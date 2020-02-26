@@ -17,9 +17,9 @@ daemonize==2.5.0
 database-sanitizer==0.4.0
 defusedxml==0.5.0
 Delorean==1.0.0
-Django==2.2.9
+Django==2.2.10
 django-admin-json-editor==0.1.5
-django-allauth==0.38.0
+django-allauth==0.41.0
 django-anymail==5.0
 django-appconf==1.0.2
 django-cors-headers==2.4.0
@@ -69,7 +69,7 @@ more-itertools==5.0.0
 ntlm-auth==1.2.0
 oauthlib==3.0.0
 packaging==19.2
-Pillow==5.4.1
+Pillow==7.0.0
 pip-tools==4.2.0
 pluggy==0.8.1
 psycopg2==2.7.6.1
