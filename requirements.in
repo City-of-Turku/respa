@@ -93,7 +93,7 @@ python-docx==0.8.10
 python-jose==3.0.1
 python3-openid==3.1.0
 pytz==2018.9
-PyYAML==5.1
+PyYAML==5.3
 raven==6.10.0
 requests==2.21.0
 requests-cache==0.4.13
