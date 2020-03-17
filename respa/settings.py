@@ -135,6 +135,7 @@ INSTALLED_APPS = [
     'helusers.providers.helsinki',
     'respa.providers.turku_oidc',
     'munigeo',
+    'taggit',
 
     'reports',
     'users',

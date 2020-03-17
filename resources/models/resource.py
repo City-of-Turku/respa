@@ -31,6 +31,10 @@ from PIL import Image
 from guardian.shortcuts import get_objects_for_user, get_users_with_perms
 from guardian.core import ObjectPermissionChecker
 
+
+from taggit.managers import TaggableManager
+from taggit.models import CommonGenericTaggedItemBase, TaggedItemBase
+
 from ..auth import is_authenticated_user, is_general_admin, is_superuser, is_underage, is_overage
 from ..errors import InvalidImage
 from ..fields import EquipmentField
@@ -171,6 +175,10 @@ class ResourceQuerySet(models.QuerySet):
         return self.filter(Q(unit__in=list(units) + list(units_where_role)) | Q(groups__in=resource_groups)).distinct()
 
 
+class CleanResourceID(CommonGenericTaggedItemBase, TaggedItemBase):
+    object_id = models.CharField(max_length=100, verbose_name=_('Object id'), db_index=True)
+
+
 class Resource(ModifiableModel, AutoIdentifiedModel):
     AUTHENTICATION_TYPES = (
         ('none', _('None')),
@@ -194,6 +202,9 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
     purposes = models.ManyToManyField(Purpose, verbose_name=_('Purposes'))
     name = models.CharField(verbose_name=_('Name'), max_length=200)
     description = models.TextField(verbose_name=_('Description'), null=True, blank=True)
+
+    tags = TaggableManager(through=CleanResourceID)
+
     min_age = models.PositiveIntegerField(verbose_name=_('Age restriction (min)'), null=True, blank=True, default=0)
     max_age = models.PositiveIntegerField(verbose_name=_('Age restriction (max)'), null=True, blank=True, default=0)
     need_manual_confirmation = models.BooleanField(verbose_name=_('Need manual confirmation'), default=False)
