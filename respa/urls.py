@@ -69,5 +69,11 @@ if settings.USE_SWAGGER_OPENAPI_VIEW:
         re_path(r'redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     ])
 
+if settings.MACHINE_TO_MACHINE_AUTH_ENABLED:
+    from rest_framework_jwt.views import obtain_jwt_token
+    urlpatterns.extend([
+        path('api-token-auth/', obtain_jwt_token),
+    ])
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

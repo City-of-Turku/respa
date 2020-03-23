@@ -6,6 +6,7 @@ Django settings for respa project.
 import os
 import environ
 import raven
+import datetime
 from sys import platform
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ImproperlyConfigured
@@ -61,14 +62,19 @@ env = environ.Env(
     OIDC_API_AUTHORIZATION_FIELD=(str, ''),
     OIDC_REQUIRE_API_SCOPE_FOR_AUTHENTICATION=(bool, False),
     OIDC_ISSUER=(str, ''),
-    OIDC_LEEWAY=(int, 0),
+    OIDC_LEEWAY=(int, 3600),
     GSM_NOTIFICATION_ADDRESS=(str, ''),
     HELUSERS_PROVIDER=(str, 'helusers.providers.helsinki'),
     HELUSERS_SOCIALACCOUNT_ADAPTER=(str, 'helusers.adapter.SocialAccountAdapter'),
-    HELUSERS_DEFAULT_AUTHENTICATION=(str, 'helusers.jwt.JWTAuthentication'),
+    AUTHENTICATION_CLASSES=(list, ['helusers.jwt.JWTAuthentication']),
     HELUSERS_AUTHENTICATION_BACKEND=(str, 'helusers.tunnistamo_oidc.TunnistamoOIDCAuth'),
     USE_SWAGGER_OPENAPI_VIEW=(bool, False),
     EMAIL_HOST=(str, ''),
+    MACHINE_TO_MACHINE_AUTH_ENABLED=(bool, False),
+    JWT_AUTH_HEADER_PREFIX=(str, "bearer"),
+    JWT_LEEWAY=(int, 30), # seconds
+    JWT_LIFETIME=(int, 3600), # generated jwt token expires after this many seconds
+    JWT_PAYLOAD_HANDLER=(str, 'respa.machine_to_machine_auth.utils.jwt_payload_handler') # generates jwt token payload
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -301,9 +307,9 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-         env('HELUSERS_DEFAULT_AUTHENTICATION') 
-        ] + ([
+    'DEFAULT_AUTHENTICATION_CLASSES':
+         env('AUTHENTICATION_CLASSES')
+        + ([
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
     ] if DEBUG else []),
@@ -321,15 +327,29 @@ OIDC_API_TOKEN_AUTH = {
     'API_AUTHORIZATION_FIELD': env('OIDC_API_AUTHORIZATION_FIELD'),
     'REQUIRE_API_SCOPE_FOR_AUTHENTICATION': env('OIDC_REQUIRE_API_SCOPE_FOR_AUTHENTICATION'),
     'ISSUER': env('OIDC_ISSUER'),
-    'OIDC_LEEWAY': env('OIDC_LEEWAY'),
     'OIDC_SECRET': env('OIDC_SECRET')
+}
+
+# Current oidc library has a bug which causes oidc tokens
+# to be read as expired after oidc leeway time has passed since
+# token creation. Workaround is to override default 600 sec leeway
+# to be more than oidc token expiration time.
+OIDC_AUTH = {
+    'OIDC_LEEWAY': env('OIDC_LEEWAY')
 }
 
 JWT_AUTH = {
     'JWT_PAYLOAD_GET_USER_ID_HANDLER': 'helusers.jwt.get_user_id_from_payload_handler',
     'JWT_AUDIENCE': env('TOKEN_AUTH_ACCEPTED_AUDIENCE'),
-    'JWT_SECRET_KEY': env('TOKEN_AUTH_SHARED_SECRET')
+    'JWT_SECRET_KEY': env('TOKEN_AUTH_SHARED_SECRET'),
+    'JWT_AUTH_HEADER_PREFIX': env('JWT_AUTH_HEADER_PREFIX'),
+    'JWT_LEEWAY': env('JWT_LEEWAY'),
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(env('JWT_LIFETIME')),
+    'JWT_PAYLOAD_HANDLER': env('JWT_PAYLOAD_HANDLER')
 }
+
+# toggles auth token api endpoint url
+MACHINE_TO_MACHINE_AUTH_ENABLED = env('MACHINE_TO_MACHINE_AUTH_ENABLED')
 
 CSRF_COOKIE_NAME = '%s-csrftoken' % env.str('COOKIE_PREFIX')
 SESSION_COOKIE_NAME = '%s-sessionid' % env.str('COOKIE_PREFIX')
@@ -399,7 +419,7 @@ elif USE_DJANGO_DEFAULT_EMAIL:
     EMAIL_USE_TLS = True
     DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 else:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' 
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 RESPA_ADMIN_USERNAME_LOGIN = env.bool(
     'RESPA_ADMIN_USERNAME_LOGIN', default=True)
