@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('taggit', '0003_taggeditem_add_unique_index'),
         ('contenttypes', '0002_remove_content_type_name'),
-        ('resources', '0088_auto_20200317_1310'),
+        ('resources', '0088_auto_20200319_1053'),
     ]
 
     operations = [
