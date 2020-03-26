@@ -147,19 +147,26 @@ export function coloredDropdownListener(event) {
 export function showSearchTagInput() {
   let newValue = []
   let tagInput = $(document.getElementById('id_tags'));
-  if (tagInput) {
-    let searchTags = $(tagInput).val().split(',');
-    for(var i=0;i<searchTags.length;i++) {
+  $($(tagInput).val().split(',')).each((index, tag) => {
+    let parsed = parseTag(tag);
+    if (parsed) {
       newValue.push(
-        parseTag(searchTags[i])
-      );
+        parsed
+      )
     }
+  });
+  $(tagInput).val('');
+
+  if (newValue.length > 0) {
+    $(tagInput).attr('type', 'text').val(newValue.join(', '));
   }
-  $(tagInput).attr('type', 'text').val(newValue.join(', '));
 }
 
 function parseTag(str) {
-  return $.trim(str)
-          .replace(/[^\w\s]/gi, '')
-          .match(/^Tag (.*)/)[1];
+  let tag = $.trim(str)
+             .replace(/[^\w\s]/gi, '')
+             .match(/^Tag (.*)/);
+  if (tag)
+    return tag[1]
+  return null;
 }

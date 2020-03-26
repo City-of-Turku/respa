@@ -203,7 +203,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
     name = models.CharField(verbose_name=_('Name'), max_length=200)
     description = models.TextField(verbose_name=_('Description'), null=True, blank=True)
 
-    tags = TaggableManager(through=CleanResourceID)
+    tags = TaggableManager(through=CleanResourceID, blank=True)
 
     min_age = models.PositiveIntegerField(verbose_name=_('Age restriction (min)'), null=True, blank=True, default=0)
     max_age = models.PositiveIntegerField(verbose_name=_('Age restriction (max)'), null=True, blank=True, default=0)

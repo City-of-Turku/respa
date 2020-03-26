@@ -5,6 +5,9 @@ from django.forms import inlineformset_factory
 from django.forms.formsets import DELETION_FIELD_NAME
 from guardian.core import ObjectPermissionChecker
 
+
+from taggit.forms import TagField
+
 from .widgets import (
     RespaCheckboxSelect,
     RespaCheckboxInput,
@@ -187,6 +190,10 @@ class ResourceForm(forms.ModelForm):
     name_fi = forms.CharField(
         required=True,
         label='Nimi [fi]',
+    )
+    tags = TagField(
+        required=False,
+        label='Avainsanat'
     )
 
     def __init__(self, *args, **kwargs):
