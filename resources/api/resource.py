@@ -26,7 +26,7 @@ from munigeo import api as munigeo_api
 from resources.models import (
     AccessibilityValue, AccessibilityViewpoint, Purpose, Reservation, Resource, ResourceAccessibility,
     ResourceImage, ResourceType, ResourceEquipment, TermsOfUse, Equipment, ReservationMetadataSet,
-    ResourceDailyOpeningHours, UnitAccessibility
+    ReservationHomeMunicipalitySet, ResourceDailyOpeningHours, UnitAccessibility
 )
 from resources.models.resource import determine_hours_time_range
 
@@ -167,6 +167,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     user_permissions = serializers.SerializerMethodField()
     supported_reservation_extra_fields = serializers.ReadOnlyField(source='get_supported_reservation_extra_field_names')
     required_reservation_extra_fields = serializers.ReadOnlyField(source='get_required_reservation_extra_field_names')
+    included_reservation_home_municipality_fields = serializers.ReadOnlyField(source='get_included_home_municipality_field_names')
     is_favorite = serializers.SerializerMethodField()
     generic_terms = serializers.SerializerMethodField()
     payment_terms = serializers.SerializerMethodField()
@@ -273,6 +274,10 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
             set_id = obj.reservation_metadata_set_id
             if set_id:
                 obj.reservation_metadata_set = self.context['reservation_metadata_set_cache'][set_id]
+        if 'reservation_home_municipality_set_cache' in self.context:
+            home_municipality_set_id = obj.reservation_home_municipality_set_id
+            if set_id:
+                obj.reservation_home_municipality_set = self.context['reservation_home_municipality_set_cache'][home_municipality_set_id]
         ret = super().to_representation(obj)
         if hasattr(obj, 'distance'):
             if obj.distance is not None:
@@ -351,7 +356,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     class Meta:
         model = Resource
         exclude = ('reservation_requested_notification_extra', 'reservation_confirmed_notification_extra',
-                   'access_code_type', 'reservation_metadata_set')
+                   'access_code_type', 'reservation_metadata_set', 'reservation_home_municipality_set')
 
 
 class ResourceDetailsSerializer(ResourceSerializer):
@@ -728,6 +733,9 @@ class ResourceCacheMixin:
         context['equipment_cache'] = equipment_cache
         set_list = ReservationMetadataSet.objects.all().prefetch_related('supported_fields', 'required_fields')
         context['reservation_metadata_set_cache'] = {x.id: x for x in set_list}
+
+        home_municipality_set_list = ReservationHomeMunicipalitySet.objects.all().prefetch_related('included_municipalities')
+        context['reservation_home_municipality_set_cache'] = {x.id: x for x in home_municipality_set_list}
 
         times = parse_query_time_range(self.request.query_params)
         if times:

@@ -35,7 +35,7 @@ RESERVATION_EXTRA_FIELDS = ('reserver_name', 'reserver_phone_number', 'reserver_
                             'billing_email_address', 'billing_address_street', 'billing_address_zip',
                             'billing_address_city', 'company', 'event_description', 'event_subject', 'reserver_id',
                             'number_of_participants', 'participants', 'reserver_email_address', 'require_assistance', 'require_workstation',
-                            'host_name', 'reservation_extra_questions')
+                            'host_name', 'reservation_extra_questions', 'home_municipality')
 
 
 class ReservationQuerySet(models.QuerySet):
@@ -147,6 +147,7 @@ class Reservation(ModifiableModel):
     host_name = models.CharField(verbose_name=_('Host name'), max_length=100, blank=True)
     require_assistance = models.BooleanField(verbose_name=_('Require assistance'), default=False)
     require_workstation = models.BooleanField(verbose_name=_('Require workstation'), default=False)
+    home_municipality = models.CharField(verbose_name=_('Home municipality'), max_length=100, blank=True)
 
     # extra detail fields for manually confirmed reservations
 
@@ -372,7 +373,7 @@ class Reservation(ModifiableModel):
         reminder.reminder_date = r_date
         reminder.save()
         self.reminder = reminder
-    
+
     def modify_reminder(self):
         if not self.reminder:
             return
@@ -524,7 +525,7 @@ class Reservation(ModifiableModel):
                 self.reminder.user = self.reminder.user if self.reminder.user else user
                 self.reminder.action_by_official = self.reminder.action_by_official if self.reminder.action_by_official else action_by_official
                 self.reminder.save()
-        
+
         """
         Stuff common to all reservation related mails.
 
@@ -675,6 +676,29 @@ class ReservationMetadataSet(ModifiableModel):
     def __str__(self):
         return self.name
 
+#ReservationHomeMunicipalityField
+class ReservationHomeMunicipalityField(models.Model):
+    field_name = models.CharField(max_length=100, verbose_name=_('Field name'), unique=True)
+
+    class Meta:
+        verbose_name = _('Reservation home municipality field')
+        verbose_name_plural = _('Reservation home municipality fields')
+
+    def __str__(self):
+        return self.field_name
+#ReservationHomeMunicipalitySet
+class ReservationHomeMunicipalitySet(ModifiableModel):
+    name = models.CharField(max_length=100, verbose_name=_('Name'), unique=True)
+    included_municipalities = models.ManyToManyField(ReservationHomeMunicipalityField,
+        verbose_name=_('Included municipalities'), related_name='home_municipality_included_set')
+
+    class Meta:
+        verbose_name = _('Reservation home municipality set')
+        verbose_name_plural = _('Reservation home municipality sets')
+
+    def __str__(self):
+        return self.name
+
 class ReservationReminderQuerySet(models.QuerySet):
     pass
 
@@ -683,7 +707,7 @@ class ReservationReminder(models.Model):
                                  on_delete=models.CASCADE)
     reminder_date = models.DateTimeField(verbose_name=_('Reminder Date'))
 
-    notification_type = models.CharField(verbose_name=_('Notification type'), max_length=32, null=True, blank=True)    
+    notification_type = models.CharField(verbose_name=_('Notification type'), max_length=32, null=True, blank=True)
     user = models.ForeignKey('users.User', verbose_name=_('User'), related_name='Users',
                                  on_delete=models.CASCADE, null=True, blank=True)
     action_by_official = models.BooleanField(verbose_name=_('Action by official'), null=True, blank=True)

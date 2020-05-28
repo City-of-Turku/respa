@@ -1,8 +1,9 @@
 from .accessibility import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility, UnitAccessibility
 from .availability import Day, Period, get_opening_hours
-from .reservation import ( 
-    ReservationMetadataField, ReservationMetadataSet, Reservation, RESERVATION_EXTRA_FIELDS, 
-    ReservationBulk, ReservationReminder, ReservationQuerySet 
+from .reservation import (
+    ReservationMetadataField, ReservationMetadataSet, ReservationHomeMunicipalityField, ReservationHomeMunicipalitySet,
+    Reservation, RESERVATION_EXTRA_FIELDS,
+    ReservationBulk, ReservationReminder, ReservationQuerySet
 )
 from .resource import (
     Purpose, Resource, ResourceType, ResourceImage, ResourceEquipment, ResourceGroup,
@@ -25,6 +26,8 @@ __all__ = [
     'Reservation',
     'ReservationMetadataField',
     'ReservationMetadataSet',
+    'ReservationHomeMunicipalityField',
+    'ReservationHomeMunicipalitySet',
     'ReservationBulk',
     'ReservationReminder',
     'ReservationQuerySet',

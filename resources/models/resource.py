@@ -269,6 +269,10 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
         'resources.ReservationMetadataSet', verbose_name=_('Reservation metadata set'),
         null=True, blank=True, on_delete=models.SET_NULL
     )
+    reservation_home_municipality_set = models.ForeignKey(
+        'resources.ReservationHomeMunicipalitySet', verbose_name=_('Reservation home municipality set'),
+        null=True, blank=True, on_delete=models.SET_NULL, related_name='home_municipality_included_set'
+    )
     external_reservation_url = models.URLField(
         verbose_name=_('External reservation URL'),
         help_text=_('A link to an external reservation system if this resource is managed elsewhere'),
@@ -733,6 +737,15 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
         else:
             metadata_set = self.reservation_metadata_set
         return [x.field_name for x in metadata_set.required_fields.all()]
+
+    def get_included_home_municipality_field_names(self, cache=None):
+        if not self.reservation_home_municipality_set_id:
+            return []
+        if cache:
+            home_municipality_set = cache[self.reservation_home_municipality_set_id]
+        else:
+            home_municipality_set = self.reservation_home_municipality_set
+        return [x.field_name for x in home_municipality_set.included_municipalities.all()]
 
     def clean(self):
         if self.cooldown is None:
