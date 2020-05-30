@@ -276,7 +276,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
                 obj.reservation_metadata_set = self.context['reservation_metadata_set_cache'][set_id]
         if 'reservation_home_municipality_set_cache' in self.context:
             home_municipality_set_id = obj.reservation_home_municipality_set_id
-            if set_id:
+            if home_municipality_set_id:
                 obj.reservation_home_municipality_set = self.context['reservation_home_municipality_set_cache'][home_municipality_set_id]
         ret = super().to_representation(obj)
         if hasattr(obj, 'distance'):

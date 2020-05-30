@@ -32,7 +32,10 @@ from munigeo import api as munigeo_api
 from datetime import datetime
 from time import strptime, mktime, sleep
 
-from resources.models import Reservation, Resource, ReservationMetadataSet, ReservationBulk, ReservationQuerySet
+from resources.models import (
+    Reservation, Resource, ReservationMetadataSet, ReservationHomeMunicipalitySet,
+    ReservationBulk, ReservationQuerySet
+)
 from resources.models.reservation import RESERVATION_EXTRA_FIELDS
 from resources.models.utils import build_reservations_ical_file
 from resources.pagination import ReservationPagination
@@ -221,6 +224,20 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             if reservable_after and data['begin'] < reservable_after:
                 raise ValidationError(_('The resource is reservable only after %(datetime)s' %
                                         {'datetime': reservable_after}))
+
+        # Check given home municipality is included in resource's home municipality set
+        if 'home_municipality' in data:
+            included = resource.get_included_home_municipality_field_names()
+            #[{Municipality: {fi: Name, en: Name, sv: Name}}, ...]
+            found = False
+
+            for municipality in included:
+                if data['home_municipality'] in list(municipality.values())[0].values():
+                    found = True
+                    break
+
+            if not found:
+                raise ValidationError(_('Home municipality has to be one of the included home municipality options'))
 
         # normal users cannot make reservations for other people
         if not resource.can_create_reservations_for_other_users(request_user):

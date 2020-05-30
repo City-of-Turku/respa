@@ -745,7 +745,19 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
             home_municipality_set = cache[self.reservation_home_municipality_set_id]
         else:
             home_municipality_set = self.reservation_home_municipality_set
-        return [x.field_name for x in home_municipality_set.included_municipalities.all()]
+        # get home municipalities with translations [{id: {fi, en, sv}}, ...]
+        included_municipalities = home_municipality_set.included_municipalities.all()
+        result_municipalities = []
+
+        for municipality in included_municipalities:
+            result_municipalities.append({
+                municipality.field_name: {
+                        'fi': municipality.field_name_fi,
+                        'en': municipality.field_name_en,
+                        'sv': municipality.field_name_sv
+                }
+            })
+        return result_municipalities
 
     def clean(self):
         if self.cooldown is None:

@@ -676,7 +676,6 @@ class ReservationMetadataSet(ModifiableModel):
     def __str__(self):
         return self.name
 
-#ReservationHomeMunicipalityField
 class ReservationHomeMunicipalityField(models.Model):
     field_name = models.CharField(max_length=100, verbose_name=_('Field name'), unique=True)
 
@@ -686,7 +685,7 @@ class ReservationHomeMunicipalityField(models.Model):
 
     def __str__(self):
         return self.field_name
-#ReservationHomeMunicipalitySet
+
 class ReservationHomeMunicipalitySet(ModifiableModel):
     name = models.CharField(max_length=100, verbose_name=_('Name'), unique=True)
     included_municipalities = models.ManyToManyField(ReservationHomeMunicipalityField,
