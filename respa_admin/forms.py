@@ -259,6 +259,7 @@ class ResourceForm(forms.ModelForm):
             'payment_terms',
             'public',
             'reservation_metadata_set',
+            'reservation_home_municipality_set',
             'tags'
         ] + translated_fields
 
