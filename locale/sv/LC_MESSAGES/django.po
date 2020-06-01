@@ -1752,3 +1752,27 @@ msgstr "Skicka SMS-påminnelse"
 
 msgid "How many hours before reservation the reminder is sent"
 msgstr "Hur många timmar före reserveringen ska SMS-påminnelsen skickas"
+
+msgid "Home municipality"
+msgstr "Hemkommun"
+
+msgid "Reservation home municipality field"
+msgstr ""
+
+msgid "Reservation home municipality fields"
+msgstr ""
+
+msgid "Included municipalities"
+msgstr ""
+
+msgid "Reservation home municipality set"
+msgstr ""
+
+msgid "Reservation home municipality sets"
+msgstr ""
+
+msgid "Home municipality has to be one of the included home municipality options"
+msgstr ""
+
+msgid "Reservation home municipality options"
+msgstr ""

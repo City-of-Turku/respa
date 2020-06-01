@@ -10,7 +10,7 @@
         {{ form.need_manual_confirmation }}
     </div>
     {% trans "Booking form" as metadata_custom_label %}
-    {% trans "Home municipality set" as home_municipality_custom_label %}
+    {% trans "Reservation home municipality options" as home_municipality_custom_label %}
     {% include "respa_admin/forms/_select.html" with field=form.authentication %}
     {% include "respa_admin/forms/_listed_textarea_input.html" with field=form.resource_staff_emails %}
     {% include "respa_admin/forms/_select.html" with field=form.generic_terms %}

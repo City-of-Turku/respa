@@ -1713,3 +1713,27 @@ msgstr "Lähetä tekstiviestimuistutus varauksista"
 
 msgid "How many hours before reservation the reminder is sent"
 msgstr "Kuinka monta tuntia etukäteen lähetetään muistutus"
+
+msgid "Home municipality"
+msgstr "Kotikunta"
+
+msgid "Reservation home municipality field"
+msgstr "Varauksen kotikuntakenttä"
+
+msgid "Reservation home municipality fields"
+msgstr "Varauksen kotikuntakentät"
+
+msgid "Included municipalities"
+msgstr "Sisäänluetut kunnat"
+
+msgid "Reservation home municipality set"
+msgstr "Varauksen kotikuntajoukko"
+
+msgid "Reservation home municipality sets"
+msgstr "Varauksen kotikuntajoukot"
+
+msgid "Home municipality has to be one of the included home municipality options"
+msgstr "Kotikunnan täytyy olla yksi annetuista kotikuntavaihtoehdoista"
+
+msgid "Reservation home municipality options"
+msgstr "Varauksen kotikuntavaihtoehdot"
