@@ -167,7 +167,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     user_permissions = serializers.SerializerMethodField()
     supported_reservation_extra_fields = serializers.ReadOnlyField(source='get_supported_reservation_extra_field_names')
     required_reservation_extra_fields = serializers.ReadOnlyField(source='get_required_reservation_extra_field_names')
-    included_reservation_home_municipality_fields = serializers.ReadOnlyField(source='get_included_home_municipality_field_names')
+    included_reservation_home_municipality_fields = serializers.ReadOnlyField(source='get_included_home_municipality_names')
     is_favorite = serializers.SerializerMethodField()
     generic_terms = serializers.SerializerMethodField()
     payment_terms = serializers.SerializerMethodField()

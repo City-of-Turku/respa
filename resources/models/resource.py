@@ -738,7 +738,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
             metadata_set = self.reservation_metadata_set
         return [x.field_name for x in metadata_set.required_fields.all()]
 
-    def get_included_home_municipality_field_names(self, cache=None):
+    def get_included_home_municipality_names(self, cache=None):
         if not self.reservation_home_municipality_set_id:
             return []
         if cache:
@@ -751,10 +751,10 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
 
         for municipality in included_municipalities:
             result_municipalities.append({
-                municipality.field_name: {
-                        'fi': municipality.field_name_fi,
-                        'en': municipality.field_name_en,
-                        'sv': municipality.field_name_sv
+                "name": {
+                        'fi': municipality.name_fi,
+                        'en': municipality.name_en,
+                        'sv': municipality.name_sv
                 }
             })
         return result_municipalities

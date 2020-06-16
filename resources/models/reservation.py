@@ -147,7 +147,8 @@ class Reservation(ModifiableModel):
     host_name = models.CharField(verbose_name=_('Host name'), max_length=100, blank=True)
     require_assistance = models.BooleanField(verbose_name=_('Require assistance'), default=False)
     require_workstation = models.BooleanField(verbose_name=_('Require workstation'), default=False)
-    home_municipality = models.CharField(verbose_name=_('Home municipality'), max_length=100, blank=True)
+    home_municipality = models.ForeignKey('ReservationHomeMunicipalityField', verbose_name=_('Home municipality'),
+                                            null=True, blank=True, on_delete=models.SET_NULL)
 
     # extra detail fields for manually confirmed reservations
 
@@ -677,14 +678,14 @@ class ReservationMetadataSet(ModifiableModel):
         return self.name
 
 class ReservationHomeMunicipalityField(models.Model):
-    field_name = models.CharField(max_length=100, verbose_name=_('Field name'), unique=True)
+    name = models.CharField(max_length=100, verbose_name=_('Name'), unique=True)
 
     class Meta:
         verbose_name = _('Reservation home municipality field')
         verbose_name_plural = _('Reservation home municipality fields')
 
     def __str__(self):
-        return self.field_name
+        return self.name
 
 class ReservationHomeMunicipalitySet(ModifiableModel):
     name = models.CharField(max_length=100, verbose_name=_('Name'), unique=True)

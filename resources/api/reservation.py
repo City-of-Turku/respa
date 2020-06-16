@@ -33,8 +33,8 @@ from datetime import datetime
 from time import strptime, mktime, sleep
 
 from resources.models import (
-    Reservation, Resource, ReservationMetadataSet, ReservationHomeMunicipalitySet,
-    ReservationBulk, ReservationQuerySet
+    Reservation, Resource, ReservationMetadataSet, ReservationHomeMunicipalityField,
+    ReservationHomeMunicipalitySet, ReservationBulk, ReservationQuerySet
 )
 from resources.models.reservation import RESERVATION_EXTRA_FIELDS
 from resources.models.utils import build_reservations_ical_file
@@ -104,6 +104,12 @@ class ReservationBulkSerializer(ExtraDataMixin, TranslatedModelSerializer):
                 (res.begin, res.end)
             )
 
+class HomeMunicipalitySerializer(TranslatedModelSerializer):
+    class Meta:
+        model = ReservationHomeMunicipalityField
+        fields = ('name',)
+        ref_name = 'ReservationHomeMunicipalitySerializer'
+
 class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.GeoModelSerializer):
     begin = NullableDateTimeField()
     end = NullableDateTimeField()
@@ -113,6 +119,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
     need_manual_confirmation = serializers.ReadOnlyField()
     user_permissions = serializers.SerializerMethodField()
     preferred_language = serializers.ChoiceField(choices=settings.LANGUAGES, required=False)
+    home_municipality = HomeMunicipalitySerializer()
 
     class Meta:
         model = Reservation
@@ -227,12 +234,14 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
 
         # Check given home municipality is included in resource's home municipality set
         if 'home_municipality' in data:
-            included = resource.get_included_home_municipality_field_names()
-            #[{Municipality: {fi: Name, en: Name, sv: Name}}, ...]
+            included = resource.get_included_home_municipality_names()
+            print(included)
+            #[{name: {fi: Name, en: Name, sv: Name}}, ...]
             found = False
 
             for municipality in included:
-                if data['home_municipality'] in list(municipality.values())[0].values():
+                # change to checking object
+                if data['home_municipality'] in list(municipality.values()):
                     found = True
                     break
 

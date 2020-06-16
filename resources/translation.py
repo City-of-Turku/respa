@@ -67,5 +67,5 @@ class AccessibilityViewpointTranslationOptions(TranslationOptions):
 
 @register(ReservationHomeMunicipalityField)
 class ReservationHomeMunicipalityFieldTranslationOptions(TranslationOptions):
-    fields = ('field_name',)
+    fields = ('name',)
     required_languages = ('fi', 'en', 'sv')
