@@ -107,8 +107,22 @@ class ReservationBulkSerializer(ExtraDataMixin, TranslatedModelSerializer):
 class HomeMunicipalitySerializer(TranslatedModelSerializer):
     class Meta:
         model = ReservationHomeMunicipalityField
-        fields = ('name',)
+        fields = ('id', 'name')
         ref_name = 'ReservationHomeMunicipalitySerializer'
+
+    def to_internal_value(self, data):
+        # if string is given, try to use it as id and convert the id to correct home municipality object
+        if isinstance(data, str):
+            home_municipality = get_object_or_none(ReservationHomeMunicipalityField, id=data)
+            if not home_municipality:
+                raise ValidationError({
+                    'home_municipality': {
+                        'id': [_('Invalid pk "{pk_value}" - object does not exist.').format(pk_value=data)]
+                    }
+                })
+            data = home_municipality
+
+        return data
 
 class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.GeoModelSerializer):
     begin = NullableDateTimeField()
@@ -235,13 +249,10 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         # Check given home municipality is included in resource's home municipality set
         if 'home_municipality' in data:
             included = resource.get_included_home_municipality_names()
-            print(included)
-            #[{name: {fi: Name, en: Name, sv: Name}}, ...]
             found = False
 
             for municipality in included:
-                # change to checking object
-                if data['home_municipality'] in list(municipality.values()):
+                if data['home_municipality'].id == municipality['id']:
                     found = True
                     break
 

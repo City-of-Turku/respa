@@ -751,6 +751,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
 
         for municipality in included_municipalities:
             result_municipalities.append({
+                'id': municipality.id,
                 "name": {
                         'fi': municipality.name_fi,
                         'en': municipality.name_en,

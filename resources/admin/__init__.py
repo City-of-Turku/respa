@@ -269,6 +269,8 @@ class ReservationMetadataSetAdmin(PopulateCreatedAndModifiedMixin, admin.ModelAd
     exclude = CommonExcludeMixin.exclude + ('id',)
     form = ReservationMetadataSetForm
 
+class ReservationHomeMunicipalityFieldAdmin(CommonExcludeMixin, TranslationAdmin):
+    pass
 
 class ReservationHomeMunicipalitySetForm(forms.ModelForm):
     class Meta:
@@ -425,7 +427,7 @@ admin_site.register(ReservationMetadataField, ReservationMetadataFieldAdmin)
 admin.site.register(ReservationBulk, ReservationBulkAdmin)
 admin.site.register(ReservationReminder, ReservationReminderAdmin)
 admin_site.register(ReservationMetadataSet, ReservationMetadataSetAdmin)
-admin_site.register(ReservationHomeMunicipalityField)
+admin_site.register(ReservationHomeMunicipalityField, ReservationHomeMunicipalityFieldAdmin)
 admin_site.register(ReservationHomeMunicipalitySet, ReservationHomeMunicipalitySetAdmin)
 admin.site.register(ResourceGroup, ResourceGroupAdmin)
 if admin.site.is_registered(Municipality):

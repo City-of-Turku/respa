@@ -18,7 +18,7 @@ from notifications.models import NotificationTemplate, NotificationTemplateExcep
 from resources.signals import (
     reservation_modified, reservation_confirmed, reservation_cancelled
 )
-from .base import ModifiableModel
+from .base import ModifiableModel, NameIdentifiedModel
 from .resource import generate_access_code, validate_access_code
 from .resource import Resource
 from .utils import (
@@ -677,12 +677,14 @@ class ReservationMetadataSet(ModifiableModel):
     def __str__(self):
         return self.name
 
-class ReservationHomeMunicipalityField(models.Model):
+class ReservationHomeMunicipalityField(NameIdentifiedModel):
+    id = models.CharField(primary_key=True, max_length=100)
     name = models.CharField(max_length=100, verbose_name=_('Name'), unique=True)
 
     class Meta:
         verbose_name = _('Reservation home municipality field')
         verbose_name_plural = _('Reservation home municipality fields')
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
