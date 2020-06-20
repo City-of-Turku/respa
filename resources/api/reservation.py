@@ -133,7 +133,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
     need_manual_confirmation = serializers.ReadOnlyField()
     user_permissions = serializers.SerializerMethodField()
     preferred_language = serializers.ChoiceField(choices=settings.LANGUAGES, required=False)
-    home_municipality = HomeMunicipalitySerializer()
+    home_municipality = HomeMunicipalitySerializer(required=False)
 
     class Meta:
         model = Reservation
@@ -307,7 +307,6 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         try:
             instance.clean(original_reservation=reservation, user=request_user)
         except DjangoValidationError as exc:
-
             # Convert Django ValidationError to DRF ValidationError so that in the response
             # field specific error messages are added in the field instead of in non_field_messages.
             if not hasattr(exc, 'error_dict'):
