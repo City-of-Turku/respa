@@ -18,6 +18,8 @@ from resources.models import (
     ResourceType,
     Unit,
     UnitAuthorization,
+    ReservationHomeMunicipalityField,
+    ReservationHomeMunicipalitySet,
 )
 
 
@@ -185,3 +187,13 @@ def test_admin_may_bypass_min_period(resource_with_opening_hours, user):
     with pytest.raises(ValidationError) as error:
         reservation.clean()
     assert error.value.code == 'invalid_time_slot'
+
+@pytest.mark.django_db
+def test_reservation_home_municipality_field_str():
+        home_municipality_field = ReservationHomeMunicipalityField.objects.create(name='test municipality')
+        assert str(home_municipality_field) == 'test municipality'
+
+@pytest.mark.django_db
+def test_reservation_home_municipality_set_str():
+        home_municipality_set = ReservationHomeMunicipalitySet.objects.create(name='test municipality set')
+        assert str(home_municipality_set) == 'test municipality set'
