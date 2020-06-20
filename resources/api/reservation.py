@@ -111,18 +111,30 @@ class HomeMunicipalitySerializer(TranslatedModelSerializer):
         ref_name = 'ReservationHomeMunicipalitySerializer'
 
     def to_internal_value(self, data):
-        # if string is given, try to use it as id and convert the id to correct home municipality object
-        if isinstance(data, str):
-            home_municipality = get_object_or_none(ReservationHomeMunicipalityField, id=data)
-            if not home_municipality:
-                raise ValidationError({
-                    'home_municipality': {
-                        'id': [_('Invalid pk "{pk_value}" - object does not exist.').format(pk_value=data)]
-                    }
-                })
-            data = home_municipality
+        # if string or dict is given, try to use its id and convert the id to correct home municipality object
+        if isinstance(data, str) or isinstance(data, dict):
+            home_municipality = None
 
-        return data
+            if isinstance(data, str):
+                home_municipality = get_object_or_none(ReservationHomeMunicipalityField, id=data)
+
+            # if dict and key id exists
+            if isinstance(data, dict):
+                if "id" in data:
+                    home_municipality = get_object_or_none(ReservationHomeMunicipalityField, id=data['id'])
+                else:
+                    raise ValidationError(_('Invalid home municipality object - id is missing.'))
+
+            if not home_municipality:
+                    raise ValidationError({
+                        'home_municipality': {
+                            'id': [_('Invalid pk "{pk_value}" - object does not exist.').format(pk_value=data)]
+                        }
+                    })
+            data = home_municipality
+            return data
+        else:
+            return super().to_internal_value(data)
 
 class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.GeoModelSerializer):
     begin = NullableDateTimeField()
