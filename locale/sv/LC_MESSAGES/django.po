@@ -1757,22 +1757,22 @@ msgid "Home municipality"
 msgstr "Hemkommun"
 
 msgid "Reservation home municipality field"
-msgstr ""
+msgstr "Reservering hemkommunfält"
 
 msgid "Reservation home municipality fields"
-msgstr ""
+msgstr "Reservering hemkommunfälten"
 
 msgid "Included municipalities"
-msgstr ""
+msgstr "Innehåller kommuner"
 
 msgid "Reservation home municipality set"
-msgstr ""
+msgstr "Reservering hemkommungrupp"
 
 msgid "Reservation home municipality sets"
-msgstr ""
+msgstr "Reservering hemkommungrupper"
 
 msgid "Home municipality has to be one of the included home municipality options"
-msgstr ""
+msgstr "Hemkommun måste vara ett av de som finns i hemkommungruppen"
 
 msgid "Reservation home municipality options"
-msgstr ""
+msgstr "Reservering hemkommungrupp"
