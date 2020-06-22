@@ -349,7 +349,7 @@ JWT_AUTH = {
     'JWT_SECRET_KEY': env('TOKEN_AUTH_SHARED_SECRET'),
     'JWT_AUTH_HEADER_PREFIX': env('JWT_AUTH_HEADER_PREFIX'),
     'JWT_LEEWAY': env('JWT_LEEWAY'),
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(env('JWT_LIFETIME')),
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=env('JWT_LIFETIME')),
     'JWT_PAYLOAD_HANDLER': env('JWT_PAYLOAD_HANDLER')
 }
 
