@@ -1779,3 +1779,6 @@ msgstr "Reservering hemkommungrupp"
 
 msgid "Unauthenticated"
 msgstr "Ingen inloggning"
+
+msgid "This value cannot be set to more than zero if resource authentication is: "
+msgstr "Det här värdet kan inte vara mer än noll, om resursens autentisering är: "

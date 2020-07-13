@@ -119,6 +119,34 @@ def test_time_slot_validations(resource_in_unit):
     resource_in_unit.slot_size = datetime.timedelta(minutes=30)
     resource_in_unit.full_clean()
 
+# tests when authentication is unauthenticated
+@pytest.mark.django_db
+def test_unauthenticated_related_validations(resource_in_unit):
+    activate('en')
+    resource_in_unit.min_age = 2
+    resource_in_unit.max_age = 20
+    resource_in_unit.max_reservations_per_user = 5
+    resource_in_unit.authentication = 'unauthenticated'
+
+    with pytest.raises(ValidationError) as error:
+        resource_in_unit.clean()
+    assert 'This value cannot be set to more than zero if resource authentication is: Unauthenticated' \
+        in get_field_errors(error.value, 'min_age')
+    resource_in_unit.min_age = 0
+
+    with pytest.raises(ValidationError) as error:
+        resource_in_unit.clean()
+    assert 'This value cannot be set to more than zero if resource authentication is: Unauthenticated' \
+        in get_field_errors(error.value, 'max_age')
+    resource_in_unit.max_age = 0
+
+    with pytest.raises(ValidationError) as error:
+        resource_in_unit.clean()
+    assert 'This value cannot be set to more than zero if resource authentication is: Unauthenticated' \
+        in get_field_errors(error.value, 'max_reservations_per_user')
+    resource_in_unit.max_reservations_per_user = 0
+
+    resource_in_unit.full_clean()
 
 @pytest.mark.django_db
 def test_queryset_with_perm(resource_in_unit, user):

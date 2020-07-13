@@ -20,6 +20,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.six import BytesIO
+from django.utils.text import format_lazy
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from django.contrib.postgres.fields import HStoreField, DateTimeRangeField
@@ -779,6 +780,31 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
             raise ValidationError(
                 {'need_manual_confirmation': _('This cannot be enabled because the resource has product(s).')}
             )
+        if self.authentication == 'unauthenticated':
+            if self.min_age and self.min_age > 0:
+                raise ValidationError(
+                    {'min_age': format_lazy(
+                        '{}'*2,
+                        *[_('This value cannot be set to more than zero if resource authentication is: '),
+                            _('Unauthenticated')]
+                        )}
+                )
+            if self.max_age and self.max_age > 0:
+                raise ValidationError(
+                     {'max_age': format_lazy(
+                        '{}'*2,
+                        *[_('This value cannot be set to more than zero if resource authentication is: '),
+                            _('Unauthenticated')]
+                        )}
+                )
+            if self.max_reservations_per_user and self.max_reservations_per_user > 0:
+                raise ValidationError(
+                     {'max_reservations_per_user': format_lazy(
+                        '{}'*2,
+                        *[_('This value cannot be set to more than zero if resource authentication is: '),
+                            _('Unauthenticated')]
+                        )}
+                )
 
 class ResourceImage(ModifiableModel):
     TYPES = (
