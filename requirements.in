@@ -17,7 +17,7 @@ daemonize
 database-sanitizer>=0.4.0
 defusedxml
 Delorean
-Django==2.2.11
+Django==2.2.14
 django-admin-json-editor
 django-allauth
 django-anymail
@@ -72,8 +72,7 @@ ntlm-auth
 oauthlib
 packaging
 phonenumbers
-Pillow
-pip-tools
+Pillow>7.0.0
 pluggy
 --no-binary psycopg2
 psycopg2
@@ -85,7 +84,7 @@ pycryptodomex
 pyflakes
 pyjwkest
 PyJWT
-pylint
+pylint>2.4.4
 pylint-django
 pylint-plugin-utils
 pyparsing
@@ -103,7 +102,7 @@ requests
 requests-cache
 requests-ntlm
 requests-oauthlib
-rsa
+rsa>4.0
 ruamel.yaml
 ruamel.yaml.clib
 sentry-sdk
