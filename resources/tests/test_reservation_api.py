@@ -1301,9 +1301,7 @@ def test_reservation_mails_in_finnish(
 @override_settings(RESPA_MAILS_ENABLED=True)
 @pytest.mark.django_db
 def test_reservation_created_mail(user_api_client, resource_in_unit, list_url, reservation_data, user, reservation_created_notification):
-    with switch_language(reservation_created_notification, 'en'):
-        reservation_created_notification.body += '{{ extra_content }}'
-        reservation_created_notification.save()
+    reservation_data['preferred_language'] = 'en'
 
     response = user_api_client.post(list_url, data=reservation_data, format='json')
     file_name, ical_file, mimetype = mail.outbox[0].attachments[0]
@@ -1314,7 +1312,7 @@ def test_reservation_created_mail(user_api_client, resource_in_unit, list_url, r
     check_received_mail_exists(
         'Normal reservation created subject.',
         user.email,
-        'Normal reservation created body.' + resource_in_unit.reservation_confirmed_notification_extra,
+        'Normal reservation created body.'
     )
 
 
