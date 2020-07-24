@@ -418,6 +418,25 @@ class Reservation(ModifiableModel):
             if day and not is_valid_time_slot(dt, self.resource.slot_size, day['opens']):
                 raise ValidationError(_("Begin and end time must match time slots"), code='invalid_time_slot')
 
+        # Check if Unit has disallow_overlapping_reservations value of True
+        if (
+            self.resource.unit.disallow_overlapping_reservations and not
+            self.resource.can_create_overlapping_reservations(user)
+        ):
+            reservations_for_same_unit = Reservation.objects.filter(user=user, resource__unit=self.resource.unit)
+            valid_reservations_for_same_unit = reservations_for_same_unit.exclude(state=Reservation.CANCELLED)
+            user_has_conflicting_reservations = valid_reservations_for_same_unit.filter(
+                Q(begin__gt=self.begin, begin__lt=self.end)
+                | Q(begin__lt=self.begin, end__gt=self.begin)
+                | Q(begin__gte=self.begin, end__lte=self.end)
+            )
+
+            if user_has_conflicting_reservations:
+                raise ValidationError(
+                    _('This unit does not allow overlapping reservations for its resources'),
+                    code='conflicting_reservation'
+                )
+
         original_reservation = self if self.pk else kwargs.get('original_reservation', None)
         if self.resource.check_reservation_collision(self.begin, self.end, original_reservation):
             raise ValidationError(_("The resource is already reserved for some of the period"))
@@ -488,7 +507,7 @@ class Reservation(ModifiableModel):
             if self.user and self.user.is_staff:
                 context['staff_name'] = self.user.get_display_name()
 
-            if notification_type == NotificationType.RESERVATION_CONFIRMED:
+            if notification_type in [NotificationType.RESERVATION_CONFIRMED, NotificationType.RESERVATION_CREATED]:
                 if self.resource.reservation_confirmed_notification_extra:
                     context['extra_content'] = self.resource.reservation_confirmed_notification_extra
             elif notification_type == NotificationType.RESERVATION_REQUESTED:
@@ -549,7 +568,9 @@ class Reservation(ModifiableModel):
             print('Notification type: %s does not exist' % notification_type)
             return
 
-        if user:
+        if getattr(self, 'order', None) and self.billing_email_address:
+            email_address = self.billing_email_address
+        elif user:
             email_address = user.email
         else:
             if not (self.reserver_email_address or self.user):

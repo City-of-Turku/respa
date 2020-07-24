@@ -77,7 +77,9 @@ env = environ.Env(
     JWT_AUTH_HEADER_PREFIX=(str, "JWT"),
     JWT_LEEWAY=(int, 30), # seconds
     JWT_LIFETIME=(int, 3600), # generated jwt token expires after this many seconds
-    JWT_PAYLOAD_HANDLER=(str, 'respa.machine_to_machine_auth.utils.jwt_payload_handler') # generates jwt token payload
+    JWT_PAYLOAD_HANDLER=(str, 'respa.machine_to_machine_auth.utils.jwt_payload_handler'), # generates jwt token payload
+    ENABLE_RESOURCE_TOKEN_AUTH=(bool, False),
+    DISABLE_SERVER_SIDE_CURSORS=(bool, False)
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -101,6 +103,7 @@ DATABASES = {
     'default': env.db()
 }
 DATABASES['default']['ATOMIC_REQUESTS'] = True
+DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = env('DISABLE_SERVER_SIDE_CURSORS')
 
 SECURE_PROXY_SSL_HEADER = env('SECURE_PROXY_SSL_HEADER')
 
@@ -307,6 +310,8 @@ SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
 
 # REST Framework
 # http://www.django-rest-framework.org
+
+ENABLE_RESOURCE_TOKEN_AUTH = env('ENABLE_RESOURCE_TOKEN_AUTH')
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [

@@ -35,7 +35,7 @@ Our main issue tracking is on [Github](https://github.com/codepointtku/respa/iss
 
 - [City of Helsinki](https://api.hel.fi/respa/v1/) - for [Varaamo UI](https://varaamo.hel.fi/) & [Huvaja UI](https://huonevaraus.hel.fi/)
 - [City of Lappeenranta](https://varaamo.lappeenranta.fi/respa/v1/) - for [Varaamo UI](https://varaamo.lappeenranta.fi/) - [GitHub repo](https://github.com/City-of-Lappeenranta/Respa)
-- [City of Turku](https://respa.turku.fi/v1/) - for [Varaamo UI](https://varaamo.turku.fi/) - [Github repo](https://github.com/codepointtku/respa)
+- [City of Turku](https://respa.turku.fi/v1/) - for [Varaamo UI](https://varaamo.turku.fi/) - [GitHub repo](https://github.com/codepointtku/respa)
 - [City of Hämeenlinna](https://varaukset.hameenlinna.fi/v1) - for [Varaamo UI](https://varaukset.hameenlinna.fi/varaamo/) and [Berth Reservation UI](https://varaukset.hameenlinna.fi/)  - [GitHub repo](https://github.com/CityOfHameenlinna/respa)
 - [City of Espoo](https://api.hel.fi/respa/v1/) - for [Varaamo UI](https://varaamo.espoo.fi/)
 - [City of Vantaa](https://api.hel.fi/respa/v1/) - for [Varaamo UI](https://varaamo.vantaa.fi/)
@@ -140,6 +140,8 @@ Settings are done either by setting environment variables named after the settin
 - `RESPA_ADMIN_VIEW_RESOURCE_URL`: URL for a "view changes" link in Respa Admin through which the user can view changes made to a given resource. Example value: `'https://varaamo.turku.fi/resources/'`.
 - `RESPA_ADMIN_LOGO`: Name of the logo file to be displayed in Respa Admin UI. Logo file is assumed to be located in `respa_admin/static_src/img/`. Example value: `ra-logo.svg`.
 - `RESPA_ADMIN_KORO_STYLE`: Defines the style of koro-shape used in login page and resources page. Accepts values: `koro-basic`, `koro-pulse`, `koro-beat`, `koro-storm`, `koro-wave`.
+- `ENABLE_RESOURCE_TOKEN_AUTH`: Enable Django Rest Frameworks token authentication method for Resource endpoint.
+- `DISABLE_SERVER_SIDE_CURSORS`: Disable server side cursors. Useful when using pgBouncer for example. See Django docs for more information: [Django setting](https://docs.djangoproject.com/en/3.0/ref/databases/#transaction-pooling-server-side-cursors).
 
 ### Setting up PostGIS/GEOS/GDAL on Windows (x64) / Python 3
 

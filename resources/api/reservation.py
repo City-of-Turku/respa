@@ -58,6 +58,8 @@ from random import uniform
 
 from ..models.utils import dateparser
 
+from respa.renderers import ResourcesBrowsableAPIRenderer
+
 User = get_user_model()
 
 # FIXME: Make this configurable?
@@ -888,8 +890,8 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
     filter_backends = (DjangoFilterBackend, filters.OrderingFilter, UserFilterBackend, ReservationFilterBackend,
                        NeedManualConfirmationFilterBackend, StateFilterBackend, CanApproveFilterBackend, PhonenumberFilterBackend)
     filterset_class = ReservationFilterSet
-    permission_classes = (ReservationPermission, )
-    renderer_classes = (renderers.JSONRenderer, renderers.BrowsableAPIRenderer, ReservationExcelRenderer)
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly, ReservationPermission)
+    renderer_classes = (renderers.JSONRenderer, ResourcesBrowsableAPIRenderer, ReservationExcelRenderer)
     pagination_class = ReservationPagination
     authentication_classes = (
         list(drf_settings.DEFAULT_AUTHENTICATION_CLASSES) +

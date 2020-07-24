@@ -102,6 +102,10 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
                                    verbose_name=_('External data source'))
     data_source_hours = models.CharField(max_length=128, blank=True, default='',
                                          verbose_name=_('External data source for opening hours'))
+    disallow_overlapping_reservations = models.BooleanField(
+        verbose_name=_('Disallow overlapping reservations in this unit'),
+        default=False,
+    )
 
     sms_reminder = models.BooleanField(verbose_name=_('Send SMS Reminder'), default=False)
 

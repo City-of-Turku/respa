@@ -63,7 +63,7 @@ def parse_query_time_range(params):
 
 def get_resource_reservations_queryset(begin, end):
     qs = Reservation.objects.filter(begin__lte=end, end__gte=begin).current()
-    qs = qs.order_by('begin').prefetch_related('catering_orders').select_related('user')
+    qs = qs.order_by('begin').prefetch_related('catering_orders').select_related('user', 'order')
     return qs
 
 
@@ -178,6 +178,16 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     reservable_min_days_in_advance = serializers.ReadOnlyField(source='get_reservable_min_days_in_advance')
     reservable_after = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
+    max_price_per_hour = serializers.SerializerMethodField()
+    min_price_per_hour = serializers.SerializerMethodField()
+
+    def get_max_price_per_hour(self, obj):
+        """Backwards compatibility for 'max_price_per_hour' field that is now deprecated"""
+        return obj.max_price if obj.price_type == Resource.PRICE_TYPE_HOURLY else None
+
+    def get_min_price_per_hour(self, obj):
+        """Backwards compatibility for 'min_price_per_hour' field that is now deprecated"""
+        return obj.min_price if obj.price_type == Resource.PRICE_TYPE_HOURLY else None
 
     def get_extra_fields(self, includes, context):
         """ Define extra fields that can be included via query parameters. Method from ExtraDataMixin."""
@@ -484,7 +494,7 @@ class ResourceFilterSet(django_filters.FilterSet):
             return queryset.exclude(favorited_by=self.user)
 
     def filter_free_of_charge(self, queryset, name, value):
-        qs = Q(min_price_per_hour__lte=0) | Q(min_price_per_hour__isnull=True)
+        qs = Q(min_price__lte=0) | Q(min_price__isnull=True)
         if value:
             return queryset.filter(qs)
         else:
@@ -620,7 +630,7 @@ class ResourceFilterSet(django_filters.FilterSet):
 
     class Meta:
         model = Resource
-        fields = ['purpose', 'type', 'people', 'need_manual_confirmation', 'is_favorite', 'unit', 'available_between', 'min_price_per_hour']
+        fields = ['purpose', 'type', 'people', 'need_manual_confirmation', 'is_favorite', 'unit', 'available_between', 'min_price']
 
 
 class ResourceFilterBackend(filters.BaseFilterBackend):
@@ -806,7 +816,8 @@ class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.RetrieveModelMixin,
     queryset = ResourceListViewSet.queryset
     authentication_classes = (
         list(drf_settings.DEFAULT_AUTHENTICATION_CLASSES) +
-        [TokenAuthentication, SessionAuthentication])
+        [SessionAuthentication] +
+        ([TokenAuthentication] if settings.ENABLE_RESOURCE_TOKEN_AUTH else []))
 
     def get_serializer_class(self):
         if settings.RESPA_PAYMENTS_ENABLED:
@@ -822,6 +833,14 @@ class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.RetrieveModelMixin,
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context.update(self._get_cache_context())
+
+        request_user = self.request.user
+        if request_user.is_authenticated:
+            prefetched_user = get_user_model().objects.prefetch_related('unit_authorizations', 'unit_group_authorizations__subject__members').\
+                get(pk=request_user.pk)
+
+            context['prefetched_user'] = prefetched_user
+
         return context
 
     def get_queryset(self):

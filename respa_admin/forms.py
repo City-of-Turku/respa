@@ -253,8 +253,9 @@ class ResourceForm(forms.ModelForm):
             'authentication',
             'resource_staff_emails',
             'access_code_type',
-            'max_price_per_hour',
-            'min_price_per_hour',
+            'max_price',
+            'min_price',
+            'price_type',
             'generic_terms',
             'payment_terms',
             'public',
@@ -316,7 +317,14 @@ class UnitForm(forms.ModelForm):
             'address_zip',
             'municipality',
             'phone',
+            'disallow_overlapping_reservations'
         ] + translated_fields
+
+        widgets = {
+            'disallow_overlapping_reservations': RespaRadioSelect(
+                choices=((True, _('Yes')), (False, _('No')))
+            ),
+        }
 
 
 class PeriodFormset(forms.BaseInlineFormSet):
