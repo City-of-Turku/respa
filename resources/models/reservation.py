@@ -3,6 +3,8 @@ import logging
 import datetime
 import pytz
 
+
+from datetime import datetime, timedelta
 from django.utils import timezone
 import django.contrib.postgres.fields as pgfields
 from django.conf import settings
