@@ -2,6 +2,7 @@ from .base import all_views
 from users.api import all_views as users_views
 from .resource import ResourceListViewSet, ResourceViewSet, PurposeViewSet
 from .reservation import ReservationViewSet
+from .availability import PeriodViewSet
 from .unit import UnitViewSet
 from .search import TypeaheadViewSet
 from .equipment import EquipmentViewSet

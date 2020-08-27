@@ -140,6 +140,7 @@ can_create_reservations_for_other_users  X       X      X
 can_create_overlapping_reservations      X       X      X      X
 can_ignore_max_reservations_per_user     X       X      X      X
 can_ignore_max_period                    X       X      X      X
+can_modify_opening_hours                 X       X      X      X
 ====================================== ====== ======= ====== ====== ======
 
 
@@ -207,6 +208,9 @@ can_ignore_max_reservations_per_user
 
 can_ignore_max_period
   Can ignore resources max period rule
+
+can_modify_opening_hours
+  Can modify the opening hours (actually: periods) of a resource
 
 
 Respa Admin Permissions

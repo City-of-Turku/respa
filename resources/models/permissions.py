@@ -25,6 +25,7 @@ RESOURCE_PERMISSIONS = (
     ('can_create_overlapping_reservations', _('Can create overlapping reservations')),
     ('can_ignore_max_reservations_per_user', _('Can ignore resources max reservations per user rule')),
     ('can_ignore_max_period', _('Can ignore resources max period rule')),
+    ('can_modify_opening_hours', _('Can modify opening hours'))
 )
 
 UNIT_ROLE_PERMISSIONS = {
@@ -121,7 +122,12 @@ UNIT_ROLE_PERMISSIONS = {
         UnitGroupAuthorizationLevel.admin,
         UnitAuthorizationLevel.admin,
         UnitAuthorizationLevel.manager
-    ]
+    ],
+    'can_modify_opening_hours': [
+        UnitGroupAuthorizationLevel.admin,
+        UnitAuthorizationLevel.admin,
+        UnitAuthorizationLevel.manager
+    ],
 }
 
 UNIT_PERMISSIONS = [

@@ -728,6 +728,9 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
     def can_ignore_max_period(self, user):
         return self._has_perm(user, 'can_ignore_max_period')
 
+    def can_modify_opening_hours(self, user):
+        return self._has_perm(user, 'can_modify_opening_hours')
+        
     def is_access_code_enabled(self):
         return self.access_code_type != Resource.ACCESS_CODE_TYPE_NONE
 
