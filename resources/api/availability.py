@@ -1,3 +1,4 @@
+import logging
 from .base import TranslatedModelSerializer, register_view
 from rest_framework import exceptions, filters, serializers, viewsets, response, permissions
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
@@ -6,6 +7,8 @@ from rest_framework.settings import api_settings as drf_settings
 from resources.models import (
     Resource, Period, Day
 )
+
+logger = logging.getLogger(__name__)
 
 class DaySerializer(TranslatedModelSerializer):
     class Meta:
@@ -18,22 +21,34 @@ class DayViewSet(viewsets.ModelViewSet):
 
 class PeriodPermission(permissions.BasePermission):
     def has_permission(self, request, view):
-        resource_id = request.data.get('resource')
+        user = request.user
+        if not (user and user.is_authenticated):
+            return False
+
+        if (view.kwargs.get('pk', None)):
+            # Handled by has_object_permission
+            return True
+            
+        resource_id = request.data.get('resource', None)        
         if resource_id == None:
-            resource_id = request.query_params.get("resource")        
+            resource_id = request.query_params.get('resource', None)
         resource = None
         try:
             resource = Resource.objects.get(pk=resource_id)
         except Resource.DoesNotExist:
             return False
         
-        if request.user and request.user.is_authenticated and resource.can_modify_opening_hours(request.user):
+        if resource.can_modify_opening_hours(user):
             return True
 
         return False
 
     def has_object_permission(self, request, view, obj):
-        return False
+        try: 
+            resource = obj.resource
+        except AttributeError:
+            return False
+        return request.user and request.user.is_authenticated and resource.can_modify_opening_hours(request.user)
 
 class PeriodSerializer(TranslatedModelSerializer):
     def validate(self, data):
@@ -53,7 +68,7 @@ class PeriodSerializer(TranslatedModelSerializer):
         days = Day.objects.filter(period__resource=resource_id, period__end__gte=data['start'], period__start__lte=data['end'])
         instance = self.instance
         if (instance != None):
-            days = days.exclude(pk=instance.pk)
+            days = days.exclude(period=instance.pk)
         for day in days:
             for data_day in data['days']:
                 if (day.weekday == data_day['weekday']):
