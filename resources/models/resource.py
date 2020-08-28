@@ -622,6 +622,9 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
 
         if self.max_age and is_overage(user, self.max_age):
             return False
+        
+        if self.unit.is_manager(user) or self.unit.is_admin(user):
+            return True
 
         return self._has_role_perm(user, perm) or self._has_explicit_perm(user, perm, allow_admin)
 

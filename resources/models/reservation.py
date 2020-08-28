@@ -134,6 +134,8 @@ class Reservation(ModifiableModel):
     type = models.CharField(
         blank=False, verbose_name=_('Type'), max_length=32, choices=TYPE_CHOICES, default=TYPE_NORMAL)
 
+    has_arrived = models.BooleanField(verbose_name=_('Has arrived'), default=False)
+
     # access-related fields
     access_code = models.CharField(verbose_name=_('Access code'), max_length=32, null=True, blank=True)
 

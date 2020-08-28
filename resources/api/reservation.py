@@ -160,7 +160,8 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         model = Reservation
         fields = [
             'url', 'id', 'resource', 'user', 'begin', 'end', 'comments', 'is_own', 'state', 'need_manual_confirmation',
-            'require_assistance', 'require_workstation', 'staff_event', 'access_code', 'user_permissions', 'preferred_language', 'type'
+            'require_assistance', 'require_workstation', 'staff_event', 'access_code', 'user_permissions', 'preferred_language', 'type',
+            'has_arrived'
         ] + list(RESERVATION_EXTRA_FIELDS)
         read_only_fields = list(RESERVATION_EXTRA_FIELDS)
 
@@ -238,6 +239,19 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             resource = data['resource']
         except KeyError:
             resource = reservation.resource
+            data.update({
+                'resource': resource
+            })
+        
+        if not data.get('begin', None):
+            data.update({
+                'begin': reservation.begin
+            })
+        
+        if not data.get('end', None):
+            data.update({
+                'end': reservation.end
+            })
 
         if not resource.can_make_reservations(request_user):
             raise PermissionDenied(_('You are not allowed to make reservations in this resource.'))
@@ -445,7 +459,6 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             'can_modify': can_modify_and_delete,
             'can_delete': can_modify_and_delete,
         }
-
 
 class UserFilterBackend(filters.BaseFilterBackend):
     """
@@ -758,6 +771,7 @@ class ReservationBulkViewSet(viewsets.ModelViewSet, ReservationCacheMixin):
         data.update({
             'user': request.user
         })
+        resource_id = data.get('resource')
         try:
             for key in stack:
                 begin = key.get('begin')
@@ -772,17 +786,10 @@ class ReservationBulkViewSet(viewsets.ModelViewSet, ReservationCacheMixin):
             for key in stack:
                 begin = parse_datetime(key.get('begin'))
                 end = parse_datetime(key.get('end'))
-                #begin =  datetime.fromtimestamp(mktime(strptime(str(key.get('begin')), '%Y-%m-%dT%H:%M:%S.%fz')))
-                #end = datetime.fromtimestamp(mktime(strptime(str(key.get('end')), '%Y-%m-%dT%H:%M:%S.%fz')))
-                resource = data.get('resource')
-                if not resource:
-                    raise Exception("No resource")
-                for res in Resource.objects.all():
-                    if res.id == resource:
-                        resource = res
-                        break
-                if not isinstance(resource, Resource):
-                    raise Exception("Invalid resource type")
+                try:
+                    resource = Resource.objects.get(id=resource_id)
+                except:
+                    raise
                 data['resource'] = resource
                 res = Reservation(
                     **data
@@ -818,7 +825,6 @@ class ReservationBulkViewSet(viewsets.ModelViewSet, ReservationCacheMixin):
                 {% endfor %}
             {% endif %}
             """
-            sleep(uniform(.035, .450))
             for res in reservations:
                 res.state = 'confirmed'
                 if resource.validate_reservation_period(res, res.user):
@@ -839,7 +845,6 @@ class ReservationBulkViewSet(viewsets.ModelViewSet, ReservationCacheMixin):
                             'recurring_validation_error': _('Reservation failed. Overlap with existing reservations.')
                         }, status=400
                     )
-                sleep(uniform(.015, .175))
                 res.save()
                 reservation_dates_context['dates'].append(
                     {
@@ -861,7 +866,7 @@ class ReservationBulkViewSet(viewsets.ModelViewSet, ReservationCacheMixin):
                 }
             })
             res = reservations[0]
-            url = ''.join(['http://', get_current_site(request).domain, '/v1/', 'reservation/', str(res.id), '/'])
+            url = ''.join([request.is_secure() and 'https' or 'http', get_current_site(request).domain, '/v1/', 'reservation/', str(res.id), '/'])
             ical_file = build_reservations_ical_file(reservations)
             attachment = ('reservation.ics', ical_file, 'text/calendar')
             res.send_reservation_mail(
@@ -977,7 +982,7 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         new_state = serializer.validated_data.pop('state', old_instance.state)
         new_instance = serializer.save(modified_by=self.request.user)
         new_instance.set_state(new_state, self.request.user)
-        if new_state == old_instance.state and new_state not in ['denied']: # Reservation was modified
+        if new_state == old_instance.state and new_state not in ['denied'] and self.request.method != 'PATCH': # Reservation was modified, don't send modified upon patch.
             if self.request.user.is_staff:
                 self.send_modified_mail(new_instance, staff=True)
             else:

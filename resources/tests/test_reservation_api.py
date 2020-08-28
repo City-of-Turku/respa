@@ -939,7 +939,7 @@ def test_admins_can_see_reservations_in_all_states(
 @pytest.mark.django_db
 def test_reservation_cannot_be_confirmed_without_permission(
         api_client, user_api_client, detail_url, reservation,
-        reservation_data, general_admin):
+        reservation_data, user2):
     reservation.state = Reservation.REQUESTED
     reservation.save()
     reservation_data['state'] = Reservation.CONFIRMED
@@ -948,10 +948,10 @@ def test_reservation_cannot_be_confirmed_without_permission(
     assert response.status_code == 400
     assert 'state' in response.data
 
-    api_client.force_authenticate(user=general_admin)
+    api_client.force_authenticate(user=user2)
     response = api_client.put(detail_url, data=reservation_data)
-    assert response.status_code == 400
-    assert 'state' in response.data
+    assert response.status_code == 403
+    assert response.data['detail'].code == 'permission_denied'
 
 
 @pytest.mark.django_db
@@ -970,6 +970,32 @@ def test_reservation_can_be_confirmed_with_permission(
     assert reservation.state == Reservation.CONFIRMED
     assert reservation.approver == general_admin
 
+
+@pytest.mark.django_db
+def test_reservation_patch_has_arrived(api_client, general_admin, detail_url, reservation):
+    reservation.has_arrived = False
+    reservation.save()
+    api_client.force_authenticate(user=general_admin)
+    response = api_client.patch(detail_url, data={
+        'has_arrived':True
+    })
+    assert response.status_code == 200
+    reservation.refresh_from_db()
+    assert reservation.has_arrived == True
+
+
+@pytest.mark.django_db
+def test_reservation_patch_fail_has_arrived(api_client, user2, detail_url, reservation):
+    reservation.has_arrived = False
+    reservation.save()
+    api_client.force_authenticate(user=user2)
+    response = api_client.patch(detail_url, data={
+        'has_arrived':True
+    })
+    assert response.status_code == 403
+    reservation.refresh_from_db()
+    assert reservation.has_arrived == False
+    
 
 @pytest.mark.django_db
 def test_user_cannot_modify_or_cancel_manually_confirmed_reservation(user_api_client, detail_url, reservation,
