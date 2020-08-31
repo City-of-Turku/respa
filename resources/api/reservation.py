@@ -533,6 +533,14 @@ class ReservationFilterBackend(filters.BaseFilterBackend):
         if times.get('end', None):
             queryset = queryset.filter(begin__lte=times['end'])
         return queryset
+    
+class HasArrivedFilterBackend(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        has_arrived = request.query_params.get('has_arrived', None)
+        if has_arrived is not None:
+            has_arrived = BooleanField().to_internal_value(has_arrived)
+            return queryset.filter(has_arrived=has_arrived)
+        return queryset
 
 class PhonenumberFilterBackend(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
@@ -893,7 +901,7 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
     if settings.RESPA_PAYMENTS_ENABLED:
         queryset = queryset.prefetch_related('order', 'order__order_lines', 'order__order_lines__product')
     filter_backends = (DjangoFilterBackend, filters.OrderingFilter, UserFilterBackend, ReservationFilterBackend,
-                       NeedManualConfirmationFilterBackend, StateFilterBackend, CanApproveFilterBackend, PhonenumberFilterBackend)
+                       NeedManualConfirmationFilterBackend, StateFilterBackend, CanApproveFilterBackend, PhonenumberFilterBackend, HasArrivedFilterBackend)
     filterset_class = ReservationFilterSet
     permission_classes = (ReservationPermission, )
     renderer_classes = (renderers.JSONRenderer, ResourcesBrowsableAPIRenderer, ReservationExcelRenderer)
