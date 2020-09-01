@@ -51,27 +51,62 @@ class PeriodPermission(permissions.BasePermission):
         return request.user and request.user.is_authenticated and resource.can_modify_opening_hours(request.user)
 
 class PeriodSerializer(TranslatedModelSerializer):
-    def validate(self, data):
+    def validate_days(self, value):
         # Check that weekdays are unique
         used_days = []
-        for day in data['days']:
-            if day['weekday'] in used_days:
-                raise serializers.ValidationError({"day": "Weekdays must be unique"})
+        for day in value:
+            try:
+                if day['weekday'] in used_days:
+                    raise serializers.ValidationError({"day": "Weekdays must be unique"})
+            except KeyError:
+                raise serializers.ValidationError({"weekday": "This field is required."})
             used_days.append(day['weekday'])
 
+            # Check that slot starts before it ends
+            try:
+                opens = day['opens']
+            except KeyError:
+                raise serializers.ValidationError({"opens": "This field is required."})
+            try:
+                closes = day['closes']
+            except KeyError:
+                raise serializers.ValidationError({"closes": "This field is required."})
+            if opens > closes:
+                raise serializers.ValidationError({"opens": "Day must open before it closes"})
+
+        return value
+
+    def validate(self, data):
+        partial = self.partial
+        instance = self.instance
+
         # Check that period starts before it ends
-        if data['start'] > data['end']:
+        start = data.get('start', None)
+        if start == None: 
+            start = instance.start
+        end = data.get('end', None)
+        if end == None:
+             end = instance.end
+        if start > end:
             raise serializers.ValidationError({"end": "Period must start before its end"})
 
         # Check for other periods with overlapping days
-        resource_id = data['resource']
-        days = Day.objects.filter(period__resource=resource_id, period__end__gte=data['start'], period__start__lte=data['end'])
-        instance = self.instance
-        if (instance != None):
-            days = days.exclude(period=instance.pk)
-        for day in days:
-            for data_day in data['days']:
-                if (day.weekday == data_day['weekday']):
+        days = data.get('days', None)
+        if days == None:
+            days = instance.days.all()
+
+        request = self.context.get('request')
+        if request and request.method == 'POST':
+            resource_id = data.get('resource')
+        else:
+            resource_id = instance.resource
+
+        existing_days = Day.objects.filter(period__resource=resource_id, period__end__gte=start, period__start__lte=end)
+        if instance != None:
+            existing_days = existing_days.exclude(period=instance.pk)
+        for data_day in days:
+            for existing_day in existing_days:
+                if (existing_day.weekday == data_day['weekday']):
                     raise serializers.ValidationError({"days": "If the period overlaps with another period it cannot have the same open days."})
                     
         return data
@@ -100,7 +135,7 @@ class PeriodUpdateSerializer(PeriodSerializer):
     def validate(self, data):
         super().validate(data)
         instance = self.instance
-        resource = data['resource']
+        resource = data.get('resource', None)
         if (resource != None and instance.resource != resource):
             raise serializers.ValidationError({"resource": "Resource can not be changed."})
         return data
@@ -117,14 +152,15 @@ class PeriodUpdateSerializer(PeriodSerializer):
         fields = ['start', 'resource', 'end', 'name', 'days']
 
     def update(self, instance, validated_data):
-        days_data = validated_data.pop("days")
-        instance.name = validated_data.get("name")
-        instance.start = validated_data.get("start")
-        instance.stop = validated_data.get("stop")
-        Day.objects.filter(period=instance).delete()
-        for day_data in days_data:
-            Day.objects.create(period=instance, **day_data)
-        instance.save()
+        days_data = validated_data.pop('days', None)
+        instance.name = validated_data.get('name', instance.name)
+        instance.start = validated_data.get('start', instance.start)
+        instance.end = validated_data.get('end', instance.end)
+        if days_data != None:
+            Day.objects.filter(period=instance).delete()
+            for day_data in days_data:
+                Day.objects.create(period=instance, **day_data)
+            instance.save()
         return instance
 
 class PeriodViewSet(viewsets.ModelViewSet):
@@ -138,11 +174,11 @@ class PeriodViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         serializer_class = self.serializer_class
 
-        if self.request.method == 'PUT':
+        if self.request.method == 'PUT' or 'PATCH':
             serializer_class = PeriodUpdateSerializer
 
         return serializer_class
 
-    http_method_names = ['get', 'post', 'put', 'delete', 'head', 'options']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
 
 register_view(PeriodViewSet, 'period', 'period')
