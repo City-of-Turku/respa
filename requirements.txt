@@ -50,7 +50,7 @@ django-parler==2.0.1      # via -r requirements.in, django-munigeo, django-parle
 django-reversion==3.0.7   # via -r requirements.in
 django-sanitized-dump==1.2.1  # via -r requirements.in
 django-taggit==1.3.0      # via -r requirements.in
-django==2.2.14            # via -r requirements.in, django-admin-json-editor, django-allauth, django-anymail, django-appconf, django-cors-headers, django-filter, django-guardian, django-helusers, django-jinja, django-mptt, django-multi-email-field, django-munigeo, django-reversion, django-taggit, djangorestframework, drf-oidc-auth, drf-yasg, easy-thumbnails
+django==2.2.16            # via -r requirements.in, django-admin-json-editor, django-allauth, django-anymail, django-appconf, django-cors-headers, django-filter, django-guardian, django-helusers, django-jinja, django-mptt, django-multi-email-field, django-munigeo, django-reversion, django-taggit, djangorestframework, drf-oidc-auth, drf-yasg, easy-thumbnails
 djangorestframework-jwt==1.11.0  # via -r requirements.in
 djangorestframework==3.11.0  # via -r requirements.in, django-parler-rest, drf-oidc-auth, drf-yasg
 dnspython==2.0.0          # via exchangelib
