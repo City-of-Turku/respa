@@ -17,7 +17,7 @@ daemonize
 database-sanitizer>=0.4.0
 defusedxml
 Delorean
-Django==2.2.14
+Django==2.2.16
 django-admin-json-editor==0.2.2
 django-allauth
 django-anymail
