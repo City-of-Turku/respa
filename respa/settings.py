@@ -79,7 +79,13 @@ env = environ.Env(
     JWT_LIFETIME=(int, 3600), # generated jwt token expires after this many seconds
     JWT_PAYLOAD_HANDLER=(str, 'respa.machine_to_machine_auth.utils.jwt_payload_handler'), # generates jwt token payload
     ENABLE_RESOURCE_TOKEN_AUTH=(bool, False),
-    DISABLE_SERVER_SIDE_CURSORS=(bool, False)
+    DISABLE_SERVER_SIDE_CURSORS=(bool, False),
+    O365_CLIENT_ID=(str, ''),
+    O365_CLIENT_SECRET=(str, ''),
+    O365_AUTH_URL=(str, 'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize'),
+    O365_TOKEN_URL=(str, 'https://login.microsoftonline.com/organizations/oauth2/v2.0/token'),
+    O365_API_URL=(str, 'https://graph.microsoft.com/v1.0'),
+    O365_CALLBACK_URL=(str, None)
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -159,6 +165,7 @@ INSTALLED_APPS = [
     'payments',
     'respa_exchange',
     'respa_outlook',
+    'respa_o365',
     'respa_admin',
 
     'sanitized_dump',
@@ -367,6 +374,12 @@ GSM_NOTIFICATION_ADDRESS = env('GSM_NOTIFICATION_ADDRESS')
 OUTLOOK_EMAIL_DOMAIN = env('OUTLOOK_EMAIL_DOMAIN')
 OUTLOOK_POLLING_RATE = env('OUTLOOK_POLLING_RATE')
 
+O365_CLIENT_ID=env('O365_CLIENT_ID')
+O365_CLIENT_SECRET=env('O365_CLIENT_SECRET')
+O365_AUTH_URL=env('O365_AUTH_URL')
+O365_TOKEN_URL=env('O365_TOKEN_URL')
+O365_API_URL=env('O365_API_URL')
+O365_CALLBACK_URL=env('O365_CALLBACK_URL')
 
 from easy_thumbnails.conf import Settings as thumbnail_settings  # noqa
 THUMBNAIL_PROCESSORS = (

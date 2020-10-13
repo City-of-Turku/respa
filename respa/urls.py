@@ -28,6 +28,7 @@ urlpatterns = [
     path('grappelli/', include('grappelli.urls')),
     path('resource_image/<int:pk>', ResourceImageView.as_view(), name='resource-image-view'),
     path('v1/', include(router.urls)),
+    path('v1/o365/', include('respa_o365.urls')),
     re_path(r'v1/reservation/ical/(?P<ical_token>[-\w\d]+).ics$', ICalFeedView.as_view(), name='ical-feed'),
     path('', include('social_django.urls', namespace='social')),
     path('', RedirectView.as_view(url='v1/'))
@@ -68,7 +69,7 @@ if settings.USE_SWAGGER_OPENAPI_VIEW:
         re_path(r'api/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
         re_path(r'redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     ])
-
+    
 if settings.MACHINE_TO_MACHINE_AUTH_ENABLED:
     from rest_framework_jwt.views import obtain_jwt_token
     urlpatterns.extend([
