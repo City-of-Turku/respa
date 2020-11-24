@@ -56,3 +56,8 @@ class ModifiableModel(models.Model):
 
     class Meta:
         abstract = True
+
+    def save(self, *args, **kwargs):
+        """ Updated modified timestamp on save"""
+        self.modified_at = timezone.now()
+        return super(ModifiableModel, self).save(*args, **kwargs)
