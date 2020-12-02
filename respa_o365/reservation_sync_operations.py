@@ -16,7 +16,6 @@ def operations_for_reservation_sync(changes):
 
     Returned operations are actions which can be interpreted using ActionVisitor
 
-
     """
     ops = []
 
@@ -36,7 +35,7 @@ def operations_for_reservation_sync(changes):
 
 
 class SyncActionVisitor:
-    """Visitor that """
+    """Visitor for sync actions. Implement this protocol to perform synchronisation operations (SyncAction)."""
 
     def create_event(self, target, source_id):
         pass
@@ -49,7 +48,6 @@ class SyncActionVisitor:
 
     def remove_mapping(self, respa_id, remote_id):
         pass
-
 
 
 class SyncAction:
@@ -116,7 +114,7 @@ class TargetSystem(Enum):
     REMOTE = 2
 
 
-def buildReservationSyncActionsDict():
+def build_reservation_sync_actions_dict():
 
     REMOTE = TargetSystem.REMOTE
     RESPA = TargetSystem.RESPA
@@ -184,5 +182,5 @@ def buildReservationSyncActionsDict():
     return statesToAction
 
 
-reservationSyncActions = buildReservationSyncActionsDict()
+reservationSyncActions = build_reservation_sync_actions_dict()
 

@@ -1,6 +1,6 @@
 
-from .reservation_sync_operations import ChangeType
-from .reservation_sync_operations import operations_for_reservation_sync
+from respa_o365.reservation_sync_operations import ChangeType
+from respa_o365.reservation_sync_operations import operations_for_reservation_sync
 
 
 def test_reservation_sync():
@@ -16,7 +16,7 @@ def test_reservation_sync():
     UO = "Update 'a' in REMOTE. Source id '1'."
     RM = "Remove mapping '1' and 'a'."
     expectations = [
-    # Respa:
+    # Outlook/Other:
     # t   e
     # s   g
     # i   n   d   d   d
@@ -25,7 +25,7 @@ def test_reservation_sync():
     #     c   a   a   e
     # t       e   d   l
     # o   o   r   p   e
-    # N   N   C   U   D    # Remote:
+    # N   N   C   U   D    # Respa:
     [XX, CR, CR, CR, NN],  # Not exists
     [CO, NN, UR, UR, DR],  # No change
     [CO, UO, UO, UO, CO],  # Created
