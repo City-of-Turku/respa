@@ -45,7 +45,7 @@ class RespaReservations:
     def remove_item(self, item_id):
         pass
 
-    def get_changed_items(self, memento=None):
+    def get_changes(self, memento=None):
         if memento:
             time = datetime.strptime(memento, time_format)
         else:
@@ -71,28 +71,3 @@ def status(reservation, time):
     if reservation.created_at > time:
         return ChangeType.CREATED
     return ChangeType.UPDATED
-
-
-def test_model_to_item_return_item_filled_with_model_data():
-    # Arrange
-    model = Reservation()
-    model.begin = datetime(year=2020, month=9, day=11, hour=11, minute=12, second=13)
-    model.end = datetime(year=2020, month=9, day=11, hour=13, minute=14, second=15)
-    model.reserver_name = "Pekka"
-    # Act
-    item = model_to_item(model)
-    # Assert
-    assert item.begin == model.begin
-    assert item.end == model.end
-    assert item.reserver_name == model.reserver_name
-    assert item.reserver_email_address == model.reserver_email_address
-    assert item.reserver_phone_number == model.reserver_phone_number
-
-def test_model_to_item_returns_none_when_mode_is_none():
-    # Act
-    item = model_to_item(None)
-    # Assert
-    assert item == None
-
-
-

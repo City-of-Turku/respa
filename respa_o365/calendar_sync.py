@@ -19,7 +19,7 @@ class SyncHelper:
         end = O365Calendar.parse_outlook_datetime(o365_reservation.get('end'))
         exchange_id = o365_reservation.get('id')
         exchange_change_key = o365_reservation.get('changeKey')
-                
+
         respa_reservation = Reservation.objects.create(
             resource=calendar_link.resource,
             begin = begin,
@@ -72,7 +72,7 @@ class EventSync(APIView):
             checked_o365_ids = []
             respa_reservations = Reservation.objects.filter(resource=resource_id)
             reservation_links = OutlookCalendarReservation.objects.filter(calendar_link=calendar_link)
-            
+
             for o365_reservation in o365_reservations:
                 o365_id = o365_reservation.get('id')
                 checked_o365_ids.append(o365_id)
@@ -148,7 +148,7 @@ class EventSync(APIView):
         return Response("OK")
 
 class O365Calendar:
-    def __init__(self, calendar_link): 
+    def __init__(self, calendar_link):
         self._calendar_link = calendar_link
         self._msgraph_session = None
 
@@ -217,7 +217,7 @@ class O365Calendar:
         self._delete(url)
 
     def update_event(self, event_id, respa_reservation):
-        
+
         url = self._get_events_url(event_id)
         begin = respa_reservation.begin.isoformat()
         end = respa_reservation.end.isoformat()
@@ -244,7 +244,7 @@ class O365Calendar:
         # Do I need to worry about memory leak / reference counts?
         if (self._msgraph_session is not None):
             return self._msgraph_session
-        
+
         token = json.loads(self._calendar_link.token)
 
         extra = {
@@ -256,7 +256,7 @@ class O365Calendar:
             self._calendar_link.token = json.dumps(token)
             self._calendar_link.save()
 
-        msgraph = OAuth2Session(settings.O365_CLIENT_ID, 
+        msgraph = OAuth2Session(settings.O365_CLIENT_ID,
                     token=token,
                     auto_refresh_kwargs=extra,
                     auto_refresh_url=settings.O365_TOKEN_URL,
@@ -268,10 +268,10 @@ class O365Calendar:
 
     def _get_events_url(self, event_id=None):
         base_url = '{}/me/calendars/{}/events'.format(settings.O365_API_URL, self._get_calendar_id())
-        
+
         if event_id is None:
-            return base_url        
-        
+            return base_url
+
         return base_url + '/' + event_id
 
     def _get(self, url):

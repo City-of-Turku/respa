@@ -1,136 +1,113 @@
-from datetime import timezone, datetime
 
 import pytest
-from resources.models import Reservation
+from datetime import  timedelta
+from resources.models import Reservation, ResourceType, Resource, Unit, TermsOfUse
 from respa_o365.reservation_sync_item import ReservationSyncItem
 from respa_o365.reservation_sync_operations import ChangeType
 from respa_o365.respa_reservation_repository import RespaReservations
+from respa_o365.reservation_repository_contract import ReservationRepositoryContract
 
 
 @pytest.mark.django_db
-def test_get_changed_items__returns_changes__when_no_memento_is_given(resource_in_unit, reservation):
-    repo = RespaReservations(resource_in_unit)
-    changes, memento = repo.get_changed_items()
-    change_type, _ = changes[reservation.id]
-    assert change_type == ChangeType.CREATED
+class TestRespaReservationRepository(ReservationRepositoryContract):
+    def test__get_changes_by_id__returns_deleted__when_reservation_is_cancelled(self, a_repo, a_item):
+        # Arrange
+        item_id, _ = a_repo.create_item(a_item)
+        reservation = Reservation.objects.filter(id=item_id).first()
+        reservation.state = Reservation.CANCELLED
+        reservation.save()
+        # Act
+        changes, _ = a_repo.get_changes_by_id([reservation.id])
+        # Assert
+        change_type, _ = changes[reservation.id]
+        assert change_type == ChangeType.DELETED
 
-@pytest.mark.django_db
-def test_get_changed_items__returns_empty_dict__when_there_are_no_changes_since_last_call(resource_in_unit, reservation):
-    repo = RespaReservations(resource_in_unit)
-    _, memento = repo.get_changed_items()
-    changes, _ = repo.get_changed_items(memento)
-    assert len(changes) == 0
+    def test__get_changes_by_id__returns_updated__when_reservation_is_updated(self, a_repo, a_item):
+        # Arrange
+        item_id, _ = a_repo.create_item(a_item)
+        reservation = Reservation.objects.filter(id=item_id).first()
+        _, memento = a_repo.get_changes()
+        reservation.reserver_name = "Some Body Else"
+        reservation.save()
+        # Act
+        changes, memento = a_repo.get_changes_by_id([reservation.id], memento)
+        # Assert
+        change_type, _ = changes[reservation.id]
+        assert change_type == ChangeType.UPDATED
 
-@pytest.mark.django_db
-def test_get_changes_by_id__returns_no_change__when_reservations_has_not_changed(resource_in_unit, reservation):
-    repo = RespaReservations(resource_in_unit)
-    changes, memento = repo.get_changed_items()
+    def test__get_changes__returns_updated__when_reservation_is_updated(self, a_repo, a_item):
+        # Arrange
+        item_id, _ = a_repo.create_item(a_item)
+        _, memento = a_repo.get_changes()
+        reservation = Reservation.objects.filter(id=item_id).first()
+        reservation.reserver_name = "Some Body Else"
+        reservation.save()
+        # Act
+        changes, _ = a_repo.get_changes(memento)
+        # Assert
+        assert changes[reservation.id] is not None, "Change was not available."
+        change_type, _ = changes[reservation.id]
+        assert change_type == ChangeType.UPDATED
 
-    changes, memento = repo.get_changes_by_id([reservation.id], memento)
-    change_type, _ = changes[reservation.id]
-    assert change_type == ChangeType.NO_CHANGE
+    def test__get_changes__returns_deleted__when_reservation_is_cancelled(self, a_repo, a_item):
+        # Arrange
+        item_id, _ = a_repo.create_item(a_item)
+        _, memento = a_repo.get_changes()
+        reservation = Reservation.objects.filter(id=item_id).first()
+        reservation.state = Reservation.CANCELLED
+        reservation.save()
+        # Act
+        changes, memento = a_repo.get_changes(memento)
+        # Assert
+        assert changes[reservation.id] is not None, "Change was not available."
+        change_type, _ = changes[reservation.id]
+        assert change_type == ChangeType.DELETED
 
+    @pytest.fixture()
+    def a_repo(self, a_resource):
+        return RespaReservations(a_resource)
 
-@pytest.mark.django_db
-def test_get_changes_by_id__returns_deleted__when_reservation_is_cancelled(resource_in_unit, reservation):
-    repo = RespaReservations(resource_in_unit)
-    _, memento = repo.get_changed_items()
+    @pytest.fixture
+    def a_resource(self, a_resource_type, a_unit, a_generic_terms, a_payment_terms):
+        return Resource.objects.create(
+            type=a_resource_type,
+            authentication="none",
+            name="resource in unit",
+            unit=a_unit,
+            max_reservations_per_user=1,
+            max_period=timedelta(hours=2),
+            reservable=True,
+            generic_terms=a_generic_terms,
+            payment_terms=a_payment_terms,
+            specific_terms_fi='spesifiset käyttöehdot',
+            specific_terms_en='specific terms of use',
+            reservation_confirmed_notification_extra_en='this resource rocks'
+        )
 
-    reservation.state = Reservation.CANCELLED
-    reservation.save()
+    @pytest.fixture
+    def a_resource_type(self):
+        return ResourceType.objects.get_or_create(id="test_space", name="test_space", main_type="space")[0]
 
-    changes, memento = repo.get_changes_by_id([reservation.id], memento)
-    change_type, _ = changes[reservation.id]
-    assert change_type == ChangeType.DELETED
+    @pytest.fixture
+    def a_unit(self):
+        return Unit.objects.create(name="unit", time_zone='Europe/Helsinki')
 
-@pytest.mark.django_db
-def test_get_changes_by_id__returns_updated__when_reservation_is_updated(resource_in_unit, reservation):
-    repo = RespaReservations(resource_in_unit)
-    _, memento = repo.get_changed_items()
-    reservation.reserver_name = "Some Body Else"
-    reservation.save()
+    @pytest.fixture
+    def a_generic_terms(self):
+        return TermsOfUse.objects.create(
+            name_fi='testikäyttöehdot',
+            name_en='test terms of use',
+            text_fi='kaikki on kielletty',
+            text_en='everything is forbidden',
+        )
 
-    changes, memento = repo.get_changes_by_id([reservation.id], memento)
-    change_type, _ = changes[reservation.id]
-    assert change_type == ChangeType.UPDATED
-
-@pytest.mark.django_db
-def test_get_changes__returns_updated__when_reservation_is_updated(resource_in_unit, reservation):
-    repo = RespaReservations(resource_in_unit)
-    _, memento = repo.get_changed_items()
-    reservation.reserver_name = "Some Body Else"
-    reservation.save()
-
-    changes, memento = repo.get_changed_items(memento)
-
-    assert changes[reservation.id] is not None, "Change was not available."
-    change_type, _ = changes[reservation.id]
-    assert change_type == ChangeType.UPDATED
-
-@pytest.mark.django_db
-def test_get_changes__returns_deleted__when_reservation_is_cancelled(resource_in_unit, reservation):
-    repo = RespaReservations(resource_in_unit)
-    _, memento = repo.get_changed_items()
-    reservation.state = Reservation.CANCELLED
-    reservation.save()
-
-    changes, memento = repo.get_changed_items(memento)
-
-    assert changes[reservation.id] is not None, "Change was not available."
-    change_type, _ = changes[reservation.id]
-    assert change_type == ChangeType.DELETED
-
-@pytest.mark.django_db
-def test_get_item__returns_item__when_id_exists(resource_in_unit, reservation):
-    repo = RespaReservations(resource_in_unit)
-    res = repo.get_item(reservation.id)
-    assert res.begin == reservation.begin
-    assert res.end == reservation.end
-    assert res.reserver_name == reservation.reserver_name
-    assert res.reserver_phone_number == reservation.reserver_phone_number
-    assert res.reserver_email_address == reservation.reserver_email_address
-
-@pytest.mark.django_db
-def test_get_item__returns_none__when_id_is_unknown(resource_in_unit):
-    repo = RespaReservations(resource_in_unit)
-    res = repo.get_item(5)
-    assert res == None
-
-@pytest.mark.django_db
-def test_get_item_returns_item_None2(resource_in_unit):
-    repo = RespaReservations(resource_in_unit)
-    original_item = ReservationSyncItem()
-    original_item.begin = datetime(2020, 1, 1, 12, 0, tzinfo=timezone.utc)
-    original_item.end = datetime(2020, 1, 1, 13, 0, tzinfo=timezone.utc)
-    item_id, change_key = repo.create_item(original_item)
-    item = repo.get_item(item_id)
-
-    assert original_item.reserver_name == item.reserver_name
-    assert original_item.reserver_email_address == item.reserver_email_address
-    assert original_item.reserver_phone_number == item.reserver_phone_number
-    assert original_item.begin == item.begin
-    assert original_item.end == item.end
-
-@pytest.mark.django_db
-def test_get_item_returns_item_None3(resource_in_unit):
-    repo = RespaReservations(resource_in_unit)
-    original_item1 = ReservationSyncItem()
-    original_item1.begin = datetime(2020, 1, 1, 12, 0, tzinfo=timezone.utc)
-    original_item1.end = datetime(2020, 1, 1, 13, 0, tzinfo=timezone.utc)
-    item_id, change_key1 = repo.create_item(original_item1)
-    original_item = ReservationSyncItem()
-    original_item.begin = datetime(2019, 1, 1, 12, 0, tzinfo=timezone.utc)
-    original_item.end = datetime(2019, 1, 1, 13, 0, tzinfo=timezone.utc)
-    original_item.reserver_name = "Pekka"
-    original_item.reserver_phone_number = "+123124124"
-    original_item.reserver_email_address = "abba@silli.fi"
-    item_id, change_key = repo.create_item(original_item1)
-    change_key2 = repo.set_item(item_id, original_item)
-    item = repo.get_item(item_id)
-    assert original_item.reserver_name == item.reserver_name
-    assert original_item.reserver_email_address == item.reserver_email_address
-    assert original_item.reserver_phone_number == item.reserver_phone_number
-    assert original_item.begin == item.begin
-    assert original_item.end == item.end
-
+    @pytest.fixture
+    def a_payment_terms(self):
+        return TermsOfUse.objects.create(
+            name_fi='testimaksuehdot',
+            name_en='test terms of payment',
+            text_fi='kaikki on maksullista',
+            text_en='everything is chargeable',
+            terms_type=TermsOfUse.TERMS_TYPE_PAYMENT
+        )
 
