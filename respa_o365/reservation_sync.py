@@ -105,12 +105,12 @@ class ChangeKeyWrapper(SyncItemRepository):
 
 class ReservationSync:
 
-    def __init__(self, respa, remote):
+    def __init__(self, respa, remote, respa_memento=None, remote_memento=None, id_mapper=None):
         self.__respa = ChangeKeyWrapper(respa)
         self.__remote = ChangeKeyWrapper(remote)
-        self.__id_map = TwoWayDict()
-        self.__respa_memento = None
-        self.__remote_memento = None
+        self.__id_map = IdMapper() if not id_mapper else id_mapper
+        self.__respa_memento = respa_memento
+        self.__remote_memento = remote_memento
 
     def sync(self, respa_statuses, remote_statuses):
         def build_status_pair(respa_id, remote_id):
@@ -192,52 +192,3 @@ class OpVisitor(SyncActionVisitor):
 
     def add_mapping(self, respa_id, remote_id):
         self.__id_map[respa_id] = remote_id
-
-
-
-class TwoWayDict:
-
-    def __init__(self):
-        self._direct_dict = {}
-        self._reverse_dict = {}
-
-        parent = self
-
-        class Reverse:
-            reverse = parent
-
-            def __setitem__(self, key, value):
-                parent[value] = key
-
-            def __getitem__(self, key):
-                return parent._reverse_dict[key]
-
-            def __delitem__(self, key):
-                parent.del_key_value(parent.reverse_get(key), key)
-
-            def get(self, key, *args):
-                return parent._reverse_dict.get(key, *args)
-
-        self.reverse = Reverse()
-
-    def __setitem__(self, key, value):
-        self._direct_dict[key] = value
-        self._reverse_dict[value] = key
-
-    def __delitem__(self, key):
-        value = self._direct_dict[key]
-        del self._direct_dict[key]
-        del self._reverse_dict[value]
-
-    def get(self, key, *args):
-        return self._direct_dict.get(key, *args)
-
-    def reverse_get(self, key):
-        return self._reverse_dict[key]
-
-    def del_key_value(self, key, value):
-        del self._direct_dict[key]
-        del self._reverse_dict[value]
-
-    def __getitem__(self, key):
-        return self._direct_dict[key]

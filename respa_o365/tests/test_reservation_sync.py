@@ -1,16 +1,7 @@
 import uuid
 import pytest
-from respa_o365.reservation_sync import SyncItemRepository, TwoWayDict, ReservationSync
+from respa_o365.reservation_sync import SyncItemRepository, ReservationSync
 from respa_o365.reservation_sync_operations import ChangeType
-
-
-def test_two_way_dict_reverse_affects_the_dict_itself():
-    d = TwoWayDict()
-    d["a"] = 1
-    assert d.reverse[1] == "a"
-    del d.reverse[1]
-    with pytest.raises(KeyError):
-        assert d.reverse["a"]
 
 
 def test_sync_copies_element_from_first_source_to_second():
