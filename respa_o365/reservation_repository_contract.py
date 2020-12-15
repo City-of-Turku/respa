@@ -30,7 +30,7 @@ class ReservationRepositoryContract:
 
     def test__get_changed_items__returns_empty_dict__when_there_are_no_changes_since_last_call(self, a_repo, a_item):
         item_id, change_key = a_repo.create_item(a_item)
-        _, memento = a_repo.get_changes()
+        changes1, memento = a_repo.get_changes()
         changes, _ = a_repo.get_changes(memento)
         assert len(changes) == 0
 

@@ -6,14 +6,35 @@ from respa_o365.reservation_repository_contract import ReservationRepositoryCont
 from respa_o365.reservation_sync_item import ReservationSyncItem
 
 
+class RememberCreatedItems:
+
+    def __init__(self, wrapped):
+        self._wrapped = wrapped
+        self._ids = []
+
+    def create_item(self, item):
+        item_id, change_key = self._wrapped.create_item(item)
+        self._ids.append(item_id)
+        return item_id, change_key
+
+    def __getattr__(self, name):
+        return getattr(self._wrapped, name)
+
+    def created_item_ids(self):
+        return self._ids
+
+
 class TestO365ReservationRepository(ReservationRepositoryContract):
 
     @pytest.fixture
     def a_repo(self):
         cal = client()
-        repo = O365ReservationRepository(cal)
-        return repo
-
+        repo = RememberCreatedItems(O365ReservationRepository(cal))
+        yield repo
+        # Remove ids that were created
+        ids = repo.created_item_ids()
+        for item_id in ids:
+            cal.remove_event(item_id)
 
 def client():
     # These are some token to some test environment.
@@ -61,3 +82,6 @@ def remove_events():
     events = cal.get_events()
     for id, e in events.items():
         cal.remove_event(id)
+
+def xtest():
+    remove_events()

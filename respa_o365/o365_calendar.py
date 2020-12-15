@@ -152,6 +152,7 @@ class O365Calendar:
         else:
             time = datetime(1970, 1, 1, tzinfo=timezone.utc)
         events = self.get_events()
+        events = {i: e for i, e in events.items() if e.modified_at > time}
         new_memento = reduce(lambda a, b: max(a, b.modified_at), events.values(), time)
         return {id: (status(r, time), "") for id, r in events.items()}, new_memento.strftime(time_format)
 
@@ -170,12 +171,12 @@ class O365Calendar:
         else:
             return 'me/calendars/{}/events/{}'.format(self._calendar_id, event_id)
 
-def status(reservation, time):
-    if reservation.modified_at <= time:
+def status(item, time):
+    if item.modified_at <= time:
         return ChangeType.NO_CHANGE
 #    if reservation.state in [Reservation.CANCELLED, Reservation.DENIED]:
 #        return ChangeType.DELETED
-    if reservation.created_at > time:
+    if item.created_at > time:
         return ChangeType.CREATED
     return ChangeType.UPDATED
 
