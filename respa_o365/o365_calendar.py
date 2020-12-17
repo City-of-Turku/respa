@@ -28,9 +28,10 @@ UTC = pytz.timezone("UTC")
 time_format = '%Y-%m-%dT%H:%M:%S.%f%z'
 
 class O365Calendar:
-    def __init__(self,  calendar_id, microsoft_api):
+    def __init__(self,  calendar_id, microsoft_api, known_events={}):
         self._calendar_id = calendar_id
         self._api = microsoft_api
+        self._known_events = known_events
 
     def _parse_outlook_timestamp(self, ts):
         # 2017-08-29T04:00:00.0000000 is too long format. Shorten it to 26 characters, drop last number.
@@ -53,14 +54,14 @@ class O365Calendar:
                 result[event_id] = e
         return result
 
-    def json_to_event(self, event):
-        subject = event.get("subject")
-        body = event.get("body").get("content")
-        start = self._parse_outlook_timestamp(event.get("start"))
-        end = self._parse_outlook_timestamp(event.get("end"))
-        created = datetime.strptime(event.get("createdDateTime").strip("Z")[:26], "%Y-%m-%dT%H:%M:%S.%f")
+    def json_to_event(self, json):
+        subject = json.get("subject")
+        body = json.get("body").get("content")
+        start = self._parse_outlook_timestamp(json.get("start"))
+        end = self._parse_outlook_timestamp(json.get("end"))
+        created = datetime.strptime(json.get("createdDateTime").strip("Z")[:26], "%Y-%m-%dT%H:%M:%S.%f")
         created = UTC.localize(created)
-        modified = datetime.strptime(event.get("lastModifiedDateTime").strip("Z")[:26], "%Y-%m-%dT%H:%M:%S.%f")
+        modified = datetime.strptime(json.get("lastModifiedDateTime").strip("Z")[:26], "%Y-%m-%dT%H:%M:%S.%f")
         modified = UTC.localize(modified)
         e = Event()
         e.begin = start
@@ -144,26 +145,34 @@ class O365Calendar:
             }
         )
         res = response.json()
-        return res.get('changeKey')
+        change_key = res.get('changeKey')
+        return change_key
 
     def get_changes(self, memento=None):
+        # Microsoft API does not provide general API to fetch changes.
+        # There is delta for primary calendar, but this does not work in cases
+        # where calendar id needs to be defined. Thus this method is not
+        # able to return whole status as memento. Items seen during last
+        # call is used to detect deleted items between calls.
+        # Method is not immutable against memento as it should.
         if memento:
             time = datetime.strptime(memento, time_format)
         else:
             time = datetime(1970, 1, 1, tzinfo=timezone.utc)
         events = self.get_events()
+        deleted = set(self._known_events).difference(events.keys())
+        self._known_events = {k for k in events.keys()}
         events = {i: e for i, e in events.items() if e.modified_at > time}
         new_memento = reduce(lambda a, b: max(a, b.modified_at), events.values(), time)
-        return {id: (status(r, time), "") for id, r in events.items()}, new_memento.strftime(time_format)
+        result = {id: (status(r, time), "") for id, r in events.items()}
+        for i in deleted:
+            result[i] = (ChangeType.DELETED, "")
+        return result, new_memento.strftime(time_format)
 
-    def get_changes_by_id(self, item_ids, memento=None):
-        if memento:
-            time = datetime.strptime(memento, time_format)
-        else:
-            time = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        events = self.get_events()
-        new_memento = reduce(lambda a, b: max(a, b.modified_at), events.values(), time)
-        return {id: (status(r, time), "") for id, r in events.items() if id in item_ids}, new_memento.strftime(time_format)
+    def get_changes_by_ids(self, item_ids, memento=None):
+        changes, new_memento = self.get_changes(memento)
+        # TODO Change key should be defined still
+        return {i: changes.get(i, (ChangeType.NO_CHANGE, "")) for i in item_ids}, new_memento
 
     def _get_events_url(self, event_id=None):
         if event_id is None:
@@ -247,6 +256,9 @@ class MicrosoftApi:
                 return text[len(prefix):]
             return text
         return urljoin(self._api_url, remove_prefix(path, self._api_url))
+
+    def current_token(self):
+        return self._token
 
 
 def urljoin(*args):

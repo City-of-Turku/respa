@@ -8,7 +8,12 @@ from rest_framework.permissions import BasePermission, IsAuthenticated
 from requests_oauthlib import OAuth2Session
 from urllib.parse import urlparse, parse_qs
 from resources.models import Resource, Reservation
+from .id_mapper import IdMapper
 from .models import OutlookCalendarLink, OutlookCalendarReservation
+from .o365_calendar import O365Calendar, MicrosoftApi
+from .o365_reservation_repository import O365ReservationRepository
+from .reservation_sync import ReservationSync
+from .respa_reservation_repository import RespaReservations
 
 logger = logging.getLogger(__name__)
 
@@ -60,14 +65,69 @@ class CanSyncCalendars(BasePermission):
             return obj.unit.is_manager(request.user)
         return False
 
+
+def perform_sync_to_exchange(link, func):
+    # Load state from database
+    token = link.token
+    respa_memento = link.respa_reservation_sync_memento
+    o365_memento = link.outlook_reservation_sync_memento
+    id_mappings = {}
+    reservation_item_data = {}
+    known_exchange_items = set()
+    respa_change_keys = {}
+    exchange_change_keys = {}
+    for res in OutlookCalendarReservation.objects.filter(calendar_link=link):
+        id_mappings[res.reservation_id] = res.exchange_id
+        reservation_item_data[res.reservation_id] = res
+        known_exchange_items.add(res.exchange_id)
+        respa_change_keys[res.reservation_id] = res.respa_change_key
+        exchange_change_keys[res.exchange_id] = res.exchange_change_key
+    # Initialise components
+    mapper = IdMapper(id_mappings)
+    api = MicrosoftApi(token)
+    cal = O365Calendar(link.reservation_calendar_id, api, known_events=known_exchange_items)
+    o365 = O365ReservationRepository(cal)
+    respa = RespaReservations(resource_id=link.resource.id)
+    sync = ReservationSync(respa, o365, id_mapper=mapper, respa_memento=respa_memento, remote_memento=o365_memento, respa_change_keys=respa_change_keys, remote_change_keys=exchange_change_keys)
+    # Perform synchronisation
+    func(sync)
+    # Store data back to database
+    exchange_change_keys = sync.remote_change_keys()
+    respa_change_keys = sync.respa_change_keys()
+    for respa_id, exchange_id in mapper.changes():
+        reservation = reservation_item_data[respa_id]
+        reservation.exchange_id = exchange_id
+        reservation.exchange_change_key = exchange_change_keys[exchange_id]
+        reservation.respa_change_key = respa_change_keys[respa_id]
+        reservation.save()
+    for respa_id, exchange_id in mapper.removals():
+        reservation_item_data[respa_id].delete()
+    for respa_id, exchange_id in mapper.additions():
+        reservation = Reservation.objects.filter(id=respa_id).first()
+        exchange_change_key = exchange_change_keys[exchange_id]
+        respa_change_key = respa_change_keys[respa_id]
+        OutlookCalendarReservation.objects.create(calendar_link=link, reservation=reservation, exchange_id=exchange_id, respa_change_key=respa_change_key, exchange_change_key=exchange_change_key)
+    link.exchange_reservation_sync_memento = sync.remote_memento()
+    link.respa_reservation_sync_memento = sync.respa_memento()
+    link.token = api.current_token()
+    link.save()
+
+
 class EventSync(APIView):
     permission_classes = [IsAuthenticated, CanSyncCalendars]
 
     def get(self, request):
+        calendar_links = OutlookCalendarLink.objects.all()
+        for link in calendar_links:
+            perform_sync_to_exchange(link, lambda sync: sync.sync_all())
+        return Response("OK")
+
+    def get2(self, request):
         resource_id = request.query_params.get('resource')
+        # Load state from database
         calendar_links = OutlookCalendarLink.objects.filter(resource=resource_id)
         for calendar_link in calendar_links:
-            o365_calendar = O365Calendar(calendar_link)
+            o365_calendar = O365Calendar2(calendar_link)
             o365_reservations = o365_calendar.get_events()
             checked_o365_ids = []
             respa_reservations = Reservation.objects.filter(resource=resource_id)
@@ -147,9 +207,8 @@ class EventSync(APIView):
 
         return Response("OK")
 
-class O365Calendar:
+class O365Calendar2:
     def __init__(self, calendar_link):
-        self._calendar_link = calendar_link
         self._msgraph_session = None
 
     @staticmethod

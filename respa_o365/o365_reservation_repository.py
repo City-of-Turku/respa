@@ -38,5 +38,5 @@ class O365ReservationRepository(SyncItemRepository):
     def get_changes(self, memento=None):
         return self._o365_calendar.get_changes(memento)
 
-    def get_changes_by_id(self, item_ids, memento=None):
-        return self._o365_calendar.get_changes_by_id(item_ids, memento)
+    def get_changes_by_ids(self, item_ids, memento=None):
+        return self._o365_calendar.get_changes_by_ids(item_ids, memento)

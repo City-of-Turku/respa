@@ -10,19 +10,19 @@ from respa_o365.reservation_repository_contract import ReservationRepositoryCont
 
 @pytest.mark.django_db
 class TestRespaReservationRepository(ReservationRepositoryContract):
-    def test__get_changes_by_id__returns_deleted__when_reservation_is_cancelled(self, a_repo, a_item):
+    def test__get_changes_by_ids__returns_deleted__when_reservation_is_cancelled(self, a_repo, a_item):
         # Arrange
         item_id, _ = a_repo.create_item(a_item)
         reservation = Reservation.objects.filter(id=item_id).first()
         reservation.state = Reservation.CANCELLED
         reservation.save()
         # Act
-        changes, _ = a_repo.get_changes_by_id([reservation.id])
+        changes, _ = a_repo.get_changes_by_ids([reservation.id])
         # Assert
         change_type, _ = changes[reservation.id]
         assert change_type == ChangeType.DELETED
 
-    def test__get_changes_by_id__returns_updated__when_reservation_is_updated(self, a_repo, a_item):
+    def test__get_changes_by_ids__returns_updated__when_reservation_is_updated(self, a_repo, a_item):
         # Arrange
         item_id, _ = a_repo.create_item(a_item)
         reservation = Reservation.objects.filter(id=item_id).first()
@@ -30,7 +30,7 @@ class TestRespaReservationRepository(ReservationRepositoryContract):
         reservation.reserver_name = "Some Body Else"
         reservation.save()
         # Act
-        changes, memento = a_repo.get_changes_by_id([reservation.id], memento)
+        changes, memento = a_repo.get_changes_by_ids([reservation.id], memento)
         # Assert
         change_type, _ = changes[reservation.id]
         assert change_type == ChangeType.UPDATED

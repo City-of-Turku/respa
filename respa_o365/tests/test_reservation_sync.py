@@ -1,5 +1,7 @@
 import uuid
 import pytest
+
+from respa_o365.id_mapper import IdMapper
 from respa_o365.reservation_sync import SyncItemRepository, ReservationSync
 from respa_o365.reservation_sync_operations import ChangeType
 
@@ -115,6 +117,41 @@ def test_sync_overrides_changes_from_second_source_when_changed():
     assert len(source2.get_items()) == 1, str(source2.get_items())
     assert sorted(map(lambda v: v[1], source2.get_items())) == ["blaah1a"]
 
+def test_sync_ignores_item_in_respa__when_change_key_matches():
+    # Arrange
+    source1 = MemoryRepository()
+    source2 = MemoryRepository()
+    id1, change_key1 = source1.create_item("blaah1")
+    id2, change_key2 = source2.create_item("blaah2")
+    id_mapper = IdMapper({id1: id2})
+    sync = ReservationSync(respa=source1, remote=source2, respa_change_keys={id1: change_key1}, remote_change_keys={id2: change_key2}, id_mapper=id_mapper)
+    # Act
+    sync.sync_all()
+    # Assert
+    assert len(source1.get_items()) == 1, str(source1.get_items())
+    assert len(source2.get_items()) == 1, str(source2.get_items())
+    assert sorted(map(lambda v: v[1], source1.get_items())) == ["blaah1"]
+    assert sorted(map(lambda v: v[1], source2.get_items())) == ["blaah2"]
+
+def test__respa_change_keys__returns_change_keys():
+    # Arrange
+    source1, source2 = MemoryRepository(), MemoryRepository()
+    id, change_key = source1.create_item("blaah1")
+    sync = ReservationSync(respa=source1, remote=source2)
+    # Act
+    sync.sync_all()
+    # Assert
+    assert sync.respa_change_keys() == {id: change_key}
+
+def test__remote_change_keys__returns_change_keys():
+    # Arrange
+    source1, source2 = MemoryRepository(), MemoryRepository()
+    id, change_key = source2.create_item("blaah1")
+    sync = ReservationSync(respa=source1, remote=source2)
+    # Act
+    sync.sync_all()
+    # Assert
+    assert sync.remote_change_keys() == {id: change_key}
 
 class MemoryRepository(SyncItemRepository):
     def __init__(self):
@@ -157,5 +194,5 @@ class MemoryRepository(SyncItemRepository):
     def get_changes_by_ids(self, item_ids, memento=None):
         changes, _ = self.get_changes(memento)
         result = {i: changes.get(i, (ChangeType.NO_CHANGE, hash(self.__items.get(i, None)))) for i in item_ids if i in self.__items}
-        return result
+        return result, memento
 

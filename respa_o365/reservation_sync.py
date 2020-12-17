@@ -1,4 +1,4 @@
-
+from respa_o365.id_mapper import IdMapper
 from respa_o365.reservation_sync_operations import ChangeType, SyncActionVisitor, TargetSystem, \
     operations_for_reservation_sync
 
@@ -39,7 +39,7 @@ class SyncItemRepository:
         """
         pass
 
-    def get_changes_by_id(self, item_ids, memento):
+    def get_changes_by_ids(self, item_ids, memento):
         """
         Returns changes of given ids after previous method call. Memento is interchangeable with get_changes-method.
         Change status is returned even if there has not been change in certain item. Change is not present if
@@ -58,9 +58,9 @@ class ChangeKeyWrapper(SyncItemRepository):
     Basically item that has been created or update through this wrapper is not present
     in get_changes -method calls.
     """
-    def __init__(self, repo):
+    def __init__(self, repo, change_keys={}):
         self.__repo = repo
-        self.__last_hash_value = {}
+        self.__last_hash_value = change_keys.copy()
 
     def create_item(self, item):
         item_id, changeKey = self.__repo.create_item(item)
@@ -85,8 +85,8 @@ class ChangeKeyWrapper(SyncItemRepository):
         return self.filter_seen(result), memento
 
     def get_changes_by_ids(self, *args):
-        result = self.__repo.get_changes_by_ids(*args)
-        return self.filter_seen(result)
+        result, memento = self.__repo.get_changes_by_ids(*args)
+        return self.filter_seen(result), memento
 
     def seen(self, item_id, change_key):
         last_hash = self.__last_hash_value.get(item_id, 0)
@@ -96,18 +96,20 @@ class ChangeKeyWrapper(SyncItemRepository):
     def filter_seen(self, changes_with_change_keys):
         filtered = {}
         for item_id, (change_type, change_key) in changes_with_change_keys.items():
-            if self.seen(item_id, change_key):
+            if self.seen(item_id, change_key) and change_type != ChangeType.DELETED:
                 filtered[item_id] = ChangeType.NO_CHANGE
             else:
                 filtered[item_id] = change_type
         return filtered
 
+    def change_keys(self):
+        return self.__last_hash_value.copy()
 
 class ReservationSync:
 
-    def __init__(self, respa, remote, respa_memento=None, remote_memento=None, id_mapper=None):
-        self.__respa = ChangeKeyWrapper(respa)
-        self.__remote = ChangeKeyWrapper(remote)
+    def __init__(self, respa, remote, respa_memento=None, remote_memento=None, id_mapper=None, respa_change_keys={}, remote_change_keys={}):
+        self.__respa = ChangeKeyWrapper(respa, respa_change_keys)
+        self.__remote = ChangeKeyWrapper(remote, remote_change_keys)
         self.__id_map = IdMapper() if not id_mapper else id_mapper
         self.__respa_memento = respa_memento
         self.__remote_memento = remote_memento
@@ -125,10 +127,12 @@ class ReservationSync:
             return [i for i in mapped_ids if i not in other_ids]
 
         ids_missing_from_remote = missing_ids(respa_statuses.keys(), remote_statuses.keys(), self.__id_map)
-        remote_statuses.update(self.__remote.get_changes_by_ids(ids_missing_from_remote, self.__remote_memento))
+        missing_changes_from_remote, _ = self.__remote.get_changes_by_ids(ids_missing_from_remote, self.__remote_memento)
+        remote_statuses.update(missing_changes_from_remote)
 
         ids_missing_from_respa = missing_ids(remote_statuses.keys(), respa_statuses.keys(), self.__id_map.reverse)
-        respa_statuses.update(self.__respa.get_changes_by_ids(ids_missing_from_respa, self.__respa_memento))
+        missing_changes_from_respa, _ = self.__respa.get_changes_by_ids(ids_missing_from_respa, self.__respa_memento)
+        respa_statuses.update(missing_changes_from_respa)
 
         changes = set()
         for respa_id in respa_statuses:
@@ -152,6 +156,17 @@ class ReservationSync:
         self.__respa_memento = memento_respa
         self.__remote_memento = memento_remote
 
+    def respa_memento(self):
+        return self.__respa_memento
+
+    def remote_memento(self):
+        return self.__remote_memento
+
+    def respa_change_keys(self):
+        return self.__respa.change_keys()
+
+    def remote_change_keys(self):
+        return self.__remote.change_keys()
 
 class OpVisitor(SyncActionVisitor):
 

@@ -83,5 +83,3 @@ def remove_events():
     for id, e in events.items():
         cal.remove_event(id)
 
-def xtest():
-    remove_events()

@@ -17,7 +17,7 @@ class RespaReservations:
 
     def create_item(self, item):
         reservation = Reservation.objects.create(
-            resource=self.__resource_id,
+            resource_id=self.__resource_id,
             begin=item.begin,
             end=item.end,
             reserver_name=item.reserver_name,
@@ -25,7 +25,7 @@ class RespaReservations:
             reserver_email_address=item.reserver_email_address,
             state=Reservation.CONFIRMED
         )
-        return reservation.id, ""
+        return reservation.id, item.change_key()
 
     def set_item(self, item_id, item):
         reservation = Reservation.objects.filter(id=item_id).first()
@@ -43,25 +43,29 @@ class RespaReservations:
         return model_to_item(reservation.first())
 
     def remove_item(self, item_id):
-        pass
+        reservation = Reservation.objects.filter(id=item_id).first()
+        if not Reservation:
+            return
+        reservation.state = Reservation.CANCELLED
+        reservation.save()
 
     def get_changes(self, memento=None):
         if memento:
             time = datetime.strptime(memento, time_format)
         else:
             time = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        reservations = Reservation.objects.filter(resource=self.__resource_id, modified_at__gt=time)
+        reservations = Reservation.objects.filter(resource_id=self.__resource_id, modified_at__gt=time)
         new_memento = reduce(lambda a, b: max(a, b.modified_at), reservations, time)
-        return {r.id: (status(r, time), "") for r in reservations}, new_memento.strftime(time_format)
+        return {r.id: (status(r, time), model_to_item(r).change_key()) for r in reservations}, new_memento.strftime(time_format)
 
-    def get_changes_by_id(self, item_ids, memento=None):
+    def get_changes_by_ids(self, item_ids, memento=None):
         reservations = Reservation.objects.filter(id__in=item_ids)
         if memento:
             time = datetime.strptime(memento, time_format)
         else:
             time = datetime(1970, 1, 1, tzinfo=timezone.utc)
         new_memento = reduce(lambda a, b: max(a, b.modified_at), reservations, time)
-        return {r.id: (status(r, time), "") for r in reservations}, new_memento.strftime(time_format)
+        return {r.id: (status(r, time), model_to_item(r).change_key()) for r in reservations}, new_memento.strftime(time_format)
 
 def status(reservation, time):
     if reservation.modified_at <= time:

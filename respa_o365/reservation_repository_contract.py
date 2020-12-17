@@ -10,6 +10,41 @@ class ReservationRepositoryContract:
         item = a_repo.get_item(5)
         assert item is None
 
+    def test__create_item__returns_change_key(self, a_repo, a_item):
+        # Act
+        _, change_key = a_repo.create_item(a_item)
+        # Assert
+        assert change_key is not None
+
+
+    def test__create_item__returns_different_key__when_item_is_different(self, a_repo, a_item):
+        # Act
+        _, change_key1 = a_repo.create_item(a_item)
+        _, change_key2 = a_repo.create_item(ReservationSyncItem())
+        # Assert
+        assert change_key1 != change_key2, "Change keys were {} and {}".format(change_key1, change_key2)
+
+    def test__get_changes__returns_change_keys(self, a_repo, a_item):
+        # Arrange
+        id1, change_key1 = a_repo.create_item(a_item)
+        id2, change_key2 = a_repo.create_item(ReservationSyncItem())
+        # Act
+        changes, _ = a_repo.get_changes()
+        # Assert
+        item1 = a_repo.get_item(id1)
+        assert changes[id1][1] == change_key1, "Was {}, expected {}".format(changes[id1][1], change_key1)
+        assert changes[id2][1] == change_key2, "Was {}, expected {}".format(changes[id2][1], change_key2)
+
+    def test__get_changes_by_ids__returns_change_keys(self, a_repo, a_item):
+        # Arrange
+        id1, change_key1 = a_repo.create_item(a_item)
+        id2, change_key2 = a_repo.create_item(ReservationSyncItem())
+        # Act
+        changes, _ = a_repo.get_changes_by_ids([id1, id2])
+        # Assert
+        assert changes[id1][1] == change_key1, "Was {}, expected {}".format(changes[id1][1], change_key1)
+        assert changes[id2][1] == change_key2, "Was {}, expected {}".format(changes[id2][1], change_key2)
+
     def test__get_item__returns_previously_stored_item(self, a_repo):
         # Arrange
         original_item = ReservationSyncItem()
@@ -32,11 +67,11 @@ class ReservationRepositoryContract:
         item_id, change_key = a_repo.create_item(a_item)
         changes1, memento = a_repo.get_changes()
         changes, _ = a_repo.get_changes(memento)
-        assert len(changes) == 0
+        assert len(changes) == 0, "Expected none but got: {}".format(changes)
 
     def test__get_changed_items__returns_empty_set__when_there_are_no_items(self, a_repo):
         changes, memento = a_repo.get_changes()
-        assert len(changes) == 0
+        assert len(changes) == 0, "Expected none but got: {}".format(changes)
 
     def test__get_changed_items__returns_created__when_item_is_just_created(self, a_repo, a_item):
         item_id, change_key = a_repo.create_item(a_item)
@@ -44,11 +79,19 @@ class ReservationRepositoryContract:
         change_type, _ = changes[item_id]
         assert change_type == ChangeType.CREATED
 
-    def test__get_changes_by_id__returns_no_change__when_reservations_has_not_changed(self, a_repo):
+    def test__get_changed_items__returns_deleted__when_item_has_been_removed(self, a_repo, a_item):
+        item_id, change_key = a_repo.create_item(a_item)
+        _, memento = a_repo.get_changes()
+        a_repo.remove_item(item_id)
+        changes, memento = a_repo.get_changes(memento)
+        change_type, _ = changes[item_id]
+        assert change_type == ChangeType.DELETED
+
+    def test__get_changes_by_ids__returns_no_change__when_reservations_has_not_changed(self, a_repo):
         item = ReservationSyncItem()
         item_id, change_key = a_repo.create_item(item)
         changes, memento = a_repo.get_changes()
-        changes, memento = a_repo.get_changes_by_id([item_id], memento)
+        changes, memento = a_repo.get_changes_by_ids([item_id], memento)
         change_type, _ = changes[item_id]
         assert change_type == ChangeType.NO_CHANGE
 

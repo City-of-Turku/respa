@@ -1,13 +1,33 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class ReservationSyncItem:
     """Class represents data transferred between Respa and Outlook (or another remote system)."""
-    begin = datetime.now()
-    end = datetime.now()
-    reserver_name = ""
-    reserver_email_address = ""
-    reserver_phone_number = ""
+
+    def __init__(self):
+        self.begin = datetime.now(tz=timezone.utc)
+        self.end = datetime.now(tz=timezone.utc)
+        self.reserver_name = ""
+        self.reserver_email_address = ""
+        self.reserver_phone_number = ""
+
+    def __eq__(self, other):
+        """Action is equal when internal fields are equal"""
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        return False
+
+    def __str__(self):
+        """Creates string representation that looks like this:
+             {'field1': 'value2', 'field2': 'value2'}
+        """
+        return str({k: v for k, v in self.__dict__.items()})
+
+    def change_key(self):
+        h = hash(self.reserver_name) ^ 3 * hash(self.reserver_email_address) ^ 7 * hash(self.reserver_phone_number)
+        h = h ^ 11 * hash(self.begin.timestamp())
+        h = h ^ 13 * hash(self.end.timestamp())
+        return str(h)
 
 
 def model_to_item(reservation_model):
