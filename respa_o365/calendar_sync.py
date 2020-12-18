@@ -114,8 +114,6 @@ def perform_sync_to_exchange(link, func):
 
 
 class EventSync(APIView):
-    permission_classes = [IsAuthenticated, CanSyncCalendars]
-
     def get(self, request):
         calendar_links = OutlookCalendarLink.objects.all()
         for link in calendar_links:
