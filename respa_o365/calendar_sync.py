@@ -70,7 +70,7 @@ def perform_sync_to_exchange(link, func):
     # Load state from database
     token = link.token
     respa_memento = link.respa_reservation_sync_memento
-    o365_memento = link.outlook_reservation_sync_memento
+    o365_memento = link.exchange_reservation_sync_memento
     id_mappings = {}
     reservation_item_data = {}
     known_exchange_items = set()
