@@ -11,6 +11,7 @@ from resources.models import Resource, Reservation
 from .id_mapper import IdMapper
 from .models import OutlookCalendarLink, OutlookCalendarReservation
 from .o365_calendar import O365Calendar, MicrosoftApi
+from .o365_notifications import O365Notifications
 from .o365_reservation_repository import O365ReservationRepository
 from .reservation_sync import ReservationSync
 from .respa_reservation_repository import RespaReservations
@@ -70,7 +71,7 @@ def perform_sync_to_exchange(link, func):
     # Load state from database
     token = link.token
     respa_memento = link.respa_reservation_sync_memento
-    o365_memento = link.outlook_reservation_sync_memento
+    o365_memento = link.exchange_reservation_sync_memento
     id_mappings = {}
     reservation_item_data = {}
     known_exchange_items = set()
@@ -85,7 +86,7 @@ def perform_sync_to_exchange(link, func):
     # Initialise components
     mapper = IdMapper(id_mappings)
     api = MicrosoftApi(token)
-    cal = O365Calendar(link.reservation_calendar_id, api, known_events=known_exchange_items)
+    cal = O365Calendar(microsoft_api=api, known_events=known_exchange_items, event_prefix="Varaus")
     o365 = O365ReservationRepository(cal)
     respa = RespaReservations(resource_id=link.resource.id)
     sync = ReservationSync(respa, o365, id_mapper=mapper, respa_memento=respa_memento, remote_memento=o365_memento, respa_change_keys=respa_change_keys, remote_change_keys=exchange_change_keys)
@@ -117,9 +118,23 @@ class EventSync(APIView):
     permission_classes = [IsAuthenticated, CanSyncCalendars]
 
     def get(self, request):
+        #url = "https://qe6kl3acqa.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
+        url = "https://fgno8xsw1i.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
         calendar_links = OutlookCalendarLink.objects.all()
         for link in calendar_links:
+            # api = MicrosoftApi(link.token)
+            # subscriptions = O365Notifications(api)
+            # secret = "asdasds"
+            # sub_id = subscriptions.ensureNotifications(notification_url=url,
+            #                                   resource="/me/events",
+            #                                   events=["updated", "deleted", "created"],
+            #                                   client_state=secret
+            #                                   )
+            # link.exchange_subscription_id = sub_id
+            # link.exchange_subscription_secret = secret
+
             perform_sync_to_exchange(link, lambda sync: sync.sync_all())
+
         return Response("OK")
 
     def get2(self, request):

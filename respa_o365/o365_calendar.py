@@ -1,5 +1,6 @@
 import json
 import logging
+from copy import copy
 from datetime import datetime, timezone
 from functools import reduce
 
@@ -13,25 +14,44 @@ logger = logging.getLogger(__name__)
 
 
 class Event:
-    begin = datetime.now()
-    end = datetime.now()
-    created_at = datetime.now()
-    modified_at = datetime.now()
-    subject = "Event"
-    body = ""
 
+    def __init__(self):
+        self.begin = datetime.now()
+        self.end = datetime.now()
+        self.created_at = datetime.now()
+        self. modified_at = datetime.now()
+        self.subject = "Event"
+        self.body = ""
 
     def __str__(self):
         return "{} -- {} {}: {}".format(self.begin, self.end, self.subject, self.body)
+
+    def __eq__(self, other):
+        return self.begin == other.begin \
+               and self.end == other.end \
+               and self.subject == other.subject \
+               and self.body == other.body
+
+
+    def change_key(self):
+        h = hash(self.subject) ^ 3 * hash(self.body) ^ 7
+        h = h ^ 11 * hash(self.begin.timestamp())
+        h = h ^ 13 * hash(self.end.timestamp())
+        return str(h)
 
 UTC = pytz.timezone("UTC")
 time_format = '%Y-%m-%dT%H:%M:%S.%f%z'
 
 class O365Calendar:
-    def __init__(self,  calendar_id, microsoft_api, known_events={}):
-        self._calendar_id = calendar_id
+    def __init__(self,  microsoft_api, known_events={}, calendar_id=None, event_prefix=None):
+        if calendar_id:
+            self._base_url = "me/calendars/{}/events".format(calendar_id)
+        else:
+            self._base_url = "me/events"
         self._api = microsoft_api
         self._known_events = known_events
+        self._event_prefix = event_prefix
+        self._cache = {}
 
     def _parse_outlook_timestamp(self, ts):
         # 2017-08-29T04:00:00.0000000 is too long format. Shorten it to 26 characters, drop last number.
@@ -51,7 +71,9 @@ class O365Calendar:
             for event in events:
                 event_id = event.get("id")
                 e = self.json_to_event(event)
-                result[event_id] = e
+                if self._event_prefix is None or e.subject.startswith(self._event_prefix):
+                    result[event_id] = e
+                    self._cache[event_id] = copy(e)
         return result
 
     def json_to_event(self, json):
@@ -73,11 +95,18 @@ class O365Calendar:
         return e
 
     def get_event(self, event_id):
+        if event_id in self._cache:
+            return copy(self._cache[event_id])
         url = self._get_events_url(event_id)
         json = self._api.get(url)
         if not json:
             return None
-        return self.json_to_event(json)
+        event = self.json_to_event(json)
+        if self._event_prefix is None or event.subject.startswith(self._event_prefix):
+            self._cache[event_id] = copy(event)
+            return event
+        else:
+            return None
 
     def create_event(self, event):
         begin = event.begin.isoformat()
@@ -111,22 +140,27 @@ class O365Calendar:
         if response.ok:
             res = response.json()
             exchange_id = res.get('id')
-            change_key = res.get('changeKey')
-            return exchange_id, change_key
+            self._cache[exchange_id] = copy(event)
+            return exchange_id, event.change_key()
 
         raise O365CalendarError(response.text)
 
     def remove_event(self, event_id):
+        self._cache.pop(event_id, None)
         url = self._get_events_url(event_id)
         self._api.delete(url)
 
     def update_event(self, event_id, event):
+        if event_id in self._cache:
+            if event == self._cache[event_id]:
+                return event.change_key
+
         url = self._get_events_url(event_id)
         begin = event.begin.isoformat()
         end = event.end.isoformat()
         subject = event.subject
         body = event.body
-        response = self._api.patch(
+        self._api.patch(
             url,
             json={
                 "start": {
@@ -144,9 +178,7 @@ class O365Calendar:
                 },
             }
         )
-        res = response.json()
-        change_key = res.get('changeKey')
-        return change_key
+        return event.change_key()
 
     def get_changes(self, memento=None):
         # Microsoft API does not provide general API to fetch changes.
@@ -164,21 +196,20 @@ class O365Calendar:
         self._known_events = {k for k in events.keys()}
         events = {i: e for i, e in events.items() if e.modified_at > time}
         new_memento = reduce(lambda a, b: max(a, b.modified_at), events.values(), time)
-        result = {id: (status(r, time), "") for id, r in events.items()}
+        result = {id: (status(r, time), r.change_key()) for id, r in events.items()}
         for i in deleted:
             result[i] = (ChangeType.DELETED, "")
         return result, new_memento.strftime(time_format)
 
     def get_changes_by_ids(self, item_ids, memento=None):
         changes, new_memento = self.get_changes(memento)
-        # TODO Change key should be defined still
         return {i: changes.get(i, (ChangeType.NO_CHANGE, "")) for i in item_ids}, new_memento
 
     def _get_events_url(self, event_id=None):
         if event_id is None:
-            return 'me/calendars/{}/events?$top=50'.format(self._calendar_id)
+            return '{}?$top=50'.format(self._base_url)
         else:
-            return 'me/calendars/{}/events/{}'.format(self._calendar_id, event_id)
+            return '{}/{}'.format(self._base_url, event_id)
 
 def status(item, time):
     if item.modified_at <= time:

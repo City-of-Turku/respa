@@ -65,7 +65,7 @@ class TestRespaReservationRepository(ReservationRepositoryContract):
 
     @pytest.fixture()
     def a_repo(self, a_resource):
-        return RespaReservations(a_resource)
+        return RespaReservations(a_resource.id)
 
     @pytest.fixture
     def a_resource(self, a_resource_type, a_unit, a_generic_terms, a_payment_terms):

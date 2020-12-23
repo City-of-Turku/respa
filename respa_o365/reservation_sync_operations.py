@@ -1,5 +1,7 @@
+import logging
 from enum import Enum
 
+logger = logging.getLogger(__name__)
 
 def operations_for_reservation_sync(changes):
     """Returns list of operations that would synchronise the given changes between systems.
@@ -26,6 +28,7 @@ def operations_for_reservation_sync(changes):
         try:
             fn = reservationSyncActions[respa_state][remote_state]
             result = fn(respa_id, remote_id)
+            logger.info("{} ({}) + ({}) {} -> {}", respa_id, respa_state, remote_state, remote_id, result)
             if result:
                 ops.append(result)
         except KeyError:

@@ -1,3 +1,5 @@
+import logging
+
 from respa_o365.id_mapper import IdMapper
 from respa_o365.reservation_sync_operations import ChangeType, SyncActionVisitor, TargetSystem, \
     operations_for_reservation_sync
@@ -68,10 +70,9 @@ class ChangeKeyWrapper(SyncItemRepository):
         return item_id, changeKey
 
     def set_item(self, item_id, item):
-        self.__repo.set_item(item_id, item)
-        changeKey = self.seen(item_id, item)
-        self.seen(item_id, changeKey)
-        return changeKey
+        change_key = self.__repo.set_item(item_id, item)
+        self.seen(item_id, change_key)
+        return change_key
 
     def get_item(self, item_id):
         return self.__repo.get_item(item_id)
@@ -114,7 +115,15 @@ class ReservationSync:
         self.__respa_memento = respa_memento
         self.__remote_memento = remote_memento
 
+
     def sync(self, respa_statuses, remote_statuses):
+        respa_ids = [i for i in respa_statuses.keys()]
+        remote_ids = [i for i in remote_statuses.keys()]
+        respa_statuses, _ = self.__respa.get_changes_by_ids(respa_ids, self.__respa_memento)
+        remote_statuses, _ = self.__remote.get_changes_by_ids(remote_ids, self.__remote_memento)
+        self._sync(respa_statuses, remote_statuses)
+
+    def _sync(self, respa_statuses, remote_statuses):
         def build_status_pair(respa_id, remote_id):
             respa_state = respa_statuses.get(respa_id, None)
             remote_state = remote_statuses.get(remote_id, None)
@@ -152,7 +161,7 @@ class ReservationSync:
     def sync_all(self):
         respa_statuses, memento_respa = self.__respa.get_changes(self.__respa_memento)
         remote_statuses, memento_remote = self.__remote.get_changes(self.__remote_memento)
-        self.sync(respa_statuses, remote_statuses)
+        self._sync(respa_statuses, remote_statuses)
         self.__respa_memento = memento_respa
         self.__remote_memento = memento_remote
 

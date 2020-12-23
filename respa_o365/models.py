@@ -21,6 +21,8 @@ class OutlookCalendarLink(models.Model):
     availability_calendar_id = models.TextField(verbose_name=_('Availability calendar id'))
     respa_reservation_sync_memento = models.TextField(verbose_name=_('Last known state of Respa reservations'), null=True)
     exchange_reservation_sync_memento = models.TextField(verbose_name=_('Last known state of Exchange reservations'), null=True)
+    exchange_subscription_id = models.TextField(verbose_name=_('Id of the registered notification listener'), null=True)
+    exchange_subscription_secret = models.TextField(verbose_name=_('Secret used by the notifier'), null=True)
 
 class OutlookCalendarReservation(models.Model):
     calendar_link = models.ForeignKey('OutlookCalendarLink', verbose_name=_('Calendar Link'),

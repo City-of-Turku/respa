@@ -35,6 +35,7 @@ class RespaReservations:
         reservation.reserver_name = item.reserver_name
         reservation.begin = item.begin
         reservation.end = item.end
+        reservation._from_o365_sync = True
         reservation.save()
         return ""
 
