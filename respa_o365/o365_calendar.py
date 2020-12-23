@@ -154,7 +154,7 @@ class O365Calendar:
         if event_id in self._cache:
             if event == self._cache[event_id]:
                 return event.change_key
-
+        self._cache[event_id] = copy(event)
         url = self._get_events_url(event_id)
         begin = event.begin.isoformat()
         end = event.end.isoformat()

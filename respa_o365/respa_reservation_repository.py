@@ -37,7 +37,7 @@ class RespaReservations:
         reservation.end = item.end
         reservation._from_o365_sync = True
         reservation.save()
-        return ""
+        return item.change_key()
 
     def get_item(self, item_id):
         reservation = Reservation.objects.filter(id=item_id)

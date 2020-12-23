@@ -41,25 +41,39 @@ class NotificationCallback(View):
         return request.body.startswith(b'{')
 
     def handle_notification(self, request):
-        # notifications = json.loads(request.body).get("value")
-        # for notification in notifications:
-        #     print(notification)
-        #     change_type = notification.get("changeType")
-        #     sub_id = notification.get("subscriptionId")
-        #     ct = ChangeType.UPDATED
-        #     if change_type == "created":
-        #         ct = ChangeType.CREATED
-        #     if change_type == "deleted":
-        #         ct = ChangeType.DELETED
-        #
-        #     item_id = notification.get("resourceData").get("id")
-        #     link = OutlookCalendarLink.objects.filter(exchange_subscription_id=sub_id).first()
-        #     if link:
-        #         logger.info("Notification from {}. Syncing resource {} for user {}",
-        #                     sub_id, link.resource_id, link.user_id)
-        #         perform_sync_to_exchange(link, lambda s: s.sync({}, {item_id: ct}))
-        #     else:
-        #         logger.warning("Received notification from subscription {} not connected to any calendar link.", sub_id)
+        notifications = json.loads(request.body).get("value")
+        for notification in notifications:
+            sub_id = notification.get("subscriptionId")
+            link = OutlookCalendarLink.objects.filter(exchange_subscription_id=sub_id).first()
+            if link:
+                logger.info("Notification from {}. Syncing resource {} for user {}",
+                            sub_id, link.resource_id, link.user_id)
+                perform_sync_to_exchange(link, lambda s: s.sync_all())
+            else:
+                logger.warning("Received notification from subscription {} not connected to any calendar link.", sub_id)
+
+        return HttpResponse(status=202)
+
+    def handle_notification2(self, request):
+        notifications = json.loads(request.body).get("value")
+        for notification in notifications:
+            print(notification)
+            change_type = notification.get("changeType")
+            sub_id = notification.get("subscriptionId")
+            ct = ChangeType.UPDATED
+            if change_type == "created":
+                ct = ChangeType.CREATED
+            if change_type == "deleted":
+                ct = ChangeType.DELETED
+
+            item_id = notification.get("resourceData").get("id")
+            link = OutlookCalendarLink.objects.filter(exchange_subscription_id=sub_id).first()
+            if link:
+                logger.info("Notification from {}. Syncing resource {} for user {}",
+                            sub_id, link.resource_id, link.user_id)
+                perform_sync_to_exchange(link, lambda s: s.sync({}, {item_id: ct}))
+            else:
+                logger.warning("Received notification from subscription {} not connected to any calendar link.", sub_id)
 
         return HttpResponse(status=202)
 

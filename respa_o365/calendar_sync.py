@@ -122,16 +122,16 @@ class EventSync(APIView):
         url = "https://fgno8xsw1i.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
         calendar_links = OutlookCalendarLink.objects.all()
         for link in calendar_links:
-            # api = MicrosoftApi(link.token)
-            # subscriptions = O365Notifications(api)
-            # secret = "asdasds"
-            # sub_id = subscriptions.ensureNotifications(notification_url=url,
-            #                                   resource="/me/events",
-            #                                   events=["updated", "deleted", "created"],
-            #                                   client_state=secret
-            #                                   )
-            # link.exchange_subscription_id = sub_id
-            # link.exchange_subscription_secret = secret
+            api = MicrosoftApi(link.token)
+            subscriptions = O365Notifications(api)
+            secret = "asdasds"
+            sub_id = subscriptions.ensureNotifications(notification_url=url,
+                                              resource="/me/events",
+                                              events=["updated", "deleted", "created"],
+                                              client_state=secret
+                                              )
+            link.exchange_subscription_id = sub_id
+            link.exchange_subscription_secret = secret
 
             perform_sync_to_exchange(link, lambda sync: sync.sync_all())
 

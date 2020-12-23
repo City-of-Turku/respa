@@ -11,9 +11,9 @@ class RespaO365Config(AppConfig):
         """
         Wire up the signals for uploading reservations.
         """
-        # from respa_o365.django_signal_handlers import handle_reservation_save
-        # post_save.connect(
-        #     handle_reservation_save,
-        #     sender='resources.Reservation',
-        #     dispatch_uid='respa-o365-save'
-        # )
+        from respa_o365.django_signal_handlers import handle_reservation_save
+        post_save.connect(
+            handle_reservation_save,
+            sender='resources.Reservation',
+            dispatch_uid='respa-o365-save'
+        )
