@@ -122,7 +122,7 @@ def perform_sync_to_exchange(link, func):
             ri.respa_change_key = current_respa_change_keys.pop(respa_id, ri.respa_change_key)
             ri.save()
     for respa_id, current_respa_change_key in current_respa_change_keys.items():
-        old_respa_change_key = respa_change_keys[respa_id]
+        old_respa_change_key = respa_change_keys.get(respa_id, "")
         if current_respa_change_key != old_respa_change_key:
             exchange_id = mapper.get(respa_id)
             ri = reservation_item_data[respa_id]
@@ -143,6 +143,7 @@ class EventSync(APIView):
         url = "https://fgno8xsw1i.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
         calendar_links = OutlookCalendarLink.objects.all()
         for link in calendar_links:
+            logger.info("Synchronising user %d resource %s", link.user_id, link.resource_id)
             api = MicrosoftApi(link.token)
             subscriptions = O365Notifications(api)
             secret = "asdasds"

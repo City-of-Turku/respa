@@ -24,6 +24,23 @@ class ReservationRepositoryContract:
         # Assert
         assert change_key1 != change_key2, "Change keys were {} and {}".format(change_key1, change_key2)
 
+    def test__create_item__returns_same_key_with_get_changes(self, a_repo, a_item):
+        # Arrange
+        id1, change_key1 = a_repo.create_item(a_item)
+        # Act
+        changes, _ = a_repo.get_changes()
+        # Assert
+        assert change_key1 == changes[id1][1], "Created key was {} but returned is {}".format(change_key1, changes[id1][1])
+
+    def test__set_item__returns_same_key_with_get_changes(self, a_repo, a_item):
+        # Arrange
+        id1, _ = a_repo.create_item(a_item)
+        change_key1 = a_repo.set_item(id1, ReservationSyncItem())
+        # Act
+        changes, _ = a_repo.get_changes()
+        # Assert
+        assert change_key1 == changes[id1][1], "Created key was {} but returned is {}".format(change_key1, changes[id1][1])
+
     def test__get_changes__returns_change_keys(self, a_repo, a_item):
         # Arrange
         id1, change_key1 = a_repo.create_item(a_item)
