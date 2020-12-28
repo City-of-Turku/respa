@@ -93,21 +93,42 @@ def perform_sync_to_exchange(link, func):
     # Perform synchronisation
     func(sync)
     # Store data back to database
-    exchange_change_keys = sync.remote_change_keys()
-    respa_change_keys = sync.respa_change_keys()
+    current_exchange_change_keys = sync.remote_change_keys()
+    current_respa_change_keys = sync.respa_change_keys()
     for respa_id, exchange_id in mapper.changes():
-        reservation = reservation_item_data[respa_id]
-        reservation.exchange_id = exchange_id
-        reservation.exchange_change_key = exchange_change_keys[exchange_id]
-        reservation.respa_change_key = respa_change_keys[respa_id]
-        reservation.save()
+        ri = reservation_item_data[respa_id]
+        ri.exchange_id = exchange_id
+        ri.exchange_change_key = current_exchange_change_keys.pop(exchange_id, ri.exchange_change_key)
+        ri.respa_change_key = current_respa_change_keys.pop(respa_id, ri.respa_change_key)
+        ri.save()
     for respa_id, exchange_id in mapper.removals():
         reservation_item_data[respa_id].delete()
     for respa_id, exchange_id in mapper.additions():
         reservation = Reservation.objects.filter(id=respa_id).first()
-        exchange_change_key = exchange_change_keys[exchange_id]
-        respa_change_key = respa_change_keys[respa_id]
-        OutlookCalendarReservation.objects.create(calendar_link=link, reservation=reservation, exchange_id=exchange_id, respa_change_key=respa_change_key, exchange_change_key=exchange_change_key)
+        exchange_change_key = current_exchange_change_keys.pop(exchange_id, "")
+        respa_change_key = current_respa_change_keys.pop(respa_id, "")
+        OutlookCalendarReservation.objects.create(
+            calendar_link=link,
+            reservation=reservation,
+            exchange_id=exchange_id,
+            respa_change_key=respa_change_key,
+            exchange_change_key=exchange_change_key)
+    for exchange_id, current_exchange_change_key in current_exchange_change_keys.items():
+        old_exchange_change_key = exchange_change_keys.get(exchange_id, "")
+        if current_exchange_change_key != old_exchange_change_key:
+            respa_id = mapper.reverse.get(exchange_id)
+            ri = reservation_item_data[respa_id]
+            ri.exchange_change_key = current_exchange_change_key
+            ri.respa_change_key = current_respa_change_keys.pop(respa_id, ri.respa_change_key)
+            ri.save()
+    for respa_id, current_respa_change_key in current_respa_change_keys.items():
+        old_respa_change_key = respa_change_keys[respa_id]
+        if current_respa_change_key != old_respa_change_key:
+            exchange_id = mapper.get(respa_id)
+            ri = reservation_item_data[respa_id]
+            ri.respa_change_key = current_respa_change_key
+            ri.exchange_change_key = current_exchange_change_keys.pop(exchange_id, ri.exchange_change_key)
+            ri.save()
     link.exchange_reservation_sync_memento = sync.remote_memento()
     link.respa_reservation_sync_memento = sync.respa_memento()
     link.token = api.current_token()
