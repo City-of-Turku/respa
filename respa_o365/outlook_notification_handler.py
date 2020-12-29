@@ -60,7 +60,7 @@ class NotificationCallback(View):
                     api = MicrosoftApi(link.token)
                     cal = O365Calendar(microsoft_api=api, event_prefix="Varaus")
                     item = cal.get_event(exchange_id)
-                    if item.change_key() == mapping.exchange_change_key:
+                    if item and item.change_key() == mapping.exchange_change_key:
                         continue
 
                 logger.info("Handling notifications from subscription %s. Syncing resource %s for user %d",

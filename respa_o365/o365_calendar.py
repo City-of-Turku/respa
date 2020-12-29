@@ -51,7 +51,6 @@ class O365Calendar:
         self._api = microsoft_api
         self._known_events = known_events
         self._event_prefix = event_prefix
-        self._cache = {}
 
     def _parse_outlook_timestamp(self, ts):
         # 2017-08-29T04:00:00.0000000 is too long format. Shorten it to 26 characters, drop last number.
@@ -73,7 +72,6 @@ class O365Calendar:
                 e = self.json_to_event(event)
                 if self._event_prefix is None or e.subject.startswith(self._event_prefix):
                     result[event_id] = e
-                    self._cache[event_id] = copy(e)
         return result
 
     def json_to_event(self, json):
@@ -95,15 +93,12 @@ class O365Calendar:
         return e
 
     def get_event(self, event_id):
-        if event_id in self._cache:
-            return copy(self._cache[event_id])
         url = self._get_events_url(event_id)
         json = self._api.get(url)
         if not json:
             return None
         event = self.json_to_event(json)
         if self._event_prefix is None or event.subject.startswith(self._event_prefix):
-            self._cache[event_id] = copy(event)
             return event
         else:
             return None
@@ -140,21 +135,15 @@ class O365Calendar:
         if response.ok:
             res = response.json()
             exchange_id = res.get('id')
-            self._cache[exchange_id] = copy(event)
             return exchange_id, event.change_key()
 
         raise O365CalendarError(response.text)
 
     def remove_event(self, event_id):
-        self._cache.pop(event_id, None)
         url = self._get_events_url(event_id)
         self._api.delete(url)
 
     def update_event(self, event_id, event):
-        if event_id in self._cache:
-            if event == self._cache[event_id]:
-                return event.change_key
-        self._cache[event_id] = copy(event)
         url = self._get_events_url(event_id)
         begin = event.begin.isoformat()
         end = event.end.isoformat()
@@ -239,6 +228,11 @@ class MicrosoftApi:
         session = self._get_session()
         response = session.get(self._url_for(path))
         if response.status_code == 400:
+            # Token is likely invalid.
+            # TODO Handle invalid token
+            return None
+        if response.status_code == 404:
+            # Item is not available
             return None
         return response.json()
 

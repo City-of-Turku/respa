@@ -23,12 +23,6 @@ class ReservationSyncItem:
         """
         return str({k: v for k, v in self.__dict__.items()})
 
-    def change_key(self):
-        h = hash(self.reserver_name) ^ 3 * hash(self.reserver_email_address) ^ 7 * hash(self.reserver_phone_number)
-        h = h ^ 11 * hash(self.begin.timestamp())
-        h = h ^ 13 * hash(self.end.timestamp())
-        return str(h)
-
 
 def model_to_item(reservation_model):
     if not reservation_model:
