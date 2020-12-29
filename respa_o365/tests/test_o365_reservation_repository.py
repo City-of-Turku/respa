@@ -33,13 +33,14 @@ class RememberCreatedItems:
         return self._ids
 
 
-@pytest.mark.skip(reason="Calendar id and microsoft API settings needs to be obtained manually")
+@pytest.mark.skip(reason="Possible calendar id and microsoft API settings needs to be obtained manually")
 class TestO365ReservationRepository(ReservationRepositoryContract):
 
     @pytest.fixture
     def a_repo(self):
         api = api_client()
-        cal = O365Calendar(calendar_id="AAMkADQ2NDBkOGU5LWIwMjctNGE1NC1hYTkzLTVkNTVkNTkwYWVjYgBGAAAAAACChAIIGzkZTZEGveyb2ATGBwA1Oe2EuAOdRLcbg3PDQyqhAAAAAAEGAAA1Oe2EuAOdRLcbg3PDQyqhAAA_zXX1AAA=", microsoft_api=api)
+        cal = O365Calendar(microsoft_api=api)
+        # cal = O365Calendar(calendar_id="AAMkADQ2NDBkOGU5LWIwMjctNGE1NC1hYTkzLTVkNTVkNTkwYWVjYgBGAAAAAACChAIIGzkZTZEGveyb2ATGBwA1Oe2EuAOdRLcbg3PDQyqhAAAAAAEGAAA1Oe2EuAOdRLcbg3PDQyqhAAA_zXX1AAA=", microsoft_api=api)
         repo = RememberCreatedItems(O365ReservationRepository(cal))
         yield repo
         # Remove ids that were created
@@ -50,7 +51,7 @@ class TestO365ReservationRepository(ReservationRepositoryContract):
 
 
 def create_events(count):
-    cal = client()
+    cal=O365Calendar(microsoft_api=api_client())
     now = datetime.now()
     begin = datetime(year=now.year,month=now.month,day=now.day,hour=0,minute=0,tzinfo=timezone(timedelta(hours=2)))
     print("{}".format(begin))
@@ -62,7 +63,7 @@ def create_events(count):
         event_id, change_key = cal.create_event(e)
 
 def list_events():
-    cal=client()
+    cal=O365Calendar(microsoft_api=api_client())
     events = cal.get_events()
     count = 0
     print("\n")
@@ -75,8 +76,7 @@ def list_events():
     assert count == 55
 
 def remove_events():
-    cal=client()
+    cal=O365Calendar(microsoft_api=api_client())
     events = cal.get_events()
     for id, e in events.items():
         cal.remove_event(id)
-

@@ -52,13 +52,7 @@ class IdMapper:
 
     def __delitem__(self, key):
         value = self._direct_dict[key]
-        del self._direct_dict[key]
-        del self._reverse_dict[value]
-        if key not in self._added:
-            self._removed[key] = value
-
-        self._added.pop(key, None)
-        self._changed.pop(key, None)
+        self.del_key_value(key, value)
 
     def get(self, key, *args):
         return self._direct_dict.get(key, *args)
@@ -69,6 +63,10 @@ class IdMapper:
     def del_key_value(self, key, value):
         del self._direct_dict[key]
         del self._reverse_dict[value]
+        if key not in self._added:
+            self._removed[key] = value
+        self._added.pop(key, None)
+        self._changed.pop(key, None)
 
     def __getitem__(self, key):
         return self._direct_dict[key]

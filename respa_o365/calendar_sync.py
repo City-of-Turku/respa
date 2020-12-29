@@ -104,12 +104,11 @@ def perform_sync_to_exchange(link, func):
     for respa_id, exchange_id in mapper.removals():
         reservation_item_data[respa_id].delete()
     for respa_id, exchange_id in mapper.additions():
-        reservation = Reservation.objects.filter(id=respa_id).first()
         exchange_change_key = current_exchange_change_keys.pop(exchange_id, "")
         respa_change_key = current_respa_change_keys.pop(respa_id, "")
         OutlookCalendarReservation.objects.create(
             calendar_link=link,
-            reservation=reservation,
+            reservation_id=respa_id,
             exchange_id=exchange_id,
             respa_change_key=respa_change_key,
             exchange_change_key=exchange_change_key)
@@ -117,18 +116,20 @@ def perform_sync_to_exchange(link, func):
         old_exchange_change_key = exchange_change_keys.get(exchange_id, "")
         if current_exchange_change_key != old_exchange_change_key:
             respa_id = mapper.reverse.get(exchange_id)
-            ri = reservation_item_data[respa_id]
-            ri.exchange_change_key = current_exchange_change_key
-            ri.respa_change_key = current_respa_change_keys.pop(respa_id, ri.respa_change_key)
-            ri.save()
+            ri = reservation_item_data.get(respa_id, None)
+            if ri:
+                ri.exchange_change_key = current_exchange_change_key
+                ri.respa_change_key = current_respa_change_keys.pop(respa_id, ri.respa_change_key)
+                ri.save()
     for respa_id, current_respa_change_key in current_respa_change_keys.items():
         old_respa_change_key = respa_change_keys.get(respa_id, "")
         if current_respa_change_key != old_respa_change_key:
             exchange_id = mapper.get(respa_id)
-            ri = reservation_item_data[respa_id]
-            ri.respa_change_key = current_respa_change_key
-            ri.exchange_change_key = current_exchange_change_keys.pop(exchange_id, ri.exchange_change_key)
-            ri.save()
+            ri = reservation_item_data.get(respa_id, None)
+            if ri:
+                ri.respa_change_key = current_respa_change_key
+                ri.exchange_change_key = current_exchange_change_keys.pop(exchange_id, ri.exchange_change_key)
+                ri.save()
     link.exchange_reservation_sync_memento = sync.remote_memento()
     link.respa_reservation_sync_memento = sync.respa_memento()
     link.token = api.current_token()
@@ -141,21 +142,22 @@ class EventSync(APIView):
     def get(self, request):
         #url = "https://qe6kl3acqa.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
         url = "https://fgno8xsw1i.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
-        calendar_links = OutlookCalendarLink.objects.all()
+        calendar_links = OutlookCalendarLink.objects.select_for_update().all()
         for link in calendar_links:
             logger.info("Synchronising user %d resource %s", link.user_id, link.resource_id)
+            perform_sync_to_exchange(link, lambda sync: sync.sync_all())
+
             api = MicrosoftApi(link.token)
             subscriptions = O365Notifications(api)
             secret = "asdasds"
             sub_id = subscriptions.ensureNotifications(notification_url=url,
-                                              resource="/me/events",
-                                              events=["updated", "deleted", "created"],
-                                              client_state=secret
-                                              )
+                                                       resource="/me/events",
+                                                       events=["updated", "deleted", "created"],
+                                                       client_state=secret
+                                                       )
             link.exchange_subscription_id = sub_id
             link.exchange_subscription_secret = secret
-
-            perform_sync_to_exchange(link, lambda sync: sync.sync_all())
+            link.save()
 
         return Response("OK")
 

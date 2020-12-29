@@ -1,5 +1,7 @@
 import json
 import logging
+
+from django.db import Error
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -7,6 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 from respa_o365.calendar_sync import perform_sync_to_exchange
 from respa_o365.models import OutlookCalendarLink, OutlookCalendarReservation
+from respa_o365.o365_calendar import MicrosoftApi, O365Calendar
+from respa_o365.o365_reservation_repository import O365ReservationRepository
 from respa_o365.reservation_sync_operations import ChangeType
 
 logger = logging.getLogger(__name__)
@@ -42,39 +46,30 @@ class NotificationCallback(View):
 
     def handle_notification(self, request):
         notifications = json.loads(request.body).get("value")
-        for notification in notifications:
-            sub_id = notification.get("subscriptionId")
-            link = OutlookCalendarLink.objects.filter(exchange_subscription_id=sub_id).first()
-            if link:
-                logger.info("Notification from {}. Syncing resource {} for user {}",
-                            sub_id, link.resource_id, link.user_id)
+        try:
+            for notification in notifications:
+                sub_id = notification.get("subscriptionId")
+                exchange_id = notification.get("resourceData").get("id")
+                link = OutlookCalendarLink.objects.select_for_update().filter(exchange_subscription_id=sub_id).first()
+                if not link:
+                    logger.warning("Received notification from subscription %s not connected to any calendar link.", sub_id)
+                    continue
+
+                mapping = OutlookCalendarReservation.objects.filter(exchange_id=exchange_id).first()
+                if mapping:
+                    api = MicrosoftApi(link.token)
+                    cal = O365Calendar(microsoft_api=api, event_prefix="Varaus")
+                    item = cal.get_event(exchange_id)
+                    if item.change_key() == mapping.exchange_change_key:
+                        continue
+
+                logger.info("Handling notifications from subscription %s. Syncing resource %s for user %d",
+                                sub_id, link.resource_id, link.user_id)
                 perform_sync_to_exchange(link, lambda s: s.sync_all())
-            else:
-                logger.warning("Received notification from subscription {} not connected to any calendar link.", sub_id)
 
-        return HttpResponse(status=202)
 
-    def handle_notification2(self, request):
-        notifications = json.loads(request.body).get("value")
-        for notification in notifications:
-            print(notification)
-            change_type = notification.get("changeType")
-            sub_id = notification.get("subscriptionId")
-            ct = ChangeType.UPDATED
-            if change_type == "created":
-                ct = ChangeType.CREATED
-            if change_type == "deleted":
-                ct = ChangeType.DELETED
-
-            item_id = notification.get("resourceData").get("id")
-            link = OutlookCalendarLink.objects.filter(exchange_subscription_id=sub_id).first()
-            if link:
-                logger.info("Notification from {}. Syncing resource {} for user {}",
-                            sub_id, link.resource_id, link.user_id)
-                perform_sync_to_exchange(link, lambda s: s.sync({}, {item_id: ct}))
-            else:
-                logger.warning("Received notification from subscription {} not connected to any calendar link.", sub_id)
-
+        except Error as e:
+            logger.warning("Notification handling failed", e)
         return HttpResponse(status=202)
 
 

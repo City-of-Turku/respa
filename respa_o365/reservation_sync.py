@@ -133,7 +133,7 @@ class ReservationSync:
 
         def missing_ids(ids, other_ids, mapper):
             mapped_ids = [mapper.get(i, None) for i in ids]
-            return [i for i in mapped_ids if i not in other_ids]
+            return [i for i in mapped_ids if i is not None and i not in other_ids]
 
         ids_missing_from_remote = missing_ids(respa_statuses.keys(), remote_statuses.keys(), self.__id_map)
         missing_changes_from_remote, _ = self.__remote.get_changes_by_ids(ids_missing_from_remote, self.__remote_memento)

@@ -1,3 +1,5 @@
+import pytest
+
 from respa_o365.o365_calendar import MicrosoftApi
 from respa_o365.o365_notifications import O365Notifications
 
@@ -21,13 +23,8 @@ def create_api():
 url = "https://qe6kl3acqa.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
 
 
-def test():
-    s = O365Notifications(create_api())
-    for i in s.list():
-        print(i)
-    clear_all_subscriptions()
-
-def xtest__ensure_notification():
+@pytest.mark.skip("API parameters need to be set manually")
+def test__ensure_notification():
     s = O365Notifications(create_api())
     clear_all_subscriptions()
     id1 = s.ensureNotifications(notification_url=url, resource="me/events", events=["updated", "deleted", "created"])
@@ -35,8 +32,8 @@ def xtest__ensure_notification():
     assert id1 == id2
 
 
-
-def xtest__notification_manipulations():
+@pytest.mark.skip("API parameters need to be set manually and there needs to be working endpoint with TSL")
+def test__notification_manipulations():
     s = O365Notifications(create_api())
     startCount = len(s.list())
 
@@ -57,12 +54,7 @@ def xtest__notification_manipulations():
     subscriptions = s.list()
     assert len(subscriptions)-startCount == 0
     clear_all_subscriptions()
-#    r = s.subscribe(
-#        resource="me/calendars/AAMkADQ2NDBkOGU5LWIwMjctNGE1NC1hYTkzLTVkNTVkNTkwYWVjYgBGAAAAAACChAIIGzkZTZEGveyb2ATGBwA1Oe2EuAOdRLcbg3PDQyqhAAAAAAEGAAA1Oe2EuAOdRLcbg3PDQyqhAAA_zXX1AAA=/events",
-#        events=["updated", "deleted", "created"],
-#        notification_url="https://qe6kl3acqa.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
-#   )
-#    print("{}".format(r))
+
 
 def clear_all_subscriptions():
     s = O365Notifications(create_api())

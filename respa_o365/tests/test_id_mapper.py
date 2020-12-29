@@ -20,6 +20,11 @@ def test__additions__return_items_added():
     d["a"] = 1
     assert [(k, v) for k, v in d.additions()] == [("a", 1)]
 
+def test__additions__return_items_added__when_added_using_reverse_map():
+    d = IdMapper()
+    d.reverse[1] = "a"
+    assert [(k, v) for k, v in d.additions()] == [("a", 1)]
+
 def test__additions__return_items_added__when_changed_multiple_times():
     d = IdMapper()
     d["a"] = 1
@@ -32,9 +37,19 @@ def test__removals__return_items_removed():
     del d["b"]
     assert [(k, v) for k, v in d.removals()] == [("b", 2)]
 
+def test__removals__return_items_removed__when_removed_using_reversed_map():
+    d = IdMapper({"b": 2})
+    del d.reverse[2]
+    assert [(k, v) for k, v in d.removals()] == [("b", 2)]
+
 def test__changes__returns_changed_items():
     d = IdMapper({"b": 2})
     d["b"] = 3
+    assert [(k, v) for k, v in d.changes()] == [("b", 3)]
+
+def test__changes__returns_changed_items__when_changed_using_reverse_map():
+    d = IdMapper({"b": 2})
+    d.reverse[3] = "b"
     assert [(k, v) for k, v in d.changes()] == [("b", 3)]
 
 def test__changes__returns_none__when_value_has_not_changed():
