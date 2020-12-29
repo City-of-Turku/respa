@@ -85,7 +85,8 @@ env = environ.Env(
     O365_AUTH_URL=(str, 'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize'),
     O365_TOKEN_URL=(str, 'https://login.microsoftonline.com/organizations/oauth2/v2.0/token'),
     O365_API_URL=(str, 'https://graph.microsoft.com/v1.0'),
-    O365_CALLBACK_URL=(str, None)
+    O365_NOTIFICATION_URL=(str, None),
+    O365_CALLBACK_URL=(str, None),
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -379,6 +380,7 @@ O365_CLIENT_SECRET=env('O365_CLIENT_SECRET')
 O365_AUTH_URL=env('O365_AUTH_URL')
 O365_TOKEN_URL=env('O365_TOKEN_URL')
 O365_API_URL=env('O365_API_URL')
+O365_NOTIFICATION_URL=env('O365_NOTIFICATION_URL')
 O365_CALLBACK_URL=env('O365_CALLBACK_URL')
 
 from easy_thumbnails.conf import Settings as thumbnail_settings  # noqa

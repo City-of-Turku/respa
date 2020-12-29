@@ -13,7 +13,7 @@ from requests_oauthlib import OAuth2Session
 from urllib.parse import urlparse, parse_qs
 from resources.models import Resource
 from users.models import User
-from .calendar_sync import perform_sync_to_exchange
+from .calendar_sync import perform_sync_to_exchange, ensure_notification
 from .models import OutlookCalendarLink, OutlookTokenRequestData
 
 logger = logging.getLogger(__name__)
@@ -90,7 +90,7 @@ class LoginCallBackView(APIView):
         )
 
         perform_sync_to_exchange(link, lambda sync: sync.sync_all())
-
+        ensure_notification(link)
         stored_data.delete()
 
         return HttpResponseRedirect(redirect_to=stored_data.return_to)

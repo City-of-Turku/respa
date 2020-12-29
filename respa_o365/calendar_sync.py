@@ -1,6 +1,7 @@
 import logging
 import json
 import string
+import random
 
 from django.conf import settings
 from django.utils.dateparse import parse_datetime
@@ -138,33 +139,39 @@ def perform_sync_to_exchange(link, func):
     link.save()
 
 
+def ensure_notification(link):
+    url = getattr(settings, "O365_NOTIFICATION_URL", None)
+    if not url:
+        return
+    api = MicrosoftApi(link.token)
+    subscriptions = O365Notifications(api)
+    random_secret = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(10))
+    sub_id, created = subscriptions.ensureNotifications(notification_url=url,
+                                                        resource="/me/events",
+                                                        events=["updated", "deleted", "created"],
+                                                        client_state=random_secret
+                                                        )
+    if created:
+        link.exchange_subscription_id = sub_id
+        link.exchange_subscription_secret = random_secret
+        link.save()
+
+
 class EventSync(APIView):
     permission_classes = [IsAuthenticated, CanSyncCalendars]
 
     def get(self, request):
         #url = "https://qe6kl3acqa.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
-        url = "https://fgno8xsw1i.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
+
         calendar_links = OutlookCalendarLink.objects.select_for_update().all()
         for link in calendar_links:
             logger.info("Synchronising user %d resource %s", link.user_id, link.resource_id)
             perform_sync_to_exchange(link, lambda sync: sync.sync_all())
 
-            api = MicrosoftApi(link.token)
-            subscriptions = O365Notifications(api)
-            import random
-
-            random_secret = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(10))
-            sub_id, created = subscriptions.ensureNotifications(notification_url=url,
-                                                       resource="/me/events",
-                                                       events=["updated", "deleted", "created"],
-                                                       client_state=random_secret
-                                                       )
-            if created:
-                link.exchange_subscription_id = sub_id
-                link.exchange_subscription_secret = random_secret
-                link.save()
+            ensure_notification(link)
 
         return Response("OK")
+
 
     def get2(self, request):
         resource_id = request.query_params.get('resource')
