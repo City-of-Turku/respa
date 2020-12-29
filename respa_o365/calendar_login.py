@@ -13,6 +13,7 @@ from requests_oauthlib import OAuth2Session
 from urllib.parse import urlparse, parse_qs
 from resources.models import Resource
 from users.models import User
+from .calendar_sync import perform_sync_to_exchange
 from .models import OutlookCalendarLink, OutlookTokenRequestData
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ class LoginStartView(APIView):
         else:
             user = request.user
 
-        msgraph = OAuth2Session(settings.O365_CLIENT_ID, 
+        msgraph = OAuth2Session(settings.O365_CLIENT_ID,
             scope=['offline_access', 'User.Read', 'Calendars.ReadWrite'],
             redirect_uri=settings.O365_CALLBACK_URL)
 
@@ -59,46 +60,37 @@ class LoginStartView(APIView):
             })
 
 class LoginCallBackView(APIView):
-    def get(self, request):        
+    def get(self, request):
         state = request.query_params.get('state')
 
         try:
             stored_data = OutlookTokenRequestData.objects.get(state=state)
         except OutlookTokenRequestData.DoesNotExist:
             return Response(data="Invalid state.", status=status.HTTP_400_BAD_REQUEST)
-  
+
         if OutlookCalendarLink.objects.filter(resource=stored_data.resource, user=stored_data.user).exists():
             # Link already exists
             return HttpResponseRedirect(redirect_to=stored_data.return_to)
-        
+
         url = request.build_absolute_uri(request.get_full_path())
 
-        msgraph = OAuth2Session(settings.O365_CLIENT_ID, state=state, 
+        msgraph = OAuth2Session(settings.O365_CLIENT_ID, state=state,
             redirect_uri=settings.O365_CALLBACK_URL)
-        token = msgraph.fetch_token(settings.O365_TOKEN_URL, 
-                    client_secret=settings.O365_CLIENT_SECRET, 
-                    authorization_response=url)                            
+        token = msgraph.fetch_token(settings.O365_TOKEN_URL,
+                    client_secret=settings.O365_CLIENT_SECRET,
+                    authorization_response=url)
         token = json.dumps(token)
 
-        rand = random.randrange(100000, 999999)
-        response = msgraph.post("{}/me/calendars".format(settings.O365_API_URL), 
-                        json={ 'name': 'Varauskalenteri {}'.format(rand)})
-        j = response.json();
-        reservation_calendar_id = j.get('id')
 
-        response = msgraph.post("{}/me/calendars".format(settings.O365_API_URL), 
-                        json={ 'name': 'Aukiolokalenteri {}'.format(rand)})
-        j = response.json();
-        availability_calendar_id = j.get('id')
 
-        OutlookCalendarLink.objects.create(
+        link = OutlookCalendarLink.objects.create(
             resource=stored_data.resource,
             user=stored_data.user,
             token=token,
-            reservation_calendar_id=reservation_calendar_id,
-            availability_calendar_id=availability_calendar_id
         )
-        
+
+        perform_sync_to_exchange(link, lambda sync: sync.sync_all())
+
         stored_data.delete()
 
         return HttpResponseRedirect(redirect_to=stored_data.return_to)
