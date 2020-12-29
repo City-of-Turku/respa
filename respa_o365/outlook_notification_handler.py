@@ -51,7 +51,7 @@ class NotificationCallback(View):
                 sub_id = notification.get("subscriptionId")
                 exchange_id = notification.get("resourceData").get("id")
                 link = OutlookCalendarLink.objects.select_for_update().filter(exchange_subscription_id=sub_id).first()
-                if not link:
+                if not link or link.exchange_subscription_secret != notification.get("clientState"):
                     logger.warning("Received notification from subscription %s not connected to any calendar link.", sub_id)
                     continue
 

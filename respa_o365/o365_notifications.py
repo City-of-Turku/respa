@@ -54,9 +54,9 @@ class O365Notifications:
                 else:
                     self.delete(s.get("id"))
         if key:
-            return key
+            return key, False
         else:
-            return self.create(notification_url=notification_url, resource=resource, events=events, client_state=client_state)
+            return self.create(notification_url=notification_url, resource=resource, events=events, client_state=client_state), True
 
 
 class SubscriptionError(Exception):

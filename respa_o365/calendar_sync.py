@@ -1,5 +1,7 @@
 import logging
 import json
+import string
+
 from django.conf import settings
 from django.utils.dateparse import parse_datetime
 from rest_framework.response import Response
@@ -149,15 +151,18 @@ class EventSync(APIView):
 
             api = MicrosoftApi(link.token)
             subscriptions = O365Notifications(api)
-            secret = "asdasds"
-            sub_id = subscriptions.ensureNotifications(notification_url=url,
+            import random
+
+            random_secret = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(10))
+            sub_id, created = subscriptions.ensureNotifications(notification_url=url,
                                                        resource="/me/events",
                                                        events=["updated", "deleted", "created"],
-                                                       client_state=secret
+                                                       client_state=random_secret
                                                        )
-            link.exchange_subscription_id = sub_id
-            link.exchange_subscription_secret = secret
-            link.save()
+            if created:
+                link.exchange_subscription_id = sub_id
+                link.exchange_subscription_secret = random_secret
+                link.save()
 
         return Response("OK")
 

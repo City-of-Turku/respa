@@ -20,16 +20,18 @@ def create_api():
     return api
 
 # This requires that there is actually a listener behind TSL. Otherwise subscription creation fails.
-url = "https://qe6kl3acqa.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
+url = "https://fgno8xsw1i.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
 
 
 @pytest.mark.skip("API parameters need to be set manually")
 def test__ensure_notification():
     s = O365Notifications(create_api())
     clear_all_subscriptions()
-    id1 = s.ensureNotifications(notification_url=url, resource="me/events", events=["updated", "deleted", "created"])
-    id2 = s.ensureNotifications(notification_url=url, resource="me/events", events=["updated", "deleted", "created"])
+    id1, created1 = s.ensureNotifications(notification_url=url, resource="me/events", events=["updated", "deleted", "created"], client_state="tila1")
+    id2, created2 = s.ensureNotifications(notification_url=url, resource="me/events", events=["updated", "deleted", "created"], client_state="tila1")
     assert id1 == id2
+    assert created1
+    assert not created2
 
 
 @pytest.mark.skip("API parameters need to be set manually and there needs to be working endpoint with TSL")
@@ -41,7 +43,8 @@ def test__notification_manipulations():
     id = s.create(
         resource="me/events",
         events=["updated", "deleted", "created"],
-        notification_url=url
+        notification_url=url,
+        client_state="tila1"
     )
     r = s.get(id)
     s.renew(id)
