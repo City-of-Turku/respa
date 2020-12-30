@@ -28,7 +28,6 @@ class SyncHelper:
         end = O365Calendar.parse_outlook_datetime(o365_reservation.get('end'))
         exchange_id = o365_reservation.get('id')
         exchange_change_key = o365_reservation.get('changeKey')
-
         respa_reservation = Reservation.objects.create(
             resource=calendar_link.resource,
             begin = begin,
@@ -182,7 +181,6 @@ class EventSync(APIView):
             checked_o365_ids = []
             respa_reservations = Reservation.objects.filter(resource=resource_id)
             reservation_links = OutlookCalendarReservation.objects.filter(calendar_link=calendar_link)
-
             for o365_reservation in o365_reservations:
                 o365_id = o365_reservation.get('id')
                 checked_o365_ids.append(o365_id)
@@ -326,7 +324,6 @@ class O365Calendar2:
         self._delete(url)
 
     def update_event(self, event_id, respa_reservation):
-
         url = self._get_events_url(event_id)
         begin = respa_reservation.begin.isoformat()
         end = respa_reservation.end.isoformat()
@@ -353,7 +350,6 @@ class O365Calendar2:
         # Do I need to worry about memory leak / reference counts?
         if (self._msgraph_session is not None):
             return self._msgraph_session
-
         token = json.loads(self._calendar_link.token)
 
         extra = {
