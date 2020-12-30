@@ -158,7 +158,6 @@ def ensure_notification(link):
 
 
 class EventSync(APIView):
-    permission_classes = [IsAuthenticated, CanSyncCalendars]
 
     def get(self, request):
         #url = "https://qe6kl3acqa.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
