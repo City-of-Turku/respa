@@ -66,10 +66,12 @@ class LoginCallBackView(APIView):
         try:
             stored_data = OutlookTokenRequestData.objects.get(state=state)
         except OutlookTokenRequestData.DoesNotExist:
+            logger.error("Stored data does not exist for state.")
             return Response(data="Invalid state.", status=status.HTTP_400_BAD_REQUEST)
 
         if OutlookCalendarLink.objects.filter(resource=stored_data.resource, user=stored_data.user).exists():
             # Link already exists
+            logger.warn("Already linked user {} resource {}.".format(stored_data.user, stored_data.resource))
             return HttpResponseRedirect(redirect_to=stored_data.return_to)
 
         url = request.build_absolute_uri(request.get_full_path())
@@ -90,6 +92,7 @@ class LoginCallBackView(APIView):
         )
 
         perform_sync_to_exchange(link, lambda sync: sync.sync_all())
+
         ensure_notification(link)
         stored_data.delete()
 

@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timedelta
+from respa_o365.o365_calendar import MicrosoftApiError
 
 
 class O365Notifications:
@@ -7,7 +8,10 @@ class O365Notifications:
         self._api = microsoft_api
 
     def list(self):
-        result = self._api.get("subscriptions")
+        try: 
+            result = self._api.get("subscriptions")
+        except MicrosoftApiError:
+            return []
         return result.get("value")
 
     def create(self, resource, events, notification_url, client_state):
@@ -27,7 +31,10 @@ class O365Notifications:
         return result.json().get("id")
 
     def get(self, id):
-        result = self._api.get("subscriptions/{}".format(id))
+        try:
+            result = self._api.get("subscriptions/{}".format(id))
+        except MicrosoftApiError:
+            result = None
         return result
 
     def delete(self, id):

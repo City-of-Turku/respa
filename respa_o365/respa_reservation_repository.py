@@ -1,5 +1,6 @@
 from datetime import datetime, timezone, timedelta
 from functools import reduce
+from django.conf import settings
 
 from resources.models import Reservation
 from respa_o365.reservation_sync_item import model_to_item
@@ -13,6 +14,8 @@ class RespaReservations:
     # TODO Do not consider old items (e.g. items that ended over week ago)
     def __init__(self, resource_id):
         self.__resource_id = resource_id
+        self._start_date = (datetime.now(tz=timezone.utc) - timedelta(days=settings.O365_SYNC_DAYS_BACK)).replace(microsecond=0)
+        self._end_date = (datetime.now(tz=timezone.utc) + timedelta(days=settings.O365_SYNC_DAYS_FORWARD)).replace(microsecond=0)
 
     def create_item(self, item):
         reservation = Reservation()
@@ -48,6 +51,7 @@ class RespaReservations:
         if not Reservation:
             return
         reservation.state = Reservation.CANCELLED
+        reservation._from_o365_sync = True
         reservation.save()
 
     def get_changes(self, memento=None):
@@ -56,6 +60,7 @@ class RespaReservations:
         else:
             time = datetime(1970, 1, 1, tzinfo=timezone.utc)
         reservations = Reservation.objects.filter(resource_id=self.__resource_id, modified_at__gt=time)
+        reservations = reservations.filter(begin__range=(self._start_date, self._end_date))
         new_memento = reduce(lambda a, b: max(a, b.modified_at), reservations, time)
         return {r.id: (status(r, time), reservation_change_key(r)) for r in reservations}, new_memento.strftime(time_format)
 

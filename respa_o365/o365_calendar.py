@@ -1,9 +1,9 @@
 import json
 import logging
 from copy import copy
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from functools import reduce
-
+from urllib import parse
 import pytz
 from django.conf import settings
 from requests_oauthlib import OAuth2Session
@@ -44,13 +44,12 @@ time_format = '%Y-%m-%dT%H:%M:%S.%f%z'
 
 class O365Calendar:
     def __init__(self,  microsoft_api, known_events={}, calendar_id=None, event_prefix=None):
-        if calendar_id:
-            self._base_url = "me/calendars/{}/events".format(calendar_id)
-        else:
-            self._base_url = "me/events"
+        self._calendar_id = calendar_id
         self._api = microsoft_api
         self._known_events = known_events
         self._event_prefix = event_prefix
+        self._start_date = (datetime.now(tz=timezone.utc) - timedelta(days=settings.O365_SYNC_DAYS_BACK)).replace(microsecond=0)
+        self._end_date = (datetime.now(tz=timezone.utc) + timedelta(days=settings.O365_SYNC_DAYS_FORWARD)).replace(microsecond=0)
 
     def _parse_outlook_timestamp(self, ts):
         # 2017-08-29T04:00:00.0000000 is too long format. Shorten it to 26 characters, drop last number.
@@ -60,17 +59,20 @@ class O365Calendar:
         return pytz.timezone(timezone_str).localize(timestamp)
 
     def get_events(self):
-        url = self._get_events_url()
+        url = self._get_events_list_url()
         result = {}
         while url is not None:
             logger.info("Retrieving events from calendar at {}".format(url))
-            json = self._api.get(url)
+            try:
+                json = self._api.get(url)
+            except MicrosoftApiError:
+                return result
             url = json.get('@odata.nextLink')
             events = json.get('value')
             for event in events:
                 event_id = event.get("id")
                 e = self.json_to_event(event)
-                if self._event_prefix is None or e.subject.startswith(self._event_prefix):
+                if self._event_prefix is None or e.subject is not None and e.subject.startswith(self._event_prefix):
                     result[event_id] = e
         return result
 
@@ -93,8 +95,11 @@ class O365Calendar:
         return e
 
     def get_event(self, event_id):
-        url = self._get_events_url(event_id)
-        json = self._api.get(url)
+        url = self._get_single_event_url(event_id)
+        try:
+            json = self._api.get(url)
+        except MicrosoftApiError:
+            return None
         if not json:
             return None
         event = self.json_to_event(json)
@@ -108,7 +113,7 @@ class O365Calendar:
         end = event.end.isoformat()
         subject = event.subject
         body = event.body
-        url = self._get_events_url()
+        url = self._get_create_event_url()
         response = self._api.post(
             url,
             json={
@@ -140,11 +145,11 @@ class O365Calendar:
         raise O365CalendarError(response.text)
 
     def remove_event(self, event_id):
-        url = self._get_events_url(event_id)
+        url = self._get_single_event_url(event_id)
         self._api.delete(url)
 
     def update_event(self, event_id, event):
-        url = self._get_events_url(event_id)
+        url = self._get_single_event_url(event_id)
         begin = event.begin.isoformat()
         end = event.end.isoformat()
         subject = event.subject
@@ -194,11 +199,27 @@ class O365Calendar:
         changes, new_memento = self.get_changes(memento)
         return {i: changes.get(i, (ChangeType.NO_CHANGE, "")) for i in item_ids}, new_memento
 
-    def _get_events_url(self, event_id=None):
-        if event_id is None:
-            return '{}?$top=50'.format(self._base_url)
-        else:
-            return '{}/{}'.format(self._base_url, event_id)
+    def _get_events_list_url(self):
+        qs = 'startDateTime={}&endDateTime={}&$top=50'.format(parse.quote_plus(self._start_date.isoformat()), parse.quote_plus(self._end_date.isoformat()))
+        if self._calendar_id is not None:
+            return 'me/calendars/{}/calendarView?{}'.format(self._calendar_id, qs)
+
+        return 'me/calendar/calendarView?{}'.format(qs)
+
+    def _get_single_event_url(self, event_id):
+        if self._calendar_id is not None:
+            return 'me/calendars/{}/events/{}'.format(self._calendar_id, event_id)
+        
+        return 'me/events/{}'.format(event_id)
+
+    def _get_create_event_url(self):
+        if self._calendar_id is not None:
+            return 'me/calendars/{}/events'.format(self._calendar_id)
+        
+        return 'me/events'
+
+    
+
 
 def status(item, time):
     if item.modified_at <= time:
@@ -228,9 +249,8 @@ class MicrosoftApi:
         session = self._get_session()
         response = session.get(self._url_for(path))
         if response.status_code == 400:
-            # Token is likely invalid.
-            # TODO Handle invalid token
-            return None
+            logger.error("Microsoft API Error for GET {path}: {response.text}")
+            raise MicrosoftApiError("Microsoft API Error for GET {path}: {response.text}")
         if response.status_code == 404:
             # Item is not available
             return None
@@ -293,4 +313,7 @@ def urljoin(*args):
 
 
 class O365CalendarError(Exception):
+    pass
+
+class MicrosoftApiError(Exception):
     pass

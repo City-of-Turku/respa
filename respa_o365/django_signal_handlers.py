@@ -15,5 +15,5 @@ def handle_reservation_save(instance, **kwargs):
         return
     links = OutlookCalendarLink.objects.select_for_update().filter(resource=instance.resource)
     for link in links:
-        logger.info("Save of reservation {} launch sync of {}", instance.id, link.id)
+        logger.info("Save of reservation {} launch sync of {}".format(instance.id, link.id))
         perform_sync_to_exchange(link, lambda s: s.sync_all())

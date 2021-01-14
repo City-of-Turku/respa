@@ -87,6 +87,8 @@ env = environ.Env(
     O365_API_URL=(str, 'https://graph.microsoft.com/v1.0'),
     O365_NOTIFICATION_URL=(str, None),
     O365_CALLBACK_URL=(str, None),
+    O365_SYNC_DAYS_BACK=(int, 8),
+    O365_SYNC_DAYS_FORWARD=(int, 92)
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -382,6 +384,8 @@ O365_TOKEN_URL=env('O365_TOKEN_URL')
 O365_API_URL=env('O365_API_URL')
 O365_NOTIFICATION_URL=env('O365_NOTIFICATION_URL')
 O365_CALLBACK_URL=env('O365_CALLBACK_URL')
+O365_SYNC_DAYS_FORWARD=env('O365_SYNC_DAYS_FORWARD')
+O365_SYNC_DAYS_BACK=env('O365_SYNC_DAYS_BACK')
 
 from easy_thumbnails.conf import Settings as thumbnail_settings  # noqa
 THUMBNAIL_PROCESSORS = (
