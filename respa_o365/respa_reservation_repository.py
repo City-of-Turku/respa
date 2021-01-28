@@ -11,7 +11,6 @@ time_format = '%Y-%m-%dT%H:%M:%S.%f%z'
 
 
 class RespaReservations:
-    # TODO Do not consider old items (e.g. items that ended over week ago)
     def __init__(self, resource_id):
         self.__resource_id = resource_id
         self._start_date = (datetime.now(tz=timezone.utc) - timedelta(days=settings.O365_SYNC_DAYS_BACK)).replace(microsecond=0)
