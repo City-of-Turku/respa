@@ -1,23 +1,18 @@
 from django.shortcuts import render
 
-from respa_o365.calendar_sync import perform_sync_to_exchange
 from respa_o365.o365_calendar import MicrosoftApi, O365Calendar
 from respa_o365.o365_notifications import O365Notifications
 from respa_o365.serializers import OutlookCalendarLinkSerializer
 from respa_o365.models import OutlookCalendarLink, OutlookCalendarReservation
-from resources.api.base import register_view
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.request import Request
-from django.conf import settings
-from requests_oauthlib import OAuth2Session
-import os
+from resources.api.reservation import UserFilterBackend
 
 class OutlookCalendarLinkViewSet(viewsets.ModelViewSet):
     queryset = OutlookCalendarLink.objects.none()
     serializer_class = OutlookCalendarLinkSerializer
-
+    filter_backends = [UserFilterBackend]
+    
     def get_queryset(self):
         if self.request.user.is_anonymous:
             return OutlookCalendarLink.objects.none()
