@@ -12,7 +12,7 @@ class O365ReservationRepository(SyncItemRepository):
         e = Event()
         e.begin = item.begin
         e.end = item.end
-        e.subject = "Varaus"
+        e.subject = "Varaus Varaamo"
         e.body = format_reserver_info(item)
         return self._o365_calendar.create_event(e)
 
@@ -20,7 +20,7 @@ class O365ReservationRepository(SyncItemRepository):
         e = self._o365_calendar.get_event(item_id)
         e.begin = item.begin
         e.end = item.end
-        e.subject = "Varaus"
+        e.subject = "Varaus Varaamo"
         e.body = format_reserver_info(item)
         return self._o365_calendar.update_event(item_id, e)
 

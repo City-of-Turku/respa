@@ -88,7 +88,7 @@ def perform_sync_to_exchange(link, func):
     # Initialise components
     mapper = IdMapper(id_mappings)
     api = MicrosoftApi(token)
-    cal = O365Calendar(microsoft_api=api, known_events=known_exchange_items, event_prefix="Varaus")
+    cal = O365Calendar(microsoft_api=api, known_events=known_exchange_items, event_prefix="Varaus Varaamo")
     o365 = O365ReservationRepository(cal)
     respa = RespaReservations(resource_id=link.resource.id)
     sync = ReservationSync(respa, o365, id_mapper=mapper, respa_memento=respa_memento, remote_memento=o365_memento, respa_change_keys=respa_change_keys, remote_change_keys=exchange_change_keys)

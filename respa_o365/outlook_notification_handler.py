@@ -58,7 +58,7 @@ class NotificationCallback(View):
                 mapping = OutlookCalendarReservation.objects.filter(exchange_id=exchange_id).first()
                 if mapping:
                     api = MicrosoftApi(link.token)
-                    cal = O365Calendar(microsoft_api=api, event_prefix="Varaus")
+                    cal = O365Calendar(microsoft_api=api, event_prefix="Varaus Varaamo")
                     item = cal.get_event(exchange_id)
                     if item and item.change_key() == mapping.exchange_change_key:
                         continue
