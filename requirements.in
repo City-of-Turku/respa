@@ -4,6 +4,7 @@ astroid
 atomicwrites
 attrs
 Babel
+beautifulsoup4
 certifi
 cffi
 chardet

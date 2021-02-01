@@ -12,6 +12,7 @@ astroid==2.4.2            # via -r requirements.in, pylint
 atomicwrites==1.4.0       # via -r requirements.in
 attrs==19.3.0             # via -r requirements.in, jsonschema, pytest
 babel==2.8.0              # via -r requirements.in, delorean
+beautifulsoup4==4.9.3     # via -r requirements.in
 cached-property==1.5.1    # via exchangelib
 certifi==2020.6.20        # via -r requirements.in, requests, sentry-sdk
 cffi==1.14.1              # via -r requirements.in, cryptography
@@ -122,6 +123,7 @@ sentry-sdk==0.16.2        # via -r requirements.in
 six==1.15.0               # via -r requirements.in, astroid, cryptography, database-sanitizer, django-anymail, django-munigeo, django-parler, django-sanitized-dump, drf-yasg, ecdsa, freezegun, jsonschema, packaging, pyjwkest, python-dateutil, python-jose, social-auth-app-django, social-auth-core, swagger-spec-validator
 social-auth-app-django==4.0.0  # via -r requirements.in
 social-auth-core==3.3.3   # via -r requirements.in, social-auth-app-django
+soupsieve==2.1            # via beautifulsoup4
 sqlparse==0.3.1           # via -r requirements.in, django
 swagger-spec-validator==2.7.3  # via -r requirements.in
 text-unidecode==1.3       # via -r requirements.in, faker
