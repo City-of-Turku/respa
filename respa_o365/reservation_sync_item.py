@@ -30,12 +30,12 @@ def model_to_item(reservation_model):
     item = ReservationSyncItem()
     item.begin = reservation_model.begin
     item.end = reservation_model.end
-    if reservation_model.reserver_name == '':
-        item.reserver_name = f"{reservation_model.user.first_name} {reservation_model.user.last_name}"
+    if reservation_model.reserver_name == '' and reservation_model.user:
+            item.reserver_name = f"{reservation_model.user.first_name} {reservation_model.user.last_name}"
     else:
         item.reserver_name = reservation_model.reserver_name
 
-    if reservation_model.reserver_email_address == '':
+    if reservation_model.reserver_email_address == '' and reservation_model.user:
         item.reserver_email_address = reservation_model.user.email
     else:
         item.reserver_email_address = reservation_model.reserver_email_address
