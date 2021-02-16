@@ -45,7 +45,7 @@ class TurkuPaymentProvider(PaymentProvider):
         payload = {
             'orderNumber': str(order.order_number),
             'currency': 'EUR',
-            "locale": "fi_FI", #en_US, sv_SE
+            'locale': self.get_order_locale(order),
             "urlSet": {
                 "success": self.get_success_url(),
                 "failure": self.get_failure_url(),
@@ -77,6 +77,16 @@ class TurkuPaymentProvider(PaymentProvider):
             return self.handle_initiate_payment(r.json())
         except RequestException as e:
             raise ServiceUnavailableError("Payment service is unreachable") from e
+
+    def get_order_locale(self, order) -> str:
+        if hasattr(order.reservation, 'preferred_language'):
+            locale = order.reservation.preferred_language
+            if locale == 'sv':
+                return 'sv_SE'
+            elif locale == 'en':
+                return 'en_US'
+
+        return 'fi_FI'
 
     def create_auth_header(self, timestamp, payload):
         auth = b'%s' % self.config.get(RESPA_PAYMENTS_TURKU_API_APP_NAME).encode()
