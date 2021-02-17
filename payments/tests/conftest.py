@@ -31,6 +31,7 @@ def two_hour_reservation(resource_in_unit, user):
         billing_first_name='Seppo',
         billing_last_name='Testi',
         billing_email_address='test@example.com',
+        billing_phone_number='555555555',
         billing_address_street='Test street 1',
         billing_address_zip='12345',
         billing_address_city='Testcity',

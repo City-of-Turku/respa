@@ -215,7 +215,7 @@ class TurkuPaymentProvider(PaymentProvider):
             logger.warning('Notify: Order does not exist.')
             return HttpResponse(status=204)
 
-        if request.GET('PAID'):
+        if request.GET.get('PAID'):
             logger.debug('Notify: Payment completed successfully.')
             try:
                 order.set_state(Order.CONFIRMED, 'Payment succeeded in MaksuPalvelu notify request.')
