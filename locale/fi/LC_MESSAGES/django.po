@@ -1805,3 +1805,9 @@ msgstr "Herätemalliryhmä"
 
 msgid "Notification template groups"
 msgstr "Herätemalliryhmät"
+
+msgid "Payment service is unreachable"
+msgstr "Maksupalveluun ei saatu yhteyttä"
+
+msgid "Failed to initiate payment process"
+msgstr "Maksuprosessin aloittaminen epäonnistui"

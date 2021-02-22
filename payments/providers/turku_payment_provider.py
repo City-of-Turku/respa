@@ -8,6 +8,7 @@ from datetime import datetime
 import pytz
 
 from allauth.socialaccount.models import SocialAccount
+from django.utils.translation import gettext_lazy as _
 
 from ..models import Order, OrderLine
 from ..utils import round_price
@@ -76,7 +77,8 @@ class TurkuPaymentProvider(PaymentProvider):
             r.raise_for_status()
             return self.handle_initiate_payment(r.json())
         except RequestException as e:
-            raise ServiceUnavailableError("Payment service is unreachable") from e
+            logger.warning("Payment service is unreachable: %s" % e)
+            raise ServiceUnavailableError(_("Payment service is unreachable")) from e
 
     def get_order_locale(self, order) -> str:
         if hasattr(order.reservation, 'preferred_language'):
@@ -108,9 +110,11 @@ class TurkuPaymentProvider(PaymentProvider):
             error_list = []
             for error in errors:
                 error_list.append(str(error.get('message', 'Unknown error')))
-            raise PayloadValidationError("Payment payload data validation failed: %s" % ", ".join(error_list))
+            logger.warning("Payment payload data validation failed: %s" % ", ".join(error_list))
+            raise PayloadValidationError(_("Failed to initiate payment process"))
         else:
-            raise UnknownReturnCodeError("Unknown error")
+            logger.warning("Unknown error occurred during payment processing")
+            raise UnknownReturnCodeError(_("Failed to initiate payment process"))
 
     def payload_add_customer(self, payload, order):
         """Attach customer data to payload"""
