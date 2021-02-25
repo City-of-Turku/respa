@@ -66,13 +66,10 @@ class RespaAvailabilityRepository:
         else:
             time = datetime(1970, 1, 1, tzinfo=timezone.utc)
         periods = []
-        #periods = Period.objects.filter(resource_id=self.__resource_id, modified_at__gt=time)
-        #periods = periods.filter(start__range=(self._start_date, self._end_date))
         new_memento = reduce(lambda a, b: max(a, b.modified_at), periods, time)
         return {r.id: (status(r, time), period_change_key(r)) for r in periods}, new_memento.strftime(time_format)
 
     def get_changes_by_ids(self, item_ids, memento=None):
-        #periods = Period.objects.filter(id__in=item_ids)
         periods = []
         if memento:
             time = datetime.strptime(memento, time_format)
@@ -89,6 +86,8 @@ def status(reservation, time):
     return ChangeType.UPDATED
 
 def period_change_key(item):
+    # Changing periods through other means is prevented when there are calendar links. Thus the periods do not change
+    # on the Respa side and it is fine to always return the same change key.
     return ""
 
 def naive_time(datetime):

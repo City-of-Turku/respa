@@ -31,7 +31,6 @@ class RespaReservations:
 
     def set_item(self, item_id, item):
         reservation = Reservation.objects.filter(id=item_id).first()
-        # TODO Check if name can actually be altered
         reservation.reserver_email_address = item.reserver_email_address
         reservation.reserver_phone_number = item.reserver_phone_number
         reservation.reserver_name = item.reserver_name
