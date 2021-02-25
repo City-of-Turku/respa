@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import BasePermission, IsAuthenticated
 from requests_oauthlib import OAuth2Session
 from urllib.parse import urlparse, parse_qs
-from resources.models import Resource
+from resources.models import Resource, Period
 from users.models import User
 from .calendar_sync import perform_sync_to_exchange, ensure_notification
 from .models import OutlookCalendarLink, OutlookTokenRequestData
@@ -83,7 +83,12 @@ class LoginCallBackView(APIView):
                     authorization_response=url)
         token = json.dumps(token)
 
-
+        res = stored_data.resource
+        
+        # Delete existing periods because they will not sync to Outlook, and the format may be incompatible.
+        existing_periods = Period.objects.filter(resource=res)
+        existing_periods.delete()
+        res.update_opening_hours()
 
         link = OutlookCalendarLink.objects.create(
             resource=stored_data.resource,
