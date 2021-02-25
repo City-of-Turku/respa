@@ -24,4 +24,11 @@ class RespaO365Config(AppConfig):
             sender='resources.Period',
             dispatch_uid='respa-o365-period-save'
         )
+
+        pre_delete.connect(
+            handle_period_save,
+            sender='resources.Period',
+            dispatch_uid='respa-o365-period-delete'
+        )
+
     
