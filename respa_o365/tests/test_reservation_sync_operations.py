@@ -1,6 +1,5 @@
 
-from respa_o365.reservation_sync_operations import ChangeType
-from respa_o365.reservation_sync_operations import operations_for_reservation_sync
+from respa_o365.sync_operations import ChangeType, SyncOperations, reservationSyncActions
 
 
 def test_reservation_sync():
@@ -55,7 +54,7 @@ def test_reservation_sync():
             state1 = respa_state.name if respa_state else "None"
             state2 = outlook_state.name if outlook_state else "None"
             # Act
-            ops = operations_for_reservation_sync([(item1, item2)])
+            ops = SyncOperations([(item1, item2)], reservationSyncActions).get_sync_operations()
             # Assert
             try:
                 w = OperationWriter()

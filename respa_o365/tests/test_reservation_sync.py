@@ -3,7 +3,7 @@ import pytest
 
 from respa_o365.id_mapper import IdMapper
 from respa_o365.reservation_sync import SyncItemRepository, ReservationSync
-from respa_o365.reservation_sync_operations import ChangeType
+from respa_o365.sync_operations import ChangeType
 
 
 def test_sync_copies_element_from_first_source_to_second():

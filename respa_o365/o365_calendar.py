@@ -8,7 +8,7 @@ import pytz
 from django.conf import settings
 from requests_oauthlib import OAuth2Session
 
-from respa_o365.reservation_sync_operations import ChangeType
+from respa_o365.sync_operations import ChangeType
 
 logger = logging.getLogger(__name__)
 

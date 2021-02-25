@@ -1,5 +1,7 @@
 import logging
 import json
+from respa_o365.respa_availabilility_repository import RespaAvailabilityRepository
+from respa_o365.o365_availability_repository import O365AvailabilityRepository
 import string
 import random
 
@@ -12,12 +14,13 @@ from requests_oauthlib import OAuth2Session
 from urllib.parse import urlparse, parse_qs
 from resources.models import Resource, Reservation
 from .id_mapper import IdMapper
-from .models import OutlookCalendarLink, OutlookCalendarReservation
+from .models import OutlookCalendarLink, OutlookCalendarReservation, OutlookCalendarAvailability
 from .o365_calendar import O365Calendar, MicrosoftApi
 from .o365_notifications import O365Notifications
 from .o365_reservation_repository import O365ReservationRepository
 from .reservation_sync import ReservationSync
 from .respa_reservation_repository import RespaReservations
+from respa_o365.sync_operations import reservationSyncActions, availabilitySyncActions
 
 logger = logging.getLogger(__name__)
 
@@ -70,28 +73,44 @@ class CanSyncCalendars(BasePermission):
 
 
 def perform_sync_to_exchange(link, func):
-    # Load state from database
+    # Sync reservations
+    _perform_sync(link=link, func=func, respa_memento_field='respa_reservation_sync_memento',
+        o365_memento_field='exchange_reservation_sync_memento', outlook_model=OutlookCalendarReservation,
+        outlook_model_event_id_property='reservation_id', respa_repo=RespaReservations, o365_repo=O365ReservationRepository, 
+        event_prefix="Varaus Varaamo", sync_actions=reservationSyncActions)
+
+    # Sync availability / periods
+    _perform_sync(link=link, func=func, respa_memento_field='respa_availability_sync_memento', 
+        o365_memento_field='exchange_availability_sync_memento', outlook_model=OutlookCalendarAvailability,
+        outlook_model_event_id_property='period_id', respa_repo=RespaAvailabilityRepository, o365_repo=O365AvailabilityRepository,
+        event_prefix="Varattavissa Varaamo", sync_actions=availabilitySyncActions)
+
+
+def _perform_sync(link, func, respa_memento_field, o365_memento_field, outlook_model, outlook_model_event_id_property,
+        event_prefix, sync_actions, o365_repo, respa_repo):
     token = link.token
-    respa_memento = link.respa_reservation_sync_memento
-    o365_memento = link.exchange_reservation_sync_memento
+    respa_memento = getattr(link, respa_memento_field)
+    o365_memento = getattr(link, o365_memento_field)
     id_mappings = {}
     reservation_item_data = {}
     known_exchange_items = set()
     respa_change_keys = {}
     exchange_change_keys = {}
-    for res in OutlookCalendarReservation.objects.filter(calendar_link=link):
-        id_mappings[res.reservation_id] = res.exchange_id
-        reservation_item_data[res.reservation_id] = res
+    for res in outlook_model.objects.filter(calendar_link=link):
+        event_id = getattr(res, outlook_model_event_id_property)
+        id_mappings[event_id] = res.exchange_id
+        reservation_item_data[event_id] = res
         known_exchange_items.add(res.exchange_id)
-        respa_change_keys[res.reservation_id] = res.respa_change_key
+        respa_change_keys[event_id] = res.respa_change_key
         exchange_change_keys[res.exchange_id] = res.exchange_change_key
     # Initialise components
     mapper = IdMapper(id_mappings)
     api = MicrosoftApi(token)
-    cal = O365Calendar(microsoft_api=api, known_events=known_exchange_items, event_prefix="Varaus Varaamo")
-    o365 = O365ReservationRepository(cal)
-    respa = RespaReservations(resource_id=link.resource.id)
-    sync = ReservationSync(respa, o365, id_mapper=mapper, respa_memento=respa_memento, remote_memento=o365_memento, respa_change_keys=respa_change_keys, remote_change_keys=exchange_change_keys)
+    cal = O365Calendar(microsoft_api=api, known_events=known_exchange_items, event_prefix=event_prefix)
+    o365 = o365_repo(cal)
+    respa = respa_repo(resource_id=link.resource.id)
+    sync = ReservationSync(respa, o365, id_mapper=mapper, respa_memento=respa_memento, remote_memento=o365_memento,
+        respa_change_keys=respa_change_keys, remote_change_keys=exchange_change_keys, sync_actions=sync_actions)
     # Perform synchronisation
     func(sync)
     # Store data back to database
@@ -108,12 +127,15 @@ def perform_sync_to_exchange(link, func):
     for respa_id, exchange_id in mapper.additions():
         exchange_change_key = current_exchange_change_keys.pop(exchange_id, "")
         respa_change_key = current_respa_change_keys.pop(respa_id, "")
-        OutlookCalendarReservation.objects.create(
+        kwargs = {
+            outlook_model_event_id_property: respa_id,
+        }
+        outlook_model.objects.create(
             calendar_link=link,
-            reservation_id=respa_id,
             exchange_id=exchange_id,
             respa_change_key=respa_change_key,
-            exchange_change_key=exchange_change_key)
+            exchange_change_key=exchange_change_key,
+            **kwargs)
     for exchange_id, current_exchange_change_key in current_exchange_change_keys.items():
         old_exchange_change_key = exchange_change_keys.get(exchange_id, "")
         if current_exchange_change_key != old_exchange_change_key:
@@ -132,11 +154,10 @@ def perform_sync_to_exchange(link, func):
                 ri.respa_change_key = current_respa_change_key
                 ri.exchange_change_key = current_exchange_change_keys.pop(exchange_id, ri.exchange_change_key)
                 ri.save()
-    link.exchange_reservation_sync_memento = sync.remote_memento()
-    link.respa_reservation_sync_memento = sync.respa_memento()
+    setattr(link, o365_memento_field, sync.remote_memento())
+    setattr(link, respa_memento_field, sync.respa_memento())
     link.token = api.current_token()
     link.save()
-
 
 def ensure_notification(link):
     url = getattr(settings, "O365_NOTIFICATION_URL", None)
@@ -165,7 +186,6 @@ class EventSync(APIView):
         for link in calendar_links:
             logger.info("Synchronising user %d resource %s", link.user_id, link.resource_id)
             perform_sync_to_exchange(link, lambda sync: sync.sync_all())
-
             ensure_notification(link)
 
         return Response("OK")

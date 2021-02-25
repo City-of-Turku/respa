@@ -1,7 +1,7 @@
 import pytest
 from datetime import timezone, datetime
 from respa_o365.reservation_sync_item import ReservationSyncItem
-from respa_o365.reservation_sync_operations import ChangeType
+from respa_o365.sync_operations import ChangeType
 
 
 class ReservationRepositoryContract:

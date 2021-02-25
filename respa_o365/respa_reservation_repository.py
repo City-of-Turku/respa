@@ -4,7 +4,7 @@ from django.conf import settings
 
 from resources.models import Reservation
 from respa_o365.reservation_sync_item import model_to_item
-from respa_o365.reservation_sync_operations import ChangeType
+from respa_o365.sync_operations import ChangeType
 
 
 time_format = '%Y-%m-%dT%H:%M:%S.%f%z'
