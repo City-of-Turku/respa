@@ -9,8 +9,11 @@ from respa_o365.sync_operations import ChangeType
 
 time_format = '%Y-%m-%dT%H:%M:%S.%f%z'
 
+# We detect period changes only on the Outlook side, so the change key for Respa periods cna always be the same.
+period_change_key = '0'
 
 class RespaAvailabilityRepository:
+
     def __init__(self, resource_id):
         self.__resource_id = resource_id
         self._start_date = (datetime.now(tz=timezone.utc) - timedelta(days=settings.O365_SYNC_DAYS_BACK)).replace(microsecond=0)
@@ -26,7 +29,7 @@ class RespaAvailabilityRepository:
         Day.objects.create(closed=False, weekday=item.begin.weekday(), opens=naive_time(item.begin), closes=naive_time(item.end), period=period)
         period.save()
         Resource.objects.get(pk=self.__resource_id).update_opening_hours()
-        return period.id, period_change_key(item)
+        return period.id, period_change_key
 
     def set_item(self, item_id, item):
         period = Period.objects.get(id=item_id)
@@ -37,7 +40,7 @@ class RespaAvailabilityRepository:
         Day.objects.create(closed=False, weekday=item.begin.weekday(), opens=naive_time(item.begin), closes=naive_time(item.end), period=period)
         period.save()
         Resource.objects.get(pk=self.__resource_id).update_opening_hours()
-        return period_change_key(period)
+        return period_change_key
 
     def get_item(self, item_id):
         period = Period.objects.filter(id=item_id)
@@ -47,48 +50,19 @@ class RespaAvailabilityRepository:
         Period.objects.filter(id=item_id).delete()
 
     def get_changes(self, memento=None):
-        periods = Period.objects.filter(resource_id=self.__resource_id)
-        periods = periods.filter(start__range=(self._start_date, self._end_date))
-        new_memento = datetime(1970, 1, 1, tzinfo=timezone.utc).strftime(time_format)
-        return {r.id: (ChangeType.NO_CHANGE, period_change_key(r)) for r in periods}, new_memento
+        # Changing periods through other means is prevented when there are calendar links connected to the resource.
+        # For this reason, the periods do not change on the Respa side.
+        if not memento:
+            memento = datetime(1970, 1, 1, tzinfo=timezone.utc).strftime(time_format)
+        return {}, memento
 
     def get_changes_by_ids(self, item_ids, memento=None):
+        # Changing periods through other means is prevented when there are calendar links connected to the resource.
+        # For this reason, the periods do not change on the Respa side.
         periods = Period.objects.filter(id__in=item_ids)
-        new_memento = datetime(1970, 1, 1, tzinfo=timezone.utc).strftime(time_format)
-        return {r.id: (ChangeType.NO_CHANGE, period_change_key(r)) for r in periods}, new_memento
-
-
-
-    def get_changes(self, memento=None):
-        # Assuming no changes in periods.    
-        if memento:
-            time = datetime.strptime(memento, time_format)
-        else:
-            time = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        periods = []
-        new_memento = reduce(lambda a, b: max(a, b.modified_at), periods, time)
-        return {r.id: (status(r, time), period_change_key(r)) for r in periods}, new_memento.strftime(time_format)
-
-    def get_changes_by_ids(self, item_ids, memento=None):
-        periods = []
-        if memento:
-            time = datetime.strptime(memento, time_format)
-        else:
-            time = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        new_memento = reduce(lambda a, b: max(a, b.modified_at), periods, time)
-        return {r.id: (status(r, time), period_change_key(r)) for r in periods}, new_memento.strftime(time_format)
-
-def status(reservation, time):
-    if reservation.modified_at <= time:
-        return ChangeType.NO_CHANGE
-    if reservation.created_at > time:
-        return ChangeType.CREATED
-    return ChangeType.UPDATED
-
-def period_change_key(item):
-    # Changing periods through other means is prevented when there are calendar links. Thus the periods do not change
-    # on the Respa side and it is fine to always return the same change key.
-    return ""
+        if not memento:
+            memento = datetime(1970, 1, 1, tzinfo=timezone.utc).strftime(time_format)
+        return {p.id: (ChangeType.NO_CHANGE, period_change_key) for p in periods}, memento
 
 def naive_time(datetime):
     return timezone.make_naive(datetime).time()
