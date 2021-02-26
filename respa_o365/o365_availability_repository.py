@@ -1,9 +1,7 @@
+from django.conf import settings
 from respa_o365.availability_sync_item import AvailabilitySyncItem
-from bs4 import BeautifulSoup
-from soupsieve.css_parser import COMMENTS
 from respa_o365.o365_calendar import Event
 from respa_o365.reservation_sync import SyncItemRepository
-from respa_o365.reservation_sync_item import ReservationSyncItem
 
 class O365AvailabilityRepository(SyncItemRepository):
     def __init__(self, o365_calendar):
@@ -13,7 +11,7 @@ class O365AvailabilityRepository(SyncItemRepository):
         e = Event()
         e.begin = item.begin
         e.end = item.end
-        e.subject = "Varattavissa Varaamo"
+        e.subject = settings.O365_CALENDAR_AVAILABILITY_EVENT_PREFIX
         e.body = ''
         return self._o365_calendar.create_event(e)
 
@@ -21,7 +19,7 @@ class O365AvailabilityRepository(SyncItemRepository):
         e = self._o365_calendar.get_event(item_id)
         e.begin = item.begin
         e.end = item.end
-        e.subject = "Varattavissa Varaamo"
+        e.subject = settings.O365_CALENDAR_AVAILABILITY_EVENT_PREFIX
         e.body = ''
         return self._o365_calendar.update_event(item_id, e)
 

@@ -77,13 +77,13 @@ def perform_sync_to_exchange(link, func):
     _perform_sync(link=link, func=func, respa_memento_field='respa_reservation_sync_memento',
         o365_memento_field='exchange_reservation_sync_memento', outlook_model=OutlookCalendarReservation,
         outlook_model_event_id_property='reservation_id', respa_repo=RespaReservations, o365_repo=O365ReservationRepository, 
-        event_prefix="Varaus Varaamo", sync_actions=reservationSyncActions)
+        event_prefix=settings.O365_CALENDAR_RESERVATION_EVENT_PREFIX, sync_actions=reservationSyncActions)
 
     # Sync availability / periods
     _perform_sync(link=link, func=func, respa_memento_field='respa_availability_sync_memento', 
         o365_memento_field='exchange_availability_sync_memento', outlook_model=OutlookCalendarAvailability,
         outlook_model_event_id_property='period_id', respa_repo=RespaAvailabilityRepository, o365_repo=O365AvailabilityRepository,
-        event_prefix="Varattavissa Varaamo", sync_actions=availabilitySyncActions)
+        event_prefix=settings.O365_CALENDAR_AVAILABILITY_EVENT_PREFIX, sync_actions=availabilitySyncActions)
 
 
 def _perform_sync(link, func, respa_memento_field, o365_memento_field, outlook_model, outlook_model_event_id_property,

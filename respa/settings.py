@@ -88,7 +88,9 @@ env = environ.Env(
     O365_NOTIFICATION_URL=(str, None),
     O365_CALLBACK_URL=(str, None),
     O365_SYNC_DAYS_BACK=(int, 8),
-    O365_SYNC_DAYS_FORWARD=(int, 92)
+    O365_SYNC_DAYS_FORWARD=(int, 92),
+    O365_CALENDAR_AVAILABILITY_EVENT_PREFIX=(str, "Varattavissa Varaamo"),
+    O365_CALENDAR_RESERVATION_EVENT_PREFIX=(str, "Varaus Varaamo")
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -386,6 +388,8 @@ O365_NOTIFICATION_URL=env('O365_NOTIFICATION_URL')
 O365_CALLBACK_URL=env('O365_CALLBACK_URL')
 O365_SYNC_DAYS_FORWARD=env('O365_SYNC_DAYS_FORWARD')
 O365_SYNC_DAYS_BACK=env('O365_SYNC_DAYS_BACK')
+O365_CALENDAR_AVAILABILITY_EVENT_PREFIX=env('O365_CALENDAR_AVAILABILITY_EVENT_PREFIX')
+O365_CALENDAR_RESERVATION_EVENT_PREFIX=env('O365_CALENDAR_RESERVATION_EVENT_PREFIX')
 
 from easy_thumbnails.conf import Settings as thumbnail_settings  # noqa
 THUMBNAIL_PROCESSORS = (
