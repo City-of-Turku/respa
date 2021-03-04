@@ -24,14 +24,14 @@ class RespaReservations:
 
     def create_item(self, item):
         reservation = Reservation()
-        reservation.resource_id = self.__resource_id
-        reservation.state = Reservation.CONFIRMED
+        reservation.resource_id = self.__resource_id        
         reservation.reserver_email_address = item.reserver_email_address
         reservation.reserver_phone_number = item.reserver_phone_number
         reservation.reserver_name = item.reserver_name
         reservation.begin = item.begin
         reservation.end = item.end
         reservation._from_o365_sync = True
+        reservation.set_state(Reservation.CONFIRMED, None)
         reservation.save()
         return reservation.id, reservation_change_key(item)
 
