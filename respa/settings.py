@@ -90,7 +90,11 @@ env = environ.Env(
     O365_SYNC_DAYS_BACK=(int, 8),
     O365_SYNC_DAYS_FORWARD=(int, 92),
     O365_CALENDAR_AVAILABILITY_EVENT_PREFIX=(str, "Varattavissa Varaamo"),
-    O365_CALENDAR_RESERVATION_EVENT_PREFIX=(str, "Varaus Varaamo")
+    O365_CALENDAR_RESERVATION_EVENT_PREFIX=(str, "Varaus Varaamo"),
+    TIMMI_API_URL=(str, ''),
+    TIMMI_ADMIN_ID=(int, 0),
+    TIMMI_USERNAME=(str, ''), #base64 encoded username
+    TIMMI_PASSWORD=(str, '') #base64 encoded password
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -122,6 +126,12 @@ SITE_ID = 1
 
 USE_SWAGGER_OPENAPI_VIEW = env('USE_SWAGGER_OPENAPI_VIEW')
 USE_RESPA_EXCHANGE = env('USE_RESPA_EXCHANGE')
+
+TIMMI_API_URL = env('TIMMI_API_URL')
+TIMMI_ADMIN_ID = env('TIMMI_ADMIN_ID')
+TIMMI_USERNAME = env('TIMMI_USERNAME')
+TIMMI_PASSWORD = env('TIMMI_PASSWORD')
+TIMMI_TIMEOUT = 5
 
 # Application definition
 INSTALLED_APPS = [

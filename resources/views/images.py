@@ -51,13 +51,16 @@ class ResourceImageView(DetailView):
             out_image = image.image
             filename = image.image.name
         else:
-            out_image = get_thumbnailer(image.image).get_thumbnail({
-                'size': (width, height),
-                'box': image.cropping,
-                'crop': True,
-                'detail': True,
-            })
-            filename = "%s-%dx%d%s" % (image.image.name, width, height, os.path.splitext(out_image.name)[1])
+            try:
+                out_image = get_thumbnailer(image.image).get_thumbnail({
+                    'size': (width, height),
+                    'box': image.cropping,
+                    'crop': True,
+                    'detail': True,
+                })
+                filename = "%s-%dx%d%s" % (image.image.name, width, height, os.path.splitext(out_image.name)[1])
+            except:
+                return HttpResponseBadRequest()
 
         # FIXME: Use SendFile headers instead of Django output when not in debug mode
         out_image.seek(0)

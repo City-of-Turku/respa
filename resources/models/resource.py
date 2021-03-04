@@ -299,6 +299,9 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
     configuration = models.ForeignKey('respa_outlook.RespaOutlookConfiguration', verbose_name=_('Outlook configuration'),
         null=True, blank=True, on_delete=models.SET_NULL, related_name='Configuration')
 
+    timmi_resource = models.BooleanField(verbose_name=_('Is Timmi resource?'), default=False, blank=True, help_text=_('Is this resource part of Timmi integration?'))
+    timmi_room_id = models.PositiveIntegerField(verbose_name=_('Timmi ID'), null=True, blank=True)
+    
     objects = ResourceQuerySet.as_manager()
 
     class Meta:
@@ -790,6 +793,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
         return result_municipalities
 
     def clean(self):
+        from resources.timmi.manager import TimmiManager
         if self.cooldown is None:
             self.cooldown = datetime.timedelta(0)
         if self.min_price is not None and self.max_price is not None and self.min_price > self.max_price:

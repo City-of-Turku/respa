@@ -18,6 +18,7 @@ from django.contrib.auth import get_user_model
 
 from resources.pagination import PurposePagination
 from rest_framework import exceptions, filters, mixins, serializers, viewsets, response, status
+from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.decorators import action
 from guardian.core import ObjectPermissionChecker
@@ -299,6 +300,9 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
             elif obj.unit_distance is not None:
                 ret['distance'] = int(obj.unit_distance.m)
 
+        del ret["timmi_resource"]
+        del ret["timmi_room_id"]
+
         return ret
 
     def get_location(self, obj):
@@ -349,6 +353,8 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
         return ret
 
     def get_reservations(self, obj):
+        if obj.timmi_resource:
+            return None
         if 'start' not in self.context:
             return None
 
@@ -358,7 +364,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
                 rv.resource = obj
         else:
             rv_list = get_resource_reservations_queryset(self.context['start'], self.context['end'])
-            rv_list = rv_list.filter(resource=obj)
+            rv_list = rv_list.filter(Q(resource=obj)|Q(resource__timmi_resource=False))
 
         rv_list = list(rv_list)
         if not rv_list:
@@ -810,6 +816,10 @@ class ResourceListViewSet(munigeo_api.GeoModelAPIView, mixins.ListModelMixin,
     def get_queryset(self):
         return self.queryset.visible_for(self.request.user)
 
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return response
+
 
 class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.RetrieveModelMixin,
                       viewsets.GenericViewSet, ResourceCacheMixin):
@@ -871,6 +881,18 @@ class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.RetrieveModelMixin,
     @action(detail=True, methods=['post'])
     def unfavorite(self, request, pk=None):
         return self._set_favorite(request, False)
+    
+    def retrieve(self, request, *args, **kwargs):
+        from ..timmi.manager import TimmiManager
+        resource = self.get_object()
+        response = super().retrieve(request, *args, **kwargs)
+        if resource.timmi_resource:
+            timmi = TimmiManager()
+            try:
+                response = timmi.bind(resource, response)
+            except:
+                return Response({'message': 'Timmi connection failed'}, status=404)
+        return response
 
 
 register_view(ResourceListViewSet, 'resource')

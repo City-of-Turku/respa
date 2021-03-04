@@ -13,12 +13,12 @@ colorama
 coreapi
 coreschema
 coverage
-cryptography
+cryptography>=3.4.6
 daemonize
 database-sanitizer>=0.4.0
 defusedxml
 Delorean
-Django==2.2.16
+Django==2.2.18
 django-admin-json-editor==0.2.2
 django-allauth
 django-anymail
@@ -26,7 +26,7 @@ django-appconf
 django-cors-headers
 django-enumfields
 django-environ
-django-filter
+django-filter>=2.4.0
 django-grappelli
 django-guardian
 django-helusers
@@ -44,7 +44,7 @@ django-parler-rest
 django-reversion
 django-sanitized-dump>=0.2.0
 djangorestframework
-djangorestframework-jwt
+djangorestframework-jwt==1.11.0
 drf-oidc-auth
 drf-yasg
 easy-thumbnails
@@ -72,6 +72,7 @@ more-itertools
 ntlm-auth
 oauthlib
 packaging
+pandas
 phonenumbers
 Pillow>7.0.0
 pluggy
@@ -109,7 +110,7 @@ ruamel.yaml.clib
 sentry-sdk
 six
 social-auth-app-django
-social-auth-core
+social-auth-core==4.0.2
 sqlparse
 swagger-spec-validator
 text-unidecode
