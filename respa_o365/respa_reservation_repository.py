@@ -53,10 +53,8 @@ class RespaReservations:
     def remove_item(self, item_id):
         try:
             reservation = Reservation.objects.filter(id=item_id).first()
-            link = OutlookCalendarLink.objects.filter(resource_id=reservation.resource_id).first()
-            user = User.objects.get(pk=link.user_id)
             reservation._from_o365_sync = True
-            reservation.set_state(Reservation.CANCELLED, user)
+            reservation.set_state(Reservation.CANCELLED, None)
             reservation.save()
         except Exception:
             logger.error("Unable to cancel reservation {}".format(item_id), exc_info=True)
