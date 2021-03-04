@@ -1,14 +1,12 @@
-name: Respa CI
+name: Respa Manual CI
+
 
 on:
-  push:
-    branches:
-      - master
-      - develop
-  pull_request:
-    branches:
-      - '**'
-
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Manual tests dispatch'
+  
 jobs:
   build:
     runs-on: [ ubuntu-latest ]
