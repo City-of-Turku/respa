@@ -14,3 +14,5 @@ DJANGO_ADMIN_LOGOUT_REDIRECT_URL='https://hel.fi'
 RESPA_ADMIN_LOGOUT_REDIRECT_URL='https://hel.fi'
 # API token auth endpoint
 MACHINE_TO_MACHINE_AUTH_ENABLED=1
+environ.Env(RESPA_PROVIDER_LOGIN_URL=(str, '/accounts/helsinki/login/'))
+RESPA_PROVIDER_LOGIN_URL=env('RESPA_PROVIDER_LOGIN_URL')
