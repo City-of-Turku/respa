@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from functools import reduce
 from django.conf import settings
@@ -6,6 +7,8 @@ from django.utils import timezone
 from resources.models import Period, Day, Resource
 from respa_o365.availability_sync_item import period_to_item
 from respa_o365.sync_operations import ChangeType
+
+logger = logging.getLogger(__name__)
 
 time_format = '%Y-%m-%dT%H:%M:%S.%f%z'
 
@@ -47,7 +50,13 @@ class RespaAvailabilityRepository:
         return period_to_item(period.first())
 
     def remove_item(self, item_id):
-        Period.objects.filter(id=item_id).delete()
+        try:
+            period = Period.objects.get(id=item_id)
+            period._from_o365_sync = True
+            period.delete()
+            Resource.objects.get(pk=self.__resource_id).update_opening_hours()
+        except Exception:
+            logger.error("Failed deleting period {}".format(item_id), exc_info=True)
 
     def get_changes(self, memento=None):
         # Changing periods through other means is prevented when there are calendar links connected to the resource.
