@@ -24,47 +24,6 @@ from respa_o365.sync_operations import reservationSyncActions, availabilitySyncA
 
 logger = logging.getLogger(__name__)
 
-class SyncHelper:
-    @staticmethod
-    def copy_outlook_reservation_to_respa(calendar_link, o365_reservation):
-        begin = O365Calendar.parse_outlook_datetime(o365_reservation.get('start'))
-        end = O365Calendar.parse_outlook_datetime(o365_reservation.get('end'))
-        exchange_id = o365_reservation.get('id')
-        exchange_change_key = o365_reservation.get('changeKey')
-        respa_reservation = Reservation.objects.create(
-            resource=calendar_link.resource,
-            begin = begin,
-            end = end,
-            state = Reservation.CONFIRMED
-        )
-
-        OutlookCalendarReservation.objects.create(
-                            calendar_link=calendar_link,
-                            reservation=respa_reservation,
-                            exchange_id=exchange_id,
-                            exchange_change_key=exchange_change_key,
-                            respa_change_key=SyncHelper.get_respa_change_key(respa_reservation)
-                        )
-
-    @staticmethod
-    def update_respa_reservation(outlook_calendar_reservation, o365_reservation):
-        respa_reservation = outlook_calendar_reservation.reservation
-        respa_reservation.begin = O365Calendar.parse_outlook_datetime(o365_reservation.get('start'))
-        respa_reservation.end = O365Calendar.parse_outlook_datetime(o365_reservation.get('end'))
-        respa_reservation.save()
-        outlook_calendar_reservation.exchange_change_key = o365_reservation.get('changeKey')
-        outlook_calendar_reservation.respa_change_key = SyncHelper.get_respa_change_key(respa_reservation)
-        outlook_calendar_reservation.save()
-
-
-    @staticmethod
-    def get_respa_change_key(reservation):
-        m = str(reservation.modified_at.timestamp())
-        b = str(reservation.begin.timestamp())
-        e = str(reservation.end.timestamp())
-        s = reservation.state
-        return m + b + e + s
-
 class CanSyncCalendars(BasePermission):
     def has_object_permission(self, request, view, obj):
         if isinstance(obj, Resource):
