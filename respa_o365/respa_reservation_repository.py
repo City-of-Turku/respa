@@ -1,12 +1,18 @@
+import logging
 from datetime import datetime, timezone, timedelta
 from functools import reduce
+from sys import exc_info
 from django.conf import settings
+from django.contrib.auth import get_user_model
 
 from resources.models import Reservation
+from respa_o365.models import OutlookCalendarLink
 from respa_o365.reservation_sync_item import model_to_item
 from respa_o365.sync_operations import ChangeType
 
+User = get_user_model()
 
+logger = logging.getLogger(__name__)
 time_format = '%Y-%m-%dT%H:%M:%S.%f%z'
 
 
@@ -18,14 +24,14 @@ class RespaReservations:
 
     def create_item(self, item):
         reservation = Reservation()
-        reservation.resource_id = self.__resource_id
-        reservation.state = Reservation.CONFIRMED
+        reservation.resource_id = self.__resource_id        
         reservation.reserver_email_address = item.reserver_email_address
         reservation.reserver_phone_number = item.reserver_phone_number
         reservation.reserver_name = item.reserver_name
         reservation.begin = item.begin
         reservation.end = item.end
         reservation._from_o365_sync = True
+        reservation.set_state(Reservation.CONFIRMED, None)
         reservation.save()
         return reservation.id, reservation_change_key(item)
 
@@ -45,12 +51,13 @@ class RespaReservations:
         return model_to_item(reservation.first())
 
     def remove_item(self, item_id):
-        reservation = Reservation.objects.filter(id=item_id).first()
-        if not Reservation:
-            return
-        reservation.state = Reservation.CANCELLED
-        reservation._from_o365_sync = True
-        reservation.save()
+        try:
+            reservation = Reservation.objects.filter(id=item_id).first()
+            reservation._from_o365_sync = True
+            reservation.set_state(Reservation.CANCELLED, None)
+            reservation.save()
+        except Exception:
+            logger.error("Unable to cancel reservation {}".format(item_id), exc_info=True)
 
     def get_changes(self, memento=None):
         if memento:

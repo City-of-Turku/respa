@@ -84,7 +84,8 @@ class UserSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
 
         if user.id != instance.id:
-            data.pop('birthdate')
+            del data['birthdate']
+            del data['oid']
         return data
 
 
