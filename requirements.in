@@ -72,7 +72,6 @@ more-itertools
 ntlm-auth
 oauthlib
 packaging
-pandas
 phonenumbers
 Pillow>7.0.0
 pluggy

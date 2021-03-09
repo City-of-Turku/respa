@@ -29,7 +29,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='resource',
             name='timmi_room_id',
-            field=models.PositiveIntegerField(blank=True, null=True, verbose_name='Timmi ID'),
+            field=models.PositiveIntegerField(blank=True, help_text='This field will attempt to auto-fill if room id isn\'t provided.', null=True, verbose_name='Timmi ID'),
+        ),
+        migrations.AddField(
+            model_name='unit',
+            name='timmi_profile_id',
+            field=models.IntegerField(blank=True, null=True, verbose_name='Timmi profile id')
         ),
         migrations.AlterField(
             model_name='cleanresourceid',

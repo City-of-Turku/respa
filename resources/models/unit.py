@@ -119,6 +119,8 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
 
     sms_reminder_delay = models.IntegerField(verbose_name=_('How many hours before reservation the reminder is sent'), default=1,
                                     validators=[MinValueValidator(1), MaxValueValidator(8766)])
+    
+    timmi_profile_id = models.IntegerField(verbose_name=_('Timmi profile id'), null=True, blank=True)
 
     objects = UnitQuerySet.as_manager()
 

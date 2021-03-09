@@ -2,10 +2,11 @@ import pytz
 import requests
 import json
 
+from django.core.exceptions import ValidationError
+from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from requests.auth import HTTPBasicAuth
 from datetime import datetime, timedelta
-
 from resources.models import Reservation
 
 
@@ -26,7 +27,8 @@ class TimmiManager:
         return {
             'BOOKING_ENDPOINT': '{api_base}/bookings/{admin_id}'.format(api_base=settings.TIMMI_API_URL, admin_id=settings.TIMMI_ADMIN_ID),
             'NEW_RESERVATION_ENDPOINT': '{api_base}/cashreceipts/{admin_id}'.format(api_base=settings.TIMMI_API_URL, admin_id=settings.TIMMI_ADMIN_ID),
-            'AVAILABLE_TIMES_ENDPOINT': '{api_base}/cashregisters/{admin_id}'.format(api_base=settings.TIMMI_API_URL, admin_id=settings.TIMMI_ADMIN_ID)
+            'AVAILABLE_TIMES_ENDPOINT': '{api_base}/cashregisters/{admin_id}'.format(api_base=settings.TIMMI_API_URL, admin_id=settings.TIMMI_ADMIN_ID),
+            'ROOMPROFILES_ENDPOINT': '{api_base}/roomprofiles/{admin_id}'.format(api_base=settings.TIMMI_API_URL, admin_id=settings.TIMMI_ADMIN_ID)
         }
 
     def ts_past(self, days):
@@ -46,21 +48,10 @@ class TimmiManager:
         """
 
         endpoint = self.config['NEW_RESERVATION_ENDPOINT']
-        slots = self.get_available_slots(reservation.resource, reservation.begin.isoformat(), reservation.end.isoformat())
+        slots = self.get_available_slots(reservation.resource, reservation.begin, reservation.end)
         if not slots:
             return {}
         for slot in slots:
-            slot['booking'].update({
-                'bookingCustomer': {
-                    'identityCode': '61089',
-                    'firstName': 'Nordea',
-                    'familyName': 'Demo',
-                    'postalAddress': 'Mansikkatie 11',
-                    'postalZipCode': '20006',
-                    'postalCity': 'TURKU'
-                }
-            })
-            """
             slot['booking'].update({
                 'bookingCustomer': {
                     'identityCode': reservation.user.oid,
@@ -71,7 +62,6 @@ class TimmiManager:
                     'postalCity': reservation.billing_address_city
                 }
             })
-            """
 
         payload = {
             'paymentType': 'E',
@@ -159,8 +149,8 @@ class TimmiManager:
         endpoint = self.config['AVAILABLE_TIMES_ENDPOINT']
         response = requests.get(endpoint, headers=headers, timeout=settings.TIMMI_TIMEOUT, auth=self.auth, params={
             'roomPartId': resource.timmi_room_id,
-            'startTime': begin,
-            'endTime': end,
+            'startTime': begin.isoformat(),
+            'endTime': end.isoformat(),
             'duration': resource.min_period.seconds // 60
         })
         if response.status_code == 200:
@@ -183,3 +173,25 @@ class TimmiManager:
             response.data['reservations'] = []
         response.data['reservations'].extend(self.get_reservations(resource))
         return response
+
+    def get_room_part_id(self, resource):
+        if not resource.unit.timmi_profile_id:
+            raise ValidationError({
+                'timmi_room_id': _('Resource Unit does not have timmi profile id set.')
+                })
+        endpoint = '%s/%s' % (self.config['ROOMPROFILES_ENDPOINT'], resource.unit.timmi_profile_id)
+        response = requests.get(endpoint, headers=headers, timeout=settings.TIMMI_TIMEOUT, auth=self.auth, params={
+            'includeRoomParts': True
+        })
+        if response.status_code == 200:
+            data = json.loads(response.content.decode())
+            room = next((x for x in data['roomPart'] if x['name'] == resource.name), None)
+            if not room:
+                raise ValidationError({
+                    'timmi_room_id': _('No ID found with resource name, make sure the resource name is identical.')
+                })
+            resource.timmi_room_id = room['id']
+            return
+        raise ValidationError({
+            'timmi_room_id': _('Failed to fetch roompart id for resource, returned status: %s' % response.status_code)
+        })
