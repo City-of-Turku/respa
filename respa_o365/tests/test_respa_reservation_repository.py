@@ -3,7 +3,7 @@ import pytest
 from datetime import  timedelta
 from resources.models import Reservation, ResourceType, Resource, Unit, TermsOfUse
 from respa_o365.reservation_sync_item import ReservationSyncItem
-from respa_o365.reservation_sync_operations import ChangeType
+from respa_o365.sync_operations import ChangeType
 from respa_o365.respa_reservation_repository import RespaReservations
 from respa_o365.reservation_repository_contract import ReservationRepositoryContract
 

@@ -1,0 +1,54 @@
+name: Respa latest CI
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    runs-on: [ ubuntu-latest ]
+    strategy:
+      matrix:
+        python-version: ["3.6"]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install postgresql postgis postgresql-13-postgis-3-scripts libpq-dev gettext
+          sudo service postgresql start
+          sudo -u postgres createuser runner --superuser -w
+          sudo -u postgres psql -d template1 -c "create extension hstore;"
+          sudo -u postgres createdb respa -O runner
+          sudo -u postgres psql -d respa -c "create extension postgis;"
+      - name: Install requirements
+        run: |
+          pip install virtualenv
+          virtualenv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+      - name: Apply migrations
+        run: |
+          source venv/bin/activate
+          python manage.py migrate
+        env:
+          DATABASE_USER: runner
+      - name: Compile translations
+        run: |
+          source venv/bin/activate
+          python manage.py compilemessages --locale en --locale fi --locale sv
+      - name: Run tests
+        run: |
+          source venv/bin/activate
+          pytest --cov . --doctest-modules
+        env:
+          DATABASE_USER: runner

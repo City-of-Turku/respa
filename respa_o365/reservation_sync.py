@@ -1,8 +1,8 @@
 import logging
 
 from respa_o365.id_mapper import IdMapper
-from respa_o365.reservation_sync_operations import ChangeType, SyncActionVisitor, TargetSystem, \
-    operations_for_reservation_sync
+from respa_o365.sync_operations import ChangeType, SyncActionVisitor, TargetSystem, \
+    SyncOperations, reservationSyncActions
 
 
 class SyncItemRepository:
@@ -108,12 +108,17 @@ class ChangeKeyWrapper(SyncItemRepository):
 
 class ReservationSync:
 
-    def __init__(self, respa, remote, respa_memento=None, remote_memento=None, id_mapper=None, respa_change_keys={}, remote_change_keys={}):
+    def __init__(self, respa, remote, respa_memento=None, remote_memento=None, id_mapper=None, respa_change_keys={}, remote_change_keys={}, 
+            sync_actions=None):
         self.__respa = ChangeKeyWrapper(respa, respa_change_keys)
         self.__remote = ChangeKeyWrapper(remote, remote_change_keys)
         self.__id_map = IdMapper() if not id_mapper else id_mapper
         self.__respa_memento = respa_memento
         self.__remote_memento = remote_memento
+        if sync_actions is not None:
+            self._sync_actions = sync_actions
+        else:
+            self._sync_actions = reservationSyncActions
 
 
     def sync(self, respa_statuses, remote_statuses):
@@ -152,7 +157,8 @@ class ReservationSync:
             respa_id = self.__id_map.reverse.get(remote_id, None)
             changes.add(build_status_pair(respa_id, remote_id))
 
-        ops = operations_for_reservation_sync(changes)
+        
+        ops = SyncOperations(changes, self._sync_actions).get_sync_operations()
 
         visitor = OpVisitor(self.__respa, self.__remote, self.__id_map)
         for op in ops:

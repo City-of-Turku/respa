@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from copy import copy
 from datetime import datetime, timezone, timedelta
 from functools import reduce
@@ -8,7 +9,7 @@ import pytz
 from django.conf import settings
 from requests_oauthlib import OAuth2Session
 
-from respa_o365.reservation_sync_operations import ChangeType
+from respa_o365.sync_operations import ChangeType
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,9 @@ class O365Calendar:
         timestamp = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S.%f")
         return pytz.timezone(timezone_str).localize(timestamp)
 
+    def event_prefix_matches(self, s):
+        return self._event_prefix is None or s is not None and re.match(self._event_prefix, s, re.I)
+
     def get_events(self):
         url = self._get_events_list_url()
         result = {}
@@ -72,7 +76,7 @@ class O365Calendar:
             for event in events:
                 event_id = event.get("id")
                 e = self.json_to_event(event)
-                if self._event_prefix is None or e.subject is not None and e.subject.startswith(self._event_prefix):
+                if self.event_prefix_matches(e.subject):
                     result[event_id] = e
         return result
 
@@ -103,7 +107,7 @@ class O365Calendar:
         if not json:
             return None
         event = self.json_to_event(json)
-        if self._event_prefix is None or event.subject.startswith(self._event_prefix):
+        if self.event_prefix_matches(event.subject):
             return event
         else:
             return None

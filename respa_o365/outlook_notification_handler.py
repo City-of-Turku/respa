@@ -1,6 +1,7 @@
 import json
 import logging
 
+from django.conf import settings
 from django.db import Error
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
@@ -10,8 +11,6 @@ from django.views.decorators.csrf import csrf_exempt
 from respa_o365.calendar_sync import perform_sync_to_exchange
 from respa_o365.models import OutlookCalendarLink, OutlookCalendarReservation
 from respa_o365.o365_calendar import MicrosoftApi, O365Calendar
-from respa_o365.o365_reservation_repository import O365ReservationRepository
-from respa_o365.reservation_sync_operations import ChangeType
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +57,7 @@ class NotificationCallback(View):
                 mapping = OutlookCalendarReservation.objects.filter(exchange_id=exchange_id).first()
                 if mapping:
                     api = MicrosoftApi(link.token)
-                    cal = O365Calendar(microsoft_api=api, event_prefix="Varaus Varaamo")
+                    cal = O365Calendar(microsoft_api=api, event_prefix=settings.O365_CALENDAR_RESERVATION_EVENT_PREFIX)
                     item = cal.get_event(exchange_id)
                     if item and item.change_key() == mapping.exchange_change_key:
                         continue

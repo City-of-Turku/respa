@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from soupsieve.css_parser import COMMENTS
+from django.conf import settings
 from respa_o365.o365_calendar import Event
 from respa_o365.reservation_sync import SyncItemRepository
 from respa_o365.reservation_sync_item import ReservationSyncItem
@@ -12,7 +13,7 @@ class O365ReservationRepository(SyncItemRepository):
         e = Event()
         e.begin = item.begin
         e.end = item.end
-        e.subject = "Varaus Varaamo"
+        e.subject = settings.O365_CALENDAR_RESERVATION_EVENT_PREFIX
         e.body = format_reserver_info(item)
         return self._o365_calendar.create_event(e)
 
@@ -20,7 +21,7 @@ class O365ReservationRepository(SyncItemRepository):
         e = self._o365_calendar.get_event(item_id)
         e.begin = item.begin
         e.end = item.end
-        e.subject = "Varaus Varaamo"
+        e.subject = settings.O365_CALENDAR_RESERVATION_EVENT_PREFIX
         e.body = format_reserver_info(item)
         return self._o365_calendar.update_event(item_id, e)
 

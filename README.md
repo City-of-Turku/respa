@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.com/codepointtku/respaTku.svg?branch=master)](https://travis-ci.com/codepointtku/respa)
+[![Travis CI](https://travis-ci.com/codepointtku/respaTku.svg?branch=master)](https://travis-ci.com/codepointtku/respa)
+[![GitHub Actions](https://github.com/codepointtku/respa/actions/workflows/respa.yml/badge.svg?branch=develop)](https://github.com/codepointtku/respa/actions/workflows/respa.yml)
 [![codecov](https://codecov.io/gh/codepointtku/respa/branch/develop/graph/badge.svg)](https://codecov.io/gh/codepointtku/respa)
 [![Requirements Status](https://requires.io/github/codepointtku/respa/requirements.svg?branch=develop)](https://requires.io/github/codepointtku/respa/requirements/?branch=develop)
 
