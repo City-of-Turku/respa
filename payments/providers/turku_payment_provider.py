@@ -7,7 +7,6 @@ from hashlib import sha256, md5
 from datetime import datetime
 import pytz
 
-from allauth.socialaccount.models import SocialAccount
 from django.utils.translation import gettext_lazy as _
 
 from ..models import Order, OrderLine
@@ -62,12 +61,12 @@ class TurkuPaymentProvider(PaymentProvider):
 
         timezone = pytz.timezone('UTC')
         timestamp = str(datetime.now(tz=timezone).strftime('%Y-%m-%dT%H:%M:%SZ'))
+        user_oid = order.reservation.user.oid
 
         headers = {
             'X-TURKU-SP': self.config.get(RESPA_PAYMENTS_TURKU_API_APP_NAME),
             'X-TURKU-TS': timestamp,
-            # TODO: handle OID
-            'X-TURKU-OID': '%s' % 99766,
+            'X-TURKU-OID': '%s' % user_oid,
             'X-MERCHANT-ID': 'TURKU',
             'Authorization': self.create_auth_header(timestamp, payload)
         }
