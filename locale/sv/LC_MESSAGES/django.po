@@ -1740,3 +1740,9 @@ msgstr "Mallgrupp"
 
 msgid "Notification template groups"
 msgstr "Mallgrupper"
+
+msgid "Payment service is unreachable"
+msgstr "Betalningstjänsten är inte tillgänglig"
+
+msgid "Failed to initiate payment process"
+msgstr "Betalningsprocessens initiering misslyckades"
