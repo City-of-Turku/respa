@@ -29,16 +29,3 @@ class OutlookCalendarLinkViewSet(viewsets.ModelViewSet):
 
             return queryset
         return OutlookCalendarLink.objects.none()
-
-    def perform_destroy(self, instance):
-        # Clear outlook
-        token = instance.token
-        api = MicrosoftApi(token)
-        notifications = O365Notifications(microsoft_api=api)
-        notifications.delete(instance.exchange_subscription_id)
-        cal = O365Calendar(microsoft_api=api)
-        mappings = OutlookCalendarReservation.objects.filter(calendar_link_id=instance.id)
-        for m in mappings:
-            cal.remove_event(m.exchange_id)
-        mappings.delete()
-        super().perform_destroy(instance)
