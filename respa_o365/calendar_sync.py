@@ -128,7 +128,8 @@ def ensure_notification(link):
     sub_id, created = subscriptions.ensureNotifications(notification_url=url,
                                                         resource="/me/events",
                                                         events=["updated", "deleted", "created"],
-                                                        client_state=random_secret
+                                                        client_state=random_secret,
+                                                        subscription_id=link.exchange_subscription_id
                                                         )
     if created:
         link.exchange_subscription_id = sub_id

@@ -27,8 +27,8 @@ url = "https://fgno8xsw1i.execute-api.eu-north-1.amazonaws.com/v1/o365/notificat
 def test__ensure_notification():
     s = O365Notifications(create_api())
     clear_all_subscriptions()
-    id1, created1 = s.ensureNotifications(notification_url=url, resource="me/events", events=["updated", "deleted", "created"], client_state="tila1")
-    id2, created2 = s.ensureNotifications(notification_url=url, resource="me/events", events=["updated", "deleted", "created"], client_state="tila1")
+    id1, created1 = s.ensureNotifications(notification_url=url, resource="me/events", events=["updated", "deleted", "created"], client_state="tila1", subscription_id=None)
+    id2, created2 = s.ensureNotifications(notification_url=url, resource="me/events", events=["updated", "deleted", "created"], client_state="tila1", subscription_id=None)
     assert id1 == id2
     assert created1
     assert not created2

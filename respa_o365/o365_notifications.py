@@ -50,13 +50,14 @@ class O365Notifications:
         if result == 201:
             raise SubscriptionError(result)
 
-    def ensureNotifications(self, notification_url, resource, events, client_state):
+    def ensureNotifications(self, notification_url, resource, events, client_state, subscription_id):
         subscriptions = self.list()
         key = None
         for s in subscriptions:
             if s.get("resource") == resource and s.get("notificationUrl"):
-                if not key:
-                    key = s.get("id")
+                id = s.get("id")
+                if not key and id == subscription_id:
+                    key = id
                     self.renew(key)
                 else:
                     self.delete(s.get("id"))
