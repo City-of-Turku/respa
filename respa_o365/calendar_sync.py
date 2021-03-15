@@ -136,16 +136,3 @@ def ensure_notification(link):
         link.exchange_subscription_secret = random_secret
         link.save()
 
-
-class EventSync(APIView):
-
-    def get(self, request):
-        #url = "https://qe6kl3acqa.execute-api.eu-north-1.amazonaws.com/v1/o365/notification_callback"
-
-        calendar_links = OutlookCalendarLink.objects.select_for_update().all()
-        for link in calendar_links:
-            logger.info("Synchronising user %d resource %s", link.user_id, link.resource_id)
-            perform_sync_to_exchange(link, lambda sync: sync.sync_all())
-            ensure_notification(link)
-
-        return Response("OK")
