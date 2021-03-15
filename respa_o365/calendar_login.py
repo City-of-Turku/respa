@@ -69,9 +69,9 @@ class LoginCallBackView(APIView):
             logger.error("Stored data does not exist for state.")
             return Response(data="Invalid state.", status=status.HTTP_400_BAD_REQUEST)
 
-        if OutlookCalendarLink.objects.filter(resource=stored_data.resource, user=stored_data.user).exists():
+        if OutlookCalendarLink.objects.filter(resource=stored_data.resource).exists():
             # Link already exists
-            logger.warn("Already linked user {} resource {}.".format(stored_data.user, stored_data.resource))
+            logger.warn("Already linked resource {}.".format(stored_data.resource))
             return HttpResponseRedirect(redirect_to=stored_data.return_to)
 
         url = request.build_absolute_uri(request.get_full_path())

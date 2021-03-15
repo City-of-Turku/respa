@@ -1,4 +1,6 @@
+from resources.models.resource import Resource
 from django.shortcuts import render
+from rest_framework.response import Response
 
 from respa_o365.o365_calendar import MicrosoftApi, O365Calendar
 from respa_o365.o365_notifications import O365Notifications
@@ -29,3 +31,29 @@ class OutlookCalendarLinkViewSet(viewsets.ModelViewSet):
 
             return queryset
         return OutlookCalendarLink.objects.none()
+
+    def list(self, request, *args, **kwargs):
+        resource_id = request.query_params.get('resource_id', None)
+        if resource_id is None:
+            return super().list(self, request, *args, **kwargs)
+        
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+
+        try:
+            resource = Resource.objects.get(pk=resource_id)
+            link_exists = False
+            has_permission = resource.is_manager(request.user) or resource.is_admin(request.user)
+            if has_permission:
+                link_exists = OutlookCalendarLink.objects.all().filter(resource=resource_id).exists()
+            can_create = has_permission and not link_exists
+        except:
+            can_create = False
+
+        data = {
+            'results': serializer.data,
+            'can_create': can_create
+        }
+
+        return Response(data)
+  
