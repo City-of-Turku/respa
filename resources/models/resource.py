@@ -793,7 +793,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
         return result_municipalities
 
     def clean(self):
-        from resources.timmi.manager import TimmiManager
+        from resources.timmi import TimmiManager
         if self.cooldown is None:
             self.cooldown = datetime.timedelta(0)
         if self.min_price is not None and self.max_price is not None and self.min_price > self.max_price:

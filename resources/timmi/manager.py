@@ -9,6 +9,8 @@ from requests.auth import HTTPBasicAuth
 from datetime import datetime, timedelta
 from resources.models import Reservation
 
+from .exceptions import InvalidStatusCodeException
+
 
 tz = pytz.timezone(settings.TIME_ZONE)
 
@@ -68,10 +70,12 @@ class TimmiManager:
             'cashProduct': slots
         }
         response = requests.post(endpoint, headers=headers, timeout=settings.TIMMI_TIMEOUT, auth=self.auth, json=payload)
-        if response.status_code == 201:
-            data = json.loads(response.content.decode())
-            return data
-        return {}
+
+        if response.status_code != 201:
+            raise InvalidStatusCodeException()
+
+        data = json.loads(response.content.decode())
+        return data
 
     def confirm_reservation(self, reservation, payload, **kwargs):
         """Confirm reservation with Timmi after the payment.
@@ -90,14 +94,14 @@ class TimmiManager:
         endpoint = self.config['NEW_RESERVATION_ENDPOINT']
         payload['paymentType'] = 'W'
         response = requests.post(endpoint, headers=headers, timeout=settings.TIMMI_TIMEOUT, auth=self.auth, json=payload)
-        if response.status_code == 201:
-            data = json.loads(response.content.decode())
-            reservation.timmi_id = data['id']
-            reservation.timmi_receipt = data['formattedReceipt']
-        return {
-            'reservation': reservation,
-            'status_code': response.status_code
-        }
+
+        if response.status_code != 201:
+            raise InvalidStatusCodeException()
+
+        data = json.loads(response.content.decode())
+        reservation.timmi_id = data['id']
+        reservation.timmi_receipt = data['formattedReceipt']
+        return reservation
 
     def get_reservations(self, resource, begin=None, end=None):
         """Get reservations from the Timmi API
@@ -120,13 +124,14 @@ class TimmiManager:
             'startTime': self.ts_past(1).isoformat() if not begin else begin.isoformat(),
             'endTime': self.ts_future(30).isoformat() if not end else end.isoformat()
         })
-        if response.status_code == 200:
-            data = json.loads(response.content.decode())
-            ret = []
-            for booking in data['list']:
-                ret.append(self._clean(booking))
-            return ret
-        return []
+        if response.status_code != 200:
+            raise InvalidStatusCodeException()
+
+        data = json.loads(response.content.decode())
+        ret = []
+        for booking in data['list']:
+            ret.append(self._clean(booking))
+        return ret
     
     def _clean(self, booking):
         return {
@@ -153,10 +158,11 @@ class TimmiManager:
             'endTime': end.isoformat(),
             'duration': resource.min_period.seconds // 60
         })
-        if response.status_code == 200:
-            data = json.loads(response.content.decode())
-            return data['cashProduct']
-        return []
+        if response.status_code != 200:
+            raise InvalidStatusCodeException()
+
+        data = json.loads(response.content.decode())
+        return data['cashProduct']
 
     def bind(self, resource, response):
         """Extend resource api response with Timmi reservations
@@ -183,15 +189,15 @@ class TimmiManager:
         response = requests.get(endpoint, headers=headers, timeout=settings.TIMMI_TIMEOUT, auth=self.auth, params={
             'includeRoomParts': True
         })
-        if response.status_code == 200:
-            data = json.loads(response.content.decode())
-            room = next((x for x in data['roomPart'] if x['name'] == resource.name), None)
-            if not room:
-                raise ValidationError({
-                    'timmi_room_id': _('No ID found with resource name, make sure the resource name is identical.')
-                })
-            resource.timmi_room_id = room['id']
-            return
-        raise ValidationError({
-            'timmi_room_id': _('Failed to fetch roompart id for resource, returned status: %s' % response.status_code)
-        })
+        if response.status_code != 200:
+            raise ValidationError({
+                'timmi_room_id': _('Failed to fetch roompart id for resource, returned status: %s' % response.status_code)
+            })
+
+        data = json.loads(response.content.decode())
+        room = next((x for x in data['roomPart'] if x['name'] == resource.name), None)
+        if not room:
+            raise ValidationError({
+                'timmi_room_id': _('No ID found with resource name, make sure the resource name is identical.')
+            })
+        resource.timmi_room_id = room['id']

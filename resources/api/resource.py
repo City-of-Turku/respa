@@ -883,7 +883,7 @@ class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.RetrieveModelMixin,
         return self._set_favorite(request, False)
     
     def retrieve(self, request, *args, **kwargs):
-        from ..timmi.manager import TimmiManager
+        from resources.timmi import TimmiManager
         resource = self.get_object()
         response = super().retrieve(request, *args, **kwargs)
         if resource.timmi_resource:

@@ -20,6 +20,7 @@ from ..exceptions import (
     UnknownReturnCodeError
 )
 
+from resources.timmi import TimmiManager
 
 # Keys the provider expects to find in the config
 RESPA_PAYMENTS_TURKU_API_URL = 'RESPA_PAYMENTS_TURKU_API_URL'
@@ -42,6 +43,8 @@ class TurkuPaymentProvider(PaymentProvider):
 
     def initiate_payment(self, order) -> str:
         """Initiate payment by constructing the payload with necessary items"""
+        self.timmi_payload = TimmiManager().create_reservation(order.reservation)
+
         payload = {
             'orderNumber': str(order.order_number),
             'currency': 'EUR',
@@ -173,6 +176,9 @@ class TurkuPaymentProvider(PaymentProvider):
             return self.ui_redirect_failure()
 
         logger.debug('Payment completed successfully.')
+
+        TimmiManager().confirm_reservation(order.reservation, self.timmi_payload)
+
         try:
             order.set_state(Order.CONFIRMED, 'Payment succeeded in MaksuPalvelu success request.')
             return self.ui_redirect_success(order)
