@@ -19,7 +19,7 @@ database-sanitizer>=0.4.0
 defusedxml
 Delorean
 Django==2.2.16
-django-admin-json-editor==0.2.2
+django-admin-json-editor==0.2.3
 django-allauth
 django-anymail
 django-appconf
