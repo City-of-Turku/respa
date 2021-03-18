@@ -10,6 +10,7 @@ class ReservationSyncItem:
         self.reserver_name = ""
         self.reserver_email_address = ""
         self.reserver_phone_number = ""
+        self.comments = ""
 
     def __eq__(self, other):
         """Action is equal when internal fields are equal"""
@@ -41,4 +42,6 @@ def model_to_item(reservation_model):
         item.reserver_email_address = reservation_model.reserver_email_address
 
     item.reserver_phone_number = reservation_model.reserver_phone_number
+    item.comments = reservation_model.comments
+    
     return item

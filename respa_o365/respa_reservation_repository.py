@@ -28,6 +28,7 @@ class RespaReservations:
         reservation.reserver_email_address = item.reserver_email_address
         reservation.reserver_phone_number = item.reserver_phone_number
         reservation.reserver_name = item.reserver_name
+        reservation.comments = item.comments
         reservation.begin = item.begin
         reservation.end = item.end
         reservation._from_o365_sync = True
