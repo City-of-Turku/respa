@@ -209,14 +209,14 @@ class TurkuPaymentProvider(PaymentProvider):
         logger.debug('Handling MaksuPalvelu notify request, params: {}.'.format(request.GET))
 
         if not self.check_new_payment_authcode(request):
-            return HttpResponse(status=204)
+            return HttpResponse(status=200)
 
         try:
             order = Order.objects.get(order_number=request.GET['ORDER_NUMBER'])
         except Order.DoesNotExist:
             # Target order might be deleted after posting but before the notify arrives
             logger.warning('Notify: Order does not exist.')
-            return HttpResponse(status=204)
+            return HttpResponse(status=200)
 
         if request.GET.get('PAID'):
             logger.debug('Notify: Payment completed successfully.')
@@ -231,7 +231,7 @@ class TurkuPaymentProvider(PaymentProvider):
             except OrderStateTransitionError as oste:
                 logger.warning(oste)
 
-        return HttpResponse(status=204)
+        return HttpResponse(status=200)
 
 
     def check_new_payment_authcode(self, request):
