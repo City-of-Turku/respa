@@ -31,4 +31,10 @@ class RespaO365Config(AppConfig):
             dispatch_uid='respa-o365-period-delete'
         )
 
+        from respa_o365.django_signal_handlers import handle_calendar_link_delete
+        pre_delete.connect(
+            handle_calendar_link_delete,
+            sender='respa_o365.OutlookCalendarLink'
+        )
+
     
