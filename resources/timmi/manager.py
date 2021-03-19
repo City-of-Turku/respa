@@ -11,6 +11,9 @@ from resources.models import Reservation
 
 from .exceptions import InvalidStatusCodeException
 
+HTTP_OK = 200
+HTTP_NOT_FOUND = 404
+HTTP_CREATED = 201
 
 tz = pytz.timezone(settings.TIME_ZONE)
 
@@ -121,13 +124,13 @@ class TimmiManager:
             'startTime': self.ts_past(1).isoformat() if not begin else begin.isoformat(),
             'endTime': self.ts_future(30).isoformat() if not end else end.isoformat()
         })
-        if response.status_code != 200:
+        if response.status_code not in (HTTP_OK, HTTP_NOT_FOUND):
             raise InvalidStatusCodeException("Invalid status code: %u" % response.status_code)
-
-        data = json.loads(response.content.decode())
         ret = []
-        for booking in data['list']:
-            ret.append(self._clean(booking))
+        if response.status_code == 200:
+            data = json.loads(response.content.decode())
+            for booking in data['list']:
+                ret.append(self._clean(booking))
         return ret
     
     def _clean(self, booking):
