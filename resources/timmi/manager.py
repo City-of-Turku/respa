@@ -72,7 +72,7 @@ class TimmiManager:
         response = requests.post(endpoint, headers=headers, timeout=settings.TIMMI_TIMEOUT, auth=self.auth, json=payload)
 
         if response.status_code != 201:
-            raise InvalidStatusCodeException()
+            raise InvalidStatusCodeException("Invalid status code: %u" % response.status_code)
 
         data = json.loads(response.content.decode())
         return data
@@ -85,10 +85,7 @@ class TimmiManager:
             payload ([dict]): [Request response from Timmi.]
 
         Returns:
-            [dict]: [{
-                'reservation': Reservation instance,
-                'status_code': Request response status code
-            }]
+            [Reservation]: Modified reservation.
         """
 
         endpoint = self.config['NEW_RESERVATION_ENDPOINT']
@@ -96,7 +93,7 @@ class TimmiManager:
         response = requests.post(endpoint, headers=headers, timeout=settings.TIMMI_TIMEOUT, auth=self.auth, json=payload)
 
         if response.status_code != 201:
-            raise InvalidStatusCodeException()
+            raise InvalidStatusCodeException("Invalid status code: %u" % response.status_code)
 
         data = json.loads(response.content.decode())
         reservation.timmi_id = data['id']
@@ -125,7 +122,7 @@ class TimmiManager:
             'endTime': self.ts_future(30).isoformat() if not end else end.isoformat()
         })
         if response.status_code != 200:
-            raise InvalidStatusCodeException()
+            raise InvalidStatusCodeException("Invalid status code: %u" % response.status_code)
 
         data = json.loads(response.content.decode())
         ret = []
@@ -159,7 +156,7 @@ class TimmiManager:
             'duration': resource.min_period.seconds // 60
         })
         if response.status_code != 200:
-            raise InvalidStatusCodeException()
+            raise InvalidStatusCodeException("Invalid status code: %u" % response.status_code)
 
         data = json.loads(response.content.decode())
         return data['cashProduct']
