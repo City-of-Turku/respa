@@ -24,10 +24,11 @@ headers = {
   'From': settings.SERVER_EMAIL
 }
 class TimmiManager:
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.auth = HTTPBasicAuth(settings.TIMMI_USERNAME, settings.TIMMI_PASSWORD)
         self.config = self.get_config()
-
+        self.request = kwargs.get('request', None)
+ 
     def get_config(self):
         return {
             'BOOKING_ENDPOINT': '{api_base}/bookings/{admin_id}'.format(api_base=settings.TIMMI_API_URL, admin_id=settings.TIMMI_ADMIN_ID),
@@ -118,12 +119,17 @@ class TimmiManager:
             }]
         """
 
+        if self.request:
+            begin = self.request.GET.get('start', self.ts_past(1)) if not begin else begin
+            end = self.request.GET.get('end', self.ts_future(30)) if not end else end
+
         endpoint = self.config['BOOKING_ENDPOINT']
         response = requests.get(endpoint, headers=headers, timeout=settings.TIMMI_TIMEOUT, auth=self.auth, params={
             'roomPartId': resource.timmi_room_id,
-            'startTime': self.ts_past(1).isoformat() if not begin else begin.isoformat(),
-            'endTime': self.ts_future(30).isoformat() if not end else end.isoformat()
+            'startTime': begin.isoformat() if not isinstance(begin, str) else begin,
+            'endTime': end.isoformat() if not isinstance(end, str) else end
         })
+
         if response.status_code not in (HTTP_OK, HTTP_NOT_FOUND):
             raise InvalidStatusCodeException("Invalid status code: %u" % response.status_code)
         ret = []
