@@ -93,6 +93,7 @@ env = environ.Env(
     O365_CALENDAR_RESERVATION_EVENT_PREFIX=(str, "Varaus Varaamo"),
     TIMMI_API_URL=(str, ''),
     TIMMI_ADMIN_ID=(int, 0),
+    TIMMI_TIMEOUT=(int, 60),
     TIMMI_USERNAME=(str, ''), #base64 encoded username
     TIMMI_PASSWORD=(str, '') #base64 encoded password
 )
@@ -131,7 +132,7 @@ TIMMI_API_URL = env('TIMMI_API_URL')
 TIMMI_ADMIN_ID = env('TIMMI_ADMIN_ID')
 TIMMI_USERNAME = env('TIMMI_USERNAME')
 TIMMI_PASSWORD = env('TIMMI_PASSWORD')
-TIMMI_TIMEOUT = 5
+TIMMI_TIMEOUT = env('TIMMI_TIMEOUT')
 
 # Application definition
 INSTALLED_APPS = [
