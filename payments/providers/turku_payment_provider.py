@@ -184,7 +184,7 @@ class TurkuPaymentProvider(PaymentProvider):
 
         try:
             order.set_state(Order.CONFIRMED, 'Payment succeeded in MaksuPalvelu success request.')
-            if order.reservation.reservation.timmi_resource:
+            if order.reservation.resource.timmi_resource:
                 timmi_payload = TimmiPayload.objects.get(order=order)
                 logger.debug('Confirming reservation with Timmi API.')
                 TimmiManager().confirm_reservation(order.reservation, timmi_payload.payload).save()
