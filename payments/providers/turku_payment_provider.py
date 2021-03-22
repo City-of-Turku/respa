@@ -21,6 +21,7 @@ from ..exceptions import (
 )
 
 from resources.timmi import TimmiManager
+from resources.models import TimmiPayload
 
 # Keys the provider expects to find in the config
 RESPA_PAYMENTS_TURKU_API_URL = 'RESPA_PAYMENTS_TURKU_API_URL'
@@ -43,20 +44,24 @@ class TurkuPaymentProvider(PaymentProvider):
 
     def initiate_payment(self, order) -> str:
         """Initiate payment by constructing the payload with necessary items"""
-        self.timmi_payload = TimmiManager().create_reservation(order.reservation)
+        if order.reservation.resource.timmi_resource:
+            logger.debug("Creating reservation with Timmi API")
+            timmi_payload = TimmiManager().create_reservation(order.reservation)
+            timmi = TimmiPayload(order=order)
+            timmi.save(payload=timmi_payload)
 
         payload = {
             'orderNumber': str(order.order_number),
             'currency': 'EUR',
             'locale': self.get_order_locale(order),
-            "urlSet": {
-                "success": self.get_success_url(),
-                "failure": self.get_failure_url(),
-                "pending": "",
-                "notification": self.get_notify_url()
+            'urlSet': {
+                'success': self.get_success_url(),
+                'failure': self.get_failure_url(),
+                'pending': '',
+                'notification': self.get_notify_url()
             },
-            "orderDetails": {
-                "includeVat": "0",
+            'orderDetails': {
+                'includeVat': '0',
             }
         }
         self.payload_add_customer(payload, order)
@@ -122,17 +127,17 @@ class TurkuPaymentProvider(PaymentProvider):
         """Attach customer data to payload"""
         reservation = order.reservation
         contact = {
-            "telephone": reservation.billing_phone_number,
-            "mobile": reservation.billing_phone_number,
+            'telephone': reservation.billing_phone_number,
+            'mobile': reservation.billing_phone_number,
             'email': reservation.billing_email_address,
             'firstName': reservation.billing_first_name,
             'lastName': reservation.billing_last_name,
-            "companyName": "",
-            "address": {
+            'companyName': '',
+            'address': {
                 'street': reservation.billing_address_street,
                 'postalCode': reservation.billing_address_zip,
                 'postalOffice': reservation.billing_address_city,
-                "country": "FI"
+                'country': 'FI'
             }
         }
         payload['orderDetails']['contact'] = contact
@@ -151,12 +156,12 @@ class TurkuPaymentProvider(PaymentProvider):
             items.append({
                 'title': product.name,
                 'code': product.sku,
-                "sapCode": product.sap_code,
+                'sapCode': product.sap_code,
                 'amount': str(order_line.quantity),
                 'price':  str(round_price(product.get_pretax_price_for_reservation(reservation))),
                 'vat': str(int_tax),
-                "discount": "0.00",
-                'type': "1"
+                'discount': '0.00',
+                'type': '1'
             })
         payload['orderDetails']['products'] = items
 
@@ -177,10 +182,13 @@ class TurkuPaymentProvider(PaymentProvider):
 
         logger.debug('Payment completed successfully.')
 
-        TimmiManager().confirm_reservation(order.reservation, self.timmi_payload)
-
         try:
             order.set_state(Order.CONFIRMED, 'Payment succeeded in MaksuPalvelu success request.')
+            if order.reservation.reservation.timmi_resource:
+                timmi_payload = TimmiPayload.objects.get(order=order)
+                logger.debug('Confirming reservation with Timmi API.')
+                TimmiManager().confirm_reservation(order.reservation, timmi_payload.payload).save()
+                timmi_payload.delete()
             return self.ui_redirect_success(order)
         except OrderStateTransitionError as oste:
             logger.warning(oste)

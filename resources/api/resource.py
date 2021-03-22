@@ -886,8 +886,6 @@ class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.RetrieveModelMixin,
         from resources.timmi import TimmiManager
         resource = self.get_object()
         response = super().retrieve(request, *args, **kwargs)
-        print("retrieve(): %s" % str(resource))
-        print("is timmi: %s" % resource.timmi_resource)
         if resource.timmi_resource:
             timmi = TimmiManager(request=request)
             try:
