@@ -1,7 +1,6 @@
 import pytest
 from django.urls import reverse
 from django.test.utils import override_settings
-from django.conf import settings
 
 from users.models import User
 
@@ -9,10 +8,10 @@ login_url = reverse('respa_admin:login')
 tunnistamo_login_url = reverse('respa_admin:tunnistamo-login')
 
 @pytest.mark.django_db
-def test_tunnistamo_login_redirects_to_provider_login(client):
+def test_tunnistamo_login_redirects_to_helsinki_login(client):
     response = client.get(tunnistamo_login_url)
     assert response.status_code == 302
-    assert response.url == settings.RESPA_PROVIDER_LOGIN_URL
+    assert response.url == '/accounts/helsinki/login/'
 
 @pytest.mark.django_db
 def test_tunnistamo_login_preserves_next(client):
