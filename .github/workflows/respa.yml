@@ -52,3 +52,4 @@ jobs:
           pytest --cov . --doctest-modules
         env:
           DATABASE_USER: runner
+          DJANGO_SETTINGS_MODULE: test_settings
