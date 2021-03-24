@@ -24,7 +24,7 @@ django-allauth
 django-anymail
 django-appconf
 django-cors-headers
-django-enumfields
+django-enumfields==2.1.1
 django-environ
 django-filter>=2.4.0
 django-grappelli
