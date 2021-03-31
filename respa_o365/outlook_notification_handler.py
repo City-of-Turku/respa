@@ -8,7 +8,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from respa_o365.calendar_sync import perform_sync_to_exchange
+from respa_o365.calendar_sync import add_to_queue
 from respa_o365.models import OutlookCalendarLink, OutlookCalendarReservation
 from respa_o365.o365_calendar import MicrosoftApi, O365Calendar
 
@@ -49,7 +49,7 @@ class NotificationCallback(View):
             for notification in notifications:
                 sub_id = notification.get("subscriptionId")
                 exchange_id = notification.get("resourceData").get("id")
-                link = OutlookCalendarLink.objects.select_for_update().filter(exchange_subscription_id=sub_id).first()
+                link = OutlookCalendarLink.objects.filter(exchange_subscription_id=sub_id).first()
                 if not link or link.exchange_subscription_secret != notification.get("clientState"):
                     logger.warning("Received notification from subscription %s not connected to any calendar link.", sub_id)
                     continue
@@ -64,11 +64,11 @@ class NotificationCallback(View):
 
                 logger.info("Handling notifications from subscription %s. Syncing resource %s for user %d",
                                 sub_id, link.resource_id, link.user_id)
-                perform_sync_to_exchange(link, lambda s: s.sync_all())
+                add_to_queue(link)
 
 
         except Error as e:
-            logger.warning("Notification handling failed", e)
+            logger.warning("Notification handling failed: %s", str(e))
         return HttpResponse(status=202)
 
 

@@ -43,3 +43,10 @@ class OutlookCalendarAvailability(models.Model):
     exchange_id = models.TextField(verbose_name=_('Exchange ID'), unique=True)
     exchange_change_key = models.TextField(verbose_name=_('Exchange Change Key'))
     respa_change_key = models.TextField(verbose_name=_('Respa Change Key'))
+
+class OutlookSyncQueue(models.Model):
+    calendar_link = models.ForeignKey('OutlookCalendarLink', verbose_name=_('Calendar Link'),
+                    blank=False, null=False, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(verbose_name=_('Time of creation'), auto_now_add=True)
+
+    

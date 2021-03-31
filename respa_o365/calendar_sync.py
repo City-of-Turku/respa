@@ -1,5 +1,7 @@
 import logging
 import json
+
+from django.db import transaction, DatabaseError
 from respa_o365.respa_availabilility_repository import RespaAvailabilityRepository
 from respa_o365.o365_availability_repository import O365AvailabilityRepository
 import string
@@ -14,7 +16,7 @@ from requests_oauthlib import OAuth2Session
 from urllib.parse import urlparse, parse_qs
 from resources.models import Resource, Reservation
 from .id_mapper import IdMapper
-from .models import OutlookCalendarLink, OutlookCalendarReservation, OutlookCalendarAvailability
+from .models import OutlookCalendarLink, OutlookCalendarReservation, OutlookCalendarAvailability, OutlookSyncQueue
 from .o365_calendar import O365Calendar, MicrosoftApi
 from .o365_notifications import O365Notifications
 from .o365_reservation_repository import O365ReservationRepository
@@ -30,6 +32,27 @@ class CanSyncCalendars(BasePermission):
             return obj.unit.is_manager(request.user)
         return False
 
+def add_to_queue(link):
+    OutlookSyncQueue.objects.create(calendar_link=link)
+
+def process_queue():
+    with transaction.atomic():
+        try:
+            queue = OutlookSyncQueue.objects.select_for_update(nowait=True).all().order_by('calendar_link_id')
+            if not queue:
+                return
+        except DatabaseError as e:
+            return
+            
+        previous_id = None
+        for item in queue:
+            link_id = item.calendar_link_id
+            if link_id == previous_id:
+                continue
+            previous_id = link_id
+            link = OutlookCalendarLink.objects.select_for_update().get(pk=link_id)
+            perform_sync_to_exchange(link, lambda sync: sync.sync_all())
+            queue.delete()
 
 def perform_sync_to_exchange(link, func):
     # Sync reservations
