@@ -250,6 +250,9 @@ class AccessControlGrant(models.Model):
 
     def send_notify_email(self):
         reservation = self.reservation
+        if reservation.access_code is None:
+            logger.info('Reservation access code is None, skipping mail')
+            return
         logger.info('Notifying access code creation')
         reservation.send_access_code_created_mail()
 

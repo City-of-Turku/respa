@@ -33,7 +33,19 @@ def test_reset_reservation_access_code(ac_grant):
 
 @pytest.mark.django_db
 def test_send_notify_email(ac_grant):
+    '''mail is sent when reservation access code is not None'''
+    test_access_code= "1234"
     reservation = ac_grant.reservation
+    reservation.access_code = test_access_code
     reservation.send_access_code_created_mail = MagicMock()
     ac_grant.send_notify_email()
     reservation.send_access_code_created_mail.assert_called()
+
+@pytest.mark.django_db
+def test_send_notify_email_access_code_none(ac_grant):
+    '''mail is not sent when reservation access code is None'''
+    reservation = ac_grant.reservation
+    reservation.access_code = None
+    reservation.send_access_code_created_mail = MagicMock()
+    ac_grant.send_notify_email()
+    reservation.send_access_code_created_mail.assert_not_called()
