@@ -177,7 +177,7 @@ class AbloyDriver(AccessControlDriver):
         user.save()
         grant.access_code = user.identifier
         grant.user = user
-        grant.notify_access_code()
+        grant.save_access_code_to_reservation()
         grant.remove_at = grant.ends_at
 
         tz = pytz.timezone('Europe/Helsinki')
@@ -186,7 +186,12 @@ class AbloyDriver(AccessControlDriver):
 
         # get person data and generate new role validity times based on previous role
         # validity times if they exist.
-        person_data = self.handle_api_get_person({"ssn": str(grant.reservation.user.uuid)},)
+        person_data = {}
+        try:
+            person_data = self.handle_api_get_person({"ssn": str(grant.reservation.user.uuid)},)
+        except:
+            self.logger.info('Getting person data failed. Resetting reservation access code')
+            grant.reset_reservation_access_code()
         person_roles = {}
         if 'roles' in person_data:
             person_roles = self.convert_validity_times_from_timestamp(person_data['roles'])
@@ -230,9 +235,15 @@ class AbloyDriver(AccessControlDriver):
         }
 
         path = "api/v1/persons-setup"
-        self.handle_api_post(data, path)
+        try:
+            self.handle_api_post(data, path)
+        except:
+            self.logger.info('Posting person data failed. Resetting reservation access code')
+            grant.reset_reservation_access_code()
+
         grant.state = grant.INSTALLED
         grant.save()
+        grant.send_notify_email()
 
     def remove_grant(self, grant):
         assert grant.state == grant.REMOVING
