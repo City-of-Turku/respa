@@ -362,7 +362,13 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
             end = end.astimezone(tz)
         else:
             end = tz.localize(end)
-
+        
+        # allow end to be at midnight and bypass check by moving end seconds back by one
+        # to reservation day 23:59:59
+        end_time = end.time()
+        if end_time.hour is 0 and end_time.minute is 0 and end_time.second is 0:
+            end = end - datetime.timedelta(seconds=1)
+        
         if begin.date() != end.date():
             raise ValidationError(_("You cannot make a multi day reservation"))
 
