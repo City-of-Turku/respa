@@ -301,7 +301,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
 
     timmi_resource = models.BooleanField(verbose_name=_('Is Timmi resource?'), default=False, blank=True, help_text=_('Is this resource part of Timmi integration?'))
     timmi_room_id = models.PositiveIntegerField(verbose_name=_('Timmi ID'), null=True, blank=True, help_text=_('This field will attempt to auto-fill if room id isn\'t provided.'))
-    
+
     objects = ResourceQuerySet.as_manager()
 
     class Meta:
@@ -362,13 +362,13 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
             end = end.astimezone(tz)
         else:
             end = tz.localize(end)
-        
+
         # allow end to be at midnight and bypass check by moving end seconds back by one
         # to reservation day 23:59:59
         end_time = end.time()
-        if end_time.hour is 0 and end_time.minute is 0 and end_time.second is 0:
+        if end_time.hour == 0 and end_time.minute == 0 and end_time.second == 0:
             end = end - datetime.timedelta(seconds=1)
-        
+
         if begin.date() != end.date():
             raise ValidationError(_("You cannot make a multi day reservation"))
 
@@ -631,7 +631,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
 
         if self.max_age and is_overage(user, self.max_age):
             return False
-        
+
         if self.unit.is_manager(user) or self.unit.is_admin(user):
             return True
 
