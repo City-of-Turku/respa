@@ -149,6 +149,9 @@ class TurkuPaymentProvider(PaymentProvider):
         reservation = order.reservation
         order_lines = OrderLine.objects.filter(order=order.id)
         items = []
+        resource = reservation.resource
+        if resource.timmi_resource:
+            timmi_payload = TimmiPayload.objects.get(order=order)
         for order_line in order_lines:
             product = order_line.product
             int_tax = int(product.tax_percentage)
@@ -156,7 +159,9 @@ class TurkuPaymentProvider(PaymentProvider):
             items.append({
                 'title': product.name,
                 'code': product.sku,
-                'sapCode': product.sap_code,
+                'sapCode': timmi_payload.sap_code \
+                        if resource.timmi_resource \
+                        else product.sap_code,
                 'amount': str(order_line.quantity),
                 'price':  str(round_price(product.get_pretax_price_for_reservation(reservation))),
                 'vat': str(int_tax),

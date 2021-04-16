@@ -2,6 +2,7 @@ from django.contrib.gis.db import models
 from base64 import b64encode, b64decode
 from payments.models import Order
 from django.utils.translation import ugettext_lazy as _
+from resources.timmi.exceptions import MissingSapCodeError
 
 import json
 
@@ -11,7 +12,6 @@ class TimmiPayload(models.Model):
         on_delete=models.CASCADE
     )
     _payload = models.TextField(verbose_name=_('Timmi payload'), null=True, blank=True)
-
 
     def save(self, *args, **kwargs):
         payload = json.dumps(kwargs['payload']).encode()
@@ -26,4 +26,7 @@ class TimmiPayload(models.Model):
 
     @property
     def sap_code(self):
-        return self.payload.get('cashProduct', [{}])[0].get('accountingCode', 0)
+        code = self.payload.get('cashProduct', [{}])[0].get('accountingCode', 0)
+        if code:
+            return str(code).zfill(18)
+        raise MissingSapCodeError('Sap code missing from response.')
