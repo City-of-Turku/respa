@@ -253,7 +253,7 @@ class AbloyDriver(AccessControlDriver):
         ends_at = grant.ends_at.astimezone(tz).replace(tzinfo=None)
 
         # if previous call failed with 422, it's possible the person data is not accurate...
-        person_data = self.handle_api_get_person({"ssn": str(grant.reservation.user.uuid)},)
+        person_data = self.handle_api_get_person({"ssn": str(grant.user.user.uuid)},)
 
         # handle updating tokens
         person_tokens = self.convert_validity_times_from_timestamp(person_data["tokens"])
@@ -269,11 +269,11 @@ class AbloyDriver(AccessControlDriver):
 
         data = {
             "person": {
-                "firstname": grant.reservation.user.first_name,
-                "lastname": grant.reservation.user.last_name,
+                "firstname": grant.user.first_name,
+                "lastname": grant.user.last_name,
                 "validityStart": None,
                 "validityEnd": None,
-                "ssn": str(grant.reservation.user.uuid)
+                "ssn": str(grant.user.user.uuid)
             },
             "organizations": [{
                 "name": self.get_setting("organization_name") or "Respa",
