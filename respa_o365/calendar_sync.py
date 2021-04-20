@@ -36,33 +36,36 @@ def add_to_queue(link):
     OutlookSyncQueue.objects.create(calendar_link=link)
 
 def process_queue():
-    with transaction.atomic():
-        try:
-            queue = OutlookSyncQueue.objects.select_for_update(nowait=True).all().order_by('calendar_link_id')
-            if not queue:
-                return
-        except DatabaseError as e:
+    try:
+        queue = OutlookSyncQueue.objects.all().order_by('calendar_link_id')
+        if not queue:
+            logging.info("Nothing to sync.")
             return
-            
+
+        logging.info("Handling {} entries from sync queue.".format(queue.count()))
         previous_id = None
         for item in queue:
-            link_id = item.calendar_link_id
-            if link_id == previous_id:
-                continue
-            previous_id = link_id
-            link = OutlookCalendarLink.objects.select_for_update().get(pk=link_id)
-            perform_sync_to_exchange(link, lambda sync: sync.sync_all())
-            queue.delete()
+            with transaction.atomic():
+                link_id = item.calendar_link_id
+                same_than_previous = link_id == previous_id
+                previous_id = link_id
+                if not same_than_previous:
+                    link = OutlookCalendarLink.objects.get(pk=link_id)
+                    perform_sync_to_exchange(link, lambda sync: sync.sync_all())
+                item.delete()
+    except DatabaseError as e:
+        logger.warning("Outlook synchronisation failed due database error.", exc_info=e)
+        return
 
 def perform_sync_to_exchange(link, func):
     # Sync reservations
     _perform_sync(link=link, func=func, respa_memento_field='respa_reservation_sync_memento',
         o365_memento_field='exchange_reservation_sync_memento', outlook_model=OutlookCalendarReservation,
-        outlook_model_event_id_property='reservation_id', respa_repo=RespaReservations, o365_repo=O365ReservationRepository, 
+        outlook_model_event_id_property='reservation_id', respa_repo=RespaReservations, o365_repo=O365ReservationRepository,
         event_prefix=settings.O365_CALENDAR_RESERVATION_EVENT_PREFIX, sync_actions=reservationSyncActions)
 
     # Sync availability / periods
-    _perform_sync(link=link, func=func, respa_memento_field='respa_availability_sync_memento', 
+    _perform_sync(link=link, func=func, respa_memento_field='respa_availability_sync_memento',
         o365_memento_field='exchange_availability_sync_memento', outlook_model=OutlookCalendarAvailability,
         outlook_model_event_id_property='period_id', respa_repo=RespaAvailabilityRepository, o365_repo=O365AvailabilityRepository,
         event_prefix=settings.O365_CALENDAR_AVAILABILITY_EVENT_PREFIX, sync_actions=availabilitySyncActions)
