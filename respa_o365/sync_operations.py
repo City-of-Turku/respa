@@ -35,7 +35,7 @@ class SyncOperations:
             try:
                 fn = self.sync_actions[respa_state][remote_state]
                 result = fn(respa_id, remote_id)
-                logger.info("{} ({}) + ({}) {} -> {}", respa_id, respa_state, remote_state, remote_id, result)
+                logger.info("{} ({}) + ({}) {} -> {}".format(respa_id, respa_state, remote_state, remote_id, result))
                 if result:
                     ops.append(result)
             except KeyError:
