@@ -27,6 +27,6 @@ class TimmiPayload(models.Model):
     @property
     def sap_code(self):
         code = self.payload.get('cashProduct', [{}])[0].get('accountingCode', 0)
-        if code:
-            return str(code).zfill(18)
-        raise MissingSapCodeError('Sap code missing from response.')
+        if not code:
+            raise MissingSapCodeError('Sap code missing from response.')
+        return str(code).zfill(18)
