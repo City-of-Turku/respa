@@ -1,12 +1,11 @@
+import hashlib
 import logging
 from datetime import datetime, timezone, timedelta
 from functools import reduce
-from sys import exc_info
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
 from resources.models import Reservation
-from respa_o365.models import OutlookCalendarLink
 from respa_o365.reservation_sync_item import model_to_item
 from respa_o365.sync_operations import ChangeType
 
@@ -24,7 +23,7 @@ class RespaReservations:
 
     def create_item(self, item):
         reservation = Reservation()
-        reservation.resource_id = self.__resource_id        
+        reservation.resource_id = self.__resource_id
         reservation.reserver_email_address = item.reserver_email_address
         reservation.reserver_phone_number = item.reserver_phone_number
         reservation.reserver_name = item.reserver_name
@@ -90,7 +89,10 @@ def status(reservation, time):
 
 
 def reservation_change_key(item):
-    h = hash(item.reserver_name) ^ 3 * hash(item.reserver_email_address) ^ 7 * hash(item.reserver_phone_number)
-    h = h ^ 11 * hash(item.begin.timestamp())
-    h = h ^ 13 * hash(item.end.timestamp())
-    return str(h)
+    s = "{} -- {} name: {} email: {} phone: {}".format(
+        item.begin,
+        item.end,
+        item.reserver_name,
+        item.reserver_email_address,
+        item.reserver_phone_number)
+    return hashlib.md5(s.encode("utf-8")).hexdigest()
