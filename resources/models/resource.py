@@ -31,8 +31,6 @@ from image_cropping import ImageRatioField
 from PIL import Image
 from guardian.shortcuts import get_objects_for_user, get_users_with_perms
 from guardian.core import ObjectPermissionChecker
-
-
 from taggit.managers import TaggableManager
 from taggit.models import CommonGenericTaggedItemBase, TaggedItemBase
 
@@ -221,6 +219,8 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
     min_age = models.PositiveIntegerField(verbose_name=_('Age restriction (min)'), null=True, blank=True, default=0)
     max_age = models.PositiveIntegerField(verbose_name=_('Age restriction (max)'), null=True, blank=True, default=0)
     need_manual_confirmation = models.BooleanField(verbose_name=_('Need manual confirmation'), default=False)
+    send_sms_notification = models.BooleanField(verbose_name=_('Send SMS notification'), 
+                            default=False, blank=True, help_text=_('Send SMS notification after reservation'))
 
     resource_staff_emails = MultiEmailField(verbose_name=_('E-mail addresses for client correspondence'), null=True, blank=True)
 
@@ -257,7 +257,6 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
     reservation_confirmed_notification_extra = models.TextField(verbose_name=_(
         'Extra content to "reservation confirmed" notification'), blank=True)
     reservation_additional_information = models.TextField(verbose_name=_('Reservation additional information'), blank=True)
-
 
     min_price = models.DecimalField(verbose_name=_('Min price'), max_digits=8, decimal_places=2,
                                              blank=True, null=True, validators=[MinValueValidator(Decimal('0.00'))])

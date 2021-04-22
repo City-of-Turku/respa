@@ -626,39 +626,45 @@ class Reservation(ModifiableModel):
                 language = DEFAULT_LANG
             rendered_notification = notification_template.render(context, language)
         except NotificationTemplateException as e:
-            print('NotifcationTemplateException: %s' % e)
             logger.error(e, exc_info=True, extra={'user': user.uuid})
             return
 
         if is_reminder:
-            print("Sending SMS notification :: (%s) %s || LOCALE: %s"  % (self.reserver_phone_number, rendered_notification['subject'], language))
-            ret = send_respa_mail(
+            logger.info("Sending SMS reminder :: (%s) %s || LOCALE: %s"  % (self.reserver_phone_number, rendered_notification['subject'], language))
+            send_respa_mail(
                 email_address='%s@%s' % (self.reserver_phone_number, settings.GSM_NOTIFICATION_ADDRESS),
                 subject=rendered_notification['subject'],
                 body=rendered_notification['short_message'],
             )
-            print(ret[1])
             return
+
+        if self.resource.send_sms_notification and self.reserver_phone_number:
+            logger.info("Sending SMS notification :: (%s) %s || LOCALE: %s"  % (self.reserver_phone_number, rendered_notification['subject'], language))
+            send_respa_mail(
+                email_address='%s@%s' % (self.reserver_phone_number, settings.GSM_NOTIFICATION_ADDRESS),
+                subject=rendered_notification['subject'],
+                body=rendered_notification['short_message'],
+            )
+        logger.info("Sending automated mail :: (%s) %s || LOCALE: %s"  % (email_address, rendered_notification['subject'], language))
+
         if staff_email:
-            print("Sending automated mail :: (%s) %s || LOCALE: %s"  % (staff_email, rendered_notification['subject'], language))
-            ret = send_respa_mail(
+            send_respa_mail(
                 staff_email,
                 rendered_notification['subject'],
                 rendered_notification['body'],
                 rendered_notification['html_body'],
                 attachments
             )
-            print(ret[1])
-        else:
-            print("Sending automated mail :: (%s) %s || LOCALE: %s"  % (email_address, rendered_notification['subject'], language))
-            ret = send_respa_mail(
-                email_address,
-                rendered_notification['subject'],
-                rendered_notification['body'],
-                rendered_notification['html_body'],
-                attachments
-            )
-            print(ret[1])
+            return
+
+        send_respa_mail(
+            email_address,
+            rendered_notification['subject'],
+            rendered_notification['body'],
+            rendered_notification['html_body'],
+            attachments
+        )
+
     def notify_staff_about_reservation(self, notification):
         if self.resource.resource_staff_emails:
             for email in self.resource.resource_staff_emails:
