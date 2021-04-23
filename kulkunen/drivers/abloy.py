@@ -11,6 +11,7 @@ from django.conf import settings
 from datetime import datetime, timedelta
 from django.utils.crypto import get_random_string
 from django.utils import timezone
+from random import choice
 
 REQUESTS_TIMEOUT = 30  # seconds
 
@@ -390,20 +391,29 @@ class AbloyDriver(AccessControlDriver):
             else:
                 raise RemoteError("Unable to create PIN code for grant. Resource has not set access code type!")
 
-            # try to find an unused PIN code to use before trying to generate a new code
-            pin = self.get_free_removed_access_code(pin_digits)
+            existing_free_access_codes = self.get_all_free_removed_access_codes(pin_digits)
+            free_access_code_count = len(existing_free_access_codes)
+            # limit the amout of codes in the system for performance and management reasons
+            max_access_codes = 1000
+            if pin_digits == 6:
+                max_access_codes = 1000000
+            elif pin_digits == 4:
+                max_access_codes = 9000
 
-            if not pin:
-                # Try at most 20 times to generate an unused PIN,
-                # and if that fails, we probably have other problems. Upper layers
-                # will take care of retrying later in case the unlikely false positive
-                # happens.
-                i = 1
-                while i < 20:
-                    pin = get_random_string(1, '123456789') + get_random_string(pin_digits-1, '0123456789')
-                    if not self.system.users.active().filter(identifier=pin).exists():
-                        break
-                    i += 1
+            total_access_code_count = self.get_total_used_access_codes(pin_digits)
+
+            pin = None
+            # if there are only a few free codes, create a new one to use for better randomizing
+            if free_access_code_count < 10 and total_access_code_count < max_access_codes:
+                self.logger.info('Attempting to create a new PIN code')
+                pin = self.create_new_access_code(pin_digits)
+
+            # if there are enough free codes or new code creation fails, use a free existing code
+            # or throw an error if there are no free codes
+            if pin == None:
+                self.logger.info('Attempting to get a free previously used PIN code')
+                if existing_free_access_codes:
+                    pin = choice(existing_free_access_codes)
                 else:
                     raise RemoteError("Unable to find a PIN code for grant")
 
@@ -412,10 +422,15 @@ class AbloyDriver(AccessControlDriver):
 
         return user
 
-    # Returns an already used/removed pin code that is currently not in use
-    def get_free_removed_access_code(self, pin_digits):
-        # Search for a unique removed code that is not in use now and return it
-        # Make sure the code has correct amount of digits
+    # Returns a total number of unique access codes for given digit count
+    def get_total_used_access_codes(self, pin_digits):
+        all_grants = AccessControlGrant.objects.filter(resource__system=self.system).values('access_code').distinct()
+        access_codes = [x['access_code'] for x in all_grants if (
+            isinstance(x['access_code'], str) and len(x['access_code']) == pin_digits)]
+        return len(access_codes)
+
+    # Returns a list of unique free access codes with given digit count
+    def get_all_free_removed_access_codes(self, pin_digits):
         system_grants = AccessControlGrant.objects.filter(resource__system=self.system).distinct()
         removed_state = AccessControlGrant.REMOVED
         non_removed_states = (AccessControlGrant.INSTALLED,AccessControlGrant.INSTALLING,
@@ -423,12 +438,25 @@ class AbloyDriver(AccessControlDriver):
 
         removed_grant_codes = system_grants.filter(state__exact=removed_state).values('access_code').distinct()
         non_removed_grant_codes = system_grants.filter(state__in=non_removed_states).values('access_code').distinct()
-        for code in removed_grant_codes:
-            if isinstance(code['access_code'], str) and len(code['access_code']) == pin_digits:
-                if not code in non_removed_grant_codes:
-                    return code['access_code']
+        # remove non free access codes
+        all_free_access_codes = [x['access_code'] for x in removed_grant_codes if x not in non_removed_grant_codes]
+        # remove non strings and wrong digit count codes
+        access_codes = [x for x in all_free_access_codes if (isinstance(x, str) and len(x) == pin_digits)]
+        return access_codes
 
-        return None
+    # Returns a new code with given digit count or None if code was not found
+    def create_new_access_code(self, pin_digits):
+        pin = None
+        i = 1
+        while i < 20:
+            pin = get_random_string(1, '123456789') + get_random_string(pin_digits-1, '0123456789')
+            if not self.system.users.active().filter(identifier=pin).exists():
+                break
+            i += 1
+        else:
+            return None
+
+        return pin
 
 
     # Removes grant token from person.
