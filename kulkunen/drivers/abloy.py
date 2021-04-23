@@ -446,17 +446,11 @@ class AbloyDriver(AccessControlDriver):
 
     # Returns a new code with given digit count or None if code was not found
     def create_new_access_code(self, pin_digits):
-        pin = None
-        i = 1
-        while i < 20:
+        for _ in range(20):
             pin = get_random_string(1, '123456789') + get_random_string(pin_digits-1, '0123456789')
             if not self.system.users.active().filter(identifier=pin).exists():
-                break
-            i += 1
-        else:
-            return None
-
-        return pin
+                return pin
+        return None
 
 
     # Removes grant token from person.
