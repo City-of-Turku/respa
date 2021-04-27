@@ -76,7 +76,8 @@ def test_install_grant_fail_api_get_person(abloy_driver, abloy_grant):
     abloy_grant.reset_reservation_access_code = MagicMock()
     abloy_driver.handle_api_get_person = MagicMock(side_effect=Exception("error"))
 
-    abloy_driver.install_grant(abloy_grant)
+    with pytest.raises(Exception):
+        abloy_driver.install_grant(abloy_grant)
 
     abloy_driver.handle_api_get_person.assert_called()
     abloy_grant.reset_reservation_access_code.assert_called()
@@ -91,7 +92,8 @@ def test_install_grant_fail_handle_api_post(abloy_driver, abloy_grant):
     abloy_driver.handle_api_get_person = MagicMock()
     abloy_driver.handle_api_post = MagicMock(side_effect=Exception("error"))
 
-    abloy_driver.install_grant(abloy_grant)
+    with pytest.raises(Exception):
+        abloy_driver.install_grant(abloy_grant)
 
     abloy_driver.handle_api_get_person.assert_called()
     abloy_driver.handle_api_post.assert_called()

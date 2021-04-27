@@ -193,6 +193,7 @@ class AbloyDriver(AccessControlDriver):
         except:
             self.logger.info('Getting person data failed. Resetting reservation access code')
             grant.reset_reservation_access_code()
+            raise
         person_roles = {}
         if 'roles' in person_data:
             person_roles = self.convert_validity_times_from_timestamp(person_data['roles'])
@@ -241,6 +242,7 @@ class AbloyDriver(AccessControlDriver):
         except:
             self.logger.info('Posting person data failed. Resetting reservation access code')
             grant.reset_reservation_access_code()
+            raise
 
         grant.state = grant.INSTALLED
         grant.save()
