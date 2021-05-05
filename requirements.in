@@ -18,7 +18,7 @@ daemonize
 database-sanitizer>=0.4.0
 defusedxml
 Delorean
-Django==2.2.18
+Django==2.2.21
 django-admin-json-editor==0.2.3
 django-allauth
 django-anymail
@@ -29,7 +29,7 @@ django-environ
 django-filter>=2.4.0
 django-grappelli
 django-guardian
-django-helusers
+django-helusers==0.5.6
 django-hstore
 django-image-cropping
 django-jinja
@@ -45,7 +45,7 @@ django-reversion
 django-sanitized-dump>=0.2.0
 djangorestframework
 djangorestframework-jwt==1.11.0
-drf-oidc-auth
+drf-oidc-auth==0.10.0
 drf-yasg
 easy-thumbnails
 ecdsa
