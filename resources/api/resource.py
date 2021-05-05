@@ -300,8 +300,10 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
             elif obj.unit_distance is not None:
                 ret['distance'] = int(obj.unit_distance.m)
 
-        del ret["timmi_resource"]
-        del ret["timmi_room_id"]
+        if 'timmi_resource' in ret:
+            del ret['timmi_resource']
+        if 'timmi_room_id' in ret:
+            del ret['timmi_room_id']
 
         return ret
 
