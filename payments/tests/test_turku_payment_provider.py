@@ -275,7 +275,7 @@ def test_handle_failure_request_payment_failed(provider_base_config, order_with_
 
 
 def test_handle_notify_request_order_not_found(provider_base_config, order_with_products):
-    """Test request notify helper returns http 204 when order can't be found"""
+    """Test request notify helper returns http 200 when order can't be found"""
     params = {
         'ORDER_NUMBER': '123fgh',
         'TIMESTAMP': '1496999439',
@@ -287,7 +287,7 @@ def test_handle_notify_request_order_not_found(provider_base_config, order_with_
     payment_provider = create_turku_payment_provider(provider_base_config, request, UI_RETURN_URL)
     returned = payment_provider.handle_notify_request()
     assert isinstance(returned, HttpResponse)
-    assert returned.status_code == 204
+    assert returned.status_code == 200
 
 
 @pytest.mark.parametrize('order_state, expected_order_state', (
@@ -297,7 +297,7 @@ def test_handle_notify_request_order_not_found(provider_base_config, order_with_
     (Order.REJECTED, Order.REJECTED),
 ))
 def test_handle_notify_request_success(provider_base_config, order_with_products, order_state, expected_order_state):
-    """Test request notify helper returns http 204 and order status is correct when successful"""
+    """Test request notify helper returns http 200 and order status is correct when successful"""
     params = {
         'ORDER_NUMBER': 'abc123',
         'TIMESTAMP': '1496999439',
@@ -315,7 +315,7 @@ def test_handle_notify_request_success(provider_base_config, order_with_products
     order_after = Order.objects.get(order_number=params.get('ORDER_NUMBER'))
     assert order_after.state == expected_order_state
     assert isinstance(returned, HttpResponse)
-    assert returned.status_code == 204
+    assert returned.status_code == 200
 
 
 @pytest.mark.parametrize('order_state, expected_order_state', (
@@ -326,7 +326,7 @@ def test_handle_notify_request_success(provider_base_config, order_with_products
 ))
 def test_handle_notify_request_payment_failed(provider_base_config, order_with_products, order_state,
                                               expected_order_state):
-    """Test request notify helper returns http 204 and order status is correct when payment fails"""
+    """Test request notify helper returns http 200 and order status is correct when payment fails"""
     params = {
         'ORDER_NUMBER': 'abc123',
         'TIMESTAMP': '1496999439',
@@ -342,7 +342,7 @@ def test_handle_notify_request_payment_failed(provider_base_config, order_with_p
     order_after = Order.objects.get(order_number=params.get('ORDER_NUMBER'))
     assert order_after.state == expected_order_state
     assert isinstance(returned, HttpResponse)
-    assert returned.status_code == 204
+    assert returned.status_code == 200
 
 
 def test_check_new_payment_authcode_success(payment_provider):

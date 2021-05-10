@@ -179,6 +179,9 @@ class Reservation(ModifiableModel):
     reminder = models.ForeignKey('ReservationReminder', verbose_name=_('Reservation Reminder'), db_index=True, related_name='ReservationReminders',
                                 on_delete=models.SET_NULL, null=True, blank=True)
 
+    timmi_id = models.PositiveIntegerField(verbose_name=_('Timmi ID'), null=True, blank=True)
+    timmi_receipt = models.TextField(verbose_name=_('Timmi receipt'), null=True, blank=True, max_length=2000)
+
     objects = ReservationQuerySet.as_manager()
 
     class Meta:

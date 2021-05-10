@@ -1,14 +1,14 @@
 import logging
 from enum import Enum
-from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
+
 
 class SyncOperations:
     def __init__(self, changes, sync_actions):
         self._changes = changes
         self.sync_actions = sync_actions
-        
+
     def get_sync_operations(self):
         """Returns list of operations that would synchronise the given changes between systems.
         Changes is expected to be a list of id-state-tuplet pairs. Each tuplet represents the
@@ -35,13 +35,14 @@ class SyncOperations:
             try:
                 fn = self.sync_actions[respa_state][remote_state]
                 result = fn(respa_id, remote_id)
-                logger.info("{} ({}) + ({}) {} -> {}", respa_id, respa_state, remote_state, remote_id, result)
+                logger.info("{} ({}) + ({}) {} -> {}".format(respa_id, respa_state, remote_state, remote_id, result))
                 if result:
                     ops.append(result)
             except KeyError:
                 pass
 
-        return ops        
+        return ops
+
 
 class SyncActionVisitor:
     """Visitor for sync actions. Implement this protocol to perform synchronisation operations (SyncAction)."""
@@ -122,11 +123,13 @@ class TargetSystem(Enum):
     RESPA = 1
     REMOTE = 2
 
+
 class SyncActionFactory:
     @staticmethod
     def to(target, fn):
         def wrapper(*args):
             return fn(target, *args)
+
         return wrapper
 
     @staticmethod
@@ -158,6 +161,7 @@ class SyncActionFactory:
     def removeMapping(respa_id, remote_id):
         return RemoveMapping(respa_id, remote_id)
 
+
 def build_reservation_sync_actions_dict():
     REMOTE = TargetSystem.REMOTE
     RESPA = TargetSystem.RESPA
@@ -166,35 +170,36 @@ def build_reservation_sync_actions_dict():
     statesToAction = {
         None: {
             ChangeType.NO_CHANGE: s.to(RESPA, s.create),
-            ChangeType.CREATED:   s.to(RESPA, s.create),
-            ChangeType.UPDATED:   s.to(RESPA, s.create),
-            ChangeType.DELETED:   s.nop},
+            ChangeType.CREATED: s.to(RESPA, s.create),
+            ChangeType.UPDATED: s.to(RESPA, s.create),
+            ChangeType.DELETED: s.nop},
         ChangeType.NO_CHANGE: {
-            None:                 s.to(REMOTE, s.create),
+            None: s.to(REMOTE, s.create),
             ChangeType.NO_CHANGE: s.nop,
-            ChangeType.CREATED:   s.to(RESPA,  s.update),
-            ChangeType.UPDATED:   s.to(RESPA,  s.update),
-            ChangeType.DELETED:   s.to(RESPA,  s.delete)},
+            ChangeType.CREATED: s.to(RESPA, s.update),
+            ChangeType.UPDATED: s.to(RESPA, s.update),
+            ChangeType.DELETED: s.to(RESPA, s.delete)},
         ChangeType.CREATED: {
-            None:                 s.to(REMOTE, s.create),
+            None: s.to(REMOTE, s.create),
             ChangeType.NO_CHANGE: s.to(REMOTE, s.update),
-            ChangeType.CREATED:   s.to(REMOTE, s.update),
-            ChangeType.UPDATED:   s.to(REMOTE, s.update),
-            ChangeType.DELETED:   s.to(REMOTE, s.create)},
+            ChangeType.CREATED: s.to(REMOTE, s.update),
+            ChangeType.UPDATED: s.to(REMOTE, s.update),
+            ChangeType.DELETED: s.to(REMOTE, s.create)},
         ChangeType.UPDATED: {
-            None:                 s.to(REMOTE, s.create),
+            None: s.to(REMOTE, s.create),
             ChangeType.NO_CHANGE: s.to(REMOTE, s.update),
-            ChangeType.CREATED:   s.to(REMOTE, s.update),
-            ChangeType.UPDATED:   s.to(REMOTE, s.update),
-            ChangeType.DELETED:   s.to(REMOTE, s.create)},
+            ChangeType.CREATED: s.to(REMOTE, s.update),
+            ChangeType.UPDATED: s.to(REMOTE, s.update),
+            ChangeType.DELETED: s.to(REMOTE, s.create)},
         ChangeType.DELETED: {
-            None:                 s.nop,
+            None: s.nop,
             ChangeType.NO_CHANGE: s.to(REMOTE, s.delete),
-            ChangeType.CREATED:   s.to(REMOTE, s.delete),
-            ChangeType.UPDATED:   s.to(REMOTE, s.delete),
-            ChangeType.DELETED:   s.removeMapping}
+            ChangeType.CREATED: s.to(REMOTE, s.delete),
+            ChangeType.UPDATED: s.to(REMOTE, s.delete),
+            ChangeType.DELETED: s.removeMapping}
     }
     return statesToAction
+
 
 def build_availability_sync_actions_dict():
     REMOTE = TargetSystem.REMOTE
@@ -204,33 +209,33 @@ def build_availability_sync_actions_dict():
     statesToAction = {
         None: {
             ChangeType.NO_CHANGE: s.to(RESPA, s.create),
-            ChangeType.CREATED:   s.to(RESPA, s.create),
-            ChangeType.UPDATED:   s.to(RESPA, s.create),
-            ChangeType.DELETED:   s.nop},
+            ChangeType.CREATED: s.to(RESPA, s.create),
+            ChangeType.UPDATED: s.to(RESPA, s.create),
+            ChangeType.DELETED: s.nop},
         ChangeType.NO_CHANGE: {
-            None:                 s.to(RESPA, s.delete),
+            None: s.to(RESPA, s.delete),
             ChangeType.NO_CHANGE: s.nop,
-            ChangeType.CREATED:   s.to(RESPA,  s.update),
-            ChangeType.UPDATED:   s.to(RESPA,  s.update),
-            ChangeType.DELETED:   s.to(RESPA,  s.delete)},
+            ChangeType.CREATED: s.to(RESPA, s.update),
+            ChangeType.UPDATED: s.to(RESPA, s.update),
+            ChangeType.DELETED: s.to(RESPA, s.delete)},
         ChangeType.CREATED: {
-            None:                 s.to(RESPA, s.delete),
+            None: s.to(RESPA, s.delete),
             ChangeType.NO_CHANGE: s.to(RESPA, s.update),
-            ChangeType.CREATED:   s.to(RESPA, s.update),
-            ChangeType.UPDATED:   s.to(RESPA, s.update),
-            ChangeType.DELETED:   s.to(RESPA, s.delete)},
+            ChangeType.CREATED: s.to(RESPA, s.update),
+            ChangeType.UPDATED: s.to(RESPA, s.update),
+            ChangeType.DELETED: s.to(RESPA, s.delete)},
         ChangeType.UPDATED: {
-            None:                 s.to(RESPA, s.delete),
+            None: s.to(RESPA, s.delete),
             ChangeType.NO_CHANGE: s.to(RESPA, s.update),
-            ChangeType.CREATED:   s.to(RESPA, s.update),
-            ChangeType.UPDATED:   s.to(RESPA, s.update),
-            ChangeType.DELETED:   s.to(RESPA, s.delete)},
+            ChangeType.CREATED: s.to(RESPA, s.update),
+            ChangeType.UPDATED: s.to(RESPA, s.update),
+            ChangeType.DELETED: s.to(RESPA, s.delete)},
         ChangeType.DELETED: {
-            None:                 s.nop,
+            None: s.nop,
             ChangeType.NO_CHANGE: s.to(RESPA, s.create),
-            ChangeType.CREATED:   s.to(RESPA, s.create),
-            ChangeType.UPDATED:   s.to(RESPA, s.create),
-            ChangeType.DELETED:   s.removeMapping}
+            ChangeType.CREATED: s.to(RESPA, s.create),
+            ChangeType.UPDATED: s.to(RESPA, s.create),
+            ChangeType.DELETED: s.removeMapping}
     }
 
     return statesToAction
@@ -238,4 +243,3 @@ def build_availability_sync_actions_dict():
 
 reservationSyncActions = build_reservation_sync_actions_dict()
 availabilitySyncActions = build_availability_sync_actions_dict()
-

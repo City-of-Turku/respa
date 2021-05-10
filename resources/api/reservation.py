@@ -442,8 +442,6 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         if instance.can_view_catering_orders(user):
             data['has_catering_order'] = instance.catering_orders.exists()
 
-
-
         return data
 
     def get_is_own(self, obj):
@@ -960,7 +958,6 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         queryset = queryset.filter(filters)
 
         queryset = queryset.filter(resource__in=Resource.objects.visible_for(user))
-
         return queryset
 
     def perform_create(self, serializer):
