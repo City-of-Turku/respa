@@ -661,7 +661,8 @@ class ReservationPermission(permissions.BasePermission):
         try:
             resource = Resource.objects.get(pk=resource_id)
         except Resource.DoesNotExist:
-            return request.method in permissions.SAFE_METHODS
+            return request.method in permissions.SAFE_METHODS or \
+                    request.user and request.user.is_authenticated
         
         if resource.authentication == 'strong' and \
             not request.user.is_strong_auth:

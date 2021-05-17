@@ -604,6 +604,20 @@ def test_admins_can_make_reservations_for_others(
 
 
 @pytest.mark.django_db
+def test_strong_reservation(api_client, list_url, reservation_data, strong_user, user, strong_resource):
+    api_client.force_authenticate(strong_user)
+    reservation_data['resource'] = strong_resource.id
+    reservation_data['begin'] = dateparse.parse_datetime('2115-04-04T13:00:00+02:00')
+    reservation_data['end'] = dateparse.parse_datetime('2115-04-04T14:00:00+02:00')
+    response = api_client.post(list_url, data=reservation_data, format='json')
+    assert response.status_code == 201
+    api_client.force_authenticate(user)
+    response = api_client.post(list_url, data=reservation_data, format='json')
+    assert response.status_code == 403
+
+    
+
+@pytest.mark.django_db
 def test_reservation_user_filter(api_client, list_url, reservation, resource_in_unit, user, user2):
     """
     Tests that reservation user and is_own filtering work correctly.
