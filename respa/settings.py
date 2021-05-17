@@ -95,7 +95,8 @@ env = environ.Env(
     TIMMI_ADMIN_ID=(int, 0),
     TIMMI_TIMEOUT=(int, 60),
     TIMMI_USERNAME=(str, ''), #base64 encoded username
-    TIMMI_PASSWORD=(str, '') #base64 encoded password
+    TIMMI_PASSWORD=(str, ''), #base64 encoded password
+    STRONG_AUTH_CLAIMS=(tuple, ())
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -316,6 +317,8 @@ SOCIALACCOUNT_PROVIDERS = {
         'VERIFIED_EMAIL': True
     }
 }
+
+STRONG_AUTH_CLAIMS = env('STRONG_AUTH_CLAIMS')
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = env('DJANGO_ADMIN_LOGOUT_REDIRECT_URL')
