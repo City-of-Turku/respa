@@ -38,13 +38,16 @@ class ProductForm(forms.ModelForm):
 
 class ProductAdmin(TranslationAdmin):
     list_display = (
-        'product_id', 'sku', 'sap_code', 'name', 'type', 'price', 'price_type', 'get_price_period', 'tax_percentage',
+        'product_id', 'sku', 'sap_code', 'sap_unit', 'name', 'type', 'price', 'price_type', 'get_price_period', 'tax_percentage',
         'max_quantity', 'get_resources', 'get_created_at', 'get_modified_at'
     )
     readonly_fields = ('product_id',)
     fieldsets = (
         (None, {
-            'fields': ('sku', 'sap_code', 'type', 'name', 'description', 'max_quantity')
+            'fields': ('sku', 'type', 'name', 'description', 'max_quantity')
+        }),
+        ('SAP', {
+            'fields': ('sap_code', 'sap_unit'),
         }),
         (_('price').capitalize(), {
             'fields': ('price', 'price_type', 'price_period', 'tax_percentage'),
