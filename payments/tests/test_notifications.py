@@ -43,7 +43,9 @@ def get_body_with_all_template_vars():
 def get_expected_strings(order):
     order_line = order.order_lines.first()
     product = order_line.product
-    order_details ='[' + ', '.join([str(x) for x in order.reservation.get_notification_context('fi')['order_details']]) + ']'
+    order_details = "[%(details)s]" % ({
+        'details': ', '.join([str(x) for x in order.reservation.get_notification_context('fi')['order_details']])
+    })
     return (
         order.order_number,
         str(order.created_at.year),
