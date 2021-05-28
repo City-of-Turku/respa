@@ -13,6 +13,7 @@ class User(AbstractUser):
     email = models.CharField(verbose_name=_('Email'), null=True, max_length=100)
     birthdate = models.DateField(null=True, blank=True, verbose_name=_('Birthdate'))
     oid = models.CharField(verbose_name=_('Oid'), max_length=255, null=True, blank=True)
+    amr = None
 
     ical_token = models.SlugField(
         max_length=16, null=True, blank=True, unique=True, db_index=True, verbose_name="iCal token"
@@ -38,18 +39,16 @@ class User(AbstractUser):
             "Designates whether the user is a General Administrator "
             "with special permissions to many objects within Respa. "
             "This is almost as powerful as superuser."))
+    
+    @property
+    def is_strong_auth(self):
+        return self.amr in settings.STRONG_AUTH_CLAIMS
 
     def __str__(self):
-        ret = ""
-        if self.first_name:
-            ret += self.first_name
-        if self.last_name:
-            ret += ' ' + self.last_name
-        if not ret:
-            ret += self.username
-        if self.email:
-            ret += ' (%s)' % self.email
-        return ret
+        display_name = str('%s %s' % (self.first_name or '', self.last_name or '')).strip()
+        if display_name:
+            return f'{display_name} ({self.email})'
+        return str('%s %s' % (self.username, f'({self.email})' if self.email else '')).strip()
 
 
 
@@ -66,10 +65,9 @@ class User(AbstractUser):
         return self.ical_token
 
     def get_preferred_language(self):
-        if not self.preferred_language:
-            return settings.LANGUAGES[0][0]
-        else:
+        if self.preferred_language:
             return self.preferred_language
+        return settings.LANGUAGES[0][0]
 
     def get_user_age(self):
         return int((datetime.date.today() - datetime.datetime.strptime(str(self.birthdate), '%Y-%m-%d').date()).days / 365.25)

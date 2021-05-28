@@ -544,6 +544,72 @@ class Reservation(ModifiableModel):
             order = getattr(self, 'order', None)
             if order:
                 context['order'] = order.get_notification_context(language_code)
+            
+                all_products = []
+                # Iterate through each order/product in order_lines.
+                # Each order/product is appended to a list that is then set as the value of context['order'].
+                for item in context["order"]["order_lines"]:
+                    product = {}
+                    product_fields = (
+                        'id', 'created_at', 'reservation_name',
+                        'name', 'quantity', 'price',
+                        'unit_price', 'unit_price_num', 'tax_percentage',
+                        'price_type', 'price_period', 'order_number',
+                        'decimal_hours',
+                    )
+                    '''
+                    product_values
+
+                    These keys are used in the email template to display order/payment information.
+
+                    id                  -   id of this order
+                    created_at          -   creation date of the parent order
+                    reservation_name    -   name of resource
+                    name                -   name of this product
+                    quantity            -   quantity of products, total price of product / single unit price of product
+                    price               -   single unit price of this product
+                    unit_price          -   total price of this product, string e.g. 75,00
+                    unit_price_num      -   total price of this product, float e.g. 75.00
+                    tax_percentage      -   tax percentage of this product
+                    price_type          -   price type of product, per period / fixed
+                    price_period        -   price period of product if type=per period, e.g. 00:30:00 for 30min 
+                    order_number        -   id of parent order
+                    '''
+                    product_values = {
+                        'id': item["product"]["id"],
+                        'created_at': self.created_at.astimezone(self.resource.unit.get_tz()).strftime('%d.%m.%Y %H:%M:%S'),
+                        'reservation_name': context["resource"],
+                        'name': item["product"]["name"],
+                        'quantity': float(item["unit_price"].replace(',','.')) / float(item["product"]["price"].replace(',','.')), 
+                        'price': item["product"]["price"],
+                        'unit_price': item["unit_price"],
+                        'unit_price_num': float(item["unit_price"].replace(',','.')),
+                        'tax_percentage': item["product"]["tax_percentage"],
+                        'price_type': item["product"]["price_type"],
+                        'price_period': item["product"]["price_period"],
+                        'order_number': context["order"]["id"]
+                    }
+
+                    for field in product_fields:
+                        if field == 'decimal_hours':
+                            # price_period is None if price_type is 'fixed'
+                            if item["product"]["price_period"] is not None:
+                                # list of integers based on price_period string values, e.g. string '01:30:00' --> list [1,30,0]
+                                price_unit_time = [int(x) for x in item["product"]["price_period"].split(':')]
+                                # calculate decimal time from list integers e.g. based on previous values, ((1*60) + 30) / 60 = 1.5 
+                                decimal_hours = ((price_unit_time[0] * 60) + price_unit_time[1]) / 60
+                                product[field] = decimal_hours
+                            else:
+                                # price_type is 'fixed'
+                                product[field] = 1
+                        else:
+                            product[field] = product_values[field]
+
+                    all_products.append(product)
+                    
+                    
+                context['order_details'] = all_products
+
         if extra_context:
             context.update({
                 'bulk_email_context': {

@@ -657,15 +657,20 @@ class ReservationFilterSet(django_filters.rest_framework.FilterSet):
 
 class ReservationPermission(permissions.BasePermission):
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS or request.user and request.user.is_authenticated:
-            return True
-
         resource_id = request.data.get('resource')
-        resource = None
         try:
             resource = Resource.objects.get(pk=resource_id)
         except Resource.DoesNotExist:
+            return request.method in permissions.SAFE_METHODS or \
+                    request.user and request.user.is_authenticated
+        
+        if resource.authentication == 'strong' and \
+            not request.user.is_strong_auth:
             return False
+
+        if request.method in permissions.SAFE_METHODS or \
+            request.user and request.user.is_authenticated:
+            return True
 
         return request.method == 'POST' and resource.authentication == 'unauthenticated'
 

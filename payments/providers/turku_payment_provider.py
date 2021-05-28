@@ -20,7 +20,7 @@ from ..exceptions import (
     UnknownReturnCodeError
 )
 
-from resources.timmi import TimmiManager
+from resources.timmi import TimmiManager, MissingSapUnitError, MissingSapCodeError
 from resources.models import TimmiPayload
 
 # Keys the provider expects to find in the config
@@ -156,18 +156,25 @@ class TurkuPaymentProvider(PaymentProvider):
             product = order_line.product
             int_tax = int(product.tax_percentage)
             assert int_tax == product.tax_percentage
-            items.append({
+            product_data = {
                 'title': product.name,
                 'code': product.sku,
-                'sapCode': timmi_payload.sap_code \
-                        if resource.timmi_resource \
-                        else product.sap_code,
+                'sapCode': product.sap_code,
                 'amount': str(order_line.quantity),
                 'price':  str(round_price(product.get_pretax_price_for_reservation(reservation))),
                 'vat': str(int_tax),
                 'discount': '0.00',
                 'type': '1'
-            })
+            }
+            if resource.timmi_resource:
+                try:
+                    product_data['sapCode'] = timmi_payload.sap_code
+                    product_data['sapProfitCenter'] = timmi_payload.sap_unit
+                except (MissingSapUnitError, MissingSapCodeError):
+                    return self.ui_redirect_failure()
+            elif not resource.timmi_resource and product.sap_unit:
+                product_data['sapProfitCenter'] = product.sap_unit
+            items.append(product_data)
         payload['orderDetails']['products'] = items
 
 

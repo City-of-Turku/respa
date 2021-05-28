@@ -21,16 +21,20 @@ class UserSerializer(serializers.ModelSerializer):
     ical_feed_url = serializers.SerializerMethodField()
     staff_perms = serializers.SerializerMethodField()
     staff_status = serializers.SerializerMethodField()
+    is_strong_auth = serializers.SerializerMethodField()
 
     class Meta:
         fields = [
             'last_login', 'username', 'email', 'date_joined',
             'first_name', 'last_name', 'uuid', 'department_name',
             'is_staff', 'display_name', 'ical_feed_url', 'staff_status',
-            'staff_perms', 'favorite_resources', 'preferred_language', 'birthdate'
+            'staff_perms', 'favorite_resources', 'preferred_language', 'birthdate',
+            'is_strong_auth'
         ]
         model = get_user_model()
 
+    def get_is_strong_auth(self, obj):
+        return obj.is_strong_auth
 
     def get_staff_status(self, obj):
         units = Unit.objects.all()

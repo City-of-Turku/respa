@@ -3,3 +3,6 @@ class InvalidStatusCodeException(Exception):
 
 class MissingSapCodeError(Exception):
     ...
+
+class MissingSapUnitError(Exception):
+    ...
