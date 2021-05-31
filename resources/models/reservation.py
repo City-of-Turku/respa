@@ -683,9 +683,15 @@ class Reservation(ModifiableModel):
             else:
                 email_address = self.reserver_email_address or self.user.email
             user = self.user
+
         language = DEFAULT_LANG
-        if user and not user.is_staff:
+        # use reservation's preferred_language if it exists
+        if getattr(self, 'preferred_language', None):
             language = self.preferred_language
+        # if user is defined and user.is_staff, use default lang
+        if user and user.is_staff:
+            language = DEFAULT_LANG
+
         context = self.get_notification_context(language, notification_type=notification_type, extra_context=extra_context)
         try:
             if staff_email:
