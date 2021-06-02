@@ -576,9 +576,9 @@ class Reservation(ModifiableModel):
                     price_period        -   price period of product if type=per period, e.g. 00:30:00 for 30min 
                     order_number        -   id of parent order
                     pretax_price        -   price amount without tax, string e.g. 6,05 if total price is 7,5 with 24% vat
+                    pretax_price_num    -   price amount without tax, float e.g. 6.05
                     tax_price           -   tax amount, string e.g. 1,45 if total price is 7,5 with 24% vat
-                    pretax_price        -   price amount without tax, float e.g. 6.05
-                    tax_price           -   tax amount, float e.g. 1.45
+                    tax_price_num       -   tax amount, float e.g. 1.45
                     '''
                     product_values = {
                         'id': item["product"]["id"],
