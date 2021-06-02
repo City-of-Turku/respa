@@ -42,11 +42,15 @@ class OutlookCalendarLinkViewSet(viewsets.ModelViewSet):
 
         try:
             resource = Resource.objects.get(pk=resource_id)
-            link_exists = False
+            resource_has_link = True
+            user_has_link = True
             has_permission = resource.is_manager(request.user) or resource.is_admin(request.user)
             if has_permission:
-                link_exists = OutlookCalendarLink.objects.all().filter(resource=resource_id).exists()
-            can_create = has_permission and not link_exists
+                resource_has_link = OutlookCalendarLink.objects.all().filter(resource=resource_id).exists()
+            if not resource_has_link:
+                user_has_link = OutlookCalendarLink.objects.all().filter(user=request.user)
+            can_create = has_permission and not resource_has_link and not user_has_link
+                
         except:
             can_create = False
 
