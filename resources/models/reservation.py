@@ -555,7 +555,8 @@ class Reservation(ModifiableModel):
                         'name', 'quantity', 'price',
                         'unit_price', 'unit_price_num', 'tax_percentage',
                         'price_type', 'price_period', 'order_number',
-                        'decimal_hours',
+                        'decimal_hours', 'pretax_price', 'pretax_price_num',
+                        'tax_price', 'tax_price_num'
                     )
                     '''
                     product_values
@@ -574,6 +575,10 @@ class Reservation(ModifiableModel):
                     price_type          -   price type of product, per period / fixed
                     price_period        -   price period of product if type=per period, e.g. 00:30:00 for 30min 
                     order_number        -   id of parent order
+                    pretax_price        -   price amount without tax, string e.g. 6,05 if total price is 7,5 with 24% vat
+                    tax_price           -   tax amount, string e.g. 1,45 if total price is 7,5 with 24% vat
+                    pretax_price        -   price amount without tax, float e.g. 6.05
+                    tax_price           -   tax amount, float e.g. 1.45
                     '''
                     product_values = {
                         'id': item["product"]["id"],
@@ -587,7 +592,11 @@ class Reservation(ModifiableModel):
                         'tax_percentage': item["product"]["tax_percentage"],
                         'price_type': item["product"]["price_type"],
                         'price_period': item["product"]["price_period"],
-                        'order_number': context["order"]["id"]
+                        'order_number': context["order"]["id"],
+                        'pretax_price': item["product"]["pretax_price"],
+                        'pretax_price_num': float(item["product"]["pretax_price"].replace(',','.')),
+                        'tax_price': item["product"]["tax_price"],
+                        'tax_price_num': float(item["product"]["tax_price"].replace(',','.'))
                     }
 
                     for field in product_fields:
