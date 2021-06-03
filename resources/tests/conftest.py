@@ -55,7 +55,6 @@ def space_resource_type():
 def space_resource(space_resource_type):
     return Resource.objects.create(type=space_resource_type, authentication="none", name="resource")
 
-
 @pytest.mark.django_db
 @pytest.fixture
 def test_unit():
@@ -139,7 +138,6 @@ def resource_in_unit3(space_resource_type, test_unit3):
         reservable=True,
     )
 
-
 @pytest.mark.django_db
 @pytest.fixture
 def resource_with_opening_hours(resource_in_unit):
@@ -152,6 +150,13 @@ def resource_with_opening_hours(resource_in_unit):
                            closes=datetime.time(18, 0))
     resource_in_unit.update_opening_hours()
     return resource_in_unit
+
+@pytest.mark.django_db
+@pytest.fixture
+def strong_resource(resource_with_opening_hours):
+    resource_with_opening_hours.authentication = "strong"
+    resource_with_opening_hours.save()
+    return resource_with_opening_hours
 
 
 @pytest.mark.django_db
@@ -210,6 +215,18 @@ def resource_equipment(resource_in_unit, equipment):
     )
     return resource_equipment
 
+@pytest.mark.django_db
+@pytest.fixture
+def strong_user():
+    user = get_user_model().objects.create(
+        username='test_user_super_strong',
+        first_name='Evert',
+        last_name='Bäckström',
+        email='cem@kaner.com',
+        preferred_language='en'
+    )
+    user.amr = 'very_strong_auth'
+    return user
 
 @pytest.mark.django_db
 @pytest.fixture

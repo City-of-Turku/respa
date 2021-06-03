@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.com/codepointtku/respaTku.svg?branch=master)](https://travis-ci.com/codepointtku/respa)
+[![Travis CI](https://travis-ci.com/codepointtku/respaTku.svg?branch=master)](https://travis-ci.com/codepointtku/respa)
+[![GitHub Actions](https://github.com/codepointtku/respa/actions/workflows/respa.yml/badge.svg?branch=develop)](https://github.com/codepointtku/respa/actions/workflows/respa.yml)
 [![codecov](https://codecov.io/gh/codepointtku/respa/branch/develop/graph/badge.svg)](https://codecov.io/gh/codepointtku/respa)
 [![Requirements Status](https://requires.io/github/codepointtku/respa/requirements.svg?branch=develop)](https://requires.io/github/codepointtku/respa/requirements/?branch=develop)
 
@@ -45,8 +46,7 @@ Our main issue tracking is on [Github](https://github.com/codepointtku/respa/iss
 - [The Libraries of Lapland](https://varaamo-api.lapinkirjasto.fi/v1) - for [Varaamo UI](https://varaamo.lapinkirjasto.fi/)
 - [City of Tampere](https://respa.tampere.fi/v1/) - for [Varaamo UI](https://varaamo.tampere.fi/) - [GitHub repo](https://github.com/Tampere/respa)
 - [City of Lappeenranta](https://varaamo.lappeenranta.fi/respa/v1/) - for [Varaamo UI](https://varaamo.lappeenranta.fi/) - [GitHub repo](https://github.com/City-of-Lappeenranta/Respa)
-- City of Hämeenlinna - for [Berth Reservation UI](https://varaukset.hameenlinna.fi/)  - [GitHub repo](https://github.com/CityOfHameenlinna/respa)
-
+     
 FAQ
 ------------
 

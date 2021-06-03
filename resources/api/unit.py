@@ -76,6 +76,12 @@ class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.GeoM
             if ob.public:
                 x = False
         return x
+    
+    def to_representation(self, obj):
+        ret = super().to_representation(obj)
+        if 'timmi_profile_id' in ret:
+            del ret['timmi_profile_id']
+        return ret
 
     class Meta:
         model = Unit

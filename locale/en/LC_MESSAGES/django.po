@@ -2430,3 +2430,9 @@ msgstr ""
 
 msgid "Notification template groups"
 msgstr ""
+
+msgid "Payment service is unreachable"
+msgstr ""
+
+msgid "Failed to initiate payment process"
+msgstr ""

@@ -299,6 +299,9 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
     configuration = models.ForeignKey('respa_outlook.RespaOutlookConfiguration', verbose_name=_('Outlook configuration'),
         null=True, blank=True, on_delete=models.SET_NULL, related_name='Configuration')
 
+    timmi_resource = models.BooleanField(verbose_name=_('Is Timmi resource?'), default=False, blank=True, help_text=_('Is this resource part of Timmi integration?'))
+    timmi_room_id = models.PositiveIntegerField(verbose_name=_('Timmi ID'), null=True, blank=True, help_text=_('This field will attempt to auto-fill if room id isn\'t provided.'))
+
     objects = ResourceQuerySet.as_manager()
 
     class Meta:
@@ -359,6 +362,12 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
             end = end.astimezone(tz)
         else:
             end = tz.localize(end)
+
+        # allow end to be at midnight and bypass check by moving end seconds back by one
+        # to reservation day 23:59:59
+        end_time = end.time()
+        if end_time.hour == 0 and end_time.minute == 0 and end_time.second == 0:
+            end = end - datetime.timedelta(seconds=1)
 
         if begin.date() != end.date():
             raise ValidationError(_("You cannot make a multi day reservation"))
@@ -622,7 +631,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
 
         if self.max_age and is_overage(user, self.max_age):
             return False
-        
+
         if self.unit.is_manager(user) or self.unit.is_admin(user):
             return True
 
@@ -790,6 +799,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
         return result_municipalities
 
     def clean(self):
+        from resources.timmi import TimmiManager
         if self.cooldown is None:
             self.cooldown = datetime.timedelta(0)
         if self.min_price is not None and self.max_price is not None and self.min_price > self.max_price:
@@ -839,6 +849,8 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
                             _('Unauthenticated')]
                         )}
                 )
+        if self.timmi_resource and not self.timmi_room_id:
+            TimmiManager().get_room_part_id(self)
 
 class ResourceImage(ModifiableModel):
     TYPES = (

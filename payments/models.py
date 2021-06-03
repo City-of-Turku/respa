@@ -72,6 +72,8 @@ class Product(models.Model):
 
     type = models.CharField(max_length=32, verbose_name=_('type'), choices=TYPE_CHOICES, default=RENT)
     sku = models.CharField(max_length=255, verbose_name=_('SKU'))
+    sap_code = models.CharField(max_length=255, verbose_name=_('sap code'), blank=True)
+    sap_unit = models.CharField(max_length=255, verbose_name=_('sap unit'), blank=True, help_text=_('sap profit center'))
     name = models.CharField(max_length=100, verbose_name=_('name'), blank=True)
     description = models.TextField(verbose_name=_('description'), blank=True)
 
@@ -158,6 +160,8 @@ class Product(models.Model):
     def get_price_for_reservation(self, reservation: Reservation, rounded: bool = True) -> Decimal:
         return self.get_price_for_time_range(reservation.begin, reservation.end, rounded=rounded)
 
+    def get_tax_price(self) -> Decimal:
+        return self.price - self.get_pretax_price()
 
 class OrderQuerySet(models.QuerySet):
     def can_view(self, user):
@@ -338,6 +342,8 @@ class NotificationProductSerializer(serializers.ModelSerializer):
     type_display = serializers.ReadOnlyField(source='get_type_display')
     price_type_display = serializers.ReadOnlyField(source='get_price_type_display')
     price_period_display = serializers.SerializerMethodField()
+    pretax_price = LocalizedSerializerField(source='get_pretax_price')
+    tax_price = LocalizedSerializerField(source='get_tax_price')
 
     def get_price_period_display(self, obj):
         return get_price_period_display(obj.price_period)
@@ -345,7 +351,7 @@ class NotificationProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ('id', 'name', 'description', 'type', 'type_display', 'price_type', 'price_type_display',
-                  'tax_percentage', 'price', 'price_period', 'price_period_display')
+                  'tax_percentage', 'price', 'price_period', 'price_period_display', 'pretax_price', 'tax_price')
 
 
 class NotificationOrderLineSerializer(serializers.ModelSerializer):

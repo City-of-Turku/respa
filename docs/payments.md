@@ -5,6 +5,7 @@ Payments app adds support for Respa resources to have paid reservations. In addi
 Transactions are handled by a third party payment provider. Currently implemented provider integrations:
 
 * [Bambora Payform](https://www.bambora.com/fi/fi/online/)
+* Turku MaksuPalvelu
 
 ## Enabling and configuring Payments
 
@@ -27,19 +28,29 @@ In addition to the general configuration keys mentioned in the previous section,
 - `RESPA_PAYMENTS_BAMBORA_API_SECRET`: Used to calculate hashes out of the data being sent and received, to verify it is not being tampered with. Also found in the merchant portal and provided as a string. No default value.
 - `RESPA_PAYMENTS_BAMBORA_PAYMENT_METHODS`: An array of payment methods to show to the user to select from e.g.`['nordea', 'creditcards']`. Full list of supported values can be found in [the currencies section of](https://payform.bambora.com/docs/web_payments/?page=full-api-reference#currencies) Bambora's API documentation page.
 
+### Turku MaksuPalvelu configuration
+
+The Turku MaksuPalvelu REST API version the provider implementation targets is `v1`.
+
+In addition to the general configuration keys mentioned in the basic payments configuration section, enabling Turku MaksuPalvelu also requires some extra configuration to function:
+
+- `RESPA_PAYMENTS_TURKU_API_URL`: The URL where Turku MaksuPalvelu requests are sent.
+- `RESPA_PAYMENTS_TURKU_API_KEY`: The authentication key given to Respa by MaksuPalvelu for REST API calls.
+- `RESPA_PAYMENTS_TURKU_API_APP_NAME`: The application name given to Respa by MaksuPalvelu for REST API calls.
+
 ## Basics
 
 Model `Product` represents everything that can be ordered and paid alongside a reservation. Products are linked to one or multiple resources.
 
 There are currently two types of products:
 
-- `rent`: At least one product of type `rent` must be ordered when such is available on the resource. 
+- `rent`: At least one product of type `rent` must be ordered when such is available on the resource.
 
 - `extra`: Ordering of products of type `extra` is not mandatory, so when there are only `extra` products available, one can create a reservation without an order. However, when an order is created, even with just extra product(s), it must be paid to get the reservation confirmed.
 
 Everytime a product is saved, a new copy of it is created in the db, so product modifying does not affect already existing orders.
 
-All prices are in euros. A product's price is stored in `price` field. However, there are different ways the value should be interpreted depending on `price_type` field's value: 
+All prices are in euros. A product's price is stored in `price` field. However, there are different ways the value should be interpreted depending on `price_type` field's value:
 
 - `fixed`: The price stays always the same regardless of the reservation, so if `price` is `10.00` the final price is 10.00 EUR.
 
@@ -49,7 +60,7 @@ Model `Order` represents orders of products. One and only one order is linked to
 
 An order can be in state `waiting`, `confirmed`, `rejected`, `expired` or `cancelled`. A new order will start from state `waiting`, and from there it will change to one of the other states. Only valid other state change is from `confirmed` to `cancelled`.
 
-An order is created by providing its data in `order` field when creating a reservation via the API. The UI must also provide a return URL to which the user will be redirected after the payment process has been completed. In the creation response the UI gets back a payment URL, to which it must redirect the user to start the actual payment process. 
+An order is created by providing its data in `order` field when creating a reservation via the API. The UI must also provide a return URL to which the user will be redirected after the payment process has been completed. In the creation response the UI gets back a payment URL, to which it must redirect the user to start the actual payment process.
 
 ## Administration
 

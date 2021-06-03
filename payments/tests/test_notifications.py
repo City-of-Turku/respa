@@ -23,6 +23,7 @@ def get_body_with_all_template_vars():
         'order_line.price',
         'order_line.quantity',
         'order_line.unit_price',
+        'order_details',
         'product.id',
         'product.name',
         'product.description',
@@ -42,6 +43,9 @@ def get_body_with_all_template_vars():
 def get_expected_strings(order):
     order_line = order.order_lines.first()
     product = order_line.product
+    order_details = "[%(details)s]" % ({
+        'details': ', '.join([str(x) for x in order.reservation.get_notification_context('fi')['order_details']])
+    })
     return (
         order.order_number,
         str(order.created_at.year),
@@ -49,6 +53,7 @@ def get_expected_strings(order):
         localize_decimal(order_line.get_price()),
         str(order_line.quantity),
         localize_decimal(order_line.get_unit_price()),
+        order_details,
         product.product_id,
         product.name,
         product.description,
@@ -101,6 +106,22 @@ def test_reservation_created_notification(order_with_products):
         'Reservation created subject.',
         order_with_products.reservation.billing_email_address,
         get_expected_strings(order_with_products),
+    )
+
+@pytest.mark.django_db
+@override_settings(RESPA_MAILS_ENABLED=True)
+def test_reservation_created_notification_single_product(order_with_product):
+    user = order_with_product.reservation.user
+    user.preferred_language = 'fi'
+    user.save()
+
+    order_with_product.set_state(Order.CONFIRMED)
+
+    assert len(mail.outbox) == 1
+    check_received_mail_exists(
+        'Reservation created subject.',
+        order_with_product.reservation.billing_email_address,
+        get_expected_strings(order_with_product),
     )
 
 

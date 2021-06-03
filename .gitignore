@@ -28,3 +28,4 @@ pyvenv*
 pytest_cache
 env*
 static/*
+.python-version

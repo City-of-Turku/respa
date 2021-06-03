@@ -26,6 +26,7 @@ class ApiTokenAuthentication(HelusersApiTokenAuthentication):
                 raise AuthenticationFailed(
                     _("Not authorized for API scope \"{api_scope}\"")
                     .format(api_scope=api_scope))
+        user.amr = payload['amr']
         return (user, auth)
 
 def get_or_create_user(payload, oidc=False):

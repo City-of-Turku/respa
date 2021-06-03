@@ -114,7 +114,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
     list_display = ('name', 'unit', 'public', 'reservable')
     list_filter = ('unit', 'public', 'reservable')
     list_select_related = ('unit',)
-    ordering = ('unit', 'name')
+    ordering = ('unit', 'name', )
 
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)

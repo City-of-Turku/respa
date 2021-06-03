@@ -13,6 +13,8 @@ from .equipment import Equipment, EquipmentAlias, EquipmentCategory
 from .unit import Unit, UnitAuthorization, UnitIdentifier
 from .unit_group import UnitGroup, UnitGroupAuthorization
 
+from .timmi import TimmiPayload
+
 __all__ = [
     'AccessibilityValue',
     'AccessibilityViewpoint',
@@ -46,4 +48,5 @@ __all__ = [
     'UnitGroupAuthorization',
     'UnitIdentifier',
     'get_opening_hours',
+    'TimmiPayload'
 ]

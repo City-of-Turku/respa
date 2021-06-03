@@ -235,6 +235,27 @@ class AccessControlGrant(models.Model):
         logger.info('Notifying access code creation')
         reservation.send_access_code_created_mail()
 
+    def save_access_code_to_reservation(self):
+        reservation = self.reservation
+        reservation.access_code = self.access_code
+        try:
+            reservation.save(update_fields=['access_code'])
+        except:
+            self.reset_reservation_access_code()
+
+    def reset_reservation_access_code(self):
+        reservation = self.reservation
+        reservation.access_code = None
+        reservation.save(update_fields=['access_code'])
+
+    def send_notify_email(self):
+        reservation = self.reservation
+        if reservation.access_code is None:
+            logger.info('Reservation access code is None, skipping mail')
+            return
+        logger.info('Notifying access code creation')
+        reservation.send_access_code_created_mail()
+
 
 class AccessControlResource(models.Model):
     system = models.ForeignKey(

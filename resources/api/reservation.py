@@ -442,8 +442,6 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         if instance.can_view_catering_orders(user):
             data['has_catering_order'] = instance.catering_orders.exists()
 
-
-
         return data
 
     def get_is_own(self, obj):
@@ -659,15 +657,20 @@ class ReservationFilterSet(django_filters.rest_framework.FilterSet):
 
 class ReservationPermission(permissions.BasePermission):
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS or request.user and request.user.is_authenticated:
-            return True
-
         resource_id = request.data.get('resource')
-        resource = None
         try:
             resource = Resource.objects.get(pk=resource_id)
         except Resource.DoesNotExist:
+            return request.method in permissions.SAFE_METHODS or \
+                    request.user and request.user.is_authenticated
+        
+        if resource.authentication == 'strong' and \
+            not request.user.is_strong_auth:
             return False
+
+        if request.method in permissions.SAFE_METHODS or \
+            request.user and request.user.is_authenticated:
+            return True
 
         return request.method == 'POST' and resource.authentication == 'unauthenticated'
 
@@ -960,7 +963,6 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         queryset = queryset.filter(filters)
 
         queryset = queryset.filter(resource__in=Resource.objects.visible_for(user))
-
         return queryset
 
     def perform_create(self, serializer):

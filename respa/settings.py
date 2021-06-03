@@ -79,7 +79,24 @@ env = environ.Env(
     JWT_LIFETIME=(int, 3600), # generated jwt token expires after this many seconds
     JWT_PAYLOAD_HANDLER=(str, 'respa.machine_to_machine_auth.utils.jwt_payload_handler'), # generates jwt token payload
     ENABLE_RESOURCE_TOKEN_AUTH=(bool, False),
-    DISABLE_SERVER_SIDE_CURSORS=(bool, False)
+    DISABLE_SERVER_SIDE_CURSORS=(bool, False),
+    O365_CLIENT_ID=(str, ''),
+    O365_CLIENT_SECRET=(str, ''),
+    O365_AUTH_URL=(str, 'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize'),
+    O365_TOKEN_URL=(str, 'https://login.microsoftonline.com/organizations/oauth2/v2.0/token'),
+    O365_API_URL=(str, 'https://graph.microsoft.com/v1.0'),
+    O365_NOTIFICATION_URL=(str, None),
+    O365_CALLBACK_URL=(str, None),
+    O365_SYNC_DAYS_BACK=(int, 8),
+    O365_SYNC_DAYS_FORWARD=(int, 92),
+    O365_CALENDAR_AVAILABILITY_EVENT_PREFIX=(str, "Varattavissa Varaamo"),
+    O365_CALENDAR_RESERVATION_EVENT_PREFIX=(str, "Varaus Varaamo"),
+    TIMMI_API_URL=(str, ''),
+    TIMMI_ADMIN_ID=(int, 0),
+    TIMMI_TIMEOUT=(int, 60),
+    TIMMI_USERNAME=(str, ''), #base64 encoded username
+    TIMMI_PASSWORD=(str, ''), #base64 encoded password
+    STRONG_AUTH_CLAIMS=(tuple, ())
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -111,6 +128,12 @@ SITE_ID = 1
 
 USE_SWAGGER_OPENAPI_VIEW = env('USE_SWAGGER_OPENAPI_VIEW')
 USE_RESPA_EXCHANGE = env('USE_RESPA_EXCHANGE')
+
+TIMMI_API_URL = env('TIMMI_API_URL')
+TIMMI_ADMIN_ID = env('TIMMI_ADMIN_ID')
+TIMMI_USERNAME = env('TIMMI_USERNAME')
+TIMMI_PASSWORD = env('TIMMI_PASSWORD')
+TIMMI_TIMEOUT = env('TIMMI_TIMEOUT')
 
 # Application definition
 INSTALLED_APPS = [
@@ -159,6 +182,7 @@ INSTALLED_APPS = [
     'payments',
     'respa_exchange',
     'respa_outlook',
+    'respa_o365',
     'respa_admin',
 
     'sanitized_dump',
@@ -294,6 +318,8 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
+STRONG_AUTH_CLAIMS = env('STRONG_AUTH_CLAIMS')
+
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = env('DJANGO_ADMIN_LOGOUT_REDIRECT_URL')
 RESPA_ADMIN_LOGOUT_REDIRECT_URL = env('RESPA_ADMIN_LOGOUT_REDIRECT_URL')
@@ -367,6 +393,17 @@ GSM_NOTIFICATION_ADDRESS = env('GSM_NOTIFICATION_ADDRESS')
 OUTLOOK_EMAIL_DOMAIN = env('OUTLOOK_EMAIL_DOMAIN')
 OUTLOOK_POLLING_RATE = env('OUTLOOK_POLLING_RATE')
 
+O365_CLIENT_ID=env('O365_CLIENT_ID')
+O365_CLIENT_SECRET=env('O365_CLIENT_SECRET')
+O365_AUTH_URL=env('O365_AUTH_URL')
+O365_TOKEN_URL=env('O365_TOKEN_URL')
+O365_API_URL=env('O365_API_URL')
+O365_NOTIFICATION_URL=env('O365_NOTIFICATION_URL')
+O365_CALLBACK_URL=env('O365_CALLBACK_URL')
+O365_SYNC_DAYS_FORWARD=env('O365_SYNC_DAYS_FORWARD')
+O365_SYNC_DAYS_BACK=env('O365_SYNC_DAYS_BACK')
+O365_CALENDAR_AVAILABILITY_EVENT_PREFIX=env('O365_CALENDAR_AVAILABILITY_EVENT_PREFIX')
+O365_CALENDAR_RESERVATION_EVENT_PREFIX=env('O365_CALENDAR_RESERVATION_EVENT_PREFIX')
 
 from easy_thumbnails.conf import Settings as thumbnail_settings  # noqa
 THUMBNAIL_PROCESSORS = (
