@@ -10,7 +10,7 @@ class ServiceShortage(ModifiableModel):
     service_requirement = models.ForeignKey('ServiceRequirement', on_delete=models.CASCADE, null=True, related_name='service_shortages')
     service_point = models.ForeignKey('ServicePoint', on_delete=models.CASCADE, null=True, related_name='service_shortages')
     viewpoint = models.PositiveIntegerField()
-    shortage = models.CharField(max_length=255)
+    shortage = models.CharField(max_length=1000)
 
 class ServiceRequirement(ModifiableModel):
     text = models.TextField(null=True, blank=False)
