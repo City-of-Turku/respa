@@ -18,7 +18,6 @@ LANGUAGES = [x[0] for x in settings.LANGUAGES]
 
 
 class TranslatedModelSerializer(serializers.ModelSerializer):
-
     def __init__(self, *args, **kwargs):
         super(TranslatedModelSerializer, self).__init__(*args, **kwargs)
         model = self.Meta.model

@@ -9,6 +9,8 @@ from resources.api import RespaAPIRouter
 from resources.views.images import ResourceImageView
 from resources.views.ical import ICalFeedView
 
+import accessibility.api
+
 if getattr(settings, 'RESPA_COMMENTS_ENABLED', False):
     import comments.api
 
@@ -28,6 +30,7 @@ urlpatterns = [
     path('grappelli/', include('grappelli.urls')),
     path('resource_image/<int:pk>', ResourceImageView.as_view(), name='resource-image-view'),
     path('v1/', include(router.urls)),
+    path('v1/', include('accessibility.urls')),
     path('v1/o365/', include('respa_o365.urls')),
     re_path(r'v1/reservation/ical/(?P<ical_token>[-\w\d]+).ics$', ICalFeedView.as_view(), name='ical-feed'),
     path('', include('social_django.urls', namespace='social')),
