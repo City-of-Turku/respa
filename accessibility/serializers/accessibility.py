@@ -10,6 +10,8 @@ import re
 
 def build_url(request, pk):
     url = request.build_absolute_uri(request.get_full_path())
+    if re.search(r'/\?', url):
+        url = url.replace(re.search(r'\?.*$', url)[0], '')
     if re.search(str(pk), url):
         return url
     return f"{url}{pk}/"
