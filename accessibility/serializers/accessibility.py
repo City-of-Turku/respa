@@ -119,7 +119,8 @@ class ServiceEntranceSerializer(BaseSerializer):
     
     def to_representation(self, instance):
         obj = super().to_representation(instance)
-        obj["location"] = json.loads(obj["location"])
+        if obj["location"]:
+            obj["location"] = json.loads(obj["location"])
         return obj
 
 class ServicePointSerializer(BaseSerializer):
