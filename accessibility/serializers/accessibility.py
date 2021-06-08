@@ -74,7 +74,7 @@ class ServiceShortagesSerializer(BaseSerializer):
 
     def to_representation(self, instance):
         obj = super().to_representation(instance)
-        if obj["service_requirement"]:
+        if self.context.get('detail_requirements', False) and obj["service_requirement"]:
             requirement = ServiceRequirement.objects.get(pk=obj["service_requirement"])
             obj["service_requirement"] = ServiceRequirementSerializer(requirement).data
         return obj

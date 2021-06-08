@@ -12,8 +12,8 @@ class ServicePointViewSet(viewsets.ModelViewSet):
     """
     List or Create accessibility models.
     """
-    permission_classes = (permissions.AllowAny, )
-    queryset = ServicePoint.objects.all().prefetch_related('service_shortages__service_requirement')
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
+    queryset = ServicePoint.objects.all()
 
     def get_serializer(self, *args, **kwargs):
         data = kwargs.get('data')
@@ -25,13 +25,19 @@ class ServicePointViewSet(viewsets.ModelViewSet):
         if self.request.method in ('PUT', 'POST'):
             return ServicePointUpdateSerializer
         return ServicePointSerializer
+    
+    def get_serializer_context(self, **kwargs):
+        context = super().get_serializer_context()
+        if self.request.query_params.get('include', None):
+            context['detail_requirements'] = bool(self.request.query_params['include'] == 'detail_requirements')
+        return context
 
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
 class ServiceRequirementCreateView(generics.CreateAPIView):
     serializer_class = ServiceRequirementSerializer
-    permission_classes = (permissions.AllowAny, )
+    permission_classes = (permissions.IsAuthenticated, )
 
     def get_serializer(self, *args, **kwargs):
         data = kwargs.get('data')
