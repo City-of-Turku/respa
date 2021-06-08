@@ -74,7 +74,7 @@ class ServiceShortagesSerializer(BaseSerializer):
 
     def to_representation(self, instance):
         obj = super().to_representation(instance)
-        if self.context.get('detail_requirements', False) and instance.service_requirement:
+        if 'service_requirement' in self.context.get('includes',  []) and instance.service_requirement:
             obj['service_requirement'] = ServiceRequirementSerializer().to_representation(instance.service_requirement)
         return obj
 
@@ -159,12 +159,19 @@ class ServicePointSerializer(BaseSerializer):
 
     def to_representation(self, instance):
         request = self.context['request']
-        obj = OrderedDict()
-        obj.update({
-            'url': build_url(request, instance.id)
+        ret = OrderedDict()
+        obj = super().to_representation(instance)
+        ret.update({
+            'url': build_url(request, instance.id),
+            **obj
         })
-        obj.update(super().to_representation(instance))
-        return obj
+
+        if 'service_shortages' not in self.context.get('includes',  []):
+            ret['service_shortages'] = { 'count': instance.service_shortages.count() }
+        if 'service_entrances' not in self.context.get('includes',  []):
+            ret['service_entrances'] = { 'count': instance.service_entrances.count() }
+
+        return ret
 
 
 class ServicePointUpdateSerializer(ServicePointSerializer):

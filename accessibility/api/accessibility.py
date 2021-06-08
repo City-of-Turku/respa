@@ -29,7 +29,7 @@ class ServicePointViewSet(viewsets.ModelViewSet):
     def get_serializer_context(self, **kwargs):
         context = super().get_serializer_context()
         if self.request.query_params.get('include', None):
-            context['detail_requirements'] = bool(self.request.query_params['include'] == 'detail_requirements')
+            context['includes'] = self.request.query_params.getlist('include', [])
         return context
 
     def update(self, request, *args, **kwargs):
