@@ -555,7 +555,8 @@ class Reservation(ModifiableModel):
                         'name', 'quantity', 'price',
                         'unit_price', 'unit_price_num', 'tax_percentage',
                         'price_type', 'price_period', 'order_number',
-                        'decimal_hours',
+                        'decimal_hours', 'pretax_price', 'pretax_price_num',
+                        'tax_price', 'tax_price_num'
                     )
                     '''
                     product_values
@@ -574,6 +575,10 @@ class Reservation(ModifiableModel):
                     price_type          -   price type of product, per period / fixed
                     price_period        -   price period of product if type=per period, e.g. 00:30:00 for 30min 
                     order_number        -   id of parent order
+                    pretax_price        -   price amount without tax, string e.g. 6,05 if total price is 7,5 with 24% vat
+                    pretax_price_num    -   price amount without tax, float e.g. 6.05
+                    tax_price           -   tax amount, string e.g. 1,45 if total price is 7,5 with 24% vat
+                    tax_price_num       -   tax amount, float e.g. 1.45
                     '''
                     product_values = {
                         'id': item["product"]["id"],
@@ -587,7 +592,11 @@ class Reservation(ModifiableModel):
                         'tax_percentage': item["product"]["tax_percentage"],
                         'price_type': item["product"]["price_type"],
                         'price_period': item["product"]["price_period"],
-                        'order_number': context["order"]["id"]
+                        'order_number': context["order"]["id"],
+                        'pretax_price': item["product"]["pretax_price"],
+                        'pretax_price_num': float(item["product"]["pretax_price"].replace(',','.')),
+                        'tax_price': item["product"]["tax_price"],
+                        'tax_price_num': float(item["product"]["tax_price"].replace(',','.'))
                     }
 
                     for field in product_fields:
@@ -683,9 +692,15 @@ class Reservation(ModifiableModel):
             else:
                 email_address = self.reserver_email_address or self.user.email
             user = self.user
+
         language = DEFAULT_LANG
-        if user and not user.is_staff:
+        # use reservation's preferred_language if it exists
+        if getattr(self, 'preferred_language', None):
             language = self.preferred_language
+        # if user is defined and user.is_staff, use default lang
+        if user and user.is_staff:
+            language = DEFAULT_LANG
+
         context = self.get_notification_context(language, notification_type=notification_type, extra_context=extra_context)
         try:
             if staff_email:
