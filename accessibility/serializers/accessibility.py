@@ -123,6 +123,8 @@ class ServiceEntranceSerializer(BaseSerializer):
         return obj
 
 class ServicePointSerializer(BaseSerializer):
+    id = serializers.UUIDField()
+
     service_shortages = ServiceShortagesSerializer(many=True)
     service_entrances = ServiceEntranceSerializer(many=True)
 
@@ -175,6 +177,8 @@ class ServicePointSerializer(BaseSerializer):
 
 
 class ServicePointUpdateSerializer(ServicePointSerializer):
+    id = serializers.UUIDField(required=False)
+
     service_shortages = ServiceShortagesSerializer(many=True, required=False)
     service_entrances = ServiceEntranceSerializer(many=True, required=False)
 
