@@ -20,7 +20,7 @@ class BaseSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         obj = super(BaseSerializer, self).to_representation(instance)
         return OrderedDict([(key, obj[key])
-            if obj[key] or not obj[key] and isinstance(obj[key], bool) and isinstance(obj[key], dict)
+            if obj[key] or not obj[key] and (isinstance(obj[key], bool) or isinstance(obj[key], dict))
                 else (key, "") for key in obj])
 
     def validate(self, attrs):
@@ -74,8 +74,8 @@ class ServiceShortagesSerializer(BaseSerializer):
 
     def to_representation(self, instance):
         obj = super().to_representation(instance)
-        if self.context.get('detail_requirements', False) and obj["service_requirement"]:
-            obj['service_requirement'] = ServiceRequirementSerializer(instance.service_requirement).data
+        if self.context.get('detail_requirements', False) and instance.service_requirement:
+            obj['service_requirement'] = ServiceRequirementSerializer().to_representation(instance.service_requirement)
         return obj
 
 class ServiceSentenceSerializer(BaseSerializer):
