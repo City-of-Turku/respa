@@ -1,6 +1,7 @@
 import logging
 import json
 import random
+from respa_o365.o365_calendar import MicrosoftApi
 from django.conf import settings
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
@@ -84,7 +85,11 @@ class LoginCallBackView(APIView):
         token = json.dumps(token)
 
         res = stored_data.resource
-        
+
+        api = MicrosoftApi(token=token)
+        me_json = api.get('me')
+        microsoft_user = me_json.get('id')
+
         # Delete existing periods because they will not sync to Outlook, and the format may be incompatible.
         existing_periods = Period.objects.filter(resource=res)
         existing_periods.delete()
@@ -94,6 +99,7 @@ class LoginCallBackView(APIView):
             resource=stored_data.resource,
             user=stored_data.user,
             token=token,
+            microsoft_user_id=microsoft_user
         )
 
         add_to_queue(link)
