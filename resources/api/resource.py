@@ -71,7 +71,7 @@ def get_resource_reservations_queryset(begin, end):
 class PurposeSerializer(TranslatedModelSerializer):
     class Meta:
         model = Purpose
-        fields = ['name', 'parent', 'id']
+        fields = ['name', 'parent', 'id', 'image']
 
 
 class PurposeViewSet(viewsets.ReadOnlyModelViewSet):

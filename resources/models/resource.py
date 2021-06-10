@@ -14,7 +14,7 @@ from django.conf import settings
 from django.contrib.gis.db import models
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from django.core.validators import MinValueValidator
+from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
@@ -114,6 +114,8 @@ class Purpose(ModifiableModel, NameIdentifiedModel):
                                on_delete=models.SET_NULL)
     name = models.CharField(verbose_name=_('Name'), max_length=200)
     public = models.BooleanField(default=True, verbose_name=_('Public'))
+    image = models.FileField(upload_to='purpose_images', validators=[FileExtensionValidator(['svg'])],
+                                null=True, blank=True)
 
     class Meta:
         verbose_name = _("purpose")
