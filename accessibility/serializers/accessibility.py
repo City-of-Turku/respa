@@ -66,8 +66,7 @@ class ServiceShortagesSerializer(BaseSerializer):
     class Meta:
         model = ServiceShortage
         fields = (
-            'id',
-            'system_id', 'viewpoint',
+            'id', 'viewpoint',
             'shortage_fi', 'shortage_en', 'shortage_sv',
             'service_requirement'
         )
@@ -87,7 +86,6 @@ class ServiceSentenceSerializer(BaseSerializer):
         model = ServiceSentence
         fields = (
             'id',
-            'system_id',
             'sentence_order_text',
             'sentence_group'
         )
@@ -102,8 +100,7 @@ class ServiceEntranceSerializer(BaseSerializer):
     class Meta:
         model = ServiceEntrance
         fields = (
-            'id',
-            'system_id', 'is_main_entrance',
+            'id', 'is_main_entrance',
             'location', 'photo_url', 'street_view_url',
             'name_fi', 'name_en', 'name_sv', 'service_sentences',
         )
@@ -134,7 +131,7 @@ class ServicePointSerializer(BaseSerializer):
     class Meta:
         model = ServicePoint
         fields = (
-            'id', 'code',
+            'id', 'code', 'system_id',
             'name_fi', 'name_en', 'name_sv',
             'service_shortages', 'service_entrances'
         )

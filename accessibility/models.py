@@ -6,7 +6,6 @@ import uuid
 
 
 class ServiceShortage(ModifiableModel):
-    system_id = models.UUIDField(default=uuid.uuid4)
     service_requirement = models.ForeignKey('ServiceRequirement', on_delete=models.CASCADE, null=True, related_name='service_shortages')
     service_point = models.ForeignKey('ServicePoint', on_delete=models.CASCADE, null=True, related_name='service_shortages')
     viewpoint = models.PositiveIntegerField()
@@ -18,7 +17,6 @@ class ServiceRequirement(ModifiableModel):
     evaluation_zone = models.CharField(max_length=255)
 
 class ServiceEntrance(ModifiableModel):
-    system_id = models.UUIDField(default=uuid.uuid4)
     service_point = models.ForeignKey('ServicePoint', on_delete=models.CASCADE, null=True, related_name='service_entrances')
     is_main_entrance = models.BooleanField(default=False)
     location = JSONField(null=True, blank=True)
@@ -31,6 +29,7 @@ class ServiceEntrance(ModifiableModel):
 
 class ServicePoint(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    system_id = models.UUIDField(null=True)
     code = models.PositiveIntegerField()
     name = models.CharField(max_length=255)
 
@@ -38,7 +37,6 @@ class ServicePoint(models.Model):
         ordering = ('code', )
 
 class ServiceSentence(ModifiableModel):
-    system_id = models.UUIDField(default=uuid.uuid4)
     service_point = models.ForeignKey(ServicePoint, on_delete=models.CASCADE, null=True, related_name='service_sentences')
     service_entrance = models.ForeignKey(ServiceEntrance, on_delete=models.CASCADE, null=True, related_name='service_sentences')
     sentence_group = models.ForeignKey('SentenceGroup', on_delete=models.SET_NULL, null=True, related_name='service_sentences')
