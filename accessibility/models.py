@@ -11,6 +11,10 @@ class ServiceShortage(ModifiableModel):
     viewpoint = models.PositiveIntegerField()
     shortage = models.CharField(max_length=1000)
 
+
+    class Meta:
+        ordering = ('id', )
+
 class ServiceRequirement(ModifiableModel):
     text = models.TextField(null=True, blank=False)
     is_indoor_requirement = models.BooleanField(null=True, blank=False)
@@ -21,8 +25,8 @@ class ServiceEntrance(ModifiableModel):
     is_main_entrance = models.BooleanField(default=False)
     location = JSONField(null=True, blank=True)
     name = models.CharField(max_length=255)
-    photo_url = models.URLField(max_length=1000, null=True)
-    street_view_url = models.URLField(max_length=1000, null=True)
+    photo_url = models.URLField(max_length=1000, null=True, blank=True)
+    street_view_url = models.URLField(max_length=1000, null=True, blank=True)
 
     class Meta:
         ordering = ('id', )

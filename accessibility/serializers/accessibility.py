@@ -4,6 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from accessibility.models import ServicePoint, ServiceShortage, ServiceRequirement, ServiceEntrance, ServiceSentence, Sentence, SentenceGroup
 from django.core.exceptions import ValidationError
 from resources.api.base import TranslatedModelSerializer
+
 import json
 
 import re
@@ -28,6 +29,11 @@ class BaseSerializer(serializers.ModelSerializer):
 
 
 class SentenceSerializer(BaseSerializer):
+
+    sentence_fi = serializers.CharField(required=True)
+    sentence_sv = serializers.CharField(required=True)
+    sentence_en = serializers.CharField(required=True)
+
     class Meta:
         model = Sentence
         fields = (
@@ -45,7 +51,14 @@ class SentenceGroupSerializer(BaseSerializer):
             'sentences'
         )
     
-
+    def create(self, validated_data):
+        sentences = validated_data.pop('sentences', [])
+        instance = SentenceGroup(**validated_data)
+        instance.save()
+        serializer = SentenceSerializer(data=sentences, many=True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(group=instance)
+        return instance
 
 class ServiceRequirementSerializer(BaseSerializer):
     id = serializers.IntegerField()
@@ -61,6 +74,8 @@ class ServiceRequirementSerializer(BaseSerializer):
 
 
 class ServiceShortagesSerializer(BaseSerializer):
+    id = serializers.IntegerField(required=False)
+
     viewpoint = serializers.IntegerField(required=False)
 
     class Meta:
@@ -81,6 +96,8 @@ class ServiceSentenceSerializer(BaseSerializer):
     id = serializers.IntegerField(required=False)
     sentence_group = SentenceGroupSerializer()
 
+    sentence_order_text = serializers.CharField(required=True)
+
 
     class Meta:
         model = ServiceSentence
@@ -90,13 +107,27 @@ class ServiceSentenceSerializer(BaseSerializer):
             'sentence_group'
         )
 
+    def create(self, validated_data):
+        sentence_group = validated_data.pop('sentence_group', None)
+        service_point = self.context['service_point']
+        service_entrance = self.context['service_entrance']
+        if sentence_group:
+            serializer = SentenceGroupSerializer(data=sentence_group)
+            if serializer.is_valid(raise_exception=True):
+                sentence_group = serializer.save()
+        instance = ServiceSentence(service_point=service_point, service_entrance=service_entrance, sentence_group=sentence_group, **validated_data)
+        instance.save()
+        return instance
+
 class ServiceEntranceSerializer(BaseSerializer):
     id = serializers.IntegerField()
+
+    photo_url = serializers.URLField(required=False, allow_null=True, allow_blank=True)
+    street_view_url = serializers.URLField(required=False, allow_null=True, allow_blank=True)
     location = serializers.JSONField(required=False)
     is_main_entrance = serializers.BooleanField(required=False)
 
     service_sentences = ServiceSentenceSerializer(many=True, required=False)
-
     class Meta:
         model = ServiceEntrance
         fields = (
@@ -106,7 +137,8 @@ class ServiceEntranceSerializer(BaseSerializer):
         )
     def validate_location(self, data, **kwargs):
         try:
-            json.loads(data)
+            if not isinstance(data, dict):
+                json.loads(data)
             return data
         except:
             raise ValidationError({
@@ -116,17 +148,18 @@ class ServiceEntranceSerializer(BaseSerializer):
     def to_representation(self, instance):
         obj = super().to_representation(instance)
         if obj["location"]:
-            obj["location"] = json.loads(obj["location"])
+            if not isinstance(obj["location"], dict):
+                obj["location"] = json.loads(obj["location"])
         return obj
 
-class ServicePointSerializer(BaseSerializer):
-    id = serializers.UUIDField()
 
+class ServicePointSerializer(BaseSerializer):
     service_shortages = ServiceShortagesSerializer(many=True)
     service_entrances = ServiceEntranceSerializer(many=True)
 
+    system_id = serializers.UUIDField(required=False)
+
     name_fi = serializers.CharField(required=True)
-    code    = serializers.CharField(required=True)
 
     class Meta:
         model = ServicePoint
@@ -141,6 +174,7 @@ class ServicePointSerializer(BaseSerializer):
         service_entrances = validated_data.pop('service_entrances', [])
         instance = ServicePoint.objects.create(**validated_data)
 
+
         for service_shortage in service_shortages:
             ServiceShortage.objects.create(service_point=instance, **service_shortage)
         
@@ -151,9 +185,9 @@ class ServicePointSerializer(BaseSerializer):
                 sentence_group = service_sentence.pop('sentence_group', [])
                 sentences = sentence_group.pop('sentences', [])
                 sentence_group = SentenceGroup.objects.create(**sentence_group)
-                service_sentence = ServiceSentence.objects.create(service_point=instance, service_entrance=service_entrance, sentence_group=sentence_group, **service_sentence)
+                ServiceSentence.objects.create(service_point=instance, service_entrance=service_entrance, sentence_group=sentence_group, **service_sentence)
                 for sentence in sentences:
-                    sentence = Sentence.objects.create(group=sentence_group, **sentence)
+                    Sentence.objects.create(group=sentence_group, **sentence)
         return instance
 
     def to_representation(self, instance):
@@ -174,31 +208,39 @@ class ServicePointSerializer(BaseSerializer):
 
 
 class ServicePointUpdateSerializer(ServicePointSerializer):
-    id = serializers.UUIDField(required=False)
-
     service_shortages = ServiceShortagesSerializer(many=True, required=False)
     service_entrances = ServiceEntranceSerializer(many=True, required=False)
+
 
     name_fi = serializers.CharField(required=False)
     code    = serializers.CharField(required=False)
 
+
     def update(self, instance, validated_data):
-        shortages = validated_data.pop('service_shortages', [])
+        service_shortages = validated_data.pop('service_shortages', [])
         service_entrances = validated_data.pop('service_entrances', [])
-        for shortage in shortages:
-            ServiceShortage.objects.update_or_create(service_point=instance, **shortage)
+        for service_shortage in service_shortages:
+            pk = service_shortage.get('id', None)
+            if pk:
+                try:
+                    service_instance = ServiceShortage.objects.get(service_point=instance, pk=pk)
+                except:
+                    service_instance = ServiceShortage(service_point=instance, **service_shortage)
+                serializer = ServiceShortagesSerializer(instance=service_instance, data=service_shortage)
+                if 'service_requirement' in service_shortage:
+                    service_shortage['service_requirement'] = service_shortage['service_requirement'].id
+                if serializer.is_valid(raise_exception=True):
+                    serializer.save()
         for service_entrance in service_entrances:
             service_sentences = service_entrance.pop('service_sentences', [])
-            service_entrance, _ = ServiceEntrance.objects.update_or_create(service_point=instance, **service_entrance)
-            for service_sentence in service_sentences:
-
-                sentence_group = service_sentence.pop('sentence_group', [])
-                sentences = sentence_group.pop('sentences', [])
-
-                sentence_group, _ = SentenceGroup.objects.update_or_create(**sentence_group)
-
-                service_sentence, _ = ServiceSentence.objects.update_or_create(service_point=instance, service_entrance=service_entrance, sentence_group=sentence_group, **service_sentence)
-                
-                for sentence in sentences:
-                    sentence, _ = Sentence.objects.update_or_create(group=sentence_group, **sentence)
+            try:
+                entrance = ServiceEntrance.objects.get(service_point=instance, pk=service_entrance['id'])
+            except:
+                entrance = ServiceEntrance(service_point=instance, **validated_data)
+            serializer = ServiceEntranceSerializer(instance=entrance, data=service_entrance)
+            if serializer.is_valid(raise_exception=True):
+                service_entrance = serializer.save()
+            serializer = ServiceSentenceSerializer(data=service_sentences, many=True, context=dict(service_entrance=service_entrance, service_point=instance))
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
         return instance

@@ -19,10 +19,12 @@ class ServicePointViewSet(viewsets.ModelViewSet):
         data = kwargs.get('data')
         if isinstance(data, list):
             kwargs['many'] = True
-        return super().get_serializer(*args, **kwargs)
+        if self.request.method == 'PATCH':
+            kwargs['partial'] = True
+        return super(ServicePointViewSet, self).get_serializer(*args, **kwargs)
 
     def get_serializer_class(self):
-        if self.request.method in ('PUT', 'POST'):
+        if self.request.method in ('PUT', 'PATCH'):
             return ServicePointUpdateSerializer
         return ServicePointSerializer
     
@@ -31,9 +33,6 @@ class ServicePointViewSet(viewsets.ModelViewSet):
         if self.request.query_params.get('include', None):
             context['includes'] = self.request.query_params.getlist('include', [])
         return context
-
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
 
 class ServiceRequirementCreateView(generics.CreateAPIView):
     serializer_class = ServiceRequirementSerializer
