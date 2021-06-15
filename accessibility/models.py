@@ -17,8 +17,11 @@ class ServiceShortage(ModifiableModel):
 
 class ServiceRequirement(ModifiableModel):
     text = models.TextField(null=True, blank=False)
-    is_indoor_requirement = models.BooleanField(null=True, blank=False)
+    is_indoor_requirement = models.BooleanField(default=False)
     evaluation_zone = models.CharField(max_length=255)
+
+    class Meta:
+        ordering = ('id', )
 
 class ServiceEntrance(ModifiableModel):
     service_point = models.ForeignKey('ServicePoint', on_delete=models.CASCADE, null=True, related_name='service_entrances')

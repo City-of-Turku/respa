@@ -12,7 +12,7 @@ class ServicePointViewSet(viewsets.ModelViewSet):
     """
     List or Create accessibility models.
     """
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
+    permission_classes = (permissions.DjangoModelPermissionsOrAnonReadOnly, )
     queryset = ServicePoint.objects.all()
 
     def get_serializer(self, *args, **kwargs):
@@ -34,9 +34,11 @@ class ServicePointViewSet(viewsets.ModelViewSet):
             context['includes'] = self.request.query_params.getlist('include', [])
         return context
 
-class ServiceRequirementCreateView(generics.CreateAPIView):
+class ServiceRequirementCreateView(generics.ListCreateAPIView):
     serializer_class = ServiceRequirementSerializer
-    permission_classes = (permissions.IsAuthenticated, )
+    permission_classes = (permissions.DjangoModelPermissionsOrAnonReadOnly, )
+
+    queryset = ServiceRequirement.objects.all()
 
     def get_serializer(self, *args, **kwargs):
         data = kwargs.get('data')

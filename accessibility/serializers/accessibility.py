@@ -76,7 +76,7 @@ class ServiceRequirementSerializer(BaseSerializer):
 class ServiceShortagesSerializer(BaseSerializer):
     id = serializers.IntegerField(required=False)
 
-    viewpoint = serializers.IntegerField(required=False)
+    viewpoint = serializers.IntegerField(required=True)
 
     class Meta:
         model = ServiceShortage
@@ -157,7 +157,7 @@ class ServicePointSerializer(BaseSerializer):
     service_shortages = ServiceShortagesSerializer(many=True)
     service_entrances = ServiceEntranceSerializer(many=True)
 
-    system_id = serializers.UUIDField(required=False)
+    system_id = serializers.UUIDField(required=False, allow_null=True)
 
     name_fi = serializers.CharField(required=True)
 
@@ -172,22 +172,27 @@ class ServicePointSerializer(BaseSerializer):
     def create(self, validated_data):
         service_shortages = validated_data.pop('service_shortages', [])
         service_entrances = validated_data.pop('service_entrances', [])
-        instance = ServicePoint.objects.create(**validated_data)
+
+        instance = super(ServicePointSerializer, self).create(validated_data)
 
 
         for service_shortage in service_shortages:
-            ServiceShortage.objects.create(service_point=instance, **service_shortage)
+            serializer = ServiceShortagesSerializer(data=service_shortage)
+            if 'service_requirement' in service_shortage:
+                service_shortage['service_requirement'] = service_shortage['service_requirement'].id
+            if serializer.is_valid(raise_exception=True):
+                serializer.save(service_point=instance)
         
         for service_entrance in service_entrances:
             service_sentences = service_entrance.pop('service_sentences', [])
-            service_entrance = ServiceEntrance.objects.create(service_point=instance, **service_entrance)
-            for service_sentence in service_sentences:
-                sentence_group = service_sentence.pop('sentence_group', [])
-                sentences = sentence_group.pop('sentences', [])
-                sentence_group = SentenceGroup.objects.create(**sentence_group)
-                ServiceSentence.objects.create(service_point=instance, service_entrance=service_entrance, sentence_group=sentence_group, **service_sentence)
-                for sentence in sentences:
-                    Sentence.objects.create(group=sentence_group, **sentence)
+            serializer = ServiceEntranceSerializer(data=service_entrance)
+            if serializer.is_valid(raise_exception=True):
+                service_entrance = serializer.save(service_point=instance)
+
+            serializer = ServiceSentenceSerializer(data=service_sentences, many=True, context=dict(service_entrance=service_entrance, service_point=instance))
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+
         return instance
 
     def to_representation(self, instance):
@@ -219,6 +224,7 @@ class ServicePointUpdateSerializer(ServicePointSerializer):
     def update(self, instance, validated_data):
         service_shortages = validated_data.pop('service_shortages', [])
         service_entrances = validated_data.pop('service_entrances', [])
+        instance = super().update(instance, validated_data)
         for service_shortage in service_shortages:
             pk = service_shortage.get('id', None)
             if pk:
