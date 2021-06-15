@@ -220,29 +220,46 @@ class ServicePointUpdateSerializer(ServicePointSerializer):
     name_fi = serializers.CharField(required=False)
     code    = serializers.CharField(required=False)
 
+    def validate(self, attrs):
+        service_shortages = attrs.get('service_shortages', [])
+        service_entrances = attrs.get('service_entrances', [])
+
+        for service_shortage in service_shortages:
+            pk = service_shortage.get('id', None)
+            if not pk and self.context['request'].method == 'PATCH':
+                raise ValidationError({
+                    'message': 'PATCH service_shortage requires id'
+                })
+        for service_entrance in service_entrances:
+            pk = service_entrance.get('id', None)
+            if not pk and self.context['request'].method == 'PATCH':
+                raise ValidationError({
+                    'message': 'PATCH service_entrance requires id'
+                })
+        
+        return super().validate(attrs)
+
 
     def update(self, instance, validated_data):
         service_shortages = validated_data.pop('service_shortages', [])
         service_entrances = validated_data.pop('service_entrances', [])
         instance = super().update(instance, validated_data)
         for service_shortage in service_shortages:
-            pk = service_shortage.get('id', None)
-            if pk:
-                try:
-                    service_instance = ServiceShortage.objects.get(service_point=instance, pk=pk)
-                except:
-                    service_instance = ServiceShortage(service_point=instance, **service_shortage)
-                serializer = ServiceShortagesSerializer(instance=service_instance, data=service_shortage)
-                if 'service_requirement' in service_shortage:
-                    service_shortage['service_requirement'] = service_shortage['service_requirement'].id
-                if serializer.is_valid(raise_exception=True):
-                    serializer.save()
+            try:
+                service_instance = ServiceShortage.objects.get(service_point=instance, pk=service_shortage['id'])
+            except:
+                service_instance = ServiceShortage(service_point=instance, **service_shortage)
+            serializer = ServiceShortagesSerializer(instance=service_instance, data=service_shortage)
+            if 'service_requirement' in service_shortage:
+                service_shortage['service_requirement'] = service_shortage['service_requirement'].id
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
         for service_entrance in service_entrances:
             service_sentences = service_entrance.pop('service_sentences', [])
             try:
                 entrance = ServiceEntrance.objects.get(service_point=instance, pk=service_entrance['id'])
             except:
-                entrance = ServiceEntrance(service_point=instance, **validated_data)
+                entrance = ServiceEntrance(service_point=instance, **service_entrance)
             serializer = ServiceEntranceSerializer(instance=entrance, data=service_entrance)
             if serializer.is_valid(raise_exception=True):
                 service_entrance = serializer.save()
