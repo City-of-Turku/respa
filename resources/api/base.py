@@ -37,6 +37,16 @@ class TranslatedModelSerializer(serializers.ModelSerializer):
                     del self.fields[key]
 
     def to_representation(self, obj):
+        for field in self.translated_fields:
+            if not isinstance(getattr(obj, field), dict):
+                translated = {}
+                for lang in LANGUAGES:
+                    val = getattr(obj, '%s_%s' % (field, lang), None)
+                    if not val:
+                        continue
+                    translated[lang] = val
+                setattr(obj, field, translated)
+    
         ret = super(TranslatedModelSerializer, self).to_representation(obj)
         if obj is None:
             return ret
@@ -44,10 +54,14 @@ class TranslatedModelSerializer(serializers.ModelSerializer):
         for field_name in self.translated_fields:
             if field_name not in self.fields:
                 continue
+            if isinstance(ret[field_name], dict):
+                continue
             d = {}
             for lang in LANGUAGES:
                 key = "%s_%s" % (field_name, lang)
                 val = getattr(obj, key, None)
+                if isinstance(val, dict):
+                    val = val.get(lang, None)
                 if val in (None, ""):
                     continue
                 d[lang] = val
@@ -59,14 +73,20 @@ class TranslatedModelSerializer(serializers.ModelSerializer):
 
 
     def validate_translation(self, data):
-        translated = translator.get_options_for_model(self.Meta.model).fields.keys()
-        fields = [(key, data[key]) for key in data if key in translated]
+        fields = [(key, data[key]) for key in data if key in self.translated_fields]
+
         for field, value in fields:
             for lang in [x[0] for x in settings.LANGUAGES]:
-                if not value[lang] and '%s_%s' % (field, lang) in self.Meta.required_translations:
+                if (not lang in value or not value[lang]) and '%s_%s' % (field, lang) in self.Meta.required_translations:
                     raise ValidationError({
                         field: [
                                 '%s: %s' % (_('This field is required.').replace('.',''), lang)
+                            ]
+                    })
+                if lang in value and not isinstance(value[lang], str):
+                    raise ValidationError({
+                        field: [
+                                _('Invalid type for field: %s_%s, expected: string, but received %s.' % (field, lang, type(value[lang]).__name__))
                             ]
                     })
         return data
