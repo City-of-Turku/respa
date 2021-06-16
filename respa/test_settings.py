@@ -15,3 +15,4 @@ RESPA_ADMIN_LOGOUT_REDIRECT_URL='https://hel.fi'
 # API token auth endpoint
 MACHINE_TO_MACHINE_AUTH_ENABLED=1
 STRONG_AUTH_CLAIMS=('very_strong_auth', )
+HELUSERS_PROVIDER = 'helusers.providers.helsinki'

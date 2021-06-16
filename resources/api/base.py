@@ -3,6 +3,8 @@ from django.utils import timezone
 import django_filters
 from modeltranslation.translator import NotRegistered, translator
 from rest_framework import serializers
+from django.core.exceptions import ValidationError
+from django.utils.translation import ugettext_lazy as _
 
 all_views = []
 
@@ -15,7 +17,6 @@ def register_view(klass, name, base_name=None):
 
 
 LANGUAGES = [x[0] for x in settings.LANGUAGES]
-
 
 class TranslatedModelSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
@@ -54,8 +55,27 @@ class TranslatedModelSerializer(serializers.ModelSerializer):
             # If no text provided, leave the field as null
             d = (d or None)
             ret[field_name] = d
-
         return ret
+
+
+    def validate_translation(self, data):
+        translated = translator.get_options_for_model(self.Meta.model).fields.keys()
+        fields = [(key, data[key]) for key in data if key in translated]
+        for field, value in fields:
+            for lang in [x[0] for x in settings.LANGUAGES]:
+                if not value[lang] and '%s_%s' % (field, lang) in self.Meta.required_translations:
+                    raise ValidationError({
+                        field: [
+                                '%s: %s' % (_('This field is required.').replace('.',''), lang)
+                            ]
+                    })
+        return data
+
+    def validate(self, attrs):
+      attrs = super().validate(attrs)
+      if getattr(self.Meta, 'required_translations', None):
+        self.validate_translation(attrs)
+      return attrs
 
 
 class NullableTimeField(serializers.TimeField):
