@@ -74,7 +74,6 @@ class TranslatedModelSerializer(serializers.ModelSerializer):
 
     def validate_translation(self, data):
         fields = [(key, data[key]) for key in data if key in self.translated_fields]
-
         for field, value in fields:
             for lang in [x[0] for x in settings.LANGUAGES]:
                 if (not lang in value or not value[lang]) and '%s_%s' % (field, lang) in self.Meta.required_translations:
@@ -89,6 +88,10 @@ class TranslatedModelSerializer(serializers.ModelSerializer):
                                 _('Invalid type for field: %s_%s, expected: string, but received %s.' % (field, lang, type(value[lang]).__name__))
                             ]
                     })
+                data.update({
+                    '%s_%s' % (field, lang): value.get(lang, None)
+                })
+            del data[field]
         return data
 
     def validate(self, attrs):
