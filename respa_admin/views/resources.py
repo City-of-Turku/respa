@@ -375,7 +375,7 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
         # re-fill resource_staff_emails from initial data, return as list
         original = form.data.copy()
         original.update({
-                'resource_staff_emails': form.initial['resource_staff_emails']
+                'resource_staff_emails': form.initial.get('resource_staff_emails', [])
             })
 
         form.data = original
