@@ -1811,3 +1811,6 @@ msgstr "Maksupalveluun ei saatu yhteyttä"
 
 msgid "Failed to initiate payment process"
 msgstr "Maksuprosessin aloittaminen epäonnistui"
+
+msgid "Double click to remove an address."
+msgstr "Poista osoite kaksoisklikkaamalla."

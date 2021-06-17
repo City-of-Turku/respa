@@ -371,6 +371,14 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
         period_formset_with_days = self.add_empty_forms(period_formset_with_days)
         trans_fields = forms.get_translated_field_count(resource_image_formset)
 
+        # resource_staff_emails is treated as single string if form fails
+        # re-fill resource_staff_emails from initial data, return as list
+        original = form.data.copy()
+        original.update({
+                'resource_staff_emails': form.initial['resource_staff_emails']
+            })
+
+        form.data = original
         return self.render_to_response(
             self.get_context_data(
                 form=form,

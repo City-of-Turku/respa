@@ -24,6 +24,7 @@ export function initializeEventHandlers() {
   enableAddNewImage();
   enableRemoveImage();
   showSearchTagInput();
+  preventContentEditableInitial();
 }
 
 export function getEmptyImage() {
@@ -202,4 +203,84 @@ function parseTag(str) {
     .match(/^Tag (.*)/);
   if (tag) return tag[1];
   return null;
+}
+
+export function preventContentEditableInitial() {
+  let emailField = $(document).find("#emails-list-box");
+  let emailInput = $(document).find("#staffEmailInput");
+  let emailBtn = $(document).find('#appendEmailButton');
+  let actualField = $(document).find("#id_resource_staff_emails");
+  let helpText  = $(document).find('#email-help-text')
+
+  function testValue(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+  }
+
+  function updateListItems() {
+    $(emailField).find('li').each((index, item) => {
+      $(item).unbind('dblclick');
+      $(item).dblclick((f) => {
+        remove($(item).text())
+      })
+    })
+  }
+
+  function append(value) {
+    if (!testValue(value))
+      return;
+
+
+
+    $(emailField).append(
+      `<li>${value}</li>`
+    )
+
+    $(actualField).val(`${actualField.val()}${value}`)
+
+    $(emailInput).val('');
+    updateListItems();
+  }
+
+  function remove(value) {
+    let new_val = "";
+    $(emailField).find('li').each((index, item) => {
+      if ($(item).text() === value) {
+        $(item).remove();
+      } else {
+        new_val = `${new_val}${$(item).text().trim()}\n`
+      }
+    })
+    $(actualField).val(new_val);
+  }
+
+  setInterval((f) => {
+    if ($(emailInput).val().length > 0) {
+      $(emailBtn).attr('disabled', false);
+      if (!testValue($(emailInput).val()))
+        $(emailBtn).attr('disabled', true);
+    } else {
+      $(emailBtn).attr('disabled', true);
+    }
+    if ($(emailField).find('li').length === 0) {
+      $(helpText).hide();
+    } else {
+      $(helpText).show();
+    }
+  }, 300);
+
+  $(emailInput).on('keydown', (e) => {
+    if (e.key == 'Enter') {
+      e.preventDefault();
+      if ($(emailInput).val().length > 0) {
+        append($(emailInput).val());
+      }
+    }
+  });
+  $(emailBtn).click((e) => {
+    e.preventDefault();
+    if ($(emailInput).val().length > 0) {
+      append($(emailInput).val());
+    }
+  })
+  updateListItems();
 }

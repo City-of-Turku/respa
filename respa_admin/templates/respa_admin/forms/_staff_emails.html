@@ -1,0 +1,43 @@
+{% load i18n %}
+
+
+
+<div class="form-group">
+    <div class="textarea-wrapper">
+        <label
+            class="control-label input-label"
+            for="{{ field.id_for_label }}"
+        >
+            {{ field.label }}{% if field.field.required %}*{% endif %}
+        </label>
+        <div class="textarea-with-toolbar">
+            <span id="email-help-text" class="help-text">{% trans 'Double click to remove an address.' %}</span>
+            <ul
+            id="emails-list-box"
+            class="listed-values">
+                {% if field.value %}
+                    {% for value in field.value %}
+                        <li>{{ value }}&#13;&#10;</li>
+                    {% endfor %}
+                {% endif %}
+            </ul>
+            <div class="input-field-with-button">
+                <input 
+                    class="form-control text-input" 
+                    type="email" placeholder="{% trans 'Email' %}"
+                    id="staffEmailInput"> </input>
+                <button id="appendEmailButton" type="button" class="resources-button neat" disabled="disabled">
+                        {% trans 'Add' %} {% trans 'Email' %}
+                </button>
+            </div>
+            <textarea
+                id="{{ field.id_for_label }}"
+                class="form-control"
+                name="{{ field.name }}"
+                style="display: none;"
+            >{% if field.value %}{% for value in field.value %}{{ value }}&#13;&#10;{% endfor %}{% endif %}</textarea>
+            <span class="help-text">{{ field.help_text }}</span>
+            {% include "respa_admin/forms/_errors.html" with field=field %}
+        </div>
+    </div>
+</div>

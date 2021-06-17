@@ -39,6 +39,7 @@
         <div class="textarea-wrapper">
             <h4>{% trans "E-mail notifications" %}</h4>
             <p>{% trans "A notification will be sent when a space is booked." %}</p>
+            {% include "respa_admin/forms/_staff_emails.html" with field=form.resource_staff_emails %}
             {% include "respa_admin/forms/_textarea_input.html" with field=form.reservation_requested_notification_extra_fi %}
             {% include "respa_admin/forms/_textarea_input.html" with field=form.reservation_requested_notification_extra_en %}
             {% include "respa_admin/forms/_textarea_input.html" with field=form.reservation_requested_notification_extra_sv %}

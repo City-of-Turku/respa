@@ -80,8 +80,56 @@ $input-height-default: 50px;
 
 // styling for toolbar with a buttons toolbar
 
-.textarea-with-toolbar {
+ul.listed-values {
+  display: flex;
+  border: none;
+  min-height: 125px;
+  max-height: 125px;
+  overflow-y: auto;
+  flex-direction: column;
+  margin-top: 5px;
+  & > li {
+    color: black;
+    display: flex;
+    justify-self: flex-start;
+    font-size: $font-size-base;
+    font-weight: bold;
+    cursor: pointer;
+    max-width: 450px;
 
+    -webkit-user-select: none; /* Safari */        
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
+    
+
+    &:hover {
+      background-color: #00c17a;
+    }
+    &:active {
+      background-color: #006641;
+      font-weight: lighter;
+    }
+  }
+}
+
+div.input-field-with-button {
+  display: flex;
+  flex-direction: row;
+  border: none !important;
+  justify-content: space-between;
+  & > .neat {
+    width: 175px;
+  }
+
+  & > button {
+    &:disabled {
+      background-color: gray;
+    }
+  }
+}
+
+.textarea-with-toolbar {
   div {
     display: flex;
     border: solid 2px black;
@@ -93,7 +141,6 @@ $input-height-default: 50px;
       border-bottom-color: transparent;
       border-left-color: transparent;
     }
-
     & > button {
       line-height: 1;
       padding: $padding-base-vertical $padding-small-horizontal;

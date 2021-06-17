@@ -1746,3 +1746,6 @@ msgstr "Betalningstjänsten är inte tillgänglig"
 
 msgid "Failed to initiate payment process"
 msgstr "Betalningsprocessens initiering misslyckades"
+
+msgid "Double click to remove an address."
+msgstr "Dubbelklicka för att ta bort e-postadresser."
