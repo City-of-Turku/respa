@@ -97,11 +97,7 @@ class PurposeSerializer(TranslatedModelSerializer):
 
     def to_internal_value(self, data):
         if 'image' in data and isinstance(data['image'], str) and ';base64,' in data['image']:
-            if 'file_name' in data:
-                img_name = data['file_name'] + '.'
-            else:
-                img_name = 'image' + '.'
-            
+            img_name = f'{data.get("file_name", "image")}.'
             formatt, imgstr = data['image'].split(';base64,')
             ext = formatt.split('/')[-1]
             data['image'] = ContentFile(base64.b64decode(imgstr), name=img_name + ext)
