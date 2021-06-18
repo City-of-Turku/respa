@@ -72,3 +72,7 @@ def is_unit_manager(unit_authorizations, unit):
 
 def is_unit_viewer(unit_authorizations, unit):
     return any(auth.subject == unit and auth.level == UnitAuthorizationLevel.viewer for auth in unit_authorizations)
+
+
+def has_permission(user, permission):
+    return is_authenticated_user(user) and permission in user.get_all_permissions()
