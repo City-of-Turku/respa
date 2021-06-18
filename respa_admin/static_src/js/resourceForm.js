@@ -235,7 +235,7 @@ export function preventContentEditableInitial() {
       `<li>${value}</li>`
     )
 
-    $(actualField).val(`${actualField.val()}${value}`)
+    $(actualField).val(`${actualField.val()}${value}\n`)
 
     $(emailInput).val('');
     updateListItems();
