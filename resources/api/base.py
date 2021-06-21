@@ -18,6 +18,9 @@ def register_view(klass, name, base_name=None):
 
 LANGUAGES = [x[0] for x in settings.LANGUAGES]
 
+def get_translated_field_help_text(field_name, value_type = 'string'):
+    return f'example: "{field_name}": {{"fi": "{value_type}", "en": "{value_type}", "sv": "{value_type}"}}'
+
 class TranslatedModelSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super(TranslatedModelSerializer, self).__init__(*args, **kwargs)
