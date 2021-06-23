@@ -5,6 +5,7 @@ from modeltranslation.translator import NotRegistered, translator
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
+from resources.models.availability import Period, Day
 
 all_views = []
 
@@ -17,6 +18,9 @@ def register_view(klass, name, base_name=None):
 
 
 LANGUAGES = [x[0] for x in settings.LANGUAGES]
+
+def get_translated_field_help_text(field_name, value_type = 'string'):
+    return f'example: "{field_name}": {{"fi": "{value_type}", "en": "{value_type}", "sv": "{value_type}"}}'
 
 class TranslatedModelSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
@@ -91,7 +95,6 @@ class TranslatedModelSerializer(serializers.ModelSerializer):
                 data.update({
                     '%s_%s' % (field, lang): value.get(lang, None)
                 })
-            del data[field]
         return data
 
     def validate(self, attrs):
@@ -153,3 +156,32 @@ class ExtraDataMixin():
             return fields
         """
         return {}
+class DaySerializer(serializers.ModelSerializer):
+    weekday = serializers.ChoiceField(choices=Day.DAYS_OF_WEEK, required=True)
+
+
+    class Meta:
+        model = Day
+        exclude = (
+            'period',
+        )
+
+class PeriodSerializer(serializers.ModelSerializer):
+    days = DaySerializer(required=True, many=True)
+
+    class Meta:
+        model = Period
+        exclude = (
+            'resource',
+            'unit',
+        )
+    
+    def create(self, validated_data):
+        days = validated_data.pop('days', [])
+        instance = super().create(validated_data)
+
+        serializer = DaySerializer(data=days, many=True)
+        if serializer.is_valid(raise_exception=True):
+            days = serializer.save(period=instance)
+
+        return instance

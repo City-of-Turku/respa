@@ -3,18 +3,21 @@ import datetime
 import logging
 
 import arrow
+import base64
 import django_filters
 import pytz
 from arrow.parser import ParserError
 
 from django import forms
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.db.models import OuterRef, Prefetch, Q, Subquery, Value
 from django.db.models.functions import Coalesce, Least
 from django.urls import reverse
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.auth import get_user_model
+from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
 
 from resources.pagination import PurposePagination
 from rest_framework import exceptions, filters, mixins, serializers, viewsets, response, status
@@ -31,7 +34,7 @@ from resources.models import (
 )
 from resources.models.resource import determine_hours_time_range
 
-from ..auth import is_general_admin, is_staff
+from ..auth import has_permission, is_general_admin, is_staff
 from .accessibility import ResourceAccessibilitySerializer
 from .base import ExtraDataMixin, TranslatedModelSerializer, register_view, DRFFilterBooleanWidget
 from .reservation import ReservationSerializer
@@ -69,19 +72,66 @@ def get_resource_reservations_queryset(begin, end):
 
 
 class PurposeSerializer(TranslatedModelSerializer):
+    name = serializers.DictField(
+            required=True,
+            help_text='example: "name": {"fi": "string", "en": "string", "sv": "string"}'
+        )
+    image = serializers.FileField(
+            required=False,
+            help_text='Can be given as base64 encoded string. Include "file_name" in the request to name the file.'
+        )
     class Meta:
         model = Purpose
-        fields = ['name', 'parent', 'id', 'image']
+        fields = ['name', 'parent', 'id', 'image', 'public']
+        required_translations = ['name_fi', 'name_en', 'name_sv']
 
+    def to_representation(self, obj):
+        ret = super().to_representation(obj)
+        request = self.context.get('request')
+        if request:
+            user = request.user
+            if not is_staff(user) and not is_general_admin(user) and not has_permission(user, 'resources.view_purpose'):
+                del ret['public']
 
-class PurposeViewSet(viewsets.ReadOnlyModelViewSet):
+        return ret
+
+    def to_internal_value(self, data):
+        if 'image' in data and isinstance(data['image'], str) and ';base64,' in data['image']:
+            img_name = f'{data.get("file_name", "image")}.'
+            formatt, imgstr = data['image'].split(';base64,')
+            ext = formatt.split('/')[-1]
+            data['image'] = ContentFile(base64.b64decode(imgstr), name=img_name + ext)
+        data = super().to_internal_value(data)
+        return data
+    
+    def create(self, validated_data):
+        parent = validated_data.pop('parent', None)
+        if parent and isinstance(parent, str):
+            parent = Purpose.objects.get(pk=parent)
+
+        purpose = Purpose.objects.create(parent=parent, **validated_data)
+        return purpose
+
+    def update(self, instance, validated_data):
+        if 'parent' in validated_data:
+            parent = validated_data.pop('parent', None)
+            if parent and isinstance(parent, str):
+                parent = Purpose.objects.get(pk=parent)
+
+            validated_data['parent'] = parent
+        
+        super().update(instance, validated_data)
+        return instance
+
+class PurposeViewSet(viewsets.ModelViewSet):
     queryset = Purpose.objects.all()
     serializer_class = PurposeSerializer
     pagination_class = PurposePagination
+    permission_classes = [DjangoModelPermissionsOrAnonReadOnly]
 
     def get_queryset(self):
         user = self.request.user
-        if is_staff(user) or is_general_admin(user):
+        if is_staff(user) or is_general_admin(user) or has_permission(user, 'resources.view_purpose'):
             return self.queryset
         else:
             return self.queryset.filter(public=True)
