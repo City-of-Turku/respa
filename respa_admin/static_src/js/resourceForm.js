@@ -209,6 +209,7 @@ export function preventContentEditableInitial() {
   let emailField = $(document).find("#emails-list-box");
   let emailInput = $(document).find("#staffEmailInput");
   let emailBtn = $(document).find('#appendEmailButton');
+  let emailDeleteBtn = $(document).find('#removeEmailSelection');
   let actualField = $(document).find("#id_resource_staff_emails");
   let helpText  = $(document).find('#email-help-text')
 
@@ -218,9 +219,14 @@ export function preventContentEditableInitial() {
 
   function updateListItems() {
     $(emailField).find('li').each((index, item) => {
-      $(item).unbind('dblclick');
-      $(item).dblclick((f) => {
-        remove($(item).text())
+      $(item).unbind('click');
+      $(item).click((f) => {
+        if ($(item).hasClass('active')) {
+          $(item).removeClass('active');
+        } else {
+          $(item).addClass('active');
+          $(emailDeleteBtn).attr('disabled', false);
+        }
       })
     })
   }
@@ -256,8 +262,11 @@ export function preventContentEditableInitial() {
   setInterval((f) => {
     if ($(emailInput).val().length > 0) {
       $(emailBtn).attr('disabled', false);
-      if (!testValue($(emailInput).val()))
-        $(emailBtn).attr('disabled', true);
+      $.each($(emailInput).val().split(','), (i, value) => {
+        if (!testValue(value.trim())) {
+          $(emailBtn).attr('disabled', true);
+        }
+      });
     } else {
       $(emailBtn).attr('disabled', true);
     }
@@ -266,21 +275,40 @@ export function preventContentEditableInitial() {
     } else {
       $(helpText).show();
     }
+
+    if ($(emailField).find('li[class="active"]').length == 0) {
+      $(emailDeleteBtn).attr('disabled', true);
+    }
+
   }, 300);
 
   $(emailInput).on('keydown', (e) => {
     if (e.key == 'Enter') {
       e.preventDefault();
       if ($(emailInput).val().length > 0) {
-        append($(emailInput).val());
+        $.each($(emailInput).val().split(','), (i, value) => {
+          append(value.trim());
+        });
       }
     }
   });
   $(emailBtn).click((e) => {
     e.preventDefault();
     if ($(emailInput).val().length > 0) {
-      append($(emailInput).val());
+      $.each($(emailInput).val().split(','), (i, value) => {
+        append(value.trim());
+      });
     }
   })
+
+  $(emailDeleteBtn).click((e) => {
+    e.preventDefault();
+    $(emailField).find('li[class="active"]').each((i, value) => {
+      remove($(value).text());
+    });
+  })
+
+  $(emailDeleteBtn).attr('disabled', true);
+
   updateListItems();
 }

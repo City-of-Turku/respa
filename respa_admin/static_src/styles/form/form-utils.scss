@@ -80,6 +80,7 @@ $input-height-default: 50px;
 
 // styling for toolbar with a buttons toolbar
 
+
 ul.listed-values {
   display: flex;
   border: none;
@@ -102,12 +103,20 @@ ul.listed-values {
     -ms-user-select: none; /* IE10+/Edge */
     user-select: none; /* Standard */
     
+    &.active {
+      background-color: $brand-red;
+      font-weight: lighter;
+    }
+
 
     &:hover {
-      background-color: #00c17a;
+      &.active {
+        background-color: $brand-dark;
+      }
+      background-color: $brand-light;
     }
     &:active {
-      background-color: #006641;
+      background-color: $brand-red;
       font-weight: lighter;
     }
   }
@@ -118,16 +127,33 @@ div.input-field-with-button {
   flex-direction: row;
   border: none !important;
   justify-content: space-between;
-  & > .neat {
-    width: 175px;
-  }
+}
 
+.flex-align-end {
+  display: flex;
+  align-self: flex-end;
+}
+
+div.button-section {
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  border: none !important;
   & > button {
+    margin: 5px;
+
     &:disabled {
+      &.delete-section {
+        background-color: gray;
+      }
       background-color: gray;
+    }
+    &.delete-section {
+      background-color: $brand-red;
     }
   }
 }
+
 
 .textarea-with-toolbar {
   div {

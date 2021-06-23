@@ -11,7 +11,6 @@
             {{ field.label }}{% if field.field.required %}*{% endif %}
         </label>
         <div class="textarea-with-toolbar">
-            <span id="email-help-text" class="help-text">{% trans 'Double click to remove an address.' %}</span>
             <ul
             id="emails-list-box"
             class="listed-values">
@@ -23,12 +22,17 @@
             </ul>
             <div class="input-field-with-button">
                 <input 
-                    class="form-control text-input" 
+                    class="form-control text-input flex-align-end" 
                     type="email" placeholder="{% trans 'Email' %}"
                     id="staffEmailInput"> </input>
-                <button id="appendEmailButton" type="button" class="resources-button neat" disabled="disabled">
-                        {% trans 'Add' %} {% trans 'Email' %}
-                </button>
+                <div class="button-section">
+                    <button id="removeEmailSelection" class="resources-button delete-section" type="button">
+                            {% trans 'Remove selected' %}
+                    </button>
+                    <button id="appendEmailButton" type="button" class="resources-button" disabled="disabled">
+                            {% trans 'Add e-mail' %}
+                    </button>
+                </div>
             </div>
             <textarea
                 id="{{ field.id_for_label }}"

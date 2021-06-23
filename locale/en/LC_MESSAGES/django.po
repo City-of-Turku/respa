@@ -2437,5 +2437,5 @@ msgstr ""
 msgid "Failed to initiate payment process"
 msgstr ""
 
-msgid "Double click to remove an address."
+msgid "Remove selected"
 msgstr ""
