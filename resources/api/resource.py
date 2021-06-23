@@ -18,9 +18,18 @@ from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.utils.translation import ugettext_lazy as _
+from resources.timmi import TimmiManager
+from PIL import Image
+from io import BytesIO
 
 from resources.pagination import PurposePagination
-from rest_framework import exceptions, filters, mixins, serializers, viewsets, response, status
+from rest_framework import (
+    exceptions, filters, mixins, 
+    serializers, viewsets, response, 
+    status, generics, permissions
+)
 from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.decorators import action
@@ -30,13 +39,19 @@ from munigeo import api as munigeo_api
 from resources.models import (
     AccessibilityValue, AccessibilityViewpoint, Purpose, Reservation, Resource, ResourceAccessibility,
     ResourceImage, ResourceType, ResourceEquipment, TermsOfUse, Equipment, ReservationMetadataSet,
-    ReservationHomeMunicipalitySet, ResourceDailyOpeningHours, UnitAccessibility
+    ReservationMetadataField, ReservationHomeMunicipalityField,
+    ReservationHomeMunicipalitySet, ResourceDailyOpeningHours, UnitAccessibility, Unit, ResourceTag
 )
 from resources.models.resource import determine_hours_time_range
+from payments.models import Product
 
 from ..auth import has_permission, is_general_admin, is_staff
 from .accessibility import ResourceAccessibilitySerializer
-from .base import ExtraDataMixin, TranslatedModelSerializer, register_view, DRFFilterBooleanWidget
+from .base import (
+    ExtraDataMixin, TranslatedModelSerializer, register_view,
+    DRFFilterBooleanWidget, PeriodSerializer, DaySerializer, Period,
+    LocationField
+)
 from .reservation import ReservationSerializer
 from .unit import UnitSerializer
 from .equipment import EquipmentSerializer
@@ -165,6 +180,98 @@ class ResourceTypeViewSet(viewsets.ReadOnlyModelViewSet):
 register_view(ResourceTypeViewSet, 'type')
 
 
+class ImageSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True)
+    data = serializers.CharField(required=True)
+
+    def validate(self, attrs):
+        try:
+            img = Image.open(BytesIO(base64.b64decode(attrs['data'].encode())))
+            if img.format not in ("JPEG", "PNG", "SVG"):
+                raise Exception("Invalid format: %s" % img.format)
+        except Exception as exc:
+            raise serializers.ValidationError({
+                'message':[_(str(exc))]
+            }) from exc
+        return attrs
+
+    @property
+    def content_file(self):
+        return ContentFile(base64.b64decode(self.data['data'].encode()), name=self.data['name'])
+
+class ResourceImageSerializer(TranslatedModelSerializer):
+    id = serializers.IntegerField(required=False)
+    type = serializers.ChoiceField(choices=ResourceImage.TYPES, required=True)
+    caption = serializers.DictField(required=True)
+    image = ImageSerializer(required=False)
+
+
+    class Meta:
+        model = ResourceImage
+        exclude = (
+            'image_format', 'sort_order', 'resource',
+        )
+        required_translations = (
+            'caption_fi', 'caption_en', 'caption_sv'
+        )
+
+    def validate(self, attrs):
+        request = self.context['request']
+        if 'image' not in attrs:
+            raise serializers.ValidationError({
+                'image': [_('This field is required.')]
+            })
+
+        if request.method in ('PUT', 'PATCH') and 'id' not in attrs:
+            raise serializers.ValidationError({
+                'id': [_('This field is required.')]
+            })
+
+        return super().validate(attrs)
+
+    def create(self, validated_data):
+        if 'id' in validated_data:
+            del validated_data['id']
+
+
+        request = self.context['request']
+        user = request.user
+        image = validated_data.pop('image')
+        serializer = ImageSerializer(data=image)
+        serializer.is_valid()
+        validated_data['image'] = serializer.content_file
+        validated_data['created_by'] = user
+        instance = super().create(validated_data)
+        instance._process_image()
+        return instance
+    
+    def update(self, resource, validated_data):
+        request = self.context['request']
+        user = request.user
+
+    
+        image = validated_data.pop('image')
+        serializer = ImageSerializer(data=image)
+        serializer.is_valid()
+        validated_data['image'] = serializer.content_file
+        validated_data['modified_by'] = user
+        
+        try:
+            instance = self.Meta.model.objects.get(resource=resource, pk=validated_data['id'])
+            instance = super().update(instance, validated_data)
+        except ObjectDoesNotExist:
+            if self.Meta.model.objects.filter(pk=validated_data['id']).exists():
+                raise serializers.ValidationError({
+                    'image': {
+                        'id': 'Image with id "%d" belongs to another resource.' % validated_data['id']
+                    }
+                })
+            validated_data['created_by'] = user
+            instance = super().create(validated_data)
+
+        instance._process_image()
+        return instance
+    
 class NestedResourceImageSerializer(TranslatedModelSerializer):
     url = serializers.SerializerMethodField()
 
@@ -199,9 +306,56 @@ class ResourceEquipmentSerializer(TranslatedModelSerializer):
 
 
 class TermsOfUseSerializer(TranslatedModelSerializer):
+    id = serializers.CharField(required=False)
+    name = serializers.DictField(required=True)
+    text = serializers.DictField(required=True)
+    terms_type = serializers.ChoiceField(choices=TermsOfUse.TERMS_TYPES, required=True)
+
     class Meta:
         model = TermsOfUse
-        fields = ('text',)
+        fields = (
+            'name', 'terms_type', 
+            'text', 'id'
+        )
+        required_translations = (
+            'name_fi', 
+            'text_fi', 'text_en', 'text_sv'
+        )
+    
+    def validate(self, attrs):
+        terms_type = attrs.get('terms_type', "")
+        if terms_type != TermsOfUse.TERMS_TYPE_GENERIC and \
+            terms_type != TermsOfUse.TERMS_TYPE_PAYMENT:
+            raise serializers.ValidationError({
+                'terms_type': [_('Missing required field: "%(generic)s" or "%(payment)s"' % ({
+                    'generic': TermsOfUse.TERMS_TYPE_GENERIC,
+                    'payment': TermsOfUse.TERMS_TYPE_PAYMENT
+                }))]
+            })
+        required_fields = self.context.get('required', [])
+        for required in required_fields:
+            if required not in terms_type:
+                raise serializers.ValidationError({
+                    'terms_type': [_('Missing required field: "%(required)s"' % ({
+                        'required': required,
+                    }))]
+                })
+        return super().validate(attrs)
+    
+    def update(self, resource, validated_data):
+        if not isinstance(resource, Resource):
+            raise TypeError("Invalid type: %s passed to %s" % (type(resource), str(self.__class__.__name__)))
+        try:
+            instance = self.Meta.model.objects.get(resources_where_generic_terms=resource, terms_type=validated_data['terms_type'])
+        except ObjectDoesNotExist:
+            instance = self.create(validated_data)
+            setattr(resource, validated_data['terms_type'], instance)
+        return super().update(instance, validated_data)
+
+
+class ResourceStaffEmailField(serializers.ListField):
+    def to_internal_value(self, data):
+        return super().to_internal_value(data)
 
 
 class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.GeoModelSerializer):
@@ -231,6 +385,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     tags = serializers.SerializerMethodField()
     max_price_per_hour = serializers.SerializerMethodField()
     min_price_per_hour = serializers.SerializerMethodField()
+    resource_staff_emails = serializers.ListField()
 
     def get_max_price_per_hour(self, obj):
         """Backwards compatibility for 'max_price_per_hour' field that is now deprecated"""
@@ -267,7 +422,8 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
         return [ResourceAccessibilitySerializer(summary).data for summary in summaries]
 
     def get_tags(self, obj):
-        return obj.tags.names()
+        return list(set(
+            [tag.label for tag in ResourceTag.objects.filter(resource=obj)] + list(obj.tags.names())))
 
     def get_user_permissions(self, obj):
         request = self.context.get('request', None)
@@ -328,6 +484,8 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
             return obj.get_reservable_after()
 
     def to_representation(self, obj):
+        request = self.context['request']
+        user = request.user
         # we must parse the time parameters before serializing
         self.parse_parameters()
         if isinstance(obj, dict):
@@ -354,6 +512,14 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
             del ret['timmi_resource']
         if 'timmi_room_id' in ret:
             del ret['timmi_room_id']
+        if 'resource_staff_emails' in ret and not obj.unit.is_manager(user):
+            del ret['resource_staff_emails']
+
+
+        if 'period_details' in self.context['includes']:
+            ret['periods'] = [
+                PeriodSerializer().to_representation(period) for period in Period.objects.filter(resource=obj).defer('days__length')
+            ]
 
         return ret
 
@@ -820,6 +986,472 @@ class ResourceCacheMixin:
         self._preload_permissions()
 
         return context
+
+class ResourceCreateProductSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(required=False)
+    type = serializers.ChoiceField(choices=Product.TYPE_CHOICES, required=False)
+    sku = serializers.CharField(required=False)
+    sap_code = serializers.CharField(required=False)
+    sap_unit = serializers.CharField(required=False)
+    name = serializers.CharField(required=False)
+    description = serializers.CharField(required=False)
+
+    price = serializers.DecimalField(required=False, max_digits=10, decimal_places=2)
+    tax_percentage = serializers.DecimalField(required=False, max_digits=5, decimal_places=2)
+
+    price_type = serializers.ChoiceField(choices=Product.PRICE_TYPE_CHOICES, required=False)
+    price_period = serializers.DurationField(required=False)
+    max_quantity = serializers.IntegerField(required=False)
+
+    class Meta:
+        model = Product
+        exclude = ('resources', )
+
+    def validate(self, attrs):
+        if not Resource.objects.filter(pk=self.context['pk']).exists():
+            raise serializers.ValidationError({
+                'product': {
+                    'resource': [_('Not found.')]
+                }
+            })
+        return super().validate(attrs)
+    
+    def create(self, validated_data):
+        instance = None
+        if 'id' in validated_data:
+            try:
+                instance = self.Meta.model.objects.get(product_id=validated_data['id'])
+            except ObjectDoesNotExist:
+                raise serializers.ValidationError({
+                    'product': [_('Invalid id provided.')]
+                })
+            validated_data['product_id'] = validated_data.pop('id')
+
+        if instance:
+            if instance.resources.filter(id=self.context['pk']).exists():
+                raise serializers.ValidationError({
+                    'product': [_('This resource is already part of this product.')]
+                })
+            instance.resources.add(self.context['pk'])
+            return instance
+        
+        validated_data['resources'] = [self.context['pk']]
+        return super().create(validated_data) 
+
+    def to_representation(self, instance):
+        obj = super().to_representation(instance)
+        del obj['id']
+        return obj
+
+class ResourceCreateProductView(generics.CreateAPIView):
+    queryset = Resource.objects.select_related(
+        'generic_terms', 'payment_terms', 
+        'unit', 'type', 'reservation_metadata_set'
+        )
+    serializer_class = ResourceCreateProductSerializer
+    permission_classes = (permissions.DjangoModelPermissions, )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['pk'] = self.kwargs['pk']
+        return context
+
+class ResourceTagSerializer(serializers.ModelSerializer):
+    new_label = serializers.CharField(required=False)
+
+    class Meta:
+        model = ResourceTag
+        fields = ( 'label', 'new_label', )
+
+    def create(self, validated_data):
+        if 'new_label' in validated_data:
+            del validated_data['new_label']
+        return super().create(validated_data)
+        
+    
+    def update(self, resource, validated_data):
+        try:
+            instance = self.Meta.model.objects.get(resource=resource, label=validated_data['label'])
+        except ObjectDoesNotExist:
+            instance = self.create(validated_data)
+
+        if 'new_label' in validated_data:
+            validated_data['label'] = validated_data.pop('new_label')
+
+        return super().update(instance, validated_data)
+
+
+class DuplicateSetSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        if not getattr(self.Meta, 'list_fields', None):
+            return (super().validate(attrs), False)
+        query = Q()
+
+        if 'id' in attrs:
+            query |= Q(pk=attrs['id'])
+        if 'name' in attrs:
+            query |= Q(name=attrs['name'])
+
+        try:
+            instance = self.Meta.model.objects.get(query)
+        except ObjectDoesNotExist:
+            instance = None
+
+
+        if instance:
+            obj = self.__class__.to_representation(self, instance=instance)
+            for field in self.Meta.list_fields:
+                qs = getattr(instance, field, [])
+                if isinstance(qs, list):
+                    obj[field] = []
+                    continue
+                obj[field] = list(qs.all())
+            return (obj, True)
+        return (super().validate(attrs), False)
+
+class MetadataSetSerializer(DuplicateSetSerializer):
+    id = serializers.IntegerField(required=False)
+    name = serializers.CharField(required=False)
+    supported_fields = serializers.ListField(required=False, write_only=True)
+    required_fields = serializers.ListField(required=False,  write_only=True)
+
+    class Meta:
+        model = ReservationMetadataSet
+        fields = '__all__'
+        list_fields = (
+            'required_fields', 
+            'supported_fields'
+        )
+    
+    def validate(self, attrs):
+        supported_fields = attrs.pop('supported_fields', [])
+        required_fields = attrs.pop('required_fields', [])
+        attrs, exists = super().validate(attrs)
+        
+        if exists:
+            return attrs
+
+        if 'name' not in attrs:
+            raise serializers.ValidationError({
+                'name': [_('This field is required.')]
+            })
+        
+        if not supported_fields:
+            raise serializers.ValidationError({
+                'supported_fields': [_('This field is required.')]
+            })
+
+        try:
+            metaset = self.Meta.model.objects.get(name=attrs['name'])
+            raise serializers.ValidationError({
+                'name': [_('Metadata Set id "%d" with this name exists.' % metaset.id)]
+            })
+        except ObjectDoesNotExist:
+            pass
+
+        if not supported_fields:
+            raise serializers.ValidationError({
+                'supported_fields': [_('This field is required.')]
+            })
+
+        supported_fields = ReservationMetadataField.objects.filter(field_name__in=supported_fields)
+
+        if not supported_fields.exists():
+            raise serializers.ValidationError({
+                'supported_fields': [_('Atleast one invalid option was given.')]
+            })
+
+        attrs['supported_fields'] = supported_fields
+    
+        if required_fields:
+            required_fields = ReservationMetadataField.objects.filter(field_name__in=required_fields)
+            if not required_fields.exists():
+                raise serializers.ValidationError({
+                    'required_fields': [_('Atleast one invalid option was given.'),]
+                })
+            attrs['required_fields'] = required_fields
+        return super().validate(attrs)
+
+    def create(self, validated_data):
+        if 'id' in validated_data:
+            try:
+                return self.Meta.model.objects.get(pk=validated_data['id'])
+            except ObjectDoesNotExist:
+                pass
+        return super().create(validated_data)
+
+    def update(self, resource, validated_data):
+        if not isinstance(resource, Resource):
+            raise TypeError("Invalid type: %s passed to %s" % (type(resource), str(self.__class__.__name__)))
+        try:
+            instance = self.Meta.model.objects.get(resource=resource)
+        except ObjectDoesNotExist:
+            instance = self.create(validated_data)
+            resource.reservation_metadata_set = instance
+
+        return super().update(instance, validated_data)
+
+class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
+    id = serializers.IntegerField(required=False)
+    name = serializers.CharField(required=True)
+    municipalities = serializers.ListField(required=True, write_only=True)
+
+    class Meta:
+        model = ReservationHomeMunicipalitySet
+        exclude = ('included_municipalities',)
+        list_fields = ('municipalities',)
+
+    def validate(self, attrs):
+        municipalities = attrs.pop('municipalities', [])
+        attrs, exists = super().validate(attrs)
+        if exists:
+            return attrs
+
+        try:
+            municipality = self.Meta.model.objects.get(name=attrs['name'])
+            raise serializers.ValidationError({
+                'name': [_('Home Municipality Set id "%d" with this name exists' % municipality.id)]
+            })
+        except ObjectDoesNotExist:
+            pass
+
+        municipalities = ReservationHomeMunicipalityField.objects.filter(name__in=municipalities)
+        if not municipalities.exists():
+            raise serializers.ValidationError({
+                'municipalities':[_('Atleast one invalid option was given.')]
+            })
+    
+        attrs['municipalities'] = municipalities
+        return attrs
+
+    def create(self, validated_data):
+        if 'id' in validated_data:
+            try:
+                return self.Meta.model.objects.get(pk=validated_data['id'])
+            except ObjectDoesNotExist:
+                pass
+        validated_data['included_municipalities'] = validated_data.pop('municipalities')
+        return super().create(validated_data)
+
+    def update(self, resource, validated_data):
+        if not isinstance(resource, Resource):
+            raise TypeError("Invalid type: %s passed to %s" % (type(resource), str(self.__class__.__name__)))
+
+        try:
+            instance = self.Meta.model.objects.get(home_municipality_included_set=resource)
+        except ObjectDoesNotExist:
+            instance = self.create(validated_data)
+            resource.reservation_home_municipality_set = instance
+
+        return super().update(instance, validated_data)
+
+class ResourceCreateSerializer(TranslatedModelSerializer):
+    id = serializers.CharField(required=False)
+    public = serializers.BooleanField(required=True)
+    name = serializers.DictField(required=True)
+    description = serializers.DictField(required=True)
+    need_manual_confirmation = serializers.BooleanField(required=True)
+    authentication = serializers.ChoiceField(choices=Resource.AUTHENTICATION_TYPES, required=True)
+    people_capacity = serializers.IntegerField(required=True)
+    min_period = serializers.DurationField(required=True)
+    max_period = serializers.DurationField(required=True)
+    slot_size = serializers.DurationField(required=True)
+    reservation_info = serializers.DictField(required=True)
+    terms_of_use = TermsOfUseSerializer(required=True, many=True)
+
+    tags = ResourceTagSerializer(required=False, many=True)
+    periods  = PeriodSerializer(required=False, many=True)
+
+    images = ResourceImageSerializer(required=True, allow_empty=False, many=True)
+    reservation_metadata_set = MetadataSetSerializer(required=False)
+    reservation_home_municipality_set = ReservationHomeMunicipalitySetSerializer(required=False)
+
+    location = LocationField(required=False)
+
+    class Meta:
+        model = Resource
+        fields = '__all__'
+        exclude_fields = (
+            'resource_email', 'configuration',
+            )
+        required_translations = (
+            'name_fi', 'name_sv', 'name_en'
+            'description_fi', 'description_sv', 'description_en',
+            'reservation_info_fi', 'reservation_info_sv', 'reservation_info_en',
+            )
+        extra_serializers = {
+            'images': ResourceImageSerializer,
+            'tags': ResourceTagSerializer,
+            'periods': PeriodSerializer,
+            'terms_of_use': TermsOfUseSerializer,
+            'reservation_metadata_set': MetadataSetSerializer,
+            'reservation_home_municipality_set': ReservationHomeMunicipalitySetSerializer
+        }
+
+    def validate(self, attrs):
+        request = self.context['request']
+        if not 'unit' in attrs:
+            raise serializers.ValidationError({
+                'unit': [_('This field is required.')]
+            })
+        resource = None
+        try:
+            if attrs.get('id', 0):
+                resource = Resource.objects.get(pk=attrs['id'])
+        except ObjectDoesNotExist:
+            pass
+        if resource:
+            raise serializers.ValidationError({
+                'id': [_('This resource already exists.')]
+            })
+        return super().validate(attrs)
+    
+    def create(self, validated_data):
+        return self.create_or_update(validated_data)
+
+    def get_tags(self, resource):
+        return [ tag.label for tag in ResourceTag.objects.filter(resource=resource) ]
+
+    def to_representation(self, obj):
+        data = ResourceSerializer(context=self.context).to_representation(obj)
+        data['tags'] = self.get_tags(obj)
+        return data
+
+    def create_or_update(self, validated_data, _instance=None):
+        extra = (
+            ('images', 
+                {'kwargs': { 'many': True, 'context': self.context, 'data': validated_data.pop('images', {}), },
+                    'save_kw': { 'resource_fk': True }, } ),
+
+            ('tags',
+                {'kwargs': {'many': True, 'data': validated_data.pop('tags', []), },
+                    'save_kw': { 'resource_fk': True }, } ),
+
+            ('periods', 
+                { 'kwargs': { 'many': True, 'data': validated_data.pop('periods', {}), },
+                    'save_kw': { 'resource_fk': True }, } ),
+
+            ('terms_of_use', 
+                { 'kwargs': { 'many': True, 'context': { 'required': [ TermsOfUse.TERMS_TYPE_GENERIC ] }, 'data': validated_data.pop('terms_of_use', []), },
+                    'perform': ( lambda instance, serializer: setattr(instance, serializer.terms_type, serializer), ), } ),
+
+            ('reservation_metadata_set',
+                { 'kwargs': { 'data': validated_data.pop('reservation_metadata_set', {}), },
+                    'perform': ( lambda instance, serializer: setattr(instance, 'reservation_metadata_set', serializer), ), } ),
+
+            ('reservation_home_municipality_set', 
+                { 'kwargs': { 'data': validated_data.pop('reservation_home_municipality_set', {}), },
+                    'perform': ( lambda instance, serializer: setattr(instance, 'reservation_home_municipality_set', serializer), ), } ),
+        )
+
+        if _instance:
+            instance = super().update(_instance, validated_data)
+        else:
+            instance = super().create(validated_data)
+
+        if instance.timmi_resource and not instance.timmi_room_id:
+            try:
+                TimmiManager().get_room_part_id(instance)
+            except ValidationError as exc:
+                raise serializers.ValidationError(exc.message_dict) from exc
+
+        for field in extra:
+            name, data = field
+
+            actions = data.pop('perform', [])
+            kwargs = data.pop('kwargs', {})
+            save_kw = data.pop('save_kw', {})
+
+            if _instance:
+                kwargs['instance'] = instance
+
+            serializer = self.get_extra_serializer(name, **kwargs)
+            if not serializer:
+                continue
+
+            if isinstance(serializer, list):
+                for ser in serializer:
+                    ser.is_valid(raise_exception=True)
+                    if save_kw.get('resource_fk', False):
+                        ser = ser.save(resource=instance)
+                    else:
+                        ser = ser.save()
+                    for action in actions:
+                        action(instance, ser)
+                continue
+
+            serializer.is_valid(raise_exception=True)
+
+            if save_kw.get('resource', False):
+                serializer = serializer.save(resource=instance)
+            else:
+                serializer = serializer.save()
+
+            for action in actions:
+                action(instance, serializer)
+
+        instance.save()
+        return instance
+
+    def get_extra_serializer(self, name, **kwargs):
+        if not kwargs.get('data', None):
+            return None
+
+        serializer = self.Meta.extra_serializers.get(name, None)
+        if not serializer or \
+            not kwargs.get('data', None):
+            return None
+        if kwargs.get('many', False):
+            datas = kwargs.pop('data', [])
+            del kwargs['many']
+            return [serializer(data=data, **kwargs) for data in datas]
+
+        return serializer(**kwargs)
+
+
+
+class ResourceUpdateSerializer(ResourceCreateSerializer):
+    id = serializers.CharField(read_only=True)
+    terms_of_use = TermsOfUseSerializer(required=False, many=True)
+    tags = ResourceTagSerializer(required=False, many=True)
+    periods  = PeriodSerializer(required=False, many=True)
+    images = ResourceImageSerializer(required=False, allow_empty=False, many=True)
+    reservation_metadata_set = MetadataSetSerializer(required=False)
+    reservation_home_municipality_set = ReservationHomeMunicipalitySetSerializer(required=False)
+    location = LocationField(required=False)
+    
+    def validate(self, attrs):
+        request = self.context['request']
+
+        if 'periods' in attrs:
+            for period in attrs['periods']:
+                if not 'id' in period and \
+                    request.method in ('PUT', 'PATCH'):
+                    raise serializers.ValidationError({
+                        'period': [_('id is required when updating periods.')]
+                    })
+
+        return super().validate(attrs)
+
+    def update(self, instance, validated_data):
+        return self.create_or_update(validated_data, _instance=instance)
+    
+
+class ResourceCreateView(generics.CreateAPIView):
+    queryset = Resource.objects.select_related(
+        'generic_terms', 'payment_terms', 
+        'unit', 'type', 'reservation_metadata_set'
+        )
+    serializer_class = ResourceCreateSerializer
+    permission_classes = (permissions.DjangoModelPermissions, )
+
+class ResourceUpdateView(generics.UpdateAPIView):
+    queryset = Resource.objects.select_related(
+        'generic_terms', 'payment_terms', 
+        'unit', 'type', 'reservation_metadata_set'
+        )
+    serializer_class = ResourceUpdateSerializer
+    permission_classes = (permissions.DjangoModelPermissions, )
 
 
 class ResourceListViewSet(munigeo_api.GeoModelAPIView, mixins.ListModelMixin,

@@ -29,6 +29,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('grappelli/', include('grappelli.urls')),
     path('resource_image/<int:pk>', ResourceImageView.as_view(), name='resource-image-view'),
+    path('v1/', include('resources.urls')),
     path('v1/', include(router.urls)),
     path('v1/', include('accessibility.urls')),
     path('v1/o365/', include('respa_o365.urls')),

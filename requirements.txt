@@ -117,7 +117,7 @@ django-js-asset==1.2.2
     # via
     #   -r requirements.in
     #   django-mptt
-django-modeltranslation==0.13-beta1
+django-modeltranslation==0.17.2
     # via -r requirements.in
 django-mptt==0.12.0
     # via
@@ -154,6 +154,7 @@ django==2.2.21
     #   django-guardian
     #   django-helusers
     #   django-jinja
+    #   django-modeltranslation
     #   django-mptt
     #   django-multi-email-field
     #   django-munigeo
@@ -440,6 +441,7 @@ six==1.15.0
     # via
     #   -r requirements.in
     #   database-sanitizer
+    #   django-modeltranslation
     #   django-munigeo
     #   django-sanitized-dump
     #   ecdsa

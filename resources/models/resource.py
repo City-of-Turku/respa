@@ -89,6 +89,15 @@ def determine_hours_time_range(begin, end, tz):
     return begin, end
 
 
+class ResourceTag(AutoIdentifiedModel):
+    label = models.CharField(verbose_name=_('Tag label'), max_length=255)
+    resource = models.ForeignKey('Resource', on_delete=models.CASCADE, related_name='resource_tags')
+
+
+    def __str__(self):
+        return '<%s: %s>' % (self.resource.name, self.label)
+
+
 class ResourceType(ModifiableModel, AutoIdentifiedModel):
     MAIN_TYPES = (
         ('space', _('Space')),

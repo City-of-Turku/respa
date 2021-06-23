@@ -5,7 +5,12 @@ from modeltranslation.translator import NotRegistered, translator
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.gis.geos import Point
 from resources.models.availability import Period, Day
+from resources.models.resource import Resource
+from resources.models.unit import Unit
+
+from collections import OrderedDict
 
 all_views = []
 
@@ -167,6 +172,8 @@ class DaySerializer(serializers.ModelSerializer):
         )
 
 class PeriodSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+
     days = DaySerializer(required=True, many=True)
 
     class Meta:
@@ -178,6 +185,10 @@ class PeriodSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         days = validated_data.pop('days', [])
+
+        if 'id' in validated_data:      # "read_only" during create
+            del validated_data['id']
+
         instance = super().create(validated_data)
 
         serializer = DaySerializer(data=days, many=True)
@@ -185,3 +196,39 @@ class PeriodSerializer(serializers.ModelSerializer):
             days = serializer.save(period=instance)
 
         return instance
+
+    def update(self, instance, validated_data):
+        days = validated_data.pop('days', [])
+        if isinstance(instance, Resource) or \
+            isinstance(instance, Unit):
+            instance = self.Meta.model.objects.get(pk=validated_data['id'])
+
+        serializer = DaySerializer(data=days, many=True)
+        if serializer.is_valid(raise_exception=True):
+            days = serializer.save(period=instance)
+
+        return super().update(instance, validated_data)
+
+    
+    def to_representation(self, instance):
+        obj = super(PeriodSerializer, self).to_representation(instance)
+        obj['days'] = [{
+            'weekday': day['weekday'],
+            'opens': day['opens'],
+            'closes': day['closes'],
+            'closed': day['closed']
+            } for day in obj['days']]
+        return obj
+
+class LocationField(serializers.DictField):
+    srid = serializers.CharField(read_only=True)
+    coordinates = serializers.ListField(required=True)
+    type = serializers.CharField(read_only=True)
+
+
+    def to_internal_value(self, data):
+        if data['type'].lower() == 'point':
+            x,y = data['coordinates']
+            srid = data.get('srid', settings.DEFAULT_SRID)
+            return Point(x=x, y=y, srid=srid)
+        return super().to_internal_value(data)

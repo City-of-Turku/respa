@@ -3,11 +3,11 @@ from .availability import Day, Period, get_opening_hours
 from .reservation import (
     ReservationMetadataField, ReservationMetadataSet, ReservationHomeMunicipalityField, ReservationHomeMunicipalitySet,
     Reservation, RESERVATION_EXTRA_FIELDS,
-    ReservationBulk, ReservationReminder, ReservationQuerySet
+    ReservationBulk, ReservationReminder, ReservationQuerySet,
 )
 from .resource import (
     Purpose, Resource, ResourceType, ResourceImage, ResourceEquipment, ResourceGroup,
-    ResourceDailyOpeningHours, TermsOfUse
+    ResourceDailyOpeningHours, TermsOfUse, ResourceTag
 )
 from .equipment import Equipment, EquipmentAlias, EquipmentCategory
 from .unit import Unit, UnitAuthorization, UnitIdentifier
@@ -34,6 +34,7 @@ __all__ = [
     'ReservationReminder',
     'ReservationQuerySet',
     'Resource',
+    'ResourceTag',
     'ResourceAccessibility',
     'ResourceDailyOpeningHours',
     'ResourceEquipment',

@@ -34,7 +34,7 @@ django-hstore
 django-image-cropping
 django-jinja
 django-js-asset
-django-modeltranslation==0.13-beta1
+django-modeltranslation
 django-mptt
 django-taggit
 git+https://github.com/Christophe31/django-multi-email-field.git@master#django-multi-email-field
