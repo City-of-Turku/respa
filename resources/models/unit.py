@@ -114,6 +114,10 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
         verbose_name=_('Disallow overlapping reservations in this unit'),
         default=False,
     )
+    disallow_overlapping_reservations_per_user = models.BooleanField(
+        verbose_name=_('Disallow overlapping reservations in this unit only for the same user.'),
+        default=False,
+    )
 
     sms_reminder = models.BooleanField(verbose_name=_('Send SMS Reminder'), default=False)
 
