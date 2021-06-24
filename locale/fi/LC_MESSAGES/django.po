@@ -1812,5 +1812,9 @@ msgstr "Maksupalveluun ei saatu yhteyttä"
 msgid "Failed to initiate payment process"
 msgstr "Maksuprosessin aloittaminen epäonnistui"
 
+
 msgid "Remove selected"
 msgstr "Poista valitut"
+
+msgid "Disallow overlapping reservations in this unit only for the same user."
+msgstr "Estä toimipisteen sisäiset päällekkäiset varaukset vain samalle käyttäjälle."

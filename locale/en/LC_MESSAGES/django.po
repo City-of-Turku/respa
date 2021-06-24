@@ -2437,5 +2437,9 @@ msgstr ""
 msgid "Failed to initiate payment process"
 msgstr ""
 
+
 msgid "Remove selected"
+msgstr ""
+
+msgid "Disallow overlapping reservations in this unit only for the same user."
 msgstr ""

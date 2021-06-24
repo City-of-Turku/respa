@@ -1747,5 +1747,9 @@ msgstr "Betalningstjänsten är inte tillgänglig"
 msgid "Failed to initiate payment process"
 msgstr "Betalningsprocessens initiering misslyckades"
 
+
 msgid "Remove selected"
 msgstr "Ta bort valda"
+
+msgid "Disallow overlapping reservations in this unit only for the same user."
+msgstr "Blockera överlappande reservationer i den här enheten bara för samma användare."
