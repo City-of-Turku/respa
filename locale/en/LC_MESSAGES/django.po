@@ -2439,3 +2439,6 @@ msgstr ""
 
 msgid "Double click to remove an address."
 msgstr ""
+
+msgid "Disallow overlapping reservations in this unit only for the same user."
+msgstr ""

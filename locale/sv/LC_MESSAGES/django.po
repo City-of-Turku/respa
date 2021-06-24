@@ -1749,3 +1749,6 @@ msgstr "Betalningsprocessens initiering misslyckades"
 
 msgid "Double click to remove an address."
 msgstr "Dubbelklicka för att ta bort e-postadresser."
+
+msgid "Disallow overlapping reservations in this unit only for the same user."
+msgstr "Blockera överlappande reservationer i den här enheten bara för samma användare."
