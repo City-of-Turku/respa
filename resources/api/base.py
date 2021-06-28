@@ -2,7 +2,7 @@ from django.conf import settings
 from django.utils import timezone
 import django_filters
 from modeltranslation.translator import NotRegistered, translator
-from rest_framework import serializers
+from rest_framework import serializers, fields as drf
 from django.db.models import Q
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
@@ -254,6 +254,10 @@ class LocationField(serializers.DictField):
         return super().to_internal_value(data)
 
     def validate_empty_values(self, data):
+        if data == drf.empty:
+            return super().validate_empty_values(data)
+
+
         fields = ('coordinates', 'type')
 
         if not data:
@@ -269,7 +273,7 @@ class LocationField(serializers.DictField):
         if not isinstance(data['coordinates'], list):
             raise serializers.ValidationError({'coordinates':[_('Expected value type list, got %s.' % type(data['coordinates']).__name__)]})
 
-        if len(data['coordinates']) == 0 or len(data['coordinates']) > 2:
+        if len(data['coordinates']) <= 1 or len(data['coordinates']) > 2:
                 raise serializers.ValidationError({'coordinates':[_('Invalid coordinate values.')]})
         for coord in data['coordinates']:
             try:
