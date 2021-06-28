@@ -3,7 +3,8 @@ from django.utils import timezone
 import django_filters
 from modeltranslation.translator import NotRegistered, translator
 from rest_framework import serializers
-from django.core.exceptions import ValidationError
+from django.db.models import Q
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.gis.geos import Point
 from resources.models.availability import Period, Day
@@ -172,7 +173,8 @@ class DaySerializer(serializers.ModelSerializer):
         )
 
 class PeriodSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(required=False)
+    id = serializers.IntegerField(required=False, help_text="This field is read-only.")
+    name = serializers.CharField(required=False, max_length=200)
 
     days = DaySerializer(required=True, many=True)
 
@@ -182,8 +184,8 @@ class PeriodSerializer(serializers.ModelSerializer):
             'resource',
             'unit',
         )
-    
-    def create(self, validated_data):
+   
+    def create(self, validated_data, **kwargs):
         days = validated_data.pop('days', [])
 
         if 'id' in validated_data:      # "read_only" during create
@@ -191,18 +193,37 @@ class PeriodSerializer(serializers.ModelSerializer):
 
         instance = super().create(validated_data)
 
+        if 'unit' in kwargs:
+            setattr(instance, 'unit', kwargs['unit'])
+        if 'resource' in kwargs:
+            setattr(instance, 'resource', kwargs['resource'])
+
         serializer = DaySerializer(data=days, many=True)
         if serializer.is_valid(raise_exception=True):
             days = serializer.save(period=instance)
 
+        instance.save()
         return instance
 
     def update(self, instance, validated_data):
         days = validated_data.pop('days', [])
-        if isinstance(instance, Resource) or \
-            isinstance(instance, Unit):
-            instance = self.Meta.model.objects.get(pk=validated_data['id'])
 
+        try:
+            if isinstance(instance, Resource):
+                instance = self.Meta.model.objects.get(pk=validated_data['id'], resource=instance)
+            elif isinstance(instance, Unit):
+                instance = self.Meta.model.objects.get(pk=validated_data['id'], unit=instance)
+        except ObjectDoesNotExist as exc:
+            if isinstance(instance, Resource):
+                instance = self.create(validated_data, resource=instance)
+            elif isinstance(instance, Unit):
+                instance = self.create(validated_data, unit=instance)
+
+        query = Q()
+        for weekday in days:
+            query |= Q(weekday=weekday['weekday'])
+        instance.days.filter(query).delete()
+        
         serializer = DaySerializer(data=days, many=True)
         if serializer.is_valid(raise_exception=True):
             days = serializer.save(period=instance)
@@ -255,10 +276,10 @@ class LocationField(serializers.DictField):
                 int(coord)
             except:
                 raise serializers.ValidationError({
-                    'coordinates':[_('Invalid coordinate values. Expected value type int, got %s.' % type(coord).__name__)]
+                    'coordinates':[_('Invalid coordinate values. Expected value type float, got %s.' % type(coord).__name__)]
                 })
         x,y = data['coordinates']
-        data['coordinates'] = [int(x), int(y)]
+        data['coordinates'] = [float(x), float(y)]
 
 
         return super().validate_empty_values(data)

@@ -1270,7 +1270,7 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
     reservation_metadata_set = MetadataSetSerializer(required=False)
     reservation_home_municipality_set = ReservationHomeMunicipalitySetSerializer(required=False)
 
-    location = LocationField(required=False)
+    location = LocationField(required=False, help_text='example: {"type": "Point", "coordinates": [22.00000, 60.0000]}')
 
     class Meta:
         model = Resource
@@ -1422,7 +1422,7 @@ class ResourceUpdateSerializer(ResourceCreateSerializer):
     images = ResourceImageSerializer(required=False, allow_empty=False, many=True)
     reservation_metadata_set = MetadataSetSerializer(required=False)
     reservation_home_municipality_set = ReservationHomeMunicipalitySetSerializer(required=False)
-    location = LocationField(required=False)
+    location = LocationField(required=False, help_text='example: {"type": "Point", "coordinates": [22.00000, 60.0000]}')
     
     def validate(self, attrs):
         request = self.context['request']
