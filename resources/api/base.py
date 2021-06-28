@@ -222,9 +222,8 @@ class PeriodSerializer(serializers.ModelSerializer):
 
 class LocationField(serializers.DictField):
     srid = serializers.CharField(read_only=True)
-    coordinates = serializers.ListField(required=True)
+    coordinates = serializers.ListField(read_only=True)
     type = serializers.CharField(read_only=True)
-
 
     def to_internal_value(self, data):
         if data['type'].lower() == 'point':
@@ -232,3 +231,16 @@ class LocationField(serializers.DictField):
             srid = data.get('srid', settings.DEFAULT_SRID)
             return Point(x=x, y=y, srid=srid)
         return super().to_internal_value(data)
+
+    def validate_empty_values(self, data):
+        fields = ('coordinates', 'type')
+
+        if not data:
+            raise serializers.ValidationError(_('This field is cannot be empty.'))
+        
+        for field in fields:
+            if field not in data:
+                raise serializers.ValidationError({field:[_('This field is required.')]})
+        if len(data['coordinates']) == 0 or len(data['coordinates']) > 2:
+                raise serializers.ValidationError({'coordinates':[_('Invalid coordinate values.')]})
+        return super().validate_empty_values(data)
