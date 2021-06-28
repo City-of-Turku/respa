@@ -1,6 +1,7 @@
 import collections
 import datetime
 import logging
+import jsonschema as json
 
 import arrow
 import base64
@@ -28,7 +29,7 @@ from resources.pagination import PurposePagination
 from rest_framework import (
     exceptions, filters, mixins, 
     serializers, viewsets, response, 
-    status, generics, permissions
+    status, generics, permissions, fields
 )
 from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
@@ -1093,12 +1094,16 @@ class DuplicateSetSerializer(serializers.ModelSerializer):
         if 'name' in attrs:
             query |= Q(name=attrs['name'])
 
+        if not len(query):
+            raise serializers.ValidationError({
+                'error': [_('Missing required field(s): id or name')]
+            })
+
         try:
             instance = self.Meta.model.objects.get(query)
         except ObjectDoesNotExist:
             instance = None
-
-
+            
         if instance:
             obj = self.__class__.to_representation(self, instance=instance)
             for field in self.Meta.list_fields:
@@ -1107,14 +1112,19 @@ class DuplicateSetSerializer(serializers.ModelSerializer):
                     obj[field] = []
                     continue
                 obj[field] = list(qs.all())
-            return (obj, True)
-        return (super().validate(attrs), False)
+            return obj
+        return super().validate(attrs)
 
 class MetadataSetSerializer(DuplicateSetSerializer):
     id = serializers.IntegerField(required=False)
     name = serializers.CharField(required=False)
     supported_fields = serializers.ListField(required=False, write_only=True)
     required_fields = serializers.ListField(required=False,  write_only=True)
+    remove_fields = serializers.DictField(
+                            child=serializers.ListField(
+                                required=False, write_only=True, 
+                                    child=serializers.CharField(required=True)),
+                    required=False, write_only=True, allow_empty=True)
 
     class Meta:
         model = ReservationMetadataSet
@@ -1126,13 +1136,42 @@ class MetadataSetSerializer(DuplicateSetSerializer):
             'required_fields', 
             'supported_fields'
         )
+        schema = {
+            "type": "object",
+            "properties": {
+                "remove_fields": {
+                    "type": "object",
+                    "properties": {
+                        "supported_fields": { "type": "array", "items": [{"type": "string"}], "minItems": 1 },
+                        "required_fields": { "type": "array", "items": [{"type": "string"}], "minItems": 1  }
+                    },
+                    "required": [ "supported_fields", ]
+                }
+            },
+            "required": [ "remove_fields" ]
+        }
     
     def validate(self, attrs):
         supported_fields = attrs.pop('supported_fields', [])
         required_fields = attrs.pop('required_fields', [])
-        attrs, exists = super().validate(attrs)
-        
-        if exists:
+        remove_fields = attrs.pop('remove_fields', fields.empty)
+
+
+        attrs = super().validate(attrs)
+
+        if remove_fields != fields.empty:
+            try:
+                json.validate({'remove_fields': remove_fields}, self.Meta.schema)
+            except Exception as exc:
+                raise serializers.ValidationError({
+                    'remove_fields': 'Invalid schema.',
+                    'schema': self.Meta.schema
+                }) from exc
+
+        if 'supported_fields' in attrs: # Metadata fetched from DB using name or id
+            attrs['supported_fields'] = supported_fields
+            attrs['required_fields'] = required_fields
+            attrs['remove_fields'] = remove_fields
             return attrs
 
         if 'name' not in attrs:
@@ -1174,9 +1213,13 @@ class MetadataSetSerializer(DuplicateSetSerializer):
                     'required_fields': [_('Atleast one invalid option was given.'),]
                 })
             attrs['required_fields'] = required_fields
+
         return super().validate(attrs)
 
     def create(self, validated_data):
+        if 'remove_fields' in validated_data:
+            del validated_data['remove_fields'] 
+
         if 'id' in validated_data:
             try:
                 return self.Meta.model.objects.get(pk=validated_data['id'])
@@ -1185,6 +1228,7 @@ class MetadataSetSerializer(DuplicateSetSerializer):
         return super().create(validated_data)
 
     def update(self, resource, validated_data):
+        remove_fields = validated_data.pop('remove_fields', {})
         if not isinstance(resource, Resource):
             raise TypeError("Invalid type: %s passed to %s" % (type(resource), str(self.__class__.__name__)))
         try:
@@ -1193,22 +1237,72 @@ class MetadataSetSerializer(DuplicateSetSerializer):
             instance = self.create(validated_data)
             resource.reservation_metadata_set = instance
 
+        for field, value in (
+            ('supported_fields', validated_data.pop('supported_fields', [])),
+            ('required_fields', validated_data.pop('required_fields', [])),
+        ):
+            for field_name in value:
+                if instance.filter(field, field_name).exists():
+                    continue
+                instance.add(field, field_name)
+
+        if remove_fields != fields.empty:
+            for field, value in (
+                ('supported_fields', remove_fields.pop('supported_fields', [])),
+                ('required_fields', remove_fields.pop('required_fields', [])),
+            ):
+                for field_name in value:
+                    if instance.filter(field, field_name).exists():
+                        instance.remove(field, field_name)
+
         return super().update(instance, validated_data)
 
 class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
     id = serializers.IntegerField(required=False)
     name = serializers.CharField(required=True)
     municipalities = serializers.ListField(required=True, write_only=True)
+    remove_fields = serializers.DictField(
+                            child=serializers.ListField(
+                                required=False, write_only=True, 
+                                    child=serializers.CharField(required=True)),
+                    required=False, write_only=True, allow_empty=True)
 
     class Meta:
         model = ReservationHomeMunicipalitySet
         exclude = ('included_municipalities',)
         list_fields = ('municipalities',)
+        schema = {
+            "type": "object",
+            "properties": {
+                "remove_fields": {
+                    "type": "object",
+                    "properties": {
+                        "municipalities": { "type": "array", "items": [{"type": "string"}], "minItems": 1 },
+                    },
+                    "required": [ "municipalities", ]
+                }
+            },
+            "minItems": 1,
+            "required": [ "remove_fields" ]
+        }
 
     def validate(self, attrs):
         municipalities = attrs.pop('municipalities', [])
-        attrs, exists = super().validate(attrs)
-        if exists:
+        remove_fields = attrs.pop('remove_fields', fields.empty)
+        attrs = super().validate(attrs)
+
+        if remove_fields != fields.empty:
+            try:
+                json.validate({'remove_fields': remove_fields}, self.Meta.schema)
+            except Exception as exc:
+                raise serializers.ValidationError({
+                    'remove_fields': 'Invalid schema.',
+                    'schema': self.Meta.schema
+                }) from exc
+
+        if 'id' in attrs: # Municipality fetched from DB using id
+            attrs['municipalities'].extend(municipalities)
+            attrs['remove_fields'] = remove_fields
             return attrs
 
         try:
@@ -1229,15 +1323,22 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
         return attrs
 
     def create(self, validated_data):
+        if 'remove_fields' in validated_data:
+            del validated_data['remove_fields'] 
+
+
         if 'id' in validated_data:
             try:
                 return self.Meta.model.objects.get(pk=validated_data['id'])
             except ObjectDoesNotExist:
                 pass
+
         validated_data['included_municipalities'] = validated_data.pop('municipalities')
         return super().create(validated_data)
 
     def update(self, resource, validated_data):
+        remove_fields = validated_data.pop('remove_fields', {})
+
         if not isinstance(resource, Resource):
             raise TypeError("Invalid type: %s passed to %s" % (type(resource), str(self.__class__.__name__)))
 
@@ -1246,6 +1347,17 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
         except ObjectDoesNotExist:
             instance = self.create(validated_data)
             resource.reservation_home_municipality_set = instance
+
+        for municipality in validated_data.pop('municipalities'):
+            if instance.filter(municipality).exists():
+                continue
+            instance.add(municipality)
+
+        if remove_fields != fields.empty:
+            for municipality in remove_fields.pop('municipalities', []):
+                if instance.filter(municipality).exists():
+                    instance.remove(municipality)
+
 
         return super().update(instance, validated_data)
 
