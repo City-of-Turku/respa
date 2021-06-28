@@ -236,11 +236,29 @@ class LocationField(serializers.DictField):
         fields = ('coordinates', 'type')
 
         if not data:
-            raise serializers.ValidationError(_('This field is cannot be empty.'))
+            raise serializers.ValidationError(_('This field cannot be empty.'))
         
         for field in fields:
             if field not in data:
                 raise serializers.ValidationError({field:[_('This field is required.')]})
+        
+        if not isinstance(data['type'], str):
+            raise serializers.ValidationError({'type': [_('Expected value type str, got %s.' % type(data['type']).__name__)]})
+
+        if not isinstance(data['coordinates'], list):
+            raise serializers.ValidationError({'coordinates':[_('Expected value type list, got %s.' % type(data['coordinates']).__name__)]})
+
         if len(data['coordinates']) == 0 or len(data['coordinates']) > 2:
                 raise serializers.ValidationError({'coordinates':[_('Invalid coordinate values.')]})
+        for coord in data['coordinates']:
+            try:
+                int(coord)
+            except:
+                raise serializers.ValidationError({
+                    'coordinates':[_('Invalid coordinate values. Expected value type int, got %s.' % type(coord).__name__)]
+                })
+        x,y = data['coordinates']
+        data['coordinates'] = [int(x), int(y)]
+
+
         return super().validate_empty_values(data)
