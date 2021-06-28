@@ -1814,3 +1814,6 @@ msgstr "Maksuprosessin aloittaminen epäonnistui"
 
 msgid "Double click to remove an address."
 msgstr "Poista osoite kaksoisklikkaamalla."
+
+msgid "Disallow overlapping reservations in this unit only for the same user."
+msgstr "Estä toimipisteen sisäiset päällekkäiset varaukset vain samalle käyttäjälle."

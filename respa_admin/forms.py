@@ -317,11 +317,15 @@ class UnitForm(forms.ModelForm):
             'address_zip',
             'municipality',
             'phone',
-            'disallow_overlapping_reservations'
+            'disallow_overlapping_reservations',
+            'disallow_overlapping_reservations_per_user'
         ] + translated_fields
 
         widgets = {
             'disallow_overlapping_reservations': RespaRadioSelect(
+                choices=((True, _('Yes')), (False, _('No')))
+            ),
+            'disallow_overlapping_reservations_per_user': RespaRadioSelect(
                 choices=((True, _('Yes')), (False, _('No')))
             ),
         }
