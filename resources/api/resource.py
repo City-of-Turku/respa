@@ -594,7 +594,8 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     class Meta:
         model = Resource
         exclude = ('reservation_requested_notification_extra', 'reservation_confirmed_notification_extra',
-                   'access_code_type', 'reservation_metadata_set', 'reservation_home_municipality_set')
+                   'access_code_type', 'reservation_metadata_set', 'reservation_home_municipality_set', 
+                   'created_by', 'modified_by')
 
 
 class ResourceDetailsSerializer(ResourceSerializer):
@@ -1117,7 +1118,10 @@ class MetadataSetSerializer(DuplicateSetSerializer):
 
     class Meta:
         model = ReservationMetadataSet
-        fields = '__all__'
+        exclude = (
+            'created_at', 'modified_at', 
+            'created_by', 'modified_by'
+        )
         list_fields = (
             'required_fields', 
             'supported_fields'
