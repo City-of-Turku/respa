@@ -1437,7 +1437,8 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
 
     def validate(self, attrs):
         request = self.context['request']
-        if not 'unit' in attrs:
+        unit = attrs.get('unit', None)
+        if not unit:
             raise serializers.ValidationError({
                 'unit': [_('This field is required.')]
             })
