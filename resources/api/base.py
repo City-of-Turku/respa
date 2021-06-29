@@ -44,7 +44,13 @@ class TranslatedModelSerializer(serializers.ModelSerializer):
             for lang in LANGUAGES:
                 key = "%s_%s" % (field_name, lang)
                 if key in self.fields:
-                    del self.fields[key]
+                    del self.fields[key]   
+            field = self.fields.get(field_name, None)
+            if not field:
+                continue
+            if isinstance(field, drf.DictField) and \
+                not getattr(field, 'help_text', None):
+                setattr(field, 'help_text', get_translated_field_help_text(field_name))
 
     def to_representation(self, obj):
         for field in self.translated_fields:
