@@ -180,10 +180,7 @@ class PeriodSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Period
-        exclude = (
-            'resource',
-            'unit',
-        )
+        exclude = ( 'resource', 'unit', )
    
     def create(self, validated_data, **kwargs):
         days = validated_data.pop('days', [])

@@ -51,7 +51,7 @@ from .accessibility import ResourceAccessibilitySerializer
 from .base import (
     ExtraDataMixin, TranslatedModelSerializer, register_view,
     DRFFilterBooleanWidget, PeriodSerializer, DaySerializer, Period,
-    LocationField
+    LocationField, get_translated_field_help_text
 )
 from .reservation import ReservationSerializer
 from .unit import UnitSerializer
@@ -211,6 +211,7 @@ class ResourceImageSerializer(TranslatedModelSerializer):
         model = ResourceImage
         exclude = (
             'image_format', 'sort_order', 'resource',
+            'created_at', 'modified_at', 'created_by', 'modified_by'
         )
         required_translations = (
             'caption_fi', 'caption_en', 'caption_sv'
@@ -1085,6 +1086,7 @@ class ResourceTagSerializer(serializers.ModelSerializer):
 
 class DuplicateSetSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
+        request = self.context.get('request', None)
         if not getattr(self.Meta, 'list_fields', None):
             return (super().validate(attrs), False)
         query = Q()
@@ -1095,8 +1097,12 @@ class DuplicateSetSerializer(serializers.ModelSerializer):
             query |= Q(name=attrs['name'])
 
         if not len(query):
+            if request and request.method in ('PUT', 'PATCH'):
+                raise serializers.ValidationError({
+                    'error': [_('Missing required field(s): id or name')]
+                })
             raise serializers.ValidationError({
-                'error': [_('Missing required field(s): id or name')]
+                'error': [_('Missing required field: name')]
             })
 
         try:
@@ -1269,7 +1275,7 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
 
     class Meta:
         model = ReservationHomeMunicipalitySet
-        exclude = ('included_municipalities',)
+        exclude = ('included_municipalities', 'created_at', 'modified_at', )
         list_fields = ('municipalities',)
         schema = {
             "type": "object",
@@ -1366,6 +1372,14 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
     public = serializers.BooleanField(required=True)
     name = serializers.DictField(required=True)
     description = serializers.DictField(required=True)
+    responsible_contact_info = serializers.DictField(
+        required=False,
+        help_text=get_translated_field_help_text('responsible_contact_info')
+    )
+    specific_terms = serializers.DictField(
+        required=False,
+        help_text=get_translated_field_help_text('specific_terms')
+    )
     need_manual_confirmation = serializers.BooleanField(required=True)
     authentication = serializers.ChoiceField(choices=Resource.AUTHENTICATION_TYPES, required=True)
     people_capacity = serializers.IntegerField(required=True)
@@ -1373,11 +1387,10 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
     max_period = serializers.DurationField(required=True)
     slot_size = serializers.DurationField(required=True)
     reservation_info = serializers.DictField(required=True)
-    terms_of_use = TermsOfUseSerializer(required=True, many=True)
 
+    terms_of_use = TermsOfUseSerializer(required=True, many=True)
     tags = ResourceTagSerializer(required=False, many=True)
     periods  = PeriodSerializer(required=False, many=True)
-
     images = ResourceImageSerializer(required=True, allow_empty=False, many=True)
     reservation_metadata_set = MetadataSetSerializer(required=False)
     reservation_home_municipality_set = ReservationHomeMunicipalitySetSerializer(required=False)
@@ -1386,14 +1399,16 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
 
     class Meta:
         model = Resource
-        fields = '__all__'
-        exclude_fields = (
+        exclude = (
             'resource_email', 'configuration',
-            )
+            'created_at', 'modified_at'
+        )
         required_translations = (
             'name_fi', 'name_sv', 'name_en'
             'description_fi', 'description_sv', 'description_en',
             'reservation_info_fi', 'reservation_info_sv', 'reservation_info_en',
+            'responsible_contact_info_fi',
+            'specific_terms_fi', 'specific_terms_en', 'specific_terms_sv',
             )
         extra_serializers = {
             'images': ResourceImageSerializer,
