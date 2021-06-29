@@ -183,7 +183,7 @@ register_view(ResourceTypeViewSet, 'type')
 
 class ImageSerializer(serializers.Serializer):
     name = serializers.CharField(required=True)
-    data = serializers.CharField(required=True)
+    data = serializers.CharField(required=True, help_text='Data must be base64 encoded')
 
     def validate(self, attrs):
         try:
@@ -1388,6 +1388,10 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
     slot_size = serializers.DurationField(required=True)
     reservation_info = serializers.DictField(required=True)
 
+    reservation_confirmed_notification_extra = serializers.DictField(required=False)
+    reservation_requested_notification_extra = serializers.DictField(required=False)
+    reservation_additional_information = serializers.DictField(required=False)
+
     terms_of_use = TermsOfUseSerializer(required=True, many=True)
     tags = ResourceTagSerializer(required=False, many=True)
     periods  = PeriodSerializer(required=False, many=True)
@@ -1401,7 +1405,9 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
         model = Resource
         exclude = (
             'resource_email', 'configuration',
-            'created_at', 'modified_at'
+            'created_at', 'modified_at',
+            'modified_by', 'created_by',
+            'generic_terms', 'payment_terms'
         )
         required_translations = (
             'name_fi', 'name_sv', 'name_en'
@@ -1409,6 +1415,16 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
             'reservation_info_fi', 'reservation_info_sv', 'reservation_info_en',
             'responsible_contact_info_fi',
             'specific_terms_fi', 'specific_terms_en', 'specific_terms_sv',
+            'reservation_confirmed_notification_extra_fi',
+            'reservation_confirmed_notification_extra_en',
+            'reservation_confirmed_notification_extra_sv',
+            'reservation_requested_notification_extra_fi',
+            'reservation_requested_notification_extra_en',
+            'reservation_requested_notification_extra_sv',
+            'reservation_additional_information_fi', 
+            'reservation_additional_information_en', 
+            'reservation_additional_information_sv'
+
             )
         extra_serializers = {
             'images': ResourceImageSerializer,
