@@ -1162,7 +1162,6 @@ class MetadataSetSerializer(DuplicateSetSerializer):
         required_fields = data.pop('required_fields', [])
         remove_fields = data.pop('remove_fields', fields.empty)
 
-
         attrs = super().validate(data)
 
         if remove_fields != fields.empty:
@@ -1173,12 +1172,11 @@ class MetadataSetSerializer(DuplicateSetSerializer):
                     'remove_fields': 'Invalid schema.',
                     'schema': self.Meta.schema
                 }) from exc
-
         if 'supported_fields' in attrs: # Metadata fetched from DB using name or id
+            attrs.update(data)
             attrs['supported_fields'] = supported_fields
             attrs['required_fields'] = required_fields
             attrs['remove_fields'] = remove_fields
-            attrs.update(data)
             return attrs
 
         if 'name' not in attrs:
@@ -1220,7 +1218,6 @@ class MetadataSetSerializer(DuplicateSetSerializer):
                     'required_fields': [_('Atleast one invalid option was given.'),]
                 })
             attrs['required_fields'] = required_fields
-
         return super().validate(attrs)
 
     def create(self, validated_data):
@@ -1308,9 +1305,9 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
                 }) from exc
 
         if 'id' in attrs: # Municipality fetched from DB using id
+            attrs.update(data)
             attrs['municipalities'].extend(municipalities)
             attrs['remove_fields'] = remove_fields
-            attrs.update(data)
             return attrs
 
         try:
