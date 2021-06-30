@@ -224,11 +224,6 @@ class ResourceImageSerializer(TranslatedModelSerializer):
                 'image': [_('This field is required.')]
             })
 
-        if request.method in ('PUT', 'PATCH') and 'id' not in attrs:
-            raise serializers.ValidationError({
-                'id': [_('This field is required.')]
-            })
-
         return super().validate(attrs)
 
     def create(self, validated_data):
@@ -248,6 +243,9 @@ class ResourceImageSerializer(TranslatedModelSerializer):
         return instance
     
     def update(self, resource, validated_data):
+        if 'id' not in validated_data:
+            return self.create(validated_data)
+
         request = self.context['request']
         user = request.user
 
@@ -257,7 +255,6 @@ class ResourceImageSerializer(TranslatedModelSerializer):
         serializer.is_valid()
         validated_data['image'] = serializer.content_file
         validated_data['modified_by'] = user
-        
         try:
             instance = self.Meta.model.objects.get(resource=resource, pk=validated_data['id'])
             instance = super().update(instance, validated_data)
@@ -514,8 +511,11 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
             del ret['timmi_resource']
         if 'timmi_room_id' in ret:
             del ret['timmi_room_id']
-        if 'resource_staff_emails' in ret and not obj.unit.is_manager(user):
-            del ret['resource_staff_emails']
+
+        if 'resource_staff_emails' in ret and \
+                (not is_staff(user) and not is_general_admin(user) and
+                    not has_permission(user, 'resources.view_resource')):
+                        del ret['resource_staff_emails']
 
 
         if 'period_details' in self.context['includes']:
@@ -597,7 +597,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
         model = Resource
         exclude = ('reservation_requested_notification_extra', 'reservation_confirmed_notification_extra',
                    'access_code_type', 'reservation_metadata_set', 'reservation_home_municipality_set', 
-                   'created_by', 'modified_by')
+                   'created_by', 'modified_by', 'configuration', 'resource_email')
 
 
 class ResourceDetailsSerializer(ResourceSerializer):
@@ -1456,7 +1456,7 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
     def validate(self, attrs):
         request = self.context['request']
         unit = attrs.get('unit', None)
-        if not unit:
+        if not unit and request.method == 'POST':
             raise serializers.ValidationError({
                 'unit': [_('This field is required.')]
             })
@@ -1585,6 +1585,21 @@ class ResourceUpdateSerializer(ResourceCreateSerializer):
     reservation_metadata_set = MetadataSetSerializer(required=False)
     reservation_home_municipality_set = ReservationHomeMunicipalitySetSerializer(required=False)
     location = LocationField(required=False, help_text='example: {"type": "Point", "coordinates": [22.00000, 60.0000]}')
+
+    authentication = serializers.ChoiceField(choices=Resource.AUTHENTICATION_TYPES, required=False)
+    description = serializers.DictField(required=False)
+    min_period = serializers.DurationField(required=False)
+    max_period = serializers.DurationField(required=False)
+    name = serializers.DictField(required=False)
+    need_manual_confirmation = serializers.BooleanField(required=False)
+    people_capacity = serializers.IntegerField(required=False)
+    public = serializers.BooleanField(required=False)
+    slot_size = serializers.DurationField(required=False)
+    reservation_info = serializers.DictField(required=False)
+
+    unit = serializers.PrimaryKeyRelatedField(required=False, queryset=Unit.objects.all())
+    purposes = serializers.PrimaryKeyRelatedField(required=False, queryset=Purpose.objects.all())
+    type = serializers.PrimaryKeyRelatedField(required=False, queryset=ResourceType.objects.all())
     
     def validate(self, attrs):
         request = self.context['request']
