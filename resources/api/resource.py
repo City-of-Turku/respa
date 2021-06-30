@@ -11,6 +11,7 @@ from arrow.parser import ParserError
 
 from django import forms
 from django.conf import settings
+from django.core.validators import validate_email
 from django.core.files.base import ContentFile
 from django.db.models import OuterRef, Prefetch, Q, Subquery, Value
 from django.db.models.functions import Coalesce, Least
@@ -35,7 +36,6 @@ from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.decorators import action
 from guardian.core import ObjectPermissionChecker
-
 from munigeo import api as munigeo_api
 from resources.models import (
     AccessibilityValue, AccessibilityViewpoint, Purpose, Reservation, Resource, ResourceAccessibility,
@@ -1367,6 +1367,22 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
 
         return super().update(instance, validated_data)
 
+class ResourceStaffEmailsField(serializers.ListField):
+    def to_internal_value(self, data):
+        return '\n'.join(data)
+    
+    def validate_empty_values(self, data):
+        if data == fields.empty:
+            return super().validate_empty_values(data)
+
+        if not data:
+            raise serializers.ValidationError(_('This field cannot be empty.'))
+        
+        for email in data:
+            validate_email(email)
+
+        return super().validate_empty_values(data)
+
 class ResourceCreateSerializer(TranslatedModelSerializer):
     id = serializers.CharField(required=False)
     public = serializers.BooleanField(required=True)
@@ -1391,6 +1407,8 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
     reservation_confirmed_notification_extra = serializers.DictField(required=False)
     reservation_requested_notification_extra = serializers.DictField(required=False)
     reservation_additional_information = serializers.DictField(required=False)
+
+    resource_staff_emails = ResourceStaffEmailsField(required=False)
 
     terms_of_use = TermsOfUseSerializer(required=True, many=True)
     tags = ResourceTagSerializer(required=False, many=True)
