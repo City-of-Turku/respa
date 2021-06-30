@@ -1093,7 +1093,7 @@ class DuplicateSetSerializer(serializers.ModelSerializer):
 
         if 'id' in attrs:
             query |= Q(pk=attrs['id'])
-        if 'name' in attrs:
+        elif 'name' in attrs:
             query |= Q(name=attrs['name'])
 
         if not len(query):
@@ -1157,13 +1157,13 @@ class MetadataSetSerializer(DuplicateSetSerializer):
             "required": [ "remove_fields" ]
         }
     
-    def validate(self, attrs):
-        supported_fields = attrs.pop('supported_fields', [])
-        required_fields = attrs.pop('required_fields', [])
-        remove_fields = attrs.pop('remove_fields', fields.empty)
+    def validate(self, data):
+        supported_fields = data.pop('supported_fields', [])
+        required_fields = data.pop('required_fields', [])
+        remove_fields = data.pop('remove_fields', fields.empty)
 
 
-        attrs = super().validate(attrs)
+        attrs = super().validate(data)
 
         if remove_fields != fields.empty:
             try:
@@ -1178,6 +1178,7 @@ class MetadataSetSerializer(DuplicateSetSerializer):
             attrs['supported_fields'] = supported_fields
             attrs['required_fields'] = required_fields
             attrs['remove_fields'] = remove_fields
+            attrs.update(data)
             return attrs
 
         if 'name' not in attrs:
@@ -1292,10 +1293,10 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
             "required": [ "remove_fields" ]
         }
 
-    def validate(self, attrs):
-        municipalities = attrs.pop('municipalities', [])
-        remove_fields = attrs.pop('remove_fields', fields.empty)
-        attrs = super().validate(attrs)
+    def validate(self, data):
+        municipalities = data.pop('municipalities', [])
+        remove_fields = data.pop('remove_fields', fields.empty)
+        attrs = super().validate(data)
 
         if remove_fields != fields.empty:
             try:
@@ -1309,6 +1310,7 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
         if 'id' in attrs: # Municipality fetched from DB using id
             attrs['municipalities'].extend(municipalities)
             attrs['remove_fields'] = remove_fields
+            attrs.update(data)
             return attrs
 
         try:
