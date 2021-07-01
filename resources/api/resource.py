@@ -1249,7 +1249,7 @@ class ReservationHomeMunicipalitySetSerializer(serializers.ModelSerializer):
                                 required=False, write_only=True, 
                                     child=serializers.CharField(required=True)),
                     required=False, write_only=True, allow_empty=True,
-                    help_text='Example: "remove_fields: { "supported_fields": [ %(example)s ] }"' % ({
+                    help_text='Example: "remove_fields: { "municipalities": [ %(example)s ] }"' % ({
                 'example': ', '.join(
                     "\"%s\"" % x for x in ReservationHomeMunicipalitySet.get_example())
                 }))
