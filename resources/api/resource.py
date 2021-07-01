@@ -1331,7 +1331,7 @@ class ReservationHomeMunicipalitySetSerializer(serializers.ModelSerializer):
             instance = self.create(validated_data)
             resource.reservation_home_municipality_set = instance
 
-        for municipality in validated_data.pop('municipalities'):
+        for municipality in validated_data.pop('municipalities', []):
             if instance.filter(municipality).exists():
                 continue
             instance.add(municipality)
