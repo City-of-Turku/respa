@@ -362,7 +362,9 @@ class ResourceStaffEmailsField(serializers.ListField):
     def to_representation(self, data):
         if not data:
             return []
-        return data.split('\n')
+        if isinstance(data, list):
+            return data
+        return str(data).split('\n')
 
 class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.GeoModelSerializer):
     purposes = PurposeSerializer(many=True)
