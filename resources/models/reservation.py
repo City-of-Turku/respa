@@ -864,12 +864,18 @@ class ReservationMetadataSet(ModifiableModel):
 
     @staticmethod
     def get_supported_fields():
-        return [str(s.field_name) for s in ReservationMetadataField.objects.all()]
+        try:
+            return [str(s.field_name) for s in ReservationMetadataField.objects.all()]
+        except:
+            return []
 
     @staticmethod
     def get_example():
-        items = [str(s.field_name) for s in ReservationMetadataField.objects.all()]
-        if len(items) < 2:
+        try:
+            items = [str(s.field_name) for s in ReservationMetadataField.objects.all()]
+            if len(items) < 2:
+                return ["Example1", "Example2"]
+        except:
             return ["Example1", "Example2"]
         return sample(items, 2)
 
@@ -917,13 +923,19 @@ class ReservationHomeMunicipalitySet(ModifiableModel):
 
     @staticmethod
     def get_supported_fields():
-        return [str(s.name) for s in ReservationHomeMunicipalityField.objects.all()]
+        try:
+            return [str(s.name) for s in ReservationHomeMunicipalityField.objects.all()]
+        except:
+            return []
 
     @staticmethod
     def get_example():
-        items = [str(s.name) for s in ReservationHomeMunicipalityField.objects.all()]
-        if len(items) < 2:
-            return ["Example1", "Example2"]
+        try:
+            items = [str(s.name) for s in ReservationHomeMunicipalityField.objects.all()]
+            if len(items) < 2:
+                return ["Example1", "Example2"]
+        except:
+            return ["Example1", "Example2"] 
         return sample(items, 2)
 class ReservationReminderQuerySet(models.QuerySet):
     pass
