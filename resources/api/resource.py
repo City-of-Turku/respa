@@ -1572,7 +1572,7 @@ class ResourceUpdateSerializer(ResourceCreateSerializer):
     reservation_info = serializers.DictField(required=False)
 
     unit = serializers.PrimaryKeyRelatedField(required=False, queryset=Unit.objects.all())
-    purposes = serializers.PrimaryKeyRelatedField(required=False, queryset=Purpose.objects.all())
+    purposes = serializers.PrimaryKeyRelatedField(required=False, many=True, queryset=Purpose.objects.all())
     type = serializers.PrimaryKeyRelatedField(required=False, queryset=ResourceType.objects.all())
     
     def validate(self, attrs):
