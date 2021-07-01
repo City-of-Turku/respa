@@ -331,14 +331,6 @@ class TermsOfUseSerializer(TranslatedModelSerializer):
                     'payment': TermsOfUse.TERMS_TYPE_PAYMENT
                 }))]
             })
-        required_fields = self.context.get('required', [])
-        for required in required_fields:
-            if required not in terms_type:
-                raise serializers.ValidationError({
-                    'terms_type': [_('Missing required field: "%(required)s"' % ({
-                        'required': required,
-                    }))]
-                })
         return super().validate(attrs)
     
     def update(self, resource, validated_data):
@@ -1440,18 +1432,22 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
         extra = (
             ('images', 
                 {'kwargs': { 'many': True, 'context': self.context, 'data': validated_data.pop('images', {}), },
-                    'save_kw': { 'resource_fk': True }, } ),
+                    'validate': ( (lambda data: len(data) <= 5, _('Invalid length, max: 5')), ),
+                    'save_kw': { 'resource_fk': True, }, } ),
 
             ('tags',
                 {'kwargs': {'many': True, 'context': self.context, 'data': validated_data.pop('tags', []), },
+                    'validate': ( (lambda data: len(data) <= 20,  _('Invalid length, max: 20')), ),
                     'save_kw': { 'resource_fk': True }, } ),
 
             ('periods', 
                 { 'kwargs': { 'many': True, 'context': self.context, 'data': validated_data.pop('periods', {}), },
+                    'validate': ( (lambda data: len(data) <= 10,  _('Invalid length, max: 10')), ),
                     'save_kw': { 'resource_fk': True }, } ),
 
             ('terms_of_use', 
-                { 'kwargs': { 'many': True, 'context': { 'required': [ TermsOfUse.TERMS_TYPE_GENERIC ], **self.context }, 'data': validated_data.pop('terms_of_use', []), },
+                { 'kwargs': { 'many': True, 'context': self.context, 'data': validated_data.pop('terms_of_use', []), },
+                    'validate': ( (lambda data: len(data) <= 2,  _('Invalid length, max: 2')), ),
                     'perform': ( lambda instance, serializer: setattr(instance, serializer.terms_type, serializer), ), } ),
 
             ('reservation_metadata_set',
@@ -1480,11 +1476,12 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
             actions = data.pop('perform', [])
             kwargs = data.pop('kwargs', {})
             save_kw = data.pop('save_kw', {})
+            validate = data.pop('validate', [])
 
             if _instance:
                 kwargs['instance'] = instance
 
-            serializer = self.get_extra_serializer(name, **kwargs)
+            serializer = self.get_extra_serializer(name, validate=validate, **kwargs)
             if not serializer:
                 continue
 
@@ -1515,6 +1512,15 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
     def get_extra_serializer(self, name, **kwargs):
         if not kwargs.get('data', None):
             return None
+        validations = kwargs.pop('validate', [])
+
+        for validate, message in validations:
+            if not validate(kwargs['data']):
+                raise serializers.ValidationError({
+                    'error': [_('%s failed validation.' % name)],
+                    'message': [message],
+                    'length': len(kwargs['data'])
+                })
 
         serializer = self.Meta.extra_serializers.get(name, None)
         if not serializer or \
