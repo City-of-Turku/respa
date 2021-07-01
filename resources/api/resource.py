@@ -343,11 +343,26 @@ class TermsOfUseSerializer(TranslatedModelSerializer):
             setattr(resource, validated_data['terms_type'], instance)
         return super().update(instance, validated_data)
 
-
-class ResourceStaffEmailField(serializers.ListField):
+class ResourceStaffEmailsField(serializers.ListField):
     def to_internal_value(self, data):
-        return super().to_internal_value(data)
+        return '\n'.join(data)
+    
+    def validate_empty_values(self, data):
+        if data == fields.empty:
+            return super().validate_empty_values(data)
 
+        if not data:
+            raise serializers.ValidationError(_('This field cannot be empty.'))
+        
+        for email in data:
+            validate_email(email)
+
+        return super().validate_empty_values(data)
+    
+    def to_representation(self, data):
+        if not data:
+            return []
+        return data.split('\n')
 
 class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.GeoModelSerializer):
     purposes = PurposeSerializer(many=True)
@@ -376,7 +391,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     tags = serializers.SerializerMethodField()
     max_price_per_hour = serializers.SerializerMethodField()
     min_price_per_hour = serializers.SerializerMethodField()
-    resource_staff_emails = serializers.ListField()
+    resource_staff_emails = ResourceStaffEmailsField()
 
     def get_max_price_per_hour(self, obj):
         """Backwards compatibility for 'max_price_per_hour' field that is now deprecated"""
@@ -1312,22 +1327,6 @@ class ReservationHomeMunicipalitySetSerializer(serializers.ModelSerializer):
                     instance.remove(municipality)
 
         return super().update(instance, validated_data)
-
-class ResourceStaffEmailsField(serializers.ListField):
-    def to_internal_value(self, data):
-        return '\n'.join(data)
-    
-    def validate_empty_values(self, data):
-        if data == fields.empty:
-            return super().validate_empty_values(data)
-
-        if not data:
-            raise serializers.ValidationError(_('This field cannot be empty.'))
-        
-        for email in data:
-            validate_email(email)
-
-        return super().validate_empty_values(data)
 
 class ResourceCreateSerializer(TranslatedModelSerializer):
     id = serializers.CharField(required=False)
