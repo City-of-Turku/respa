@@ -1084,45 +1084,7 @@ class ResourceTagSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class DuplicateSetSerializer(serializers.ModelSerializer):
-    def validate(self, attrs):
-        request = self.context.get('request', None)
-        if not getattr(self.Meta, 'list_fields', None):
-            return (super().validate(attrs), False)
-        query = Q()
-
-        if 'id' in attrs:
-            query |= Q(pk=attrs['id'])
-        elif 'name' in attrs:
-            query |= Q(name=attrs['name'])
-
-        if not len(query):
-            if request and request.method in ('PUT', 'PATCH'):
-                raise serializers.ValidationError({
-                    'error': [_('Missing required field(s): id or name')]
-                })
-            raise serializers.ValidationError({
-                'error': [_('Missing required field: name')]
-            })
-
-        try:
-            instance = self.Meta.model.objects.get(query)
-        except ObjectDoesNotExist:
-            instance = None
-            
-        if instance:
-            obj = self.__class__.to_representation(self, instance=instance)
-            for field in self.Meta.list_fields:
-                qs = getattr(instance, field, [])
-                if isinstance(qs, list):
-                    obj[field] = []
-                    continue
-                obj[field] = list(qs.all())
-            return obj
-        return super().validate(attrs)
-
-class MetadataSetSerializer(DuplicateSetSerializer):
-    id = serializers.IntegerField(required=False)
+class MetadataSetSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=False)
     supported_fields = serializers.ListField(required=False, write_only=True)
     required_fields = serializers.ListField(required=False,  write_only=True)
@@ -1135,6 +1097,7 @@ class MetadataSetSerializer(DuplicateSetSerializer):
     class Meta:
         model = ReservationMetadataSet
         exclude = (
+            'id',
             'created_at', 'modified_at', 
             'created_by', 'modified_by'
         )
@@ -1157,12 +1120,27 @@ class MetadataSetSerializer(DuplicateSetSerializer):
             "required": [ "remove_fields" ]
         }
     
-    def validate(self, data):
-        supported_fields = data.pop('supported_fields', [])
-        required_fields = data.pop('required_fields', [])
-        remove_fields = data.pop('remove_fields', fields.empty)
+    def validate(self, attrs):
+        request = self.context['request']
+        supported_fields = attrs.pop('supported_fields', [])
+        required_fields = attrs.pop('required_fields', [])
+        remove_fields = attrs.pop('remove_fields', fields.empty)
 
-        attrs = super().validate(data)
+        name = attrs.get('name', None)
+
+        if request.method == 'POST':
+            if not name:
+                raise serializers.ValidationError({
+                    'name':[_('This field is required.')]
+                })
+            try:
+                self.Meta.model.objects.get(name=attrs['name'])
+                raise serializers.ValidationError({
+                    'name': [_('Metadata set with this name already exists.')]
+                })
+            except (ObjectDoesNotExist, serializers.ValidationError) as exc:
+                if isinstance(exc, serializers.ValidationError):
+                    raise
 
         if remove_fields != fields.empty:
             try:
@@ -1172,30 +1150,11 @@ class MetadataSetSerializer(DuplicateSetSerializer):
                     'remove_fields': 'Invalid schema.',
                     'schema': self.Meta.schema
                 }) from exc
-        if 'supported_fields' in attrs: # Metadata fetched from DB using name or id
-            attrs.update(data)
-            attrs['supported_fields'] = supported_fields
-            attrs['required_fields'] = required_fields
-            attrs['remove_fields'] = remove_fields
-            return attrs
-
-        if 'name' not in attrs:
-            raise serializers.ValidationError({
-                'name': [_('This field is required.')]
-            })
         
         if not supported_fields:
             raise serializers.ValidationError({
                 'supported_fields': [_('This field is required.')]
             })
-
-        try:
-            metaset = self.Meta.model.objects.get(name=attrs['name'])
-            raise serializers.ValidationError({
-                'name': [_('Metadata Set id "%d" with this name exists.' % metaset.id)]
-            })
-        except ObjectDoesNotExist:
-            pass
 
         if not supported_fields:
             raise serializers.ValidationError({
@@ -1223,13 +1182,15 @@ class MetadataSetSerializer(DuplicateSetSerializer):
     def create(self, validated_data):
         if 'remove_fields' in validated_data:
             del validated_data['remove_fields'] 
-
-        if 'id' in validated_data:
-            try:
-                return self.Meta.model.objects.get(pk=validated_data['id'])
-            except ObjectDoesNotExist:
-                pass
-        return super().create(validated_data)
+        try:
+            instance = super().create(validated_data)
+        except Exception as exc:
+            logger.error("Error while creating metadata set through api: %s", exc)
+            raise serializers.ValidationError(
+                {'error': [_("Something went wrong.")]}
+            ) from exc
+        attrs['remove_fields'] = remove_fields
+        return instance
 
     def update(self, resource, validated_data):
         remove_fields = validated_data.pop('remove_fields', {})
@@ -1261,8 +1222,7 @@ class MetadataSetSerializer(DuplicateSetSerializer):
 
         return super().update(instance, validated_data)
 
-class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
-    id = serializers.IntegerField(required=False)
+class ReservationHomeMunicipalitySetSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=True)
     municipalities = serializers.ListField(required=True, write_only=True)
     remove_fields = serializers.DictField(
@@ -1273,7 +1233,7 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
 
     class Meta:
         model = ReservationHomeMunicipalitySet
-        exclude = ('included_municipalities', 'created_at', 'modified_at', )
+        exclude = ('id', 'included_municipalities', 'created_at', 'modified_at', )
         list_fields = ('municipalities',)
         schema = {
             "type": "object",
@@ -1290,10 +1250,10 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
             "required": [ "remove_fields" ]
         }
 
-    def validate(self, data):
-        municipalities = data.pop('municipalities', [])
-        remove_fields = data.pop('remove_fields', fields.empty)
-        attrs = super().validate(data)
+    def validate(self, attrs):
+        request = self.context['request']
+        municipalities = attrs.pop('municipalities', [])
+        remove_fields = attrs.pop('remove_fields', fields.empty)
 
         if remove_fields != fields.empty:
             try:
@@ -1303,20 +1263,20 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
                     'remove_fields': 'Invalid schema.',
                     'schema': self.Meta.schema
                 }) from exc
-
-        if 'id' in attrs: # Municipality fetched from DB using id
-            attrs.update(data)
-            attrs['municipalities'].extend(municipalities)
-            attrs['remove_fields'] = remove_fields
-            return attrs
-
-        try:
-            municipality = self.Meta.model.objects.get(name=attrs['name'])
-            raise serializers.ValidationError({
-                'name': [_('Home Municipality Set id "%d" with this name exists' % municipality.id)]
-            })
-        except ObjectDoesNotExist:
-            pass
+        name = attrs.get('name', None)
+        if request.method == 'POST':
+            if not name:
+                raise serializers.ValidationError({
+                    'name':[_('This field is required.')]
+                })
+            try:
+                self.Meta.model.objects.get(name=attrs['name'])
+                raise serializers.ValidationError({
+                    'name': [_('Home Municipality set with this name already exists.')]
+                })
+            except (ObjectDoesNotExist, serializers.ValidationError) as exc:
+                if isinstance(exc, serializers.ValidationError):
+                    raise
 
         municipalities = ReservationHomeMunicipalityField.objects.filter(name__in=municipalities)
         if not municipalities.exists():
@@ -1325,20 +1285,15 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
             })
     
         attrs['municipalities'] = municipalities
+        attrs['remove_fields'] = remove_fields
         return attrs
 
     def create(self, validated_data):
         if 'remove_fields' in validated_data:
-            del validated_data['remove_fields'] 
-
-
-        if 'id' in validated_data:
-            try:
-                return self.Meta.model.objects.get(pk=validated_data['id'])
-            except ObjectDoesNotExist:
-                pass
+            del validated_data['remove_fields']
 
         validated_data['included_municipalities'] = validated_data.pop('municipalities')
+
         return super().create(validated_data)
 
     def update(self, resource, validated_data):
@@ -1362,7 +1317,6 @@ class ReservationHomeMunicipalitySetSerializer(DuplicateSetSerializer):
             for municipality in remove_fields.pop('municipalities', []):
                 if instance.filter(municipality).exists():
                     instance.remove(municipality)
-
 
         return super().update(instance, validated_data)
 
@@ -1489,23 +1443,23 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
                     'save_kw': { 'resource_fk': True }, } ),
 
             ('tags',
-                {'kwargs': {'many': True, 'data': validated_data.pop('tags', []), },
+                {'kwargs': {'many': True, 'context': self.context, 'data': validated_data.pop('tags', []), },
                     'save_kw': { 'resource_fk': True }, } ),
 
             ('periods', 
-                { 'kwargs': { 'many': True, 'data': validated_data.pop('periods', {}), },
+                { 'kwargs': { 'many': True, 'context': self.context, 'data': validated_data.pop('periods', {}), },
                     'save_kw': { 'resource_fk': True }, } ),
 
             ('terms_of_use', 
-                { 'kwargs': { 'many': True, 'context': { 'required': [ TermsOfUse.TERMS_TYPE_GENERIC ] }, 'data': validated_data.pop('terms_of_use', []), },
+                { 'kwargs': { 'many': True, 'context': { 'required': [ TermsOfUse.TERMS_TYPE_GENERIC ], **self.context }, 'data': validated_data.pop('terms_of_use', []), },
                     'perform': ( lambda instance, serializer: setattr(instance, serializer.terms_type, serializer), ), } ),
 
             ('reservation_metadata_set',
-                { 'kwargs': { 'data': validated_data.pop('reservation_metadata_set', {}), },
+                { 'kwargs': { 'data': validated_data.pop('reservation_metadata_set', {}), 'context': self.context, },
                     'perform': ( lambda instance, serializer: setattr(instance, 'reservation_metadata_set', serializer), ), } ),
 
             ('reservation_home_municipality_set', 
-                { 'kwargs': { 'data': validated_data.pop('reservation_home_municipality_set', {}), },
+                { 'kwargs': { 'data': validated_data.pop('reservation_home_municipality_set', {}), 'context': self.context, },
                     'perform': ( lambda instance, serializer: setattr(instance, 'reservation_home_municipality_set', serializer), ), } ),
         )
 
