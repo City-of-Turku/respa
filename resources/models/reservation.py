@@ -26,6 +26,8 @@ from .utils import (
     DEFAULT_LANG, localize_datetime, format_dt_range, build_reservations_ical_file
 )
 
+from random import sample
+
 DEFAULT_TZ = pytz.timezone(settings.TIME_ZONE)
 
 logger = logging.getLogger(__name__)
@@ -860,6 +862,17 @@ class ReservationMetadataSet(ModifiableModel):
             self.required_fields.remove(obj)
         _field.remove(obj)
 
+    @staticmethod
+    def get_supported_fields():
+        return [str(s.field_name) for s in ReservationMetadataField.objects.all()]
+
+    @staticmethod
+    def get_example():
+        items = [str(s.field_name) for s in ReservationMetadataField.objects.all()]
+        if len(items) < 2:
+            return ["Example1", "Example2"]
+        return sample(items, 2)
+
 class ReservationHomeMunicipalityField(NameIdentifiedModel):
     id = models.CharField(primary_key=True, max_length=100)
     name = models.CharField(max_length=100, verbose_name=_('Name'), unique=True)
@@ -871,6 +884,7 @@ class ReservationHomeMunicipalityField(NameIdentifiedModel):
 
     def __str__(self):
         return self.name
+
 
 class ReservationHomeMunicipalitySet(ModifiableModel):
     name = models.CharField(max_length=100, verbose_name=_('Name'), unique=True)
@@ -901,6 +915,16 @@ class ReservationHomeMunicipalitySet(ModifiableModel):
             return
         self.included_municipalities.remove(obj)
 
+    @staticmethod
+    def get_supported_fields():
+        return [str(s.name) for s in ReservationHomeMunicipalityField.objects.all()]
+
+    @staticmethod
+    def get_example():
+        items = [str(s.name) for s in ReservationHomeMunicipalityField.objects.all()]
+        if len(items) < 2:
+            return ["Example1", "Example2"]
+        return sample(items, 2)
 class ReservationReminderQuerySet(models.QuerySet):
     pass
 

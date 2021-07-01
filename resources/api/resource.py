@@ -58,6 +58,8 @@ from .unit import UnitSerializer
 from .equipment import EquipmentSerializer
 from rest_framework.settings import api_settings as drf_settings
 
+from random import sample
+
 
 logger = logging.getLogger(__name__)
 
@@ -1095,13 +1097,19 @@ class ResourceTagSerializer(serializers.ModelSerializer):
 
 class MetadataSetSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=False)
-    supported_fields = serializers.ListField(required=False, write_only=True)
-    required_fields = serializers.ListField(required=False,  write_only=True)
+    supported_fields = serializers.ListField(required=False, write_only=True, 
+            help_text='Options: \n%s' % '\n'.join(ReservationMetadataSet.get_supported_fields()))
+    required_fields = serializers.ListField(required=False,  write_only=True,
+            help_text='Options: \n%s' % '\n'.join(ReservationMetadataSet.get_supported_fields()))
     remove_fields = serializers.DictField(
                             child=serializers.ListField(
                                 required=False, write_only=True, 
                                     child=serializers.CharField(required=True)),
-                    required=False, write_only=True, allow_empty=True)
+                    required=False, write_only=True, allow_empty=True,
+            help_text='Example: "remove_fields: { "supported_fields": [ %(example)s ] }"' % ({
+                'example': ', '.join(
+                    "\"%s\"" % x for x in ReservationMetadataSet.get_example())
+                }))
 
     class Meta:
         model = ReservationMetadataSet
@@ -1234,12 +1242,17 @@ class MetadataSetSerializer(serializers.ModelSerializer):
 
 class ReservationHomeMunicipalitySetSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=True)
-    municipalities = serializers.ListField(required=True, write_only=True)
+    municipalities = serializers.ListField(required=True, write_only=True, 
+    help_text='Options: \n%s' % '\n'.join(ReservationHomeMunicipalitySet.get_supported_fields()))
     remove_fields = serializers.DictField(
                             child=serializers.ListField(
                                 required=False, write_only=True, 
                                     child=serializers.CharField(required=True)),
-                    required=False, write_only=True, allow_empty=True)
+                    required=False, write_only=True, allow_empty=True,
+                    help_text='Example: "remove_fields: { "supported_fields": [ %(example)s ] }"' % ({
+                'example': ', '.join(
+                    "\"%s\"" % x for x in ReservationHomeMunicipalitySet.get_example())
+                }))
 
     class Meta:
         model = ReservationHomeMunicipalitySet
