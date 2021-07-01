@@ -1169,6 +1169,8 @@ class MetadataSetSerializer(serializers.ModelSerializer):
                     'required_fields': [_('Atleast one invalid option was given.'),]
                 })
             attrs['required_fields'] = required_fields
+
+        attrs['remove_fields'] = remove_fields
         return super().validate(attrs)
 
     def create(self, validated_data):
@@ -1181,7 +1183,6 @@ class MetadataSetSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'error': [_("Something went wrong.")]}
             ) from exc
-        attrs['remove_fields'] = remove_fields
         return instance
 
     def update(self, resource, validated_data):
