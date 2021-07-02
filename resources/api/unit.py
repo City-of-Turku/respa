@@ -141,7 +141,7 @@ class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer):
         model = Unit
         fields = '__all__'
         required_translations = ('name_fi', 'name_en', 'name_sv', 'street_address_fi')
-        read_only_fields = ('created_at', 'modified_at', 'created_by', 'modified_by')
+        read_only_fields = ('created_at', 'modified_at', 'created_by', 'modified_by', 'time_zone')
 
 
 class UnitViewSet(viewsets.ModelViewSet):
