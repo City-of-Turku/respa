@@ -249,6 +249,16 @@ class LocationField(serializers.DictField):
     coordinates = serializers.ListField(read_only=True)
     type = serializers.CharField(read_only=True)
 
+    def to_representation(self, value):
+        if value and not value.empty and isinstance(value, Point):
+            ret = {
+                'type': 'Point',
+                'coordinates': [value.x, value.y]
+            }
+            return ret
+
+        return super().to_representation(value)
+
     def to_internal_value(self, data):
         if data['type'].lower() == 'point':
             x,y = data['coordinates']

@@ -4,6 +4,7 @@ import struct
 import time
 import io
 import logging
+from munigeo.models import Municipality
 import pytz
 
 import arrow
@@ -270,3 +271,9 @@ def dateparser(first, iter) -> str:
         return time
     except:
         return ""
+
+def get_municipality_help_options():
+    try:
+        return list(Municipality.objects.all().values_list('pk', flat=True))
+    except:
+        return []

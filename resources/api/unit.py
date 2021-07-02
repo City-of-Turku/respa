@@ -1,12 +1,18 @@
+from resources.models.utils import get_municipality_help_options
+from munigeo.models import Municipality
+from resources.auth import has_permission, is_general_admin, is_staff
 from rest_framework import serializers, viewsets
 from django.contrib.auth.models import AnonymousUser
 import django_filters
-from munigeo import api as munigeo_api
-from resources.api.base import NullableDateTimeField, TranslatedModelSerializer, register_view, DRFFilterBooleanWidget
+from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
+from resources.api.base import (
+    NullableDateTimeField, TranslatedModelSerializer,
+    register_view, DRFFilterBooleanWidget
+)
 from resources.models import Unit
 from resources.models.resource import Resource
 from .accessibility import UnitAccessibilitySerializer
-from .base import ExtraDataMixin
+from .base import ExtraDataMixin, LocationField, PeriodSerializer
 
 
 class UnitFilterSet(django_filters.FilterSet):
@@ -22,14 +28,31 @@ class UnitFilterSet(django_filters.FilterSet):
         fields = ('resource_group',)
 
 
-class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.GeoModelSerializer):
+class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer):
+    name = serializers.DictField(required=True)
+    description = serializers.DictField(required=False)
+    street_address = serializers.DictField(required=True)
+    www_url = serializers.DictField(required=False)
+    picture_caption = serializers.DictField(required=False)
+    periods = PeriodSerializer(required=False, many=True)
     opening_hours_today = serializers.DictField(
+        required=False,
+        read_only=True,
         source='get_opening_hours',
         child=serializers.ListField(
             child=serializers.DictField(
                 child=NullableDateTimeField())
         )
     )
+    location = LocationField(
+        required=False,
+        help_text='example: "location": {"type": "Point", "coordinates": [22.00000, 60.00000]}'
+    )
+    municipality = serializers.PrimaryKeyRelatedField(
+        required=False,
+        queryset=Municipality.objects.all(),
+        help_text=f'options: {get_municipality_help_options()}')
+
     # depracated, available for backwards compatibility
     reservable_days_in_advance      = serializers.ReadOnlyField(source='reservable_max_days_in_advance')
     reservable_max_days_in_advance  = serializers.ReadOnlyField()
@@ -78,21 +101,55 @@ class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.GeoM
         return x
     
     def to_representation(self, obj):
+        request = self.context['request']
+        user = request.user
         ret = super().to_representation(obj)
         if 'timmi_profile_id' in ret:
             del ret['timmi_profile_id']
+
+        if 'created_by' in ret and 'modified_by' in ret and \
+                (not is_staff(user) and not is_general_admin(user) and
+                    not has_permission(user, 'resources.view_unit')):
+                        del ret['created_by']
+                        del ret['modified_by']
+
         return ret
 
+    
+    def create(self, validated_data):
+        periods_data = validated_data.pop('periods', [])
+        unit = Unit.objects.create(**validated_data)
+
+        periods = PeriodSerializer(data=periods_data, many=True)
+        if periods.is_valid(raise_exception=True):
+            periods.save(unit=unit)
+
+        return unit
+
+
+    def update(self, instance, validated_data):
+        if 'periods' in validated_data:
+            periods_data = validated_data.pop('periods', [])
+            periods = PeriodSerializer(data=periods_data, many=True)
+            if periods.is_valid(raise_exception=True):
+                periods.save(unit=instance)
+        
+        super().update(instance, validated_data)
+        return instance
+    
     class Meta:
         model = Unit
         fields = '__all__'
+        required_translations = ('name_fi', 'name_en', 'name_sv', 'street_address_fi')
+        read_only_fields = ('created_at', 'modified_at', 'created_by', 'modified_by')
 
 
-class UnitViewSet(munigeo_api.GeoModelAPIView, viewsets.ReadOnlyModelViewSet):
+class UnitViewSet(viewsets.ModelViewSet):
     queryset = Unit.objects.all()
     serializer_class = UnitSerializer
     filter_backends = (django_filters.rest_framework.DjangoFilterBackend,)
     filterset_class = UnitFilterSet
+    permission_classes = (DjangoModelPermissionsOrAnonReadOnly, )
 
 
 register_view(UnitViewSet, 'unit')
