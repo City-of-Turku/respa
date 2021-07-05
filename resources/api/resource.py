@@ -159,9 +159,13 @@ register_view(PurposeViewSet, 'purpose')
 
 
 class ResourceTypeSerializer(TranslatedModelSerializer):
+    name = serializers.DictField(required=True)
+
     class Meta:
         model = ResourceType
         fields = ['name', 'main_type', 'id']
+        required_translations = ['name_fi']
+        read_only_fields = ['id']
 
 
 class ResourceTypeFilterSet(django_filters.FilterSet):
@@ -173,11 +177,12 @@ class ResourceTypeFilterSet(django_filters.FilterSet):
         fields = ('resource_group',)
 
 
-class ResourceTypeViewSet(viewsets.ReadOnlyModelViewSet):
+class ResourceTypeViewSet(viewsets.ModelViewSet):
     queryset = ResourceType.objects.all()
     serializer_class = ResourceTypeSerializer
     filter_backends = (django_filters.rest_framework.DjangoFilterBackend,)
     filterset_class = ResourceTypeFilterSet
+    permission_classes = (DjangoModelPermissionsOrAnonReadOnly, )
 
 
 register_view(ResourceTypeViewSet, 'type')
