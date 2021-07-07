@@ -19,6 +19,7 @@ if getattr(settings, 'RESPA_CATERINGS_ENABLED', False):
 
 if settings.RESPA_PAYMENTS_ENABLED:
     import payments.api.order  # noqa
+    import payments.api.product  # noqa
 
 router = RespaAPIRouter()
 
