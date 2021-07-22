@@ -5,9 +5,6 @@ from django.forms import inlineformset_factory
 from django.forms.formsets import DELETION_FIELD_NAME
 from guardian.core import ObjectPermissionChecker
 
-
-from taggit.forms import TagField
-
 from .widgets import (
     RespaCheckboxSelect,
     RespaCheckboxInput,
@@ -22,6 +19,7 @@ from resources.models import (
     Purpose,
     Resource,
     ResourceImage,
+    ResourceTag,
     Unit,
     UnitAuthorization,
     TermsOfUse
@@ -174,6 +172,30 @@ class ImageForm(forms.ModelForm):
         fields = ['image', 'type'] + translated_fields
 
 
+class ResourceTagField(forms.CharField):
+    def to_python(self, value):
+        if not value:
+            return []
+        if not isinstance(value, list):
+            value = value.splitlines()
+        data = {
+            'remove': [],
+            'create': []
+        }
+
+        for val in value:
+            if val.startswith('remove_'):
+                tag = val.split('remove_')[1].strip()
+                if tag in data['remove']:
+                    continue
+                data['remove'].append(tag)
+            elif val.startswith('create_'):
+                tag = val.split('create_')[1].strip()
+                if tag in data['create']:
+                    continue
+                data['create'].append(tag)
+        return data
+
 class ResourceForm(forms.ModelForm):
     purposes = forms.ModelMultipleChoiceField(
         widget=RespaCheckboxSelect,
@@ -191,9 +213,10 @@ class ResourceForm(forms.ModelForm):
         required=True,
         label='Nimi [fi]',
     )
-    tags = TagField(
+
+    resource_tags = ResourceTagField(
         required=False,
-        label='Avainsanat'
+        label=_('Keywords')
     )
 
     def __init__(self, *args, **kwargs):
@@ -261,7 +284,7 @@ class ResourceForm(forms.ModelForm):
             'public',
             'reservation_metadata_set',
             'reservation_home_municipality_set',
-            'tags'
+            'resource_tags'
         ] + translated_fields
 
         widgets = {
@@ -288,6 +311,38 @@ class ResourceForm(forms.ModelForm):
             ),
         }
 
+    def get_resource_tags(self):
+        tags = list(ResourceTag.objects.filter(resource=self.instance).values_list('label', flat=True))
+        tags.extend(tag for tag in self.instance.tags.names() if tag not in tags)
+        return tags
+
+    def get_initial_for_field(self, field, field_name):
+        if field_name == 'resource_tags' and self.instance.pk:
+            self.initial['resource_tags'] = self.get_resource_tags()
+        return super().get_initial_for_field(field, field_name)
+
+    def save(self, commit=True):
+        resource_tags = self.cleaned_data.pop('resource_tags', {})
+        ResourceTag.objects.filter(resource=self.instance, label__in=resource_tags['remove']).delete()
+
+        old_tags = list(ResourceTag.objects.filter(resource=self.instance).values_list('label', flat=True))
+        old_tags.extend([tag for tag in self.instance.tags.names() if tag not in old_tags])
+
+        cleaned_tags = [
+            ResourceTag(label=tag, resource=self.instance)
+            for tag in resource_tags['create'] if tag not in old_tags
+        ]
+
+        # Swap from old tag system to new
+        for tag in self.instance.tags.all():
+            cleaned_tags.append(
+                ResourceTag(label=str(tag), resource=self.instance)
+            )
+            tag.delete()
+
+        for tag in cleaned_tags:
+            tag.save()
+        return super().save(commit=commit)
 
 class UnitForm(forms.ModelForm):
     name_fi = forms.CharField(

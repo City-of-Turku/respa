@@ -2443,3 +2443,12 @@ msgstr ""
 
 msgid "Disallow overlapping reservations in this unit only for the same user."
 msgstr ""
+
+msgid "Keywords"
+msgstr ""
+
+msgid "Comma-separated keywords"
+msgstr ""
+
+msgid "Add keyword"
+msgstr ""

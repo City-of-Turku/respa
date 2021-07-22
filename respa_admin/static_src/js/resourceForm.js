@@ -23,8 +23,8 @@ export function initializeEventHandlers() {
   enableLanguageButtons();
   enableAddNewImage();
   enableRemoveImage();
-  showSearchTagInput();
-  preventContentEditableInitial();
+  resourceStaffEmailsHandler();
+  resourceTagsHandler();
 }
 
 export function getEmptyImage() {
@@ -181,35 +181,25 @@ export function coloredDropdownListener(event) {
   reservableDropdown.addEventListener("change", addDropdownColor, false);
 }
 
-export function showSearchTagInput() {
-  let newValue = [];
-  let tagInput = $(document.getElementById("id_tags"));
-  $($(tagInput).val().split(",")).each((index, tag) => {
-    let parsed = parseTag(tag);
-    if (parsed) {
-      newValue.push(parsed);
-    }
-  });
-  $(tagInput).val("");
-
-  if (newValue.length > 0) {
-    $(tagInput).attr("type", "text").val(newValue.join(", "));
-  }
+function updateListItems(field, deleteBtn) {
+  $(field).find('li').each((index, item) => {
+    $(item).unbind('click');
+    $(item).click((f) => {
+      if ($(item).hasClass('active')) {
+        $(item).removeClass('active');
+      } else {
+        $(item).addClass('active');
+        $(deleteBtn).attr('disabled', false);
+      }
+    })
+  })
 }
 
-function parseTag(str) {
-  let tag = $.trim(str)
-    .replace(/[^\w\söäå]/gi, "")
-    .match(/^Tag (.*)/);
-  if (tag) return tag[1];
-  return null;
-}
-
-export function preventContentEditableInitial() {
-  let emailField = $(document).find("#emails-list-box");
-  let emailInput = $(document).find("#staffEmailInput");
-  let emailBtn = $(document).find('#appendEmailButton');
-  let emailDeleteBtn = $(document).find('#removeEmailSelection');
+function resourceStaffEmailsHandler() {
+  let field = $(document).find("#emails-list-box");
+  let input = $(document).find("#staffEmailInput");
+  let btn = $(document).find('#appendEmailButton');
+  let deleteBtn = $(document).find('#removeEmailSelection');
   let actualField = $(document).find("#id_resource_staff_emails");
   let helpText  = $(document).find('#email-help-text')
 
@@ -217,39 +207,20 @@ export function preventContentEditableInitial() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
   }
 
-  function updateListItems() {
-    $(emailField).find('li').each((index, item) => {
-      $(item).unbind('click');
-      $(item).click((f) => {
-        if ($(item).hasClass('active')) {
-          $(item).removeClass('active');
-        } else {
-          $(item).addClass('active');
-          $(emailDeleteBtn).attr('disabled', false);
-        }
-      })
-    })
-  }
-
   function append(value) {
     if (!testValue(value))
       return;
-
-
-
-    $(emailField).append(
+    $(field).append(
       `<li>${value}</li>`
     )
-
     $(actualField).val(`${actualField.val()}${value}\n`)
-
-    $(emailInput).val('');
-    updateListItems();
+    $(input).val('');
+    updateListItems(field, deleteBtn);
   }
 
   function remove(value) {
     let new_val = "";
-    $(emailField).find('li').each((index, item) => {
+    $(field).find('li').each((index, item) => {
       if ($(item).text() === value) {
         $(item).remove();
       } else {
@@ -260,55 +231,138 @@ export function preventContentEditableInitial() {
   }
 
   setInterval((f) => {
-    if ($(emailInput).val().length > 0) {
-      $(emailBtn).attr('disabled', false);
-      $.each($(emailInput).val().split(','), (i, value) => {
+    if ($(input).val().length > 0) {
+      $(btn).attr('disabled', false);
+      $.each($(input).val().split(','), (i, value) => {
         if (!testValue(value.trim())) {
-          $(emailBtn).attr('disabled', true);
+          $(btn).attr('disabled', true);
         }
       });
     } else {
-      $(emailBtn).attr('disabled', true);
+      $(btn).attr('disabled', true);
     }
-    if ($(emailField).find('li').length === 0) {
+    if ($(field).find('li').length === 0) {
       $(helpText).hide();
     } else {
       $(helpText).show();
     }
 
-    if ($(emailField).find('li[class="active"]').length == 0) {
-      $(emailDeleteBtn).attr('disabled', true);
+    if ($(field).find('li[class="active"]').length == 0) {
+      $(deleteBtn).attr('disabled', true);
     }
-
   }, 300);
 
-  $(emailInput).on('keydown', (e) => {
+  $(input).on('keydown', (e) => {
     if (e.key == 'Enter') {
       e.preventDefault();
-      if ($(emailInput).val().length > 0) {
-        $.each($(emailInput).val().split(','), (i, value) => {
+      if ($(input).val().length > 0) {
+        $.each($(input).val().split(','), (i, value) => {
           append(value.trim());
         });
       }
     }
   });
-  $(emailBtn).click((e) => {
+  $(btn).click((e) => {
     e.preventDefault();
-    if ($(emailInput).val().length > 0) {
-      $.each($(emailInput).val().split(','), (i, value) => {
+    if ($(input).val().length > 0) {
+      $.each($(input).val().split(','), (i, value) => {
         append(value.trim());
       });
     }
   })
 
-  $(emailDeleteBtn).click((e) => {
+  $(deleteBtn).click((e) => {
     e.preventDefault();
-    $(emailField).find('li[class="active"]').each((i, value) => {
+    $(field).find('li[class="active"]').each((i, value) => {
       remove($(value).text());
     });
   })
 
-  $(emailDeleteBtn).attr('disabled', true);
+  $(deleteBtn).attr('disabled', true);
 
-  updateListItems();
+  updateListItems(field, deleteBtn);
+}
+
+
+function resourceTagsHandler() {
+  let field = $(document).find("#tags-list-box");
+  let input = $(document).find("#tagInput");
+  let deleteBtn = $(document).find('#removeTagSelection');
+  let btn = $(document).find('#appendTagButton');
+  let actualField = $(document).find("#id_resource_tags");
+
+  function append(value) { 
+      $(field).append(
+        `<li>${value}</li>`
+      )
+      $(actualField).val(`${actualField.val()}create_${value}\n`);
+      $(input).val('');
+      updateListItems(field, deleteBtn);
+  }
+  function remove(value) {
+    let new_val = "";
+    $(field).find('li').each((index, item) => {
+      if ($(item).text() === value) {
+        new_val = $(actualField).val((index, text) => {
+          return text.replace(`create_${value.trim()}`, `remove_${value.trim()}`);
+        }).val()
+        $(item).remove();
+      }
+    })
+  }
+
+
+  $(input).on('keydown', (e) => {
+    if (e.key == 'Enter') {
+      e.preventDefault();
+      if ($(input).val().length > 0) {
+        $.each($(input).val().split(','), (i, value) => {
+          if (/\s/.test(value)) {
+            $.each(value.trim().split(' '), (i, v) => {
+              append(v.trim());
+            });
+          } else {
+            append(value.trim());
+          }
+        });
+      }
+    }
+  });
+  $(btn).click((e) => {
+    e.preventDefault();
+    if ($(input).val().length > 0) {
+      $.each($(input).val().split(','), (i, value) => {
+        if (/\s/.test(value)) {
+          $.each(value.trim().split(' '), (i, v) => {
+            append(v.trim());
+          });
+        } else {
+          append(value.trim());
+        }
+      });
+    }
+  })
+
+  $(deleteBtn).click((e) => {
+    e.preventDefault();
+    $(field).find('li[class="active"]').each((i, value) => {
+      remove($(value).text());
+    });
+  })
+
+  setInterval((f) => {
+    if ($(input).val().length > 0) {
+      $(btn).attr('disabled', false);
+    } else {
+      $(btn).attr('disabled', true);
+    }
+
+    if ($(field).find('li[class="active"]').length == 0) {
+      $(deleteBtn).attr('disabled', true);
+    }
+  }, 300);
+
+
+  $(deleteBtn).attr('disabled', true);
+  updateListItems(field, deleteBtn);
 }

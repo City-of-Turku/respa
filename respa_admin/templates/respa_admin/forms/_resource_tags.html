@@ -1,0 +1,47 @@
+{% load i18n %}
+
+
+
+<div class="form-group">
+    <div class="textarea-wrapper">
+        <label
+            class="control-label input-label"
+            for="{{ field.id_for_label }}"
+        >
+            {{ field.label }}{% if field.field.required %}*{% endif %}
+        </label>
+        <div class="textarea-with-toolbar">
+            <ul
+            id="tags-list-box"
+            class="listed-values">
+                {% if field.value %}
+                    {% for value in field.value %}
+                        <li>{{ value }}&#13;&#10;</li>
+                    {% endfor %}
+                {% endif %}
+            </ul>
+            <div class="input-field-with-button">
+                <input 
+                    class="form-control text-input flex-align-end" 
+                    type="text" placeholder="{% trans 'Comma-separated keywords' %}"
+                    id="tagInput"> </input>
+                <div class="button-section">
+                    <button id="removeTagSelection" class="resources-button delete-section" type="button">
+                            {% trans 'Remove selected' %}
+                    </button>
+                    <button id="appendTagButton" type="button" class="resources-button" disabled="disabled">
+                            {% trans 'Add keywords' %}
+                    </button>
+                </div>
+            </div>
+            <textarea
+                id="{{ field.id_for_label }}"
+                class="form-control"
+                name="{{ field.name }}"
+                style="display: none;"
+            >{% if field.value %}{% for value in field.value %}create_{{ value }}&#13;&#10;{% endfor %}{% endif %}</textarea>
+            <span class="help-text">{{ field.help_text }}</span>
+            {% include "respa_admin/forms/_errors.html" with field=field %}
+        </div>
+    </div>
+</div>

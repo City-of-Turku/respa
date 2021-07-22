@@ -1753,3 +1753,12 @@ msgstr "Ta bort valda"
 
 msgid "Disallow overlapping reservations in this unit only for the same user."
 msgstr "Blockera överlappande reservationer i den här enheten bara för samma användare."
+
+msgid "Keywords"
+msgstr "Nyckelorden"
+
+msgid "Comma-separated keywords"
+msgstr "Kommaseparerade nyckelorden"
+
+msgid "Add keyword"
+msgstr "Lägg till nyckelord"

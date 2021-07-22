@@ -1818,3 +1818,12 @@ msgstr "Poista valitut"
 
 msgid "Disallow overlapping reservations in this unit only for the same user."
 msgstr "Estä toimipisteen sisäiset päällekkäiset varaukset vain samalle käyttäjälle."
+
+msgid "Keywords"
+msgstr "Avainsanat"
+
+msgid "Comma-separated keywords"
+msgstr "Pilkuilla erotellut avainsanat"
+
+msgid "Add keywords"
+msgstr "Lisää avainsanoja"

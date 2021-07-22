@@ -708,6 +708,8 @@ class ResourceFilterSet(django_filters.FilterSet):
                                                   widget=DRFFilterBooleanWidget)
     municipality = django_filters.Filter(field_name='unit__municipality_id', lookup_expr='in',
                                          widget=django_filters.widgets.CSVWidget, distinct=True)
+    keywords = django_filters.CharFilter(method='filter_keywords')
+
     order_by = ResourceOrderingFilter(
         fields=(
             ('name_fi', 'resource_name_fi'),
@@ -723,6 +725,10 @@ class ResourceFilterSet(django_filters.FilterSet):
             ('accessibility_priority', 'accessibility'),
         ),
     )
+
+    def filter_keywords(self, queryset, field, value):
+        values = value.split(',')
+        return queryset.filter(id__in=[tag.resource.id for tag in ResourceTag.objects.filter(label__in=values)])
 
     def filter_is_favorite(self, queryset, name, value):
         if not self.user.is_authenticated:
@@ -921,16 +927,6 @@ class LocationFilterBackend(filters.BaseFilterBackend):
             q = Q(location__distance_lte=(point, distance)) | Q(unit__location__distance_lte=(point, distance))
             queryset = queryset.filter(q)
         return queryset
-
-"""
-class TagsFilterBackend(filters.BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        query_params = request.query_params.get('search')
-        if query_params:
-            query_params = query_params.split(' ')
-            queryset = queryset.filter(tags__name__in=query_params)
-        return queryset
-"""
 
 class ResourceCacheMixin:
     def _preload_opening_hours(self, times):
@@ -1618,14 +1614,14 @@ class ResourceListViewSet(munigeo_api.GeoModelAPIView, mixins.ListModelMixin,
                           viewsets.GenericViewSet, ResourceCacheMixin):
     queryset = Resource.objects.select_related('generic_terms', 'payment_terms', 'unit', 'type', 'reservation_metadata_set')
     queryset = queryset.prefetch_related('favorited_by', 'resource_equipment', 'resource_equipment__equipment',
-                                         'purposes', 'images', 'purposes', 'groups', 'tags')
+                                         'purposes', 'images', 'purposes', 'groups', 'resource_tags')
     if settings.RESPA_PAYMENTS_ENABLED:
         queryset = queryset.prefetch_related('products')
     filter_backends = (filters.SearchFilter, ResourceFilterBackend, LocationFilterBackend)
     search_fields = (
                     'name_fi', 'description_fi', 'unit__name_fi', 'type__name_fi',
                     'name_sv', 'description_sv', 'unit__name_sv', 'type__name_sv',
-                    'name_en', 'description_en', 'unit__name_en', 'type__name_en', '=tags__name'
+                    'name_en', 'description_en', 'unit__name_en', 'type__name_en', '=resource_tags__label'
                     )
 
     serializer_class = ResourceSerializer
