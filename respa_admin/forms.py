@@ -322,26 +322,25 @@ class ResourceForm(forms.ModelForm):
         return super().get_initial_for_field(field, field_name)
 
     def save(self, commit=True):
-        resource_tags = self.cleaned_data.pop('resource_tags', {})
-        ResourceTag.objects.filter(resource=self.instance, label__in=resource_tags['remove']).delete()
+        resource_tags = self.cleaned_data.pop('resource_tags', [])
+        if isinstance(resource_tags, dict):
+            ResourceTag.objects.filter(resource=self.instance, label__in=resource_tags['remove']).delete()
+            old_tags = list(ResourceTag.objects.filter(resource=self.instance).values_list('label', flat=True))
+            old_tags.extend([tag for tag in self.instance.tags.names() if tag not in old_tags])
+            cleaned_tags = [
+                ResourceTag(label=tag, resource=self.instance)
+                for tag in resource_tags['create'] if tag not in old_tags
+            ]
 
-        old_tags = list(ResourceTag.objects.filter(resource=self.instance).values_list('label', flat=True))
-        old_tags.extend([tag for tag in self.instance.tags.names() if tag not in old_tags])
+            # Swap from old tag system to new
+            for tag in self.instance.tags.all():
+                cleaned_tags.append(
+                    ResourceTag(label=str(tag), resource=self.instance)
+                )
+                tag.delete()
 
-        cleaned_tags = [
-            ResourceTag(label=tag, resource=self.instance)
-            for tag in resource_tags['create'] if tag not in old_tags
-        ]
-
-        # Swap from old tag system to new
-        for tag in self.instance.tags.all():
-            cleaned_tags.append(
-                ResourceTag(label=str(tag), resource=self.instance)
-            )
-            tag.delete()
-
-        for tag in cleaned_tags:
-            tag.save()
+            for tag in cleaned_tags:
+                tag.save()
         return super().save(commit=commit)
 
 class UnitForm(forms.ModelForm):
