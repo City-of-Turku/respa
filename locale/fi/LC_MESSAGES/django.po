@@ -1822,6 +1822,9 @@ msgstr "Estä toimipisteen sisäiset päällekkäiset varaukset vain samalle kä
 msgid "Keywords"
 msgstr "Avainsanat"
 
+msgid "Keyword"
+msgstr "Avainsana"
+
 msgid "Comma-separated keywords"
 msgstr "Pilkuilla erotellut avainsanat"
 

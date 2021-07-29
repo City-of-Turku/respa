@@ -1757,6 +1757,9 @@ msgstr "Blockera överlappande reservationer i den här enheten bara för samma 
 msgid "Keywords"
 msgstr "Nyckelorden"
 
+msgid "Keyword"
+msgstr "Nyckelord"
+
 msgid "Comma-separated keywords"
 msgstr "Kommaseparerade nyckelorden"
 

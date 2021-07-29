@@ -2447,6 +2447,9 @@ msgstr ""
 msgid "Keywords"
 msgstr ""
 
+msgid "Keyword"
+msgstr ""
+
 msgid "Comma-separated keywords"
 msgstr ""
 

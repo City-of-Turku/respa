@@ -25,7 +25,7 @@ from resources.admin.period_inline import PeriodInline
 from ..models import (
     AccessibilityValue, AccessibilityViewpoint, Day, Equipment, EquipmentAlias, EquipmentCategory, Purpose,
     Reservation, ReservationBulk, ReservationReminder, ReservationMetadataField, ReservationMetadataSet,
-    ReservationHomeMunicipalityField, ReservationHomeMunicipalitySet, Resource, ResourceAccessibility,
+    ReservationHomeMunicipalityField, ReservationHomeMunicipalitySet, Resource, ResourceTag, ResourceAccessibility,
     ResourceEquipment, ResourceGroup, ResourceImage, ResourceType, TermsOfUse,
     Unit, UnitAuthorization, UnitIdentifier, UnitGroup, UnitGroupAuthorization)
 from munigeo.models import Municipality
@@ -99,22 +99,86 @@ class UnitIdentifierInline(admin.StackedInline):
     fields = ('namespace', 'value')
     extra = 0
 
+class ResourceTagInline(admin.TabularInline):
+    model = ResourceTag
+    fields = ('label',)
+    verbose_name = _('Keyword')
+    verbose_name_plural = _('Keywords')
+    extra = 0
 
 class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin, HttpsFriendlyGeoAdmin):
     inlines = [
         PeriodInline,
         ResourceEquipmentInline,
         ResourceGroupInline,
+        ResourceTagInline
     ]
 
     default_lon = 2478871  # Central Railway Station in EPSG:3857
     default_lat = 8501259
     default_zoom = 12
 
-    list_display = ('name', 'unit', 'public', 'reservable')
+    list_display = ('name', 'unit', 'public', 'reservable',)
     list_filter = ('unit', 'public', 'reservable')
     list_select_related = ('unit',)
-    ordering = ('unit', 'name', )
+    ordering = ('unit', 'name',)
+
+    fieldsets = (
+        (None, {
+            'fields': (
+                'unit', 'type',
+                'purposes',
+            ),
+        }),
+        (_('Resource Information'), {
+            'fields': (
+                'public', 'reservable',
+                'name', 'description',
+                'authentication',
+                'min_age', 'max_age',
+                'people_capacity', 'area',
+                'location', 'generic_terms',
+                'payment_terms', 'specific_terms',
+                'access_code_type',
+            ),
+        }),
+        (_('Timmi Information'), {
+            'fields': (
+                'timmi_resource', 'timmi_room_id',
+            ),
+        }),
+        (_('Reservation Information'), {
+            'fields': (
+                'need_manual_confirmation',
+                'reservation_metadata_set',
+                'reservation_home_municipality_set',
+                'cooldown', 'slot_size',
+                'min_period', 'max_period',
+                'max_reservations_per_user',
+                'resource_staff_emails',
+                'reservation_info',
+                'reservation_additional_information',
+                'responsible_contact_info',
+                'reservation_requested_notification_extra',
+                'reservation_confirmed_notification_extra',
+            ),
+        }),
+        (_('Price Information'), {
+            'fields': (
+                'min_price', 'max_price',
+                'price_type', 
+            ),
+        }),
+        (_('Extra Information'), {
+            'fields': (
+                'tags',
+                'external_reservation_url',
+                'id',
+            ),
+        }),
+    )
+
+    readonly_fields = ('tags', )
 
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)

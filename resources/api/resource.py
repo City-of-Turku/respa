@@ -726,9 +726,9 @@ class ResourceFilterSet(django_filters.FilterSet):
         ),
     )
 
-    def filter_keywords(self, queryset, field, value):
-        values = value.split(',')
-        return queryset.filter(id__in=[tag.resource.id for tag in ResourceTag.objects.filter(label__in=values)])
+    def filter_keywords(self, queryset, field, keywords):
+        cleaned = [keyword.strip() for keyword in keywords.split(',') if keyword.strip()]
+        return queryset.filter(id__in=[tag.resource.id for tag in ResourceTag.objects.filter(label__in=cleaned)])
 
     def filter_is_favorite(self, queryset, name, value):
         if not self.user.is_authenticated:
