@@ -25,10 +25,6 @@ babel==2.9.1
     # via
     #   -r requirements.in
     #   delorean
-backports-datetime-fromisoformat==1.0.0
-    # via exchangelib
-backports.zoneinfo==0.2.1
-    # via exchangelib
 beautifulsoup4==4.9.3
     # via -r requirements.in
 cached-property==1.5.2
@@ -66,7 +62,6 @@ coverage==5.5
 cryptography==3.4.7
     # via
     #   -r requirements.in
-    #   pyjwt
     #   requests-ntlm
     #   social-auth-core
 daemonize==2.5.0
@@ -83,6 +78,28 @@ defusedxml==0.7.1
     #   social-auth-core
 delorean==1.0.0
     # via -r requirements.in
+django==2.2.21
+    # via
+    #   -r requirements.in
+    #   django-admin-json-editor
+    #   django-allauth
+    #   django-anymail
+    #   django-appconf
+    #   django-cors-headers
+    #   django-filter
+    #   django-guardian
+    #   django-helusers
+    #   django-jinja
+    #   django-modeltranslation
+    #   django-mptt
+    #   django-multi-email-field
+    #   django-munigeo
+    #   django-reversion
+    #   django-taggit
+    #   djangorestframework
+    #   drf-oidc-auth
+    #   drf-yasg
+    #   easy-thumbnails
 django-admin-json-editor==0.2.3
     # via -r requirements.in
 django-allauth==0.44.0
@@ -127,44 +144,20 @@ git+https://github.com/Christophe31/django-multi-email-field.git@master#django-m
     # via -r requirements.in
 django-munigeo==0.3.6
     # via -r requirements.in
-django-parler-rest==2.1
-    # via
-    #   -r requirements.in
-    #   django-munigeo
 django-parler==2.2
     # via
     #   -r requirements.in
     #   django-munigeo
     #   django-parler-rest
+django-parler-rest==2.1
+    # via
+    #   -r requirements.in
+    #   django-munigeo
 django-reversion==3.0.9
     # via -r requirements.in
 django-sanitized-dump==1.2.1
     # via -r requirements.in
 django-taggit==1.4.0
-    # via -r requirements.in
-django==2.2.21
-    # via
-    #   -r requirements.in
-    #   django-admin-json-editor
-    #   django-allauth
-    #   django-anymail
-    #   django-appconf
-    #   django-cors-headers
-    #   django-filter
-    #   django-guardian
-    #   django-helusers
-    #   django-jinja
-    #   django-modeltranslation
-    #   django-mptt
-    #   django-multi-email-field
-    #   django-munigeo
-    #   django-reversion
-    #   django-taggit
-    #   djangorestframework
-    #   drf-oidc-auth
-    #   drf-yasg
-    #   easy-thumbnails
-djangorestframework-jwt==1.11.0
     # via -r requirements.in
 djangorestframework==3.12.4
     # via
@@ -172,6 +165,8 @@ djangorestframework==3.12.4
     #   django-parler-rest
     #   drf-oidc-auth
     #   drf-yasg
+djangorestframework-jwt==1.11.0
+    # via -r requirements.in
 dnspython==2.1.0
     # via exchangelib
 drf-oidc-auth==0.10.0
@@ -212,14 +207,6 @@ idna==2.10
     # via
     #   -r requirements.in
     #   requests
-importlib-metadata==4.0.1
-    # via
-    #   flake8
-    #   jsonschema
-    #   pluggy
-    #   pytest
-importlib-resources==5.1.2
-    # via backports.zoneinfo
 inflection==0.5.1
     # via
     #   -r requirements.in
@@ -333,32 +320,32 @@ pyjwt[crypto]==1.7.1
     #   django-allauth
     #   djangorestframework-jwt
     #   social-auth-core
+pylint==2.8.2
+    # via
+    #   -r requirements.in
+    #   pylint-django
+    #   pylint-plugin-utils
 pylint-django==2.4.4
     # via -r requirements.in
 pylint-plugin-utils==0.6
     # via
     #   -r requirements.in
     #   pylint-django
-pylint==2.8.2
-    # via
-    #   -r requirements.in
-    #   pylint-django
-    #   pylint-plugin-utils
 pyparsing==2.4.7
     # via
     #   -r requirements.in
     #   packaging
 pyrsistent==0.17.3
     # via jsonschema
-pytest-cov==2.11.1
-    # via -r requirements.in
-pytest-django==4.2.0
-    # via -r requirements.in
 pytest==6.2.4
     # via
     #   -r requirements.in
     #   pytest-cov
     #   pytest-django
+pytest-cov==2.11.1
+    # via -r requirements.in
+pytest-django==4.2.0
+    # via -r requirements.in
 python-dateutil==2.8.1
     # via
     #   -r requirements.in
@@ -395,20 +382,6 @@ pyyaml==5.4.1
     #   swagger-spec-validator
 raven==6.10.0
     # via -r requirements.in
-requests-cache==0.6.3
-    # via
-    #   -r requirements.in
-    #   django-munigeo
-requests-ntlm==1.1.0
-    # via
-    #   -r requirements.in
-    #   exchangelib
-requests-oauthlib==1.3.0
-    # via
-    #   -r requirements.in
-    #   django-allauth
-    #   exchangelib
-    #   social-auth-core
 requests==2.25.1
     # via
     #   -r requirements.in
@@ -423,18 +396,32 @@ requests==2.25.1
     #   requests-ntlm
     #   requests-oauthlib
     #   social-auth-core
+requests-cache==0.6.3
+    # via
+    #   -r requirements.in
+    #   django-munigeo
+requests-ntlm==1.1.0
+    # via
+    #   -r requirements.in
+    #   exchangelib
+requests-oauthlib==1.3.0
+    # via
+    #   -r requirements.in
+    #   django-allauth
+    #   exchangelib
+    #   social-auth-core
 rsa==4.7.2
     # via
     #   -r requirements.in
     #   python-jose
-ruamel.yaml.clib==0.2.2
-    # via
-    #   -r requirements.in
-    #   ruamel.yaml
 ruamel.yaml==0.17.4
     # via
     #   -r requirements.in
     #   drf-yasg
+ruamel.yaml.clib==0.2.2
+    # via
+    #   -r requirements.in
+    #   ruamel.yaml
 sentry-sdk==1.0.0
     # via -r requirements.in
 six==1.15.0
@@ -445,7 +432,6 @@ six==1.15.0
     #   django-munigeo
     #   django-sanitized-dump
     #   ecdsa
-    #   isodate
     #   jsonschema
     #   pyjwkest
     #   python-dateutil
@@ -453,7 +439,6 @@ six==1.15.0
     #   social-auth-app-django
     #   social-auth-core
     #   swagger-spec-validator
-    #   url-normalize
 social-auth-app-django==4.0.0
     # via -r requirements.in
 social-auth-core==4.0.2
@@ -477,13 +462,7 @@ toml==0.10.2
     #   pylint
     #   pytest
 typed-ast==1.4.3
-    # via
-    #   -r requirements.in
-    #   astroid
-typing-extensions==3.10.0.0
-    # via
-    #   arrow
-    #   importlib-metadata
+    # via -r requirements.in
 tzdata==2021.1
     # via exchangelib
 tzlocal==2.1
@@ -498,7 +477,7 @@ uritemplate==3.0.1
     #   drf-yasg
 url-normalize==1.4.3
     # via requests-cache
-urllib3==1.26.4
+urllib3==1.26.5
     # via
     #   -r requirements.in
     #   requests
@@ -509,10 +488,6 @@ wrapt==1.12.1
     #   astroid
 xlsxwriter==1.4.0
     # via -r requirements.in
-zipp==3.4.1
-    # via
-    #   importlib-metadata
-    #   importlib-resources
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
