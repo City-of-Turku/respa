@@ -2455,3 +2455,15 @@ msgstr ""
 
 msgid "Add keyword"
 msgstr ""
+
+msgid "Select all"
+msgstr ""
+
+msgid "Deselect all"
+msgstr ""
+
+msgid "Download"
+msgstr ""
+
+msgid "Reports"
+msgstr ""

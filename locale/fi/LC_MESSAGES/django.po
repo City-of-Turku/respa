@@ -1830,3 +1830,15 @@ msgstr "Pilkuilla erotellut avainsanat"
 
 msgid "Add keywords"
 msgstr "Lisää avainsanoja"
+
+msgid "Select all"
+msgstr "Valitse kaikki"
+
+msgid "Deselect all"
+msgstr "Poista kaikki valinnat"
+
+msgid "Download"
+msgstr "Lataa"
+
+msgid "Reports"
+msgstr "Raportit"

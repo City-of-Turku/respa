@@ -1765,3 +1765,15 @@ msgstr "Kommaseparerade nyckelorden"
 
 msgid "Add keyword"
 msgstr "Lägg till nyckelord"
+
+msgid "Select all"
+msgstr "Välj alla"
+
+msgid "Deselect all"
+msgstr "Avmarkera alla"
+
+msgid "Download"
+msgstr "Ladda ner"
+
+msgid "Reports"
+msgstr "Rapporter"

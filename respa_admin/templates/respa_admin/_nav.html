@@ -79,6 +79,9 @@
                 <li>
                     <a href="{% url 'respa_admin:units' %}">{% trans "Units" %}</a>
                 </li>
+                <li>
+                    <a href="{% url 'respa_admin:ra-reports' %}">{% trans "Reports" %}</a>
+                </li>
                 {% if user_is_any_admin %}
                 <li>
                     <a href="{% url 'respa_admin:user-management' %}">{% trans "User management" %}</a>

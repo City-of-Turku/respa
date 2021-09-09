@@ -8,6 +8,7 @@ from .views.resources import (
     SaveResourceView
 )
 from .views.units import UnitEditView, UnitListView
+from .views.reports import ReportView
 
 app_name = 'respa_admin'
 urlpatterns = [
@@ -25,4 +26,5 @@ urlpatterns = [
     url(r'^user_management/$', ManageUserPermissionsListView.as_view(), name='user-management'),
     url(r'^user_management/search/$', ManageUserPermissionsSearchView.as_view(), name='user-management-search'),
     url(r'^user_management/(?P<user_id>\w+)/$', ManageUserPermissionsView.as_view(), name='edit-user'),
+    url(r'^reports/', ReportView.as_view(), name='ra-reports'),
 ]

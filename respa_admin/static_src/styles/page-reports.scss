@@ -1,0 +1,146 @@
+.col-wrap-container { 
+    display: flex;
+    align-items: flex-start;
+    flex-flow: column wrap;
+    max-height: 150px;
+    margin-top: 20px;
+
+    &.fluid {
+        max-height: 100%;
+    }
+
+    &.row-wrap {
+        flex-flow: row wrap;
+    }
+
+    &.justify-center {
+        justify-content: center;
+    }
+    &.flex-start {
+        justify-content: flex-start;
+    }
+    &.space-between {
+        justify-content: space-between;
+    }
+}
+
+.checkbox-container {
+    display: flex;
+    margin: 10px;
+    justify-items: center;
+}
+
+.bg-input {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+.margin-sm-left {
+    margin-left: 5px;
+}
+
+.full-width {
+    display: flex;
+    flex: 0 0 80%;
+}
+
+.text-align-center {
+    font-weight: bold;
+    text-align: center;
+    padding: 0px !important;
+}
+
+.reports {
+    display: flex;
+    flex-direction: column;
+}
+
+.border-thick {
+    border: 2px solid black !important;
+}
+
+.button-border {
+    margin-top: 10px;
+    width: 125px;
+
+    &:disabled {
+        background-color: $brand-grey !important;
+        color: #2a2a2a !important;
+    }
+}
+
+.button-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.btn-red {
+    background-color: $brand-red !important;
+}
+
+.no-wrap {
+    white-space: nowrap;
+}
+
+.reports-resource-list {
+    display: flex;
+    flex-flow: row wrap;
+    align-content: center;
+}
+
+
+.resource-card {
+    display: flex;
+    width: 125px;
+    height: 225px;
+    margin: 20px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.card {
+    display: flex;
+    width: 100%;
+    height: 200px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.date-range {
+    display: flex;
+    flex-direction: row;
+    width: 250px;
+    justify-content: center;
+}
+
+.align-center {
+    display: flex;
+    align-self: center !important;
+}
+
+
+.date-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+    &:nth-child(1) {
+        margin-bottom: 5px;
+    }
+}
+
+.reports-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.container-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}

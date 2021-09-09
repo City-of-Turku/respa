@@ -139,6 +139,20 @@ def generate_reservation_xlsx(reservations):
     :rtype: bytes
     """
     from resources.models import Reservation, RESERVATION_EXTRA_FIELDS
+    def clean(string):
+        if not string:
+            return ''
+
+        if isinstance(string, dict):
+            string = next(iter(string.items()))[1]
+
+        if not isinstance(string, str):
+            return string
+
+        unallowed_characters = ['=', '+', '-', '"', '@']
+        if string[0] in unallowed_characters:
+            string = string[1:]
+        return string
 
     output = io.BytesIO()
     workbook = xlsxwriter.Workbook(output)
@@ -147,9 +161,9 @@ def generate_reservation_xlsx(reservations):
     headers = [
         ('Unit', 30),
         ('Resource', 30),
-        ('Begin time', 15),
-        ('End time', 15),
-        ('Created at', 15),
+        ('Begin time', 30),
+        ('End time', 30),
+        ('Created at', 30),
         ('User', 30),
         ('Comments', 30),
         ('Staff event', 10),
@@ -165,6 +179,8 @@ def generate_reservation_xlsx(reservations):
 
     date_format = workbook.add_format({'num_format': 'dd.mm.yyyy hh:mm', 'align': 'left'})
     for row, reservation in enumerate(reservations, 1):
+        for key in reservation:
+            reservation[key] = clean(reservation[key])
         worksheet.write(row, 0, reservation['unit'])
         worksheet.write(row, 1, reservation['resource'])
         worksheet.write(row, 2, localtime(reservation['begin']).replace(tzinfo=None), date_format)
@@ -177,6 +193,11 @@ def generate_reservation_xlsx(reservations):
         worksheet.write(row, 7, reservation['staff_event'])
         for i, field in enumerate(RESERVATION_EXTRA_FIELDS, 8):
             if field in reservation:
+                if isinstance(reservation[field], dict):
+                    try:
+                        reservation[field] = next(iter(reservation[field].items()))[1]
+                    except:
+                        continue
                 worksheet.write(row, i, reservation[field])
     workbook.close()
     return output.getvalue()
