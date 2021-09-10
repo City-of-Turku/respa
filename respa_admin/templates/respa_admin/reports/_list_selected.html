@@ -11,7 +11,6 @@
                 <div class="resource-card">
                     <div class="card">
                         <img
-                            id="{{ resource.id }}-img"
                             class="img-rounded pull-left"
                             alt=""
                             src={% if resource.main_image %}
@@ -20,7 +19,7 @@
                                 ""
                             {% endif %}
                         >
-                        <label for="{{ resource.id }}-img" class="margin-sm-left text-align-center">{{ resource.name }}</label>
+                        <label for="{{ resource.id }}" class="margin-sm-left text-align-center">{{ resource.name }}</label>
                     </div>
                     {% if resource.checked %}
                         <input type="checkbox" id="{{ resource.id }}" name="resource" class="bg-input" value="{{ resource.id }}" checked />
