@@ -10,7 +10,9 @@
     }
 
     &.row-wrap {
-        flex-flow: row wrap;
+        @media (min-width: 365px) {
+            flex-flow: row wrap;
+        }
     }
 
     &.justify-center {

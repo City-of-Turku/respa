@@ -14,13 +14,13 @@
             </div>
             <div class="col-wrap-container border-thick">
             {% for unit in units %}
-                <div class="checkbox-container">
+                <div class="checkbox-container" id="checkbox-container">
                     {% if unit.checked %}
                         <input type="checkbox" id="{{ unit.id }}" name="unit" class="bg-input" value="{{ unit.id }}" checked />
                     {% else %}
                         <input type="checkbox" id="{{ unit.id }}" name="unit" class="bg-input" value="{{ unit.id }}" />
                     {% endif %}
-                    <span class="margin-sm-left text-align-center">{{ unit.name }}</span>
+                    <label for="checkbox-container" class="margin-sm-left text-align-center">{{ unit.name }}</label>
                 </div>
             {% endfor %}
             </div>

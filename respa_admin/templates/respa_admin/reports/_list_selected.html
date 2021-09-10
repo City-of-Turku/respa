@@ -11,6 +11,7 @@
                 <div class="resource-card">
                     <div class="card">
                         <img
+                            id="{{ resource.id }}-img"
                             class="img-rounded pull-left"
                             alt=""
                             src={% if resource.main_image %}
@@ -19,7 +20,7 @@
                                 ""
                             {% endif %}
                         >
-                        <span class="margin-sm-left text-align-center">{{ resource.name }}</span>
+                        <label for="{{ resource.id }}-img" class="margin-sm-left text-align-center">{{ resource.name }}</label>
                     </div>
                     {% if resource.checked %}
                         <input type="checkbox" id="{{ resource.id }}" name="resource" class="bg-input" value="{{ resource.id }}" checked />
@@ -33,11 +34,11 @@
             <div class="col-wrap-container">
                 <div class="col-wrap-container">
                     <input type="date" class="margin-sm-left border-thick align-center" name="begin-date" id="begin-date" />
-                    <label class="control-label input-label align-center">{% trans "Start date" %}</label>
+                    <label for="begin-date" class="control-label input-label align-center">{% trans "Start date" %}</label>
                 </div>
                 <div class="col-wrap-container">
                     <input type="date" class="margin-sm-left border-thick align-center" name="end-date" id="end-date" />
-                    <label class="control-label input-label align-center">{% trans "End date" %}</label>
+                    <label for="end-date" class="control-label input-label align-center">{% trans "End date" %}</label>
                 </div>
             </div>
             <div class="button-container row-reverse align-center">
