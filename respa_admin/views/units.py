@@ -6,6 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse_lazy
 from django.utils.translation import ugettext as _
 from django.views.generic import CreateView, ListView
+from django.contrib.admin.utils import construct_change_message
 from resources.enums import UnitAuthorizationLevel
 from resources.models import Unit, UnitAuthorization
 from respa_admin.forms import (
@@ -13,6 +14,7 @@ from respa_admin.forms import (
     UnitForm,
 )
 from respa_admin.views.base import ExtraContextMixin, PeriodMixin
+from resources.models.utils import log_entry
 
 
 class UnitListView(ExtraContextMixin, ListView):
@@ -127,7 +129,12 @@ class UnitEditView(ExtraContextMixin, PeriodMixin, CreateView):
 
     def forms_valid(self, form, period_formset_with_days):
         is_creating_new = self.object is None
+        user = self.request.user
+
         self.object = form.save()
+        log_entry(self.object, user, is_edit=not is_creating_new, message=construct_change_message(
+            form, None, is_creating_new
+        ))
         self.save_period_formset(period_formset_with_days)
 
         if is_creating_new:

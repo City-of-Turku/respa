@@ -6,6 +6,7 @@ from django.template.response import TemplateResponse
 from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import CreateView, ListView, UpdateView
+from django.contrib.admin.utils import construct_change_message
 from guardian.shortcuts import assign_perm, remove_perm
 from respa_admin.views.base import ExtraContextMixin
 from resources.enums import UnitGroupAuthorizationLevel, UnitAuthorizationLevel
@@ -21,7 +22,8 @@ from resources.models import (
     ResourceImage,
     ResourceType,
     Unit,
-    UnitGroup
+    UnitGroup,
+    UnitAuthorization
 )
 from respa_admin import accessibility_api, forms
 from respa_admin.forms import (
@@ -32,6 +34,7 @@ from respa_admin.forms import (
     get_unit_authorization_formset
 )
 from respa_admin.views.base import PeriodMixin
+from resources.models.utils import log_entry
 
 
 class ResourceListView(ExtraContextMixin, ListView):
@@ -134,14 +137,27 @@ class ManageUserPermissionsView(ExtraContextMixin, UpdateView):
             return self.forms_invalid(form, unit_authorization_formset)
 
     def forms_valid(self, form, unit_authorization_formset):
+        user = self.request.user
+        is_edit = self.object is not None
+
         self.object = form.save()
         unit_authorization_formset.instance = self.object
         for form in unit_authorization_formset.cleaned_data:
-            if 'subject' in form and 'level' in form:
+            level = form.get('level',  None)
+            subject = form.get('subject', None)
+            if subject and level:
                 if form['can_approve_reservation']:
-                    assign_perm('unit:can_approve_reservation', self.object, form['subject'])
+                    assign_perm('unit:can_approve_reservation', self.object, subject)
                 else:
-                    remove_perm('unit:can_approve_reservation', self.object, form['subject'])
+                    remove_perm('unit:can_approve_reservation', self.object, subject)
+                if form['DELETE']:
+                    log_entry(self.object, user, is_edit=is_edit, message="Unit '%s' authorization removed: %s" % (subject.name, level))
+                else:
+                    if not UnitAuthorization.objects \
+                        .for_user(self.object).to_unit(subject) \
+                                .filter(level=level).exists():
+                        log_entry(self.object, user, is_edit=is_edit, message="Unit '%s' authorization added: %s" % (subject.name, level))
+
 
         unit_authorization_formset.save()
         return HttpResponseRedirect(self.get_success_url())
@@ -354,7 +370,13 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
         return form
 
     def forms_valid(self, form, period_formset_with_days, resource_image_formset):
+        user = self.request.user
+        is_edit = self.object is not None
         self.object = form.save()
+
+        log_entry(self.object, user, is_edit=is_edit, message=construct_change_message(
+            form, None, not is_edit
+        ))
         self._save_resource_purposes()
         self._delete_extra_images(resource_image_formset)
         self._save_resource_images(resource_image_formset)

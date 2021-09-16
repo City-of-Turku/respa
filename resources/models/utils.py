@@ -13,6 +13,7 @@ from django.utils import formats
 from django.utils.translation import ungettext
 from django.core.mail import EmailMultiAlternatives
 from django.contrib.sites.models import Site
+from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, ContentType
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 from django.utils.timezone import localtime
@@ -298,3 +299,13 @@ def get_municipality_help_options():
         return list(Municipality.objects.all().values_list('pk', flat=True))
     except:
         return []
+
+
+def log_entry(instance, user, *, is_edit, message : str):
+    content_type = ContentType.objects.get_for_model(instance)
+    LogEntry.objects.log_action(
+        user.id, content_type.id,
+        instance.id, repr(instance),
+        CHANGE if is_edit else ADDITION,
+        message
+    )
