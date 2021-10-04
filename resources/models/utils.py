@@ -298,3 +298,63 @@ def get_municipality_help_options():
         return list(Municipality.objects.all().values_list('pk', flat=True))
     except:
         return []
+
+def get_order_quantity(item):
+    '''
+    Return the quantity of products based on the item['product']['price_type'].
+
+    If price_type is 'per_period' -> quantity = total price of product / single unit price of product
+    otherwise return item['quantity'].
+
+    e.g. 2 hour reservation with 10euro per 30min price period, 40 / 10 = 4.
+    '''
+    if item["product"]["price_type"] == 'per_period':
+        if item["product"]["type"] != "rent":
+            '''
+            This is for product's that have price_type == 'per_period' but type is something other than 'rent'.
+            The order's quantity is used instead of calculating one based on prices.
+            '''
+            return float(item["quantity"])
+
+        # Quantity is calculated from the total unit price / single product price.
+        quantity = float(item["unit_price"].replace(',','.')) / float(item["product"]["price"].replace(',','.'))
+        if quantity < 1:
+            '''
+            If for example the price_period of the product was 1h30min with a price of 9 euros and
+            the actual reservation is only 30min, then the unit_price would  3 euros.
+
+            3 / 9 = ~0.333 so we just return a 1 instead.
+            '''
+            return float(1)
+
+        return float(quantity)
+
+    return float(item["quantity"])
+
+def get_order_tax_price(item):
+    '''
+    Returns the correct tax price/amount for this item.
+    '''
+    if item["product"]["price_type"] == 'per_period':
+        if item["product"]["type"] != "rent":
+            # Use the precalculated tax price if type is not 'rent'
+            return float(item["get_tax_price_for_reservation"])
+        
+        quantity = float(item["unit_price"].replace(',','.')) / float(item["product"]["price"].replace(',','.'))
+        if quantity > 1:
+            return float(item["product"]["tax_price"].replace(',','.'))
+
+    return float(item["get_tax_price_for_reservation"])
+
+def get_order_pretax_price(item):
+    '''
+    Returns the correct tax-free price for this item.
+    '''
+    if item["product"]["price_type"] == 'per_period':
+        quantity = float(item["unit_price"].replace(',','.')) / float(item["product"]["price"].replace(',','.'))
+        if quantity < 1 or item["product"]["type"] != "rent":
+            return float(item['get_pretax_price_for_reservation'])
+            
+        return float(item["product"]["pretax_price"].replace(',','.'))
+
+    return float(item['get_pretax_price_for_reservation'])

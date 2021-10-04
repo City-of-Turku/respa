@@ -23,7 +23,8 @@ from .resource import generate_access_code, validate_access_code
 from .resource import Resource
 from .utils import (
     get_dt, save_dt, is_valid_time_slot, humanize_duration, send_respa_mail,
-    DEFAULT_LANG, localize_datetime, format_dt_range, build_reservations_ical_file
+    DEFAULT_LANG, localize_datetime, format_dt_range, build_reservations_ical_file,
+    get_order_quantity, get_order_tax_price, get_order_pretax_price
 )
 
 from random import sample
@@ -571,7 +572,7 @@ class Reservation(ModifiableModel):
                     created_at          -   creation date of the parent order
                     reservation_name    -   name of resource
                     name                -   name of this product
-                    quantity            -   quantity of products, total price of product / single unit price of product
+                    quantity            -   quantity of products, see function comments for explanation.
                     price               -   single unit price of this product
                     unit_price          -   total price of this product, string e.g. 75,00
                     unit_price_num      -   total price of this product, float e.g. 75.00
@@ -580,16 +581,16 @@ class Reservation(ModifiableModel):
                     price_period        -   price period of product if type=per period, e.g. 00:30:00 for 30min 
                     order_number        -   id of parent order
                     pretax_price        -   price amount without tax, string e.g. 6,05 if total price is 7,5 with 24% vat
-                    pretax_price_num    -   price amount without tax, float e.g. 6.05
+                    pretax_price_num    -   price amount without tax, float e.g. 6.05. See function comments for further explanation.
                     tax_price           -   tax amount, string e.g. 1,45 if total price is 7,5 with 24% vat
-                    tax_price_num       -   tax amount, float e.g. 1.45
+                    tax_price_num       -   tax amount, float e.g. 1.45. See function comments for further explanation.
                     '''
                     product_values = {
                         'id': item["product"]["id"],
                         'created_at': self.created_at.astimezone(self.resource.unit.get_tz()).strftime('%d.%m.%Y %H:%M:%S'),
                         'reservation_name': context["resource"],
                         'name': item["product"]["name"],
-                        'quantity': float(item["unit_price"].replace(',','.')) / float(item["product"]["price"].replace(',','.')), 
+                        'quantity': get_order_quantity(item),
                         'price': item["product"]["price"],
                         'unit_price': item["unit_price"],
                         'unit_price_num': float(item["unit_price"].replace(',','.')),
@@ -598,9 +599,9 @@ class Reservation(ModifiableModel):
                         'price_period': item["product"]["price_period"],
                         'order_number': context["order"]["id"],
                         'pretax_price': item["product"]["pretax_price"],
-                        'pretax_price_num': float(item["product"]["pretax_price"].replace(',','.')),
+                        'pretax_price_num': get_order_pretax_price(item),
                         'tax_price': item["product"]["tax_price"],
-                        'tax_price_num': float(item["product"]["tax_price"].replace(',','.'))
+                        'tax_price_num': get_order_tax_price(item)
                     }
 
                     for field in product_fields:
