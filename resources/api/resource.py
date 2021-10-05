@@ -57,6 +57,7 @@ from .reservation import ReservationSerializer
 from .unit import UnitSerializer
 from .equipment import EquipmentSerializer
 from rest_framework.settings import api_settings as drf_settings
+from resources.models.utils import log_entry
 
 from random import sample
 
@@ -1434,7 +1435,11 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
         return super().validate(attrs)
     
     def create(self, validated_data):
-        return self.create_or_update(validated_data)
+        request = self.context['request']
+        user = request.user
+        instance = self.create_or_update(validated_data)
+        log_entry(instance, user, is_edit=False, message='Created through API')
+        return instance
 
     def get_tags(self, resource):
         return [ tag.label for tag in ResourceTag.objects.filter(resource=resource) ]
@@ -1590,7 +1595,11 @@ class ResourceUpdateSerializer(ResourceCreateSerializer):
         return super().validate(attrs)
 
     def update(self, instance, validated_data):
-        return self.create_or_update(validated_data, _instance=instance)
+        request = self.context['request']
+        user = request.user
+        instance = self.create_or_update(validated_data, _instance=instance)
+        log_entry(instance, user, is_edit=True, message='Edited through API: %s' % ', '.join([k for k in validated_data]))
+        return instance
     
 
 class ResourceCreateView(generics.CreateAPIView):

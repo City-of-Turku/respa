@@ -13,6 +13,7 @@ from django.utils import formats
 from django.utils.translation import ungettext
 from django.core.mail import EmailMultiAlternatives
 from django.contrib.sites.models import Site
+from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, ContentType
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 from django.utils.timezone import localtime
@@ -299,6 +300,7 @@ def get_municipality_help_options():
     except:
         return []
 
+
 def get_order_quantity(item):
     '''
     Return the quantity of products based on the item['product']['price_type'].
@@ -330,6 +332,7 @@ def get_order_quantity(item):
         return float(quantity)
 
     return float(item["quantity"])
+  
 
 def get_order_tax_price(item):
     '''
@@ -345,6 +348,7 @@ def get_order_tax_price(item):
             return float(item["product"]["tax_price"].replace(',','.'))
 
     return float(item["get_tax_price_for_reservation"])
+  
 
 def get_order_pretax_price(item):
     '''
@@ -358,3 +362,14 @@ def get_order_pretax_price(item):
         return float(item["product"]["pretax_price"].replace(',','.'))
 
     return float(item['get_pretax_price_for_reservation'])
+
+
+def log_entry(instance, user, *, is_edit, message : str):
+    content_type = ContentType.objects.get_for_model(instance)
+    LogEntry.objects.log_action(
+        user.id, content_type.id,
+        instance.id, repr(instance),
+        CHANGE if is_edit else ADDITION,
+        message
+    )
+
