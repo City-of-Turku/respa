@@ -364,10 +364,12 @@ class NotificationOrderLineSerializer(serializers.ModelSerializer):
     product = NotificationProductSerializer()
     price = LocalizedSerializerField(source='get_price')
     unit_price = LocalizedSerializerField(source='get_unit_price')
+    reservation_pretax_price = serializers.ReadOnlyField(source='get_pretax_price_for_reservation')
+    reservation_tax_price = serializers.ReadOnlyField(source='get_tax_price_for_reservation')
 
     class Meta:
         model = OrderLine
-        fields = ('product', 'quantity', 'price', 'unit_price', 'get_pretax_price_for_reservation','get_tax_price_for_reservation')
+        fields = ('product', 'quantity', 'price', 'unit_price', 'reservation_pretax_price','reservation_tax_price')
 
 
 class NotificationOrderSerializer(serializers.ModelSerializer):

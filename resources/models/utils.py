@@ -341,13 +341,13 @@ def get_order_tax_price(item):
     if item["product"]["price_type"] == 'per_period':
         if item["product"]["type"] != "rent":
             # Use the precalculated tax price if type is not 'rent'
-            return float(item["get_tax_price_for_reservation"])
+            return float(item["reservation_tax_price"])
         
         quantity = float(item["unit_price"].replace(',','.')) / float(item["product"]["price"].replace(',','.'))
         if quantity > 1:
             return float(item["product"]["tax_price"].replace(',','.'))
 
-    return float(item["get_tax_price_for_reservation"])
+    return float(item["reservation_tax_price"])
   
 
 def get_order_pretax_price(item):
@@ -357,11 +357,11 @@ def get_order_pretax_price(item):
     if item["product"]["price_type"] == 'per_period':
         quantity = float(item["unit_price"].replace(',','.')) / float(item["product"]["price"].replace(',','.'))
         if quantity < 1 or item["product"]["type"] != "rent":
-            return float(item['get_pretax_price_for_reservation'])
+            return float(item['reservation_pretax_price'])
             
         return float(item["product"]["pretax_price"].replace(',','.'))
 
-    return float(item['get_pretax_price_for_reservation'])
+    return float(item['reservation_pretax_price'])
 
 
 def log_entry(instance, user, *, is_edit, message : str):
