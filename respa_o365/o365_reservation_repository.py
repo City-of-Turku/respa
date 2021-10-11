@@ -1,4 +1,5 @@
 import re
+import logging
 from bs4 import BeautifulSoup
 from soupsieve.css_parser import COMMENTS
 from django.conf import settings
@@ -9,11 +10,15 @@ from respa_o365.o365_calendar import Event
 from respa_o365.reservation_sync import SyncItemRepository
 from respa_o365.reservation_sync_item import ReservationSyncItem
 
+logger = logging.getLogger(__name__)
 class O365ReservationRepository(SyncItemRepository):
     def __init__(self, o365_calendar):
         self._o365_calendar = o365_calendar
 
     def create_item(self, item):
+        # Temporary logging code
+        logger.info("Creating O365 event - email: {}, phone: {}, name: {}, begin: {}, end: {}, comments: {}".format(item.reserver_email_address, item.reserver_phone_number, item.reserver_name, item.begin, item.end, item.comments))
+
         e = Event()
         e.begin = item.begin
         e.end = item.end

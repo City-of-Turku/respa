@@ -17,7 +17,7 @@ def handle_reservation_save(instance, **kwargs):
         return
     links = OutlookCalendarLink.objects.filter(resource=instance.resource)
     for link in links:
-        logger.info("Save of reservation, launch sync of {}".format(link.id))
+        logger.info("Save of reservation, add sync of resource {} ({}) to queue".format(link.resource.name, link.resource.id))
         add_to_queue(link)
 
 def handle_period_save(instance, **kwargs):

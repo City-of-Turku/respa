@@ -22,6 +22,8 @@ class RespaReservations:
         self._end_date = (datetime.now(tz=timezone.utc) + timedelta(days=settings.O365_SYNC_DAYS_FORWARD)).replace(microsecond=0)
 
     def create_item(self, item):
+        # Temporary logging code
+        logger.info("Creating respa reservation in resource {} - email: {}, phone: {}, name: {}, begin: {}, end: {}, comments: {}".format(self.__resource_id, item.reserver_email_address, item.reserver_phone_number, item.reserver_name, item.begin, item.end, item.comments))
         reservation = Reservation()
         reservation.resource_id = self.__resource_id
         reservation.reserver_email_address = item.reserver_email_address
@@ -37,9 +39,14 @@ class RespaReservations:
 
     def set_item(self, item_id, item):
         reservation = Reservation.objects.filter(id=item_id).first()
+        # Temporary logging code
+        logger.info("Updating respa reservation in resource {} ({})".format(reservation.resource.name, reservation.resource_id))
+        logger.info("Before - email: {}, phone: {}, name: {}, begin: {}, end: {}, comments: {}".format(reservation.reserver_email_address, reservation.reserver_phone_number, reservation.reserver_name, reservation.begin, reservation.end, reservation.comments))
+        logger.info("After  - email: {}, phone: {}, name: {}, begin: {}, end: {}, comments: {}".format(item.reserver_email_address, item.reserver_phone_number, item.reserver_name, item.begin, item.end, item.comments))
         reservation.reserver_email_address = item.reserver_email_address
         reservation.reserver_phone_number = item.reserver_phone_number
         reservation.reserver_name = item.reserver_name
+        reservation.comments = item.comments
         reservation.begin = item.begin
         reservation.end = item.end
         reservation._from_o365_sync = True
@@ -53,6 +60,8 @@ class RespaReservations:
     def remove_item(self, item_id):
         try:
             reservation = Reservation.objects.filter(id=item_id).first()
+            # Temporary logging code
+            logger.info("Removing respa reservation starting at {} in resource {} ({})".format(reservation.begin, reservation.resource.name, reservation.resource_id))
             reservation._from_o365_sync = True
             reservation.set_state(Reservation.CANCELLED, None)
             reservation.save()
@@ -80,6 +89,12 @@ class RespaReservations:
 
 
 def status(reservation, time):
+    # XXX: This method is debug code for logging purposes
+    status = _status(reservation, time)
+    logger.info("Respa reservation starting at {} in resource {} ({}) has status {} since {}. Last modified at {}".format(reservation.begin, reservation.resource.name, reservation.resource.id, status, time, reservation.modified_at))
+    return status
+
+def _status(reservation, time):
     if reservation.modified_at <= time:
         return ChangeType.NO_CHANGE
     if reservation.state in [Reservation.CANCELLED, Reservation.DENIED]:

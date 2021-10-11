@@ -39,10 +39,10 @@ def process_queue():
     try:
         queue = OutlookSyncQueue.objects.all().order_by('calendar_link_id')
         if not queue:
-            logging.info("Nothing to sync.")
+            logger.info("Nothing to sync.")
             return
 
-        logging.info("Handling {} entries from sync queue.".format(queue.count()))
+        logger.info("Handling {} entries from sync queue.".format(queue.count()))
         previous_id = None
         for item in queue:
             with transaction.atomic():
@@ -59,12 +59,14 @@ def process_queue():
 
 def perform_sync_to_exchange(link, func):
     # Sync reservations
+    logger.info("Syncing reservations. User=%s, resource=%s (%s), link=%s", link.user.id, link.resource.name, link.resource.id, link.id)
     _perform_sync(link=link, func=func, respa_memento_field='respa_reservation_sync_memento',
         o365_memento_field='exchange_reservation_sync_memento', outlook_model=OutlookCalendarReservation,
         outlook_model_event_id_property='reservation_id', respa_repo=RespaReservations, o365_repo=O365ReservationRepository,
         event_prefix=settings.O365_CALENDAR_RESERVATION_EVENT_PREFIX, sync_actions=reservationSyncActions)
 
     # Sync availability / periods
+    logger.info("Syncing availability. User=%s, resource=%s (%s), link=%s", link.user.id, link.resource.name, link.resource.id, link.id)
     _perform_sync(link=link, func=func, respa_memento_field='respa_availability_sync_memento',
         o365_memento_field='exchange_availability_sync_memento', outlook_model=OutlookCalendarAvailability,
         outlook_model_event_id_property='period_id', respa_repo=RespaAvailabilityRepository, o365_repo=O365AvailabilityRepository,
