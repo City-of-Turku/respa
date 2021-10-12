@@ -323,6 +323,8 @@ class ResourceForm(forms.ModelForm):
 
     def save(self, commit=True):
         resource_tags = self.cleaned_data.pop('resource_tags', [])
+        super().save(commit=commit)
+
         if isinstance(resource_tags, dict):
             ResourceTag.objects.filter(resource=self.instance, label__in=resource_tags['remove']).delete()
             old_tags = list(ResourceTag.objects.filter(resource=self.instance).values_list('label', flat=True))
@@ -338,10 +340,10 @@ class ResourceForm(forms.ModelForm):
                     ResourceTag(label=str(tag), resource=self.instance)
                 )
                 tag.delete()
-
             for tag in cleaned_tags:
                 tag.save()
-        return super().save(commit=commit)
+
+        return self.instance
 
 class UnitForm(forms.ModelForm):
     name_fi = forms.CharField(

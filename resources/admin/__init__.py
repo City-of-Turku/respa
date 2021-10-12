@@ -28,6 +28,7 @@ from ..models import (
     ReservationHomeMunicipalityField, ReservationHomeMunicipalitySet, Resource, ResourceTag, ResourceAccessibility,
     ResourceEquipment, ResourceGroup, ResourceImage, ResourceType, TermsOfUse,
     Unit, UnitAuthorization, UnitIdentifier, UnitGroup, UnitGroupAuthorization)
+from ..models.utils import generate_id
 from munigeo.models import Municipality
 from rest_framework.authtoken.admin import Token
 
@@ -183,6 +184,11 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)
         form.instance.update_opening_hours()
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj=obj, **kwargs)
+        form.base_fields['id'].initial = generate_id()
+        return form
 
 
 class UnitAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, FixedGuardedModelAdminMixin,
