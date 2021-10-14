@@ -114,6 +114,15 @@ def _perform_sync(link, func, respa_memento_field, o365_memento_field, outlook_m
     for respa_id, exchange_id in mapper.additions():
         exchange_change_key = current_exchange_change_keys.pop(exchange_id, "")
         respa_change_key = current_respa_change_keys.pop(respa_id, "")
+        
+        # Temporary debug code
+        if outlook_model == OutlookCalendarReservation:
+            logger.info("Saving new O365 reservation info...")
+            existing = outlook_model.objects.filter(exchange_id=exchange_id).first()
+            if existing:
+                logger.info("O365 reservation already exists with exchange_id={}. Existing link={}, resource={}, reservation_id={}, respa_change_key={}, exchange_change_key={}".format(exchange_id, existing.link, existing.link.resource_id, existing.reservation_id, existing.respa_change_key, existing.exchange_change_key))
+                logger.info("Overwriting with link={}, resource={}, reservation_id={}, respa_change_key={}, exchange_change_key={}".format(link, link.resource_id, respa_id, respa_change_key, exchange_change_key))
+                existing.delete()
         kwargs = {
             outlook_model_event_id_property: respa_id,
         }
