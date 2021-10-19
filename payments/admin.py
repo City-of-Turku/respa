@@ -5,12 +5,12 @@ from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 from django.utils.timezone import localtime
 from django.utils.translation import ugettext_lazy as _
-from modeltranslation.admin import TranslationAdmin
+from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
 
 from payments.utils import get_price_period_display
 from resources.models import Resource
 
-from .models import Order, OrderLine, OrderLogEntry, Product
+from .models import Order, OrderLine, OrderLogEntry, Product, CustomerGroup, ProductCustomerGroup
 
 
 def get_datetime_display(dt):
@@ -18,6 +18,13 @@ def get_datetime_display(dt):
         return None
     return localtime(dt).strftime('%d %b %Y %H:%M:%S')
 
+class CustomerGroupAdmin(TranslationAdmin):
+    fields = ('name', )
+
+class ProductCustomerGroupAdmin(TranslationAdmin):
+    def render_change_form(self, request, context, *args, **kwargs):
+        context['adminform'].form.fields['product'].queryset = Product.objects.current()
+        return super().render_change_form(request, context, *args, **kwargs)
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -36,7 +43,17 @@ class ProductForm(forms.ModelForm):
         return resources
 
 
+class ProductCustomerGroupInline(TranslationTabularInline):
+    model = ProductCustomerGroup
+    fields = ('id', 'name', 'customer_group', 'price', )
+    extra = 0
+    can_delete = False
+
 class ProductAdmin(TranslationAdmin):
+    inlines = (
+        ProductCustomerGroupInline,
+    )
+
     list_display = (
         'product_id', 'sku', 'sap_code', 'sap_unit', 'name', 'type', 'price', 'price_type', 'get_price_period', 'tax_percentage',
         'max_quantity', 'get_resources', 'get_created_at', 'get_modified_at'
@@ -50,7 +67,7 @@ class ProductAdmin(TranslationAdmin):
             'fields': ('sap_code', 'sap_unit'),
         }),
         (_('price').capitalize(), {
-            'fields': ('price', 'price_type', 'price_period', 'tax_percentage'),
+            'fields': ('price', 'price_type', 'price_period', 'tax_percentage', ),
         }),
         (_('resources').capitalize(), {
             'fields': ('resources',)
@@ -190,3 +207,5 @@ class OrderAdmin(admin.ModelAdmin):
 if settings.RESPA_PAYMENTS_ENABLED:
     admin.site.register(Product, ProductAdmin)
     admin.site.register(Order, OrderAdmin)
+    admin.site.register(CustomerGroup, CustomerGroupAdmin)
+    admin.site.register(ProductCustomerGroup, ProductCustomerGroupAdmin)

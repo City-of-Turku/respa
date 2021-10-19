@@ -1,17 +1,33 @@
-from payments.models import ARCHIVED_AT_NONE, Product
+from payments.models import ARCHIVED_AT_NONE, Product, CustomerGroup, ProductCustomerGroup
 from rest_framework import serializers, viewsets
 from resources.api.base import TranslatedModelSerializer, register_view
 from rest_framework.permissions import DjangoModelPermissions
 
+class CustomerGroupSerializer(TranslatedModelSerializer):
+    class Meta:
+        model = CustomerGroup
+        fields = ('id', 'name', )
+
+class ProductCustomerGroupSerializer(TranslatedModelSerializer):
+    customer_group = CustomerGroupSerializer()
+    class Meta:
+        model = ProductCustomerGroup
+        fields = ('id', 'price', 'customer_group')
 
 class ProductSerializer(TranslatedModelSerializer):
     name = serializers.DictField(required=False)
     description = serializers.DictField(required=False)
+    product_customer_groups = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = '__all__'
         required_translations = ('name_fi', 'description_fi',)
+
+    def get_product_customer_groups(self, obj):
+        prod_groups = ProductCustomerGroup.objects.filter(product=obj)
+        serializer = ProductCustomerGroupSerializer(prod_groups, many=True)
+        return serializer.data
 
 
 class ProductPermissions(DjangoModelPermissions):

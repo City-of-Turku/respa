@@ -1,4 +1,5 @@
 from django.utils.translation import ugettext_lazy as _
+from django.db.models import Q
 from rest_framework import serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -7,7 +8,7 @@ from resources.api.base import register_view
 from resources.models import Reservation
 
 from ..api.base import OrderLineSerializer, OrderSerializerBase
-from ..models import Order, OrderLine
+from ..models import CustomerGroup, Order, OrderLine, Product, ProductCustomerGroup
 
 
 class PriceEndpointOrderSerializer(OrderSerializerBase):
@@ -16,9 +17,10 @@ class PriceEndpointOrderSerializer(OrderSerializerBase):
     # only and add them manually to returned data in the viewset
     begin = serializers.DateTimeField(write_only=True)
     end = serializers.DateTimeField(write_only=True)
+    customer_group = serializers.CharField(write_only=True)
 
     class Meta(OrderSerializerBase.Meta):
-        fields = ('order_lines', 'price', 'begin', 'end')
+        fields = ('order_lines', 'price', 'begin', 'end', 'customer_group')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -29,8 +31,20 @@ class PriceEndpointOrderSerializer(OrderSerializerBase):
         attrs = super().validate(attrs)
         begin = attrs['begin']
         end = attrs['end']
+        order_lines = attrs.get('order_lines', None)
+        customer_group = attrs.pop('customer_group', None)
         if end < begin:
             raise serializers.ValidationError(_('Begin time must be before end time'), code='invalid_date_range')
+        query = Q()
+        for order_line in order_lines:
+            product = order_line['product']
+            query |= Q(product=product, customer_group__id=customer_group)
+
+        try:
+            attrs['product_groups'] = ProductCustomerGroup.objects.filter(query)
+        except:
+            raise serializers.ValidationError({'customer_group': _('Invalid customer group id')}, code='invalid_customer_group')
+
         return attrs
 
 
@@ -43,6 +57,7 @@ class OrderViewSet(viewsets.ViewSet):
 
         # build Order and OrderLine objects in memory only
         order_data = write_serializer.validated_data
+        product_groups = order_data.pop('product_groups', None)
         order_lines_data = order_data.pop('order_lines')
         begin = order_data.pop('begin')
         end = order_data.pop('end')
@@ -57,6 +72,9 @@ class OrderViewSet(viewsets.ViewSet):
         # get begin and end times from
         reservation = Reservation(begin=begin, end=end)
         order.reservation = reservation
+        
+        for product_group in product_groups:
+            order.overwrite_price(product_group)
 
         # serialize the in-memory objects
         read_serializer = PriceEndpointOrderSerializer(order)
