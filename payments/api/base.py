@@ -1,20 +1,22 @@
 from django.utils.duration import duration_string
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
+from payments.api.product import ProductCustomerGroupSerializer
 
 from resources.api.base import TranslatedModelSerializer
 
-from ..models import Order, OrderLine, Product
+from ..models import Order, OrderLine, Product, ProductCustomerGroup
 
 
 class ProductSerializer(TranslatedModelSerializer):
     id = serializers.CharField(source='product_id')
     price = serializers.SerializerMethodField()
+    product_customer_groups = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = (
-            'id', 'type', 'name', 'description', 'price', 'max_quantity'
+            'id', 'type', 'name', 'description', 'price', 'max_quantity', 'product_customer_groups'
         )
 
     def get_price(self, obj):
@@ -30,6 +32,11 @@ class ProductSerializer(TranslatedModelSerializer):
             ret.update({'period': duration_string(obj.price_period)})
 
         return ret
+
+    def get_product_customer_groups(self, obj):
+        product_cgs = ProductCustomerGroup.objects.filter(product=obj)
+        serializer = ProductCustomerGroupSerializer(product_cgs, many=True)
+        return serializer.data
 
 
 class OrderLineSerializer(serializers.ModelSerializer):

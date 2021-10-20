@@ -47,8 +47,8 @@ class ProductCustomerGroup(AutoIdentifiedModel):
     id = models.CharField(primary_key=True, max_length=50)
     name = models.CharField(verbose_name=_('Name'), max_length=200)
 
-    customer_group = models.ForeignKey(CustomerGroup, 
-                verbose_name=_('Customer group'), related_name='customer_group', 
+    customer_group = models.ForeignKey(CustomerGroup,
+                verbose_name=_('Customer group'), related_name='customer_group',
                 blank=True, on_delete=models.PROTECT
     )
     price = models.DecimalField(
@@ -56,12 +56,12 @@ class ProductCustomerGroup(AutoIdentifiedModel):
         validators=[MinValueValidator(Decimal('0.01'))],
         help_text=_('This will override product price field.')
     )
-    
-    product = models.ForeignKey('payments.Product', 
-                verbose_name=_('Product'), related_name='product_customer_groups', 
+
+    product = models.ForeignKey('payments.Product',
+                verbose_name=_('Product'), related_name='product_customer_groups',
                 blank=True, null=True, on_delete=models.PROTECT
     )
-    
+
     def __str__(self) -> str:
         return '{0} <{1}> ({2})'.format(self.name, self.price, self.customer_group.name)
 
@@ -163,7 +163,7 @@ class Product(models.Model):
 
         if resources:
             self.resources.set(resources)
-        
+
         for product_group in product_groups:
             product_group.product = self
             product_group.save()
@@ -200,8 +200,12 @@ class Product(models.Model):
     def get_tax_price(self) -> Decimal:
         return self.price - self.get_pretax_price()
 
-    def overwrite_price(self, product_group):
-        self.price = product_group.price
+    def overwrite_price(self, customer_group):
+        product_cgs = ProductCustomerGroup.objects.filter(product=self)
+        for product_cg in product_cgs:
+            if customer_group == product_cg.customer_group_id:
+                self.price = product_cg.price
+                break
 
 class OrderQuerySet(models.QuerySet):
     def can_view(self, user):
@@ -281,10 +285,10 @@ class Order(models.Model):
 
     def get_price(self) -> Decimal:
         return sum(order_line.get_price() for order_line in self.get_order_lines())
-    
-    def overwrite_price(self, product_group):
+
+    def overwrite_price(self, customer_group):
         for order_line in self.get_order_lines():
-            order_line.overwrite_price(product_group)
+            order_line.overwrite_price(customer_group)
 
     def set_state(self, new_state: str, log_message: str = None, save: bool = True) -> None:
         assert new_state in (Order.WAITING, Order.CONFIRMED, Order.REJECTED, Order.EXPIRED, Order.CANCELLED)
@@ -353,8 +357,8 @@ class OrderLine(models.Model):
     def get_tax_price_for_reservation(self):
         return self.get_unit_price() - self.get_pretax_price_for_reservation()
 
-    def overwrite_price(self, product_group):
-        self.product.overwrite_price(product_group)
+    def overwrite_price(self, customer_group):
+        self.product.overwrite_price(customer_group)
 
 
 class OrderLogEntry(models.Model):

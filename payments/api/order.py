@@ -17,7 +17,7 @@ class PriceEndpointOrderSerializer(OrderSerializerBase):
     # only and add them manually to returned data in the viewset
     begin = serializers.DateTimeField(write_only=True)
     end = serializers.DateTimeField(write_only=True)
-    customer_group = serializers.CharField(write_only=True)
+    customer_group = serializers.CharField(write_only=True, required=False)
 
     class Meta(OrderSerializerBase.Meta):
         fields = ('order_lines', 'price', 'begin', 'end', 'customer_group')
@@ -32,7 +32,7 @@ class PriceEndpointOrderSerializer(OrderSerializerBase):
         begin = attrs['begin']
         end = attrs['end']
         order_lines = attrs.get('order_lines', None)
-        customer_group = attrs.pop('customer_group', None)
+        customer_group = attrs.get('customer_group', None)
         if end < begin:
             raise serializers.ValidationError(_('Begin time must be before end time'), code='invalid_date_range')
         query = Q()
@@ -40,9 +40,7 @@ class PriceEndpointOrderSerializer(OrderSerializerBase):
             product = order_line['product']
             query |= Q(product=product, customer_group__id=customer_group)
 
-        try:
-            attrs['product_groups'] = ProductCustomerGroup.objects.filter(query)
-        except:
+        if customer_group and not ProductCustomerGroup.objects.filter(query).exists():
             raise serializers.ValidationError({'customer_group': _('Invalid customer group id')}, code='invalid_customer_group')
 
         return attrs
@@ -57,7 +55,7 @@ class OrderViewSet(viewsets.ViewSet):
 
         # build Order and OrderLine objects in memory only
         order_data = write_serializer.validated_data
-        product_groups = order_data.pop('product_groups', None)
+        customer_group = order_data.pop('customer_group', None)
         order_lines_data = order_data.pop('order_lines')
         begin = order_data.pop('begin')
         end = order_data.pop('end')
@@ -72,9 +70,10 @@ class OrderViewSet(viewsets.ViewSet):
         # get begin and end times from
         reservation = Reservation(begin=begin, end=end)
         order.reservation = reservation
-        
-        for product_group in product_groups:
-            order.overwrite_price(product_group)
+
+        # try to use customer group pricing when customer group is given
+        if customer_group:
+            order.overwrite_price(customer_group)
 
         # serialize the in-memory objects
         read_serializer = PriceEndpointOrderSerializer(order)
