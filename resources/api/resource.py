@@ -1485,6 +1485,11 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
         else:
             instance = super().create(validated_data)
 
+        try:
+            instance.validate_id()
+        except ValidationError as exc:
+            raise serializers.ValidationError(exc.message_dict) from exc
+
         if instance.timmi_resource and not instance.timmi_room_id:
             try:
                 TimmiManager().get_room_part_id(instance)
