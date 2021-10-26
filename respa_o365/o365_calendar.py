@@ -224,8 +224,13 @@ class O365Calendar:
 
     
 
-
 def status(item, time):
+    # Temporary logging method
+    status = _status(item, time)
+    logger.info("Outlook event starting at {} has status {} since {}. Last modified at {}".format(item.begin, status, time, item.modified_at))
+    return status
+
+def _status(item, time):
     if item.modified_at <= time:
         return ChangeType.NO_CHANGE
 #    if reservation.state in [Reservation.CANCELLED, Reservation.DENIED]:

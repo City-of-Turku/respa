@@ -39,10 +39,10 @@ def process_queue():
     try:
         queue = OutlookSyncQueue.objects.all().order_by('calendar_link_id')
         if not queue:
-            logging.info("Nothing to sync.")
+            logger.info("Nothing to sync.")
             return
 
-        logging.info("Handling {} entries from sync queue.".format(queue.count()))
+        logger.info("Handling {} entries from sync queue.".format(queue.count()))
         previous_id = None
         for item in queue:
             with transaction.atomic():
@@ -59,12 +59,14 @@ def process_queue():
 
 def perform_sync_to_exchange(link, func):
     # Sync reservations
+    logger.info("Syncing reservations. User=%s, resource=%s (%s), link=%s", link.user.id, link.resource.name, link.resource.id, link.id)
     _perform_sync(link=link, func=func, respa_memento_field='respa_reservation_sync_memento',
         o365_memento_field='exchange_reservation_sync_memento', outlook_model=OutlookCalendarReservation,
         outlook_model_event_id_property='reservation_id', respa_repo=RespaReservations, o365_repo=O365ReservationRepository,
         event_prefix=settings.O365_CALENDAR_RESERVATION_EVENT_PREFIX, sync_actions=reservationSyncActions)
 
     # Sync availability / periods
+    logger.info("Syncing availability. User=%s, resource=%s (%s), link=%s", link.user.id, link.resource.name, link.resource.id, link.id)
     _perform_sync(link=link, func=func, respa_memento_field='respa_availability_sync_memento',
         o365_memento_field='exchange_availability_sync_memento', outlook_model=OutlookCalendarAvailability,
         outlook_model_event_id_property='period_id', respa_repo=RespaAvailabilityRepository, o365_repo=O365AvailabilityRepository,
@@ -112,6 +114,15 @@ def _perform_sync(link, func, respa_memento_field, o365_memento_field, outlook_m
     for respa_id, exchange_id in mapper.additions():
         exchange_change_key = current_exchange_change_keys.pop(exchange_id, "")
         respa_change_key = current_respa_change_keys.pop(respa_id, "")
+        
+        # Temporary debug code
+        if outlook_model == OutlookCalendarReservation:
+            logger.info("Saving new O365 reservation info...")
+            existing = outlook_model.objects.filter(exchange_id=exchange_id).first()
+            if existing:
+                logger.info("O365 reservation already exists with exchange_id={}. Existing link={}, resource={}, reservation_id={}, respa_change_key={}, exchange_change_key={}".format(exchange_id, existing.link, existing.link.resource_id, existing.reservation_id, existing.respa_change_key, existing.exchange_change_key))
+                logger.info("Overwriting with link={}, resource={}, reservation_id={}, respa_change_key={}, exchange_change_key={}".format(link, link.resource_id, respa_id, respa_change_key, exchange_change_key))
+                existing.delete()
         kwargs = {
             outlook_model_event_id_property: respa_id,
         }

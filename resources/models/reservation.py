@@ -23,7 +23,8 @@ from .resource import generate_access_code, validate_access_code
 from .resource import Resource
 from .utils import (
     get_dt, save_dt, is_valid_time_slot, humanize_duration, send_respa_mail,
-    DEFAULT_LANG, localize_datetime, format_dt_range, build_reservations_ical_file
+    DEFAULT_LANG, localize_datetime, format_dt_range, build_reservations_ical_file,
+    get_order_quantity, get_order_tax_price, get_order_pretax_price
 )
 
 from random import sample
@@ -32,12 +33,15 @@ DEFAULT_TZ = pytz.timezone(settings.TIME_ZONE)
 
 logger = logging.getLogger(__name__)
 
-RESERVATION_EXTRA_FIELDS = ('reserver_name', 'reserver_phone_number', 'reserver_address_street', 'reserver_address_zip',
-                            'reserver_address_city', 'billing_first_name', 'billing_last_name', 'billing_phone_number',
+RESERVATION_BILLING_FIELDS = ('billing_first_name', 'billing_last_name', 'billing_phone_number',
                             'billing_email_address', 'billing_address_street', 'billing_address_zip',
-                            'billing_address_city', 'company', 'event_description', 'event_subject', 'reserver_id',
-                            'number_of_participants', 'participants', 'reserver_email_address', 'require_assistance', 'require_workstation',
-                            'host_name', 'reservation_extra_questions', 'home_municipality')
+                            'billing_address_city')
+
+RESERVATION_EXTRA_FIELDS = ('reserver_name', 'reserver_phone_number', 'reserver_address_street', 'reserver_address_zip',
+                            'reserver_address_city', 'company', 'event_description', 'event_subject', 'reserver_id',
+                            'number_of_participants', 'participants', 'reserver_email_address', 'require_assistance',
+                            'require_workstation', 'host_name', 'reservation_extra_questions', 'home_municipality'
+                            ) + RESERVATION_BILLING_FIELDS
 
 
 class ReservationQuerySet(models.QuerySet):
@@ -548,7 +552,7 @@ class Reservation(ModifiableModel):
             order = getattr(self, 'order', None)
             if order:
                 context['order'] = order.get_notification_context(language_code)
-            
+
                 all_products = []
                 # Iterate through each order/product in order_lines.
                 # Each order/product is appended to a list that is then set as the value of context['order'].
@@ -571,25 +575,25 @@ class Reservation(ModifiableModel):
                     created_at          -   creation date of the parent order
                     reservation_name    -   name of resource
                     name                -   name of this product
-                    quantity            -   quantity of products, total price of product / single unit price of product
+                    quantity            -   quantity of products, see function comments for explanation.
                     price               -   single unit price of this product
                     unit_price          -   total price of this product, string e.g. 75,00
                     unit_price_num      -   total price of this product, float e.g. 75.00
                     tax_percentage      -   tax percentage of this product
                     price_type          -   price type of product, per period / fixed
-                    price_period        -   price period of product if type=per period, e.g. 00:30:00 for 30min 
+                    price_period        -   price period of product if type=per period, e.g. 00:30:00 for 30min
                     order_number        -   id of parent order
                     pretax_price        -   price amount without tax, string e.g. 6,05 if total price is 7,5 with 24% vat
-                    pretax_price_num    -   price amount without tax, float e.g. 6.05
+                    pretax_price_num    -   price amount without tax, float e.g. 6.05. See function comments for further explanation.
                     tax_price           -   tax amount, string e.g. 1,45 if total price is 7,5 with 24% vat
-                    tax_price_num       -   tax amount, float e.g. 1.45
+                    tax_price_num       -   tax amount, float e.g. 1.45. See function comments for further explanation.
                     '''
                     product_values = {
                         'id': item["product"]["id"],
                         'created_at': self.created_at.astimezone(self.resource.unit.get_tz()).strftime('%d.%m.%Y %H:%M:%S'),
                         'reservation_name': context["resource"],
                         'name': item["product"]["name"],
-                        'quantity': float(item["unit_price"].replace(',','.')) / float(item["product"]["price"].replace(',','.')), 
+                        'quantity': get_order_quantity(item),
                         'price': item["product"]["price"],
                         'unit_price': item["unit_price"],
                         'unit_price_num': float(item["unit_price"].replace(',','.')),
@@ -598,9 +602,9 @@ class Reservation(ModifiableModel):
                         'price_period': item["product"]["price_period"],
                         'order_number': context["order"]["id"],
                         'pretax_price': item["product"]["pretax_price"],
-                        'pretax_price_num': float(item["product"]["pretax_price"].replace(',','.')),
+                        'pretax_price_num': get_order_pretax_price(item),
                         'tax_price': item["product"]["tax_price"],
-                        'tax_price_num': float(item["product"]["tax_price"].replace(',','.'))
+                        'tax_price_num': get_order_tax_price(item)
                     }
 
                     for field in product_fields:
@@ -609,7 +613,7 @@ class Reservation(ModifiableModel):
                             if item["product"]["price_period"] is not None:
                                 # list of integers based on price_period string values, e.g. string '01:30:00' --> list [1,30,0]
                                 price_unit_time = [int(x) for x in item["product"]["price_period"].split(':')]
-                                # calculate decimal time from list integers e.g. based on previous values, ((1*60) + 30) / 60 = 1.5 
+                                # calculate decimal time from list integers e.g. based on previous values, ((1*60) + 30) / 60 = 1.5
                                 decimal_hours = ((price_unit_time[0] * 60) + price_unit_time[1]) / 60
                                 product[field] = decimal_hours
                             else:
@@ -619,8 +623,8 @@ class Reservation(ModifiableModel):
                             product[field] = product_values[field]
 
                     all_products.append(product)
-                    
-                    
+
+
                 context['order_details'] = all_products
 
         if extra_context:
@@ -683,7 +687,7 @@ class Reservation(ModifiableModel):
         Stuff common to all reservation related mails.
 
         If user isn't given use self.user.
-        """        
+        """
         if getattr(self, 'order', None) and self.billing_email_address:
             email_address = self.billing_email_address
         elif user:
@@ -831,13 +835,13 @@ class ReservationMetadataSet(ModifiableModel):
 
     def __str__(self):
         return self.name
-    
+
     def filter(self, field, value):
         field = getattr(self, field, None)
         if not field:
             return
         return field.filter(field_name=value)
-    
+
     def add(self, field, value):
         _field = getattr(self, field, None)
         if not _field:
@@ -849,7 +853,7 @@ class ReservationMetadataSet(ModifiableModel):
         if field == 'required_fields':
             self.supported_fields.add(obj)
         _field.add(obj)
-    
+
     def remove(self, field, value):
         _field = getattr(self, field, None)
         if not _field:
@@ -910,7 +914,7 @@ class ReservationHomeMunicipalitySet(ModifiableModel):
         except ObjectDoesNotExist:
             return
         self.included_municipalities.add(obj)
-    
+
     def filter(self, value):
         return self.included_municipalities.filter(name=value)
 
@@ -935,7 +939,7 @@ class ReservationHomeMunicipalitySet(ModifiableModel):
             if len(items) < 2:
                 return ["Example1", "Example2"]
         except:
-            return ["Example1", "Example2"] 
+            return ["Example1", "Example2"]
         return sample(items, 2)
 class ReservationReminderQuerySet(models.QuerySet):
     pass

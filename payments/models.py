@@ -304,6 +304,12 @@ class OrderLine(models.Model):
     def get_price(self) -> Decimal:
         return self.product.get_price_for_reservation(self.order.reservation) * self.quantity
 
+    def get_pretax_price_for_reservation(self):
+        return self.product.get_pretax_price_for_reservation(self.order.reservation)
+
+    def get_tax_price_for_reservation(self):
+        return self.get_unit_price() - self.get_pretax_price_for_reservation()
+
 
 class OrderLogEntry(models.Model):
     order = models.ForeignKey(
@@ -358,10 +364,12 @@ class NotificationOrderLineSerializer(serializers.ModelSerializer):
     product = NotificationProductSerializer()
     price = LocalizedSerializerField(source='get_price')
     unit_price = LocalizedSerializerField(source='get_unit_price')
+    reservation_pretax_price = serializers.ReadOnlyField(source='get_pretax_price_for_reservation')
+    reservation_tax_price = serializers.ReadOnlyField(source='get_tax_price_for_reservation')
 
     class Meta:
         model = OrderLine
-        fields = ('product', 'quantity', 'price', 'unit_price')
+        fields = ('product', 'quantity', 'price', 'unit_price', 'reservation_pretax_price','reservation_tax_price')
 
 
 class NotificationOrderSerializer(serializers.ModelSerializer):

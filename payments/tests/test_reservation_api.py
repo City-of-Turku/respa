@@ -7,6 +7,7 @@ from rest_framework.reverse import reverse
 
 from resources.enums import UnitAuthorizationLevel
 from resources.models import Reservation
+from resources.models.reservation import ReservationMetadataField, ReservationMetadataSet
 from resources.models.unit import UnitAuthorization
 from resources.tests.conftest import resource_in_unit, user_api_client  # noqa
 from resources.tests.test_reservation_api import day_and_period  # noqa
@@ -318,3 +319,54 @@ def test_unit_admin_and_unit_manager_may_bypass_payment(user_api_client, resourc
     assert response.status_code == 201
     new_reservation = Reservation.objects.last()
     assert new_reservation.state == Reservation.CONFIRMED
+
+
+@pytest.mark.django_db
+def test_reservation_without_order_doesnt_require_billing_fields(user_api_client, resource_in_unit):
+    '''
+    Tests that a reservation without an order can be made without billing fields
+    even if billing fields are set as required fields for the resource.
+    '''
+    field_1 = ReservationMetadataField.objects.get(field_name='reserver_name')
+    field_2 = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    field_3 = ReservationMetadataField.objects.create(field_name='billing_first_name')
+    metadata_set = ReservationMetadataSet.objects.create(name='test_set',)
+    metadata_set.supported_fields.set([field_1, field_2, field_3])
+    metadata_set.required_fields.set([field_1, field_3])
+    resource_in_unit.reservation_metadata_set = metadata_set
+    resource_in_unit.save()
+
+    reservation_data = build_reservation_data(resource_in_unit)
+    reservation_data.update({
+        'reserver_name': 'Test Tester'
+        })
+
+    response = user_api_client.post(LIST_URL, data=reservation_data)
+    assert response.status_code == 201
+
+
+@pytest.mark.django_db
+def test_reservation_with_order_requires_billing_fields_when_they_are_set_required(
+    user_api_client, resource_in_unit, product):
+    '''
+    Tests that a reservation with an order and billing fields set as required for the resource
+    cannot be made without the billing fields
+    '''
+    field_1 = ReservationMetadataField.objects.get(field_name='reserver_name')
+    field_2 = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    field_3 = ReservationMetadataField.objects.create(field_name='billing_first_name')
+    metadata_set = ReservationMetadataSet.objects.create(name='test_set',)
+    metadata_set.supported_fields.set([field_1, field_2, field_3])
+    metadata_set.required_fields.set([field_1, field_3])
+    resource_in_unit.reservation_metadata_set = metadata_set
+    resource_in_unit.save()
+
+    reservation_data = build_reservation_data(resource_in_unit)
+    order_data = build_order_data(product)
+    reservation_data.update({
+        'reserver_name': 'Test Tester',
+        'order': order_data
+    })
+
+    response = user_api_client.post(LIST_URL, data=reservation_data)
+    assert response.status_code == 400

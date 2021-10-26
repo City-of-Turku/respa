@@ -23,8 +23,9 @@ class Command(BaseCommand):
                 calendar_links = OutlookCalendarLink.objects.all()
 
             for link in calendar_links:
-                logger.info("Synchronising O365 events for resource %s", link.resource_id)
+                logger.info("Adding resource %s (%s) to sync queue.", link.resource.name, link.resource_id)
                 add_to_queue(link)
                 ensure_notification(link)
 
+        logger.info("Processing sync queue.")
         process_queue()

@@ -13,6 +13,7 @@ from resources.models import Unit
 from resources.models.resource import Resource
 from .accessibility import UnitAccessibilitySerializer
 from .base import ExtraDataMixin, LocationField, PeriodSerializer
+from resources.models.utils import log_entry
 
 
 class UnitFilterSet(django_filters.FilterSet):
@@ -117,25 +118,30 @@ class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer):
 
     
     def create(self, validated_data):
+        request = self.context['request']
+        user = request.user
         periods_data = validated_data.pop('periods', [])
         unit = Unit.objects.create(**validated_data)
 
         periods = PeriodSerializer(data=periods_data, many=True)
         if periods.is_valid(raise_exception=True):
             periods.save(unit=unit)
-
+        log_entry(unit, user, is_edit=False, message='Created through API')
         return unit
 
 
     def update(self, instance, validated_data):
+        request = self.context['request']
+        user = request.user
+
         if 'periods' in validated_data:
             periods_data = validated_data.pop('periods', [])
             periods = PeriodSerializer(data=periods_data, many=True)
             if periods.is_valid(raise_exception=True):
                 periods.save(unit=instance)
-        
-        super().update(instance, validated_data)
-        return instance
+        unit = super().update(instance, validated_data)
+        log_entry(unit, user, is_edit=True, message='Edited through API: %s' % ', '.join([k for k in validated_data]))
+        return unit
     
     class Meta:
         model = Unit

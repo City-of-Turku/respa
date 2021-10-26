@@ -43,7 +43,7 @@ from resources.models import (
     Reservation, Resource, ReservationMetadataSet, ReservationHomeMunicipalityField,
     ReservationHomeMunicipalitySet, ReservationBulk, ReservationQuerySet
 )
-from resources.models.reservation import RESERVATION_EXTRA_FIELDS
+from resources.models.reservation import RESERVATION_BILLING_FIELDS, RESERVATION_EXTRA_FIELDS
 from resources.models.utils import build_reservations_ical_file
 from resources.pagination import ReservationPagination
 from resources.models.utils import generate_reservation_xlsx, get_object_or_none
@@ -186,6 +186,11 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             supported = resource.get_supported_reservation_extra_field_names(cache=cache)
             required = resource.get_required_reservation_extra_field_names(cache=cache)
 
+            # reservations without an order don't require billing fields
+            order = self.context['request'].data.get('order')
+            if not order:
+                required = [field for field in required if field not in RESERVATION_BILLING_FIELDS]
+
             # staff events have less requirements
             request_user = self.context['request'].user
             is_staff_event = data.get('staff_event', False)
@@ -242,12 +247,12 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             data.update({
                 'resource': resource
             })
-        
+
         if not data.get('begin', None):
             data.update({
                 'begin': reservation.begin
             })
-        
+
         if not data.get('end', None):
             data.update({
                 'end': reservation.end
@@ -306,7 +311,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         if reserver_phone_number.startswith('+'):
             if not region_code_for_country_code(phonenumbers.parse(reserver_phone_number).country_code):
                 raise ValidationError(dict(reserver_phone_number=_('Invalid country code')))
-            
+
 
         if data.get('staff_event', False):
             if not resource.can_create_staff_event(request_user):
@@ -531,7 +536,7 @@ class ReservationFilterBackend(filters.BaseFilterBackend):
         if times.get('end', None):
             queryset = queryset.filter(begin__lte=times['end'])
         return queryset
-    
+
 class HasArrivedFilterBackend(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         has_arrived = request.query_params.get('has_arrived', None)
@@ -663,7 +668,7 @@ class ReservationPermission(permissions.BasePermission):
         except Resource.DoesNotExist:
             return request.method in permissions.SAFE_METHODS or \
                     request.user and request.user.is_authenticated
-        
+
         if resource.authentication == 'strong' and \
             not request.user.is_strong_auth:
             return False
