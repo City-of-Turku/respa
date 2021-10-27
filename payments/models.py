@@ -34,6 +34,24 @@ TAX_PERCENTAGES = [Decimal(x) for x in (
 
 DEFAULT_TAX_PERCENTAGE = Decimal('24.00')
 
+class OrderCustomerGroupData(models.Model):
+    customer_group_name = models.CharField(max_length=255)
+    product_cg_price = models.DecimalField(
+        verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        help_text=_('Price of the product at that given time.')
+    )
+    order = models.OneToOneField('payments.Order', on_delete=models.PROTECT, null=True)
+
+
+    def __str__(self) -> str:
+        return 'Order: {0} <{1}> ({2})'.format(self.order.order_number, self.product_cg_price, self.customer_group_name)
+
+
+    class Meta:
+        verbose_name = _('Order customer group')
+        verbose_name_plural = _('Order customer groups')
+        ordering = ('id',)
 
 class CustomerGroup(AutoIdentifiedModel):
     id = models.CharField(primary_key=True, max_length=50)
@@ -45,7 +63,6 @@ class CustomerGroup(AutoIdentifiedModel):
 
 class ProductCustomerGroup(AutoIdentifiedModel):
     id = models.CharField(primary_key=True, max_length=50)
-    name = models.CharField(verbose_name=_('Name'), max_length=200)
 
     customer_group = models.ForeignKey(CustomerGroup,
                 verbose_name=_('Customer group'), related_name='customer_group',
@@ -63,7 +80,7 @@ class ProductCustomerGroup(AutoIdentifiedModel):
     )
 
     def __str__(self) -> str:
-        return '{0} <{1}> ({2})'.format(self.name, self.price, self.customer_group.name)
+        return '{0} <{1}> ({2})'.format(self.product.name, self.price, self.customer_group.name)
 
 
 class ProductQuerySet(models.QuerySet):
@@ -200,13 +217,6 @@ class Product(models.Model):
     def get_tax_price(self) -> Decimal:
         return self.price - self.get_pretax_price()
 
-    def overwrite_price(self, customer_group):
-        product_cgs = ProductCustomerGroup.objects.filter(product=self)
-        for product_cg in product_cgs:
-            if customer_group == product_cg.customer_group_id:
-                self.price = product_cg.price
-                break
-
 class OrderQuerySet(models.QuerySet):
     def can_view(self, user):
         if not user.is_authenticated:
@@ -286,10 +296,6 @@ class Order(models.Model):
     def get_price(self) -> Decimal:
         return sum(order_line.get_price() for order_line in self.get_order_lines())
 
-    def overwrite_price(self, customer_group):
-        for order_line in self.get_order_lines():
-            order_line.overwrite_price(customer_group)
-
     def set_state(self, new_state: str, log_message: str = None, save: bool = True) -> None:
         assert new_state in (Order.WAITING, Order.CONFIRMED, Order.REJECTED, Order.EXPIRED, Order.CANCELLED)
 
@@ -329,6 +335,13 @@ class Order(models.Model):
         with translation.override(language_code):
             return NotificationOrderSerializer(self).data
 
+    @property
+    def customer_group_name(self):
+        if hasattr(self, '_in_memory_order_customer_group_data'):
+            return self._in_memory_order_customer_group_data.customer_group_name
+        order_cg = OrderCustomerGroupData.objects.filter(order=self).first()
+        return order_cg.customer_group_name if order_cg else 'None'
+
 class OrderLine(models.Model):
     order = models.ForeignKey(Order, verbose_name=_('order'), related_name='order_lines', on_delete=models.CASCADE)
     product = models.ForeignKey(
@@ -349,6 +362,7 @@ class OrderLine(models.Model):
         return self.product.get_price_for_reservation(self.order.reservation)
 
     def get_price(self) -> Decimal:
+        self.handle_customer_group_pricing()
         return self.product.get_price_for_reservation(self.order.reservation) * self.quantity
 
     def get_pretax_price_for_reservation(self):
@@ -357,9 +371,16 @@ class OrderLine(models.Model):
     def get_tax_price_for_reservation(self):
         return self.get_unit_price() - self.get_pretax_price_for_reservation()
 
-    def overwrite_price(self, customer_group):
-        self.product.overwrite_price(customer_group)
+    @property
+    def product_cg_price(self):
+        if hasattr(self.order, '_in_memory_order_customer_group_data'):
+            return self.order._in_memory_order_customer_group_data.product_cg_price
+        order_cg = OrderCustomerGroupData.objects.filter(order=self.order).first()
+        return order_cg.product_cg_price if order_cg else 0
 
+    def handle_customer_group_pricing(self):
+        if self.product_cg_price:
+            self.product.price = self.product_cg_price
 
 class OrderLogEntry(models.Model):
     order = models.ForeignKey(

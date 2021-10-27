@@ -5,12 +5,12 @@ from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 from django.utils.timezone import localtime
 from django.utils.translation import ugettext_lazy as _
-from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
+from modeltranslation.admin import TranslationAdmin
 
 from payments.utils import get_price_period_display
 from resources.models import Resource
 
-from .models import Order, OrderLine, OrderLogEntry, Product, CustomerGroup, ProductCustomerGroup
+from .models import Order, OrderCustomerGroupData, OrderLine, OrderLogEntry, Product, CustomerGroup, ProductCustomerGroup
 
 
 def get_datetime_display(dt):
@@ -21,7 +21,7 @@ def get_datetime_display(dt):
 class CustomerGroupAdmin(TranslationAdmin):
     fields = ('name', )
 
-class ProductCustomerGroupAdmin(TranslationAdmin):
+class ProductCustomerGroupAdmin(admin.ModelAdmin):
     def render_change_form(self, request, context, *args, **kwargs):
         context['adminform'].form.fields['product'].queryset = Product.objects.current()
         return super().render_change_form(request, context, *args, **kwargs)
@@ -43,11 +43,13 @@ class ProductForm(forms.ModelForm):
         return resources
 
 
-class ProductCustomerGroupInline(TranslationTabularInline):
+class ProductCustomerGroupInline(admin.TabularInline):
     model = ProductCustomerGroup
-    fields = ('id', 'name', 'customer_group', 'price', )
+    fields = ('id', 'customer_group', 'price', )
+    readonly_fields = ('id', )
     extra = 0
     can_delete = False
+
 
 class ProductAdmin(TranslationAdmin):
     inlines = (
@@ -152,6 +154,26 @@ class OrderLogEntryInline(admin.TabularInline):
 
     timestamp_with_seconds.short_description = _('timestamp')
 
+class OrderCustomerGroupDataInline(admin.TabularInline):
+    model = OrderCustomerGroupData
+    extra = 1
+    fields = ('customer_group_name', 'product_cg_price', )
+    readonly_fields = fields
+    can_delete = False
+    verbose_name = "Selected customer group"
+    verbose_name_plural = "Selected customer group"
+    max_num = 0
+
+    def has_add_permission(self, request, obj):
+        return False
+    
+    def customer_group_name(self, obj):
+        return obj.customer_group_name
+    customer_group_name.short_description = _('customer group')
+
+    def product_cg_price(self, obj):
+        return obj.product_cg_price
+    product_cg_price.short_description = _('product price')
 
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('order_number', 'user', 'created_at', 'state', 'reservation', 'price')
@@ -159,7 +181,7 @@ class OrderAdmin(admin.ModelAdmin):
     fields = ('order_number', 'created_at', 'state', 'reservation', 'user', 'price')
 
     raw_id_fields = ('reservation',)
-    inlines = (OrderLineInline, OrderLogEntryInline)
+    inlines = (OrderLineInline, OrderCustomerGroupDataInline, OrderLogEntryInline, )
     ordering = ('-id',)
     search_fields = ('order_number',)
     list_filter = ('state',)

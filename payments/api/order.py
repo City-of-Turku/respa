@@ -8,7 +8,7 @@ from resources.api.base import register_view
 from resources.models import Reservation
 
 from ..api.base import OrderLineSerializer, OrderSerializerBase
-from ..models import CustomerGroup, Order, OrderLine, Product, ProductCustomerGroup
+from ..models import CustomerGroup, Order, OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup
 
 
 class PriceEndpointOrderSerializer(OrderSerializerBase):
@@ -32,7 +32,7 @@ class PriceEndpointOrderSerializer(OrderSerializerBase):
         begin = attrs['begin']
         end = attrs['end']
         order_lines = attrs.get('order_lines', None)
-        customer_group = attrs.get('customer_group', None)
+        customer_group = attrs.pop('customer_group', None)
         if end < begin:
             raise serializers.ValidationError(_('Begin time must be before end time'), code='invalid_date_range')
         query = Q()
@@ -40,9 +40,12 @@ class PriceEndpointOrderSerializer(OrderSerializerBase):
             product = order_line['product']
             query |= Q(product=product, customer_group__id=customer_group)
 
-        if customer_group and not ProductCustomerGroup.objects.filter(query).exists():
-            raise serializers.ValidationError({'customer_group': _('Invalid customer group id')}, code='invalid_customer_group')
+        product_cg = ProductCustomerGroup.objects.filter(query)
 
+        if customer_group and not product_cg.exists():
+            raise serializers.ValidationError({'customer_group': _('Invalid customer group id')}, code='invalid_customer_group')
+        else:
+            attrs['product_cg'] = product_cg.first()
         return attrs
 
 
@@ -55,8 +58,8 @@ class OrderViewSet(viewsets.ViewSet):
 
         # build Order and OrderLine objects in memory only
         order_data = write_serializer.validated_data
-        customer_group = order_data.pop('customer_group', None)
         order_lines_data = order_data.pop('order_lines')
+        product_cg = order_data.pop('product_cg', None)
         begin = order_data.pop('begin')
         end = order_data.pop('end')
         order = Order(**order_data)
@@ -72,8 +75,10 @@ class OrderViewSet(viewsets.ViewSet):
         order.reservation = reservation
 
         # try to use customer group pricing when customer group is given
-        if customer_group:
-            order.overwrite_price(customer_group)
+        if product_cg:
+            order._in_memory_order_customer_group_data = OrderCustomerGroupData(order=order,
+                product_cg_price=product_cg.price,
+                customer_group_name=product_cg.customer_group.name)
 
         # serialize the in-memory objects
         read_serializer = PriceEndpointOrderSerializer(order)

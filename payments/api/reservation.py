@@ -1,4 +1,5 @@
 from django.utils.translation import ugettext_lazy as _
+from django.db.models import Q
 from rest_framework import exceptions, serializers, status
 from rest_framework.exceptions import PermissionDenied
 
@@ -7,7 +8,7 @@ from payments.exceptions import (
 )
 from resources.api.reservation import ReservationSerializer
 
-from ..models import OrderLine, Product
+from ..models import OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup
 from ..providers import get_payment_provider
 from .base import OrderSerializerBase
 
@@ -16,17 +17,27 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
     id = serializers.ReadOnlyField(source='order_number')
     return_url = serializers.CharField(write_only=True)
     payment_url = serializers.SerializerMethodField()
+    customer_group = serializers.CharField(write_only=True, required=False)
 
     class Meta(OrderSerializerBase.Meta):
-        fields = OrderSerializerBase.Meta.fields + ('id', 'return_url', 'payment_url')
+        fields = OrderSerializerBase.Meta.fields + ('id', 'return_url', 'payment_url', 'customer_group')
 
     def create(self, validated_data):
         order_lines_data = validated_data.pop('order_lines', [])
+        customer_group = validated_data.pop('customer_group', None)
         return_url = validated_data.pop('return_url', '')
         order = super().create(validated_data)
-
+    
+        query = Q()
         for order_line_data in order_lines_data:
+            product = order_line_data['product']
+            query |= Q(product=product, customer_group__id=customer_group)
             OrderLine.objects.create(order=order, **order_line_data)
+    
+        product_cg = ProductCustomerGroup.objects.filter(query).first()
+
+        if product_cg:
+            OrderCustomerGroupData.objects.create(order=order, product_cg_price=product_cg.price, customer_group_name=product_cg.customer_group.name)
 
         payments = get_payment_provider(request=self.context['request'],
                                         ui_return_url=return_url)
@@ -44,7 +55,6 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         except RespaPaymentError as pe:
             raise exceptions.APIException(detail=str(pe),
                                           code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
         return order
 
     def get_payment_url(self, obj):
