@@ -40,7 +40,7 @@ from ..auth import is_authenticated_user, is_general_admin, is_superuser, is_und
 from ..errors import InvalidImage
 from ..fields import EquipmentField
 from .accessibility import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility
-from .base import AutoIdentifiedModel, NameIdentifiedModel, ModifiableModel
+from .base import AutoIdentifiedModel, NameIdentifiedModel, ModifiableModel, ValidatedIdentifier
 from .utils import create_datetime_days_from_now, get_translated, get_translated_name, humanize_duration
 from .equipment import Equipment
 from .unit import Unit
@@ -191,7 +191,7 @@ class CleanResourceID(CommonGenericTaggedItemBase, TaggedItemBase):
     object_id = models.CharField(max_length=100, verbose_name=_('Object id'), db_index=True)
 
 
-class Resource(ModifiableModel, AutoIdentifiedModel):
+class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
     AUTHENTICATION_TYPES = (
         ('unauthenticated', _('Unauthenticated')),
         ('none', _('None')),
@@ -862,6 +862,9 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
                 )
         if self.timmi_resource and not self.timmi_room_id:
             TimmiManager().get_room_part_id(self)
+
+        if self.id:
+            self.validate_id()
 
 class ResourceImage(ModifiableModel):
     TYPES = (
