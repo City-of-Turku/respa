@@ -48,3 +48,15 @@ def get_price_period_display(price_period):
         return _('hour')
     else:
         return _('{hours} hours'.format(hours=hours))
+
+
+def handle_customer_group_pricing(func):
+    from payments.models import ProductCustomerGroup
+
+    @wraps(func)
+    def wrapped(self, *args, **kwargs):
+        if ProductCustomerGroup.objects.filter(product=self.product).exists() \
+            and self.product_cg_price:
+            self.product.price = self.product_cg_price
+        return func(self)
+    return wrapped

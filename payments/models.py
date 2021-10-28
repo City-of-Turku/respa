@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
+from textwrap import wrap
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -18,7 +19,7 @@ from resources.models.base import AutoIdentifiedModel
 from resources.models.utils import generate_id
 
 from .exceptions import OrderStateTransitionError
-from .utils import convert_aftertax_to_pretax, get_price_period_display, rounded
+from .utils import convert_aftertax_to_pretax, get_price_period_display, rounded, handle_customer_group_pricing
 
 # The best way for representing non existing archived_at would be using None for it,
 # but that would not work with the unique_together constraint, which brings many
@@ -372,14 +373,16 @@ class OrderLine(models.Model):
 
     def __str__(self):
         return str(self.product)
-
+    
+    @handle_customer_group_pricing
     def get_unit_price(self) -> Decimal:
         return self.product.get_price_for_reservation(self.order.reservation)
 
+    @handle_customer_group_pricing
     def get_price(self) -> Decimal:
-        self.handle_customer_group_pricing()
         return self.product.get_price_for_reservation(self.order.reservation) * self.quantity
 
+    @handle_customer_group_pricing
     def get_pretax_price_for_reservation(self):
         return self.product.get_pretax_price_for_reservation(self.order.reservation)
 
@@ -393,11 +396,10 @@ class OrderLine(models.Model):
             return order_cg.product_cg_price
         order_cg = OrderCustomerGroupData.objects.filter(order_line=self).first()
         return order_cg.product_cg_price if order_cg else 0
-
+    
+    @handle_customer_group_pricing
     def handle_customer_group_pricing(self):
-        if ProductCustomerGroup.objects.filter(product=self.product).exists() \
-            and self.product_cg_price:
-            self.product.price = self.product_cg_price
+        pass
 
 class OrderLogEntry(models.Model):
     order = models.ForeignKey(

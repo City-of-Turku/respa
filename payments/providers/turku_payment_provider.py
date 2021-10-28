@@ -10,7 +10,7 @@ import pytz
 from django.utils.translation import gettext_lazy as _
 
 from ..models import Order, OrderLine
-from ..utils import round_price
+from ..utils import round_price, handle_customer_group_pricing
 
 from .base import PaymentProvider
 logger = logging.getLogger(__name__)
