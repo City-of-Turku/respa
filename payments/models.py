@@ -60,6 +60,12 @@ class CustomerGroup(AutoIdentifiedModel):
     def __str__(self) -> str:
         return self.name
 
+class ProductCustomerGroupQuerySet(models.QuerySet):
+    def get_total_price(self):
+        return sum(i.price for i in self)
+    
+    def customer_group(self):
+        return self.first().customer_group
 
 class ProductCustomerGroup(AutoIdentifiedModel):
     id = models.CharField(primary_key=True, max_length=50)
@@ -78,6 +84,8 @@ class ProductCustomerGroup(AutoIdentifiedModel):
                 verbose_name=_('Product'), related_name='product_customer_groups',
                 blank=True, null=True, on_delete=models.PROTECT
     )
+
+    objects = ProductCustomerGroupQuerySet.as_manager()
 
     def __str__(self) -> str:
         return '{0} <{1}> ({2})'.format(self.product.name, self.price, self.customer_group.name)

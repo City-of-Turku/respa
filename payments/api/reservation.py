@@ -34,10 +34,10 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
             query |= Q(product=product, customer_group__id=customer_group)
             OrderLine.objects.create(order=order, **order_line_data)
     
-        product_cg = ProductCustomerGroup.objects.filter(query).first()
+        product_cg = ProductCustomerGroup.objects.filter(query)
 
         if product_cg:
-            OrderCustomerGroupData.objects.create(order=order, product_cg_price=product_cg.price, customer_group_name=product_cg.customer_group.name)
+            OrderCustomerGroupData.objects.create(order=order, product_cg_price=product_cg.get_total_price(), customer_group_name=product_cg.customer_group().name)
 
         payments = get_payment_provider(request=self.context['request'],
                                         ui_return_url=return_url)

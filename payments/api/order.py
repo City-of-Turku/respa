@@ -40,12 +40,12 @@ class PriceEndpointOrderSerializer(OrderSerializerBase):
             product = order_line['product']
             query |= Q(product=product, customer_group__id=customer_group)
 
-        product_cg = ProductCustomerGroup.objects.filter(query)
+        product_cgs = ProductCustomerGroup.objects.filter(query)
 
-        if customer_group and not product_cg.exists():
+        if customer_group and not product_cgs.exists():
             raise serializers.ValidationError({'customer_group': _('Invalid customer group id')}, code='invalid_customer_group')
         else:
-            attrs['product_cg'] = product_cg.first()
+            attrs['product_cgs'] = product_cgs
         return attrs
 
 
@@ -59,7 +59,7 @@ class OrderViewSet(viewsets.ViewSet):
         # build Order and OrderLine objects in memory only
         order_data = write_serializer.validated_data
         order_lines_data = order_data.pop('order_lines')
-        product_cg = order_data.pop('product_cg', None)
+        product_cgs = order_data.pop('product_cgs', None)
         begin = order_data.pop('begin')
         end = order_data.pop('end')
         order = Order(**order_data)
@@ -75,10 +75,10 @@ class OrderViewSet(viewsets.ViewSet):
         order.reservation = reservation
 
         # try to use customer group pricing when customer group is given
-        if product_cg:
+        if product_cgs:
             order._in_memory_order_customer_group_data = OrderCustomerGroupData(order=order,
-                product_cg_price=product_cg.price,
-                customer_group_name=product_cg.customer_group.name)
+                product_cg_price=product_cgs.get_total_price(),
+                customer_group_name=product_cgs.customer_group().name)
 
         # serialize the in-memory objects
         read_serializer = PriceEndpointOrderSerializer(order)
