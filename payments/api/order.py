@@ -68,7 +68,6 @@ class OrderViewSet(viewsets.ViewSet):
         # store the OrderLine objects in the Order object so that we can use
         # those when calculating prices
         order._in_memory_order_lines = order_lines
-
         # order line price calculations need a dummy reservation from which they
         # get begin and end times from
         reservation = Reservation(begin=begin, end=end)
@@ -76,9 +75,12 @@ class OrderViewSet(viewsets.ViewSet):
 
         # try to use customer group pricing when customer group is given
         if product_cgs:
-            order._in_memory_order_customer_group_data = OrderCustomerGroupData(order=order,
-                product_cg_price=product_cgs.get_total_price(),
-                customer_group_name=product_cgs.customer_group().name)
+            order._in_memory_order_customer_group_data = [OrderCustomerGroupData(order_line=order_line,
+                product_cg_price=product_cgs.get_price_for(order_line.product),
+                customer_group_name=product_cgs.get_customer_group_name(order_line.product))
+                for order_line in order.get_order_lines()
+            ]
+
 
         # serialize the in-memory objects
         read_serializer = PriceEndpointOrderSerializer(order)

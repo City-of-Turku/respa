@@ -41,11 +41,11 @@ class OrderCustomerGroupData(models.Model):
         validators=[MinValueValidator(Decimal('0.01'))],
         help_text=_('Price of the product at that given time.')
     )
-    order = models.OneToOneField('payments.Order', on_delete=models.PROTECT, null=True)
+    order_line = models.OneToOneField('payments.OrderLine', on_delete=models.PROTECT, null=True)
 
 
     def __str__(self) -> str:
-        return 'Order: {0} <{1}> ({2})'.format(self.order.order_number, self.product_cg_price, self.customer_group_name)
+        return 'Order: {0} <{1}> ({2})'.format(self.order_line.order.order_number, self.product_cg_price, self.customer_group_name)
 
 
     class Meta:
@@ -61,18 +61,25 @@ class CustomerGroup(AutoIdentifiedModel):
         return self.name
 
 class ProductCustomerGroupQuerySet(models.QuerySet):
-    def get_total_price(self):
-        return sum(i.price for i in self)
+    def get_price_for(self, product):
+        """
+        Product can only have one product customer group,
+        Fetch product customer group use the price,
+        If one is not found, it means product has no product customer group, use the product price instead.
+        """
+        product_cg = self.filter(product=product).first()
+        return product_cg.price if product_cg else product.price
     
-    def customer_group(self):
-        return self.first().customer_group
+    def get_customer_group_name(self, product):
+        product_cg = self.filter(product=product).first()
+        return product_cg.customer_group.name if product_cg else 'None'
 
 class ProductCustomerGroup(AutoIdentifiedModel):
     id = models.CharField(primary_key=True, max_length=50)
 
     customer_group = models.ForeignKey(CustomerGroup,
-                verbose_name=_('Customer group'), related_name='customer_group',
-                blank=True, on_delete=models.PROTECT
+        verbose_name=_('Customer group'), related_name='customer_group',
+        blank=True, on_delete=models.PROTECT
     )
     price = models.DecimalField(
         verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
@@ -81,8 +88,8 @@ class ProductCustomerGroup(AutoIdentifiedModel):
     )
 
     product = models.ForeignKey('payments.Product',
-                verbose_name=_('Product'), related_name='product_customer_groups',
-                blank=True, null=True, on_delete=models.PROTECT
+        verbose_name=_('Product'), related_name='product_customer_groups',
+        blank=True, null=True, on_delete=models.PROTECT
     )
 
     objects = ProductCustomerGroupQuerySet.as_manager()
@@ -382,12 +389,14 @@ class OrderLine(models.Model):
     @property
     def product_cg_price(self):
         if hasattr(self.order, '_in_memory_order_customer_group_data'):
-            return self.order._in_memory_order_customer_group_data.product_cg_price
-        order_cg = OrderCustomerGroupData.objects.filter(order=self.order).first()
+            order_cg = next(iter([order_cg for order_cg in self.order._in_memory_order_customer_group_data if order_cg.order_line == self]))
+            return order_cg.product_cg_price
+        order_cg = OrderCustomerGroupData.objects.filter(order_line=self).first()
         return order_cg.product_cg_price if order_cg else 0
 
     def handle_customer_group_pricing(self):
-        if self.product_cg_price:
+        if ProductCustomerGroup.objects.filter(product=self.product).exists() \
+            and self.product_cg_price:
             self.product.price = self.product_cg_price
 
 class OrderLogEntry(models.Model):

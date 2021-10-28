@@ -111,7 +111,7 @@ class ProductAdmin(TranslationAdmin):
 
 class OrderLineInline(admin.TabularInline):
     model = OrderLine
-    fields = ('product', 'product_type', 'unit_price', 'quantity', 'price', 'tax_percentage')
+    fields = ('product', 'product_type', 'unit_price', 'quantity', 'price', 'tax_percentage', 'customer_group')
     extra = 0
     readonly_fields = fields
     can_delete = False
@@ -138,6 +138,12 @@ class OrderLineInline(admin.TabularInline):
         return obj.product.tax_percentage
 
     tax_percentage.short_description = _('tax percentage')
+
+    def customer_group(self, obj):
+        order_cg = OrderCustomerGroupData.objects.filter(order_line=obj).first()
+        return order_cg.customer_group_name if order_cg else 'None'
+    
+    customer_group.short_description = _('selected customer group')
 
 
 class OrderLogEntryInline(admin.TabularInline):
@@ -181,7 +187,7 @@ class OrderAdmin(admin.ModelAdmin):
     fields = ('order_number', 'created_at', 'state', 'reservation', 'user', 'price')
 
     raw_id_fields = ('reservation',)
-    inlines = (OrderLineInline, OrderCustomerGroupDataInline, OrderLogEntryInline, )
+    inlines = (OrderLineInline, OrderLogEntryInline, )
     ordering = ('-id',)
     search_fields = ('order_number',)
     list_filter = ('state',)
