@@ -63,7 +63,9 @@ class RespaReservations:
             # Temporary logging code
             logger.info("Removing respa reservation starting at {} in resource {} ({})".format(reservation.begin, reservation.resource.name, reservation.resource_id))
             reservation._from_o365_sync = True
-            reservation.set_state(Reservation.CANCELLED, None)
+            if reservation.state is not Reservation.CANCELLED:
+                reservation.state = Reservation.CANCELLED
+                reservation.send_reservation_cancelled_mail(action_by_official=True)
             reservation.save()
         except Exception:
             logger.error("Unable to cancel reservation {}".format(item_id), exc_info=True)
