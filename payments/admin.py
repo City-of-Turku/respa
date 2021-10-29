@@ -2,6 +2,7 @@ from django import forms
 from django.conf import settings
 from django.contrib import admin
 from django.core.exceptions import ValidationError
+from django.forms.models import BaseInlineFormSet
 from django.utils.safestring import mark_safe
 from django.utils.timezone import localtime
 from django.utils.translation import ugettext_lazy as _
@@ -10,7 +11,10 @@ from modeltranslation.admin import TranslationAdmin
 from payments.utils import get_price_period_display
 from resources.models import Resource
 
-from .models import Order, OrderCustomerGroupData, OrderLine, OrderLogEntry, Product, CustomerGroup, ProductCustomerGroup
+from .models import (
+    ARCHIVED_AT_NONE, Order, OrderCustomerGroupData, OrderLine, OrderLogEntry, Product,
+    CustomerGroup, ProductCustomerGroup
+)
 
 
 def get_datetime_display(dt):
@@ -43,12 +47,24 @@ class ProductForm(forms.ModelForm):
         return resources
 
 
+class ProductCGInlineFormSet(BaseInlineFormSet):
+    def save_existing_objects(self, commit=True):
+        saved_instances = super(ProductCGInlineFormSet, self).save_existing_objects(commit)
+        # product customer group has old archived product here, update product to the new one
+        for product_cg in saved_instances:
+            new_product = Product.objects.filter(product_id=product_cg.product.product_id).get(archived_at=ARCHIVED_AT_NONE)
+            product_cg.product = new_product
+            product_cg.save()
+
+        return saved_instances
+
+
 class ProductCustomerGroupInline(admin.TabularInline):
     model = ProductCustomerGroup
     fields = ('id', 'customer_group', 'price', )
-    readonly_fields = ('id', )
     extra = 0
-    can_delete = False
+    can_delete = True
+    formset = ProductCGInlineFormSet
 
 
 class ProductAdmin(TranslationAdmin):
@@ -142,7 +158,7 @@ class OrderLineInline(admin.TabularInline):
     def customer_group(self, obj):
         order_cg = OrderCustomerGroupData.objects.filter(order_line=obj).first()
         return order_cg.customer_group_name if order_cg else 'None'
-    
+
     customer_group.short_description = _('selected customer group')
 
 
@@ -172,7 +188,7 @@ class OrderCustomerGroupDataInline(admin.TabularInline):
 
     def has_add_permission(self, request, obj):
         return False
-    
+
     def customer_group_name(self, obj):
         return obj.customer_group_name
     customer_group_name.short_description = _('customer group')

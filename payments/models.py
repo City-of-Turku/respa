@@ -70,7 +70,7 @@ class ProductCustomerGroupQuerySet(models.QuerySet):
         """
         product_cg = self.filter(product=product).first()
         return product_cg.price if product_cg else product.price
-    
+
     def get_customer_group_name(self, product):
         product_cg = self.filter(product=product).first()
         return product_cg.customer_group.name if product_cg else 'None'
@@ -373,7 +373,7 @@ class OrderLine(models.Model):
 
     def __str__(self):
         return str(self.product)
-    
+
     @handle_customer_group_pricing
     def get_unit_price(self) -> Decimal:
         return self.product.get_price_for_reservation(self.order.reservation)
@@ -396,7 +396,7 @@ class OrderLine(models.Model):
             return order_cg.product_cg_price
         order_cg = OrderCustomerGroupData.objects.filter(order_line=self).first()
         return order_cg.product_cg_price if order_cg else 0
-    
+
     @handle_customer_group_pricing
     def handle_customer_group_pricing(self):
         pass
