@@ -28,19 +28,14 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         return_url = validated_data.pop('return_url', '')
         order = super().create(validated_data)
     
-        query = Q()
         for order_line_data in order_lines_data:
             product = order_line_data['product']
-            query |= Q(product=product, customer_group__id=customer_group)
-            OrderLine.objects.create(order=order, **order_line_data)
-    
-        product_cgs = ProductCustomerGroup.objects.filter(query)
-
-        if product_cgs:
-            for order_line in order.get_order_lines():
+            order_line = OrderLine.objects.create(order=order, **order_line_data)
+            prod_cg = ProductCustomerGroup.objects.filter(product=product, customer_group__id=customer_group)
+            if prod_cg.exists():
                 OrderCustomerGroupData.objects.create(order_line=order_line,
-                product_cg_price=product_cgs.get_price_for(order_line.product),
-                customer_group_name=product_cgs.get_customer_group_name(order_line.product))
+                product_cg_price=prod_cg.get_price_for(order_line.product),
+                customer_group_name=prod_cg.get_customer_group_name(order_line.product))
 
         payments = get_payment_provider(request=self.context['request'],
                                         ui_return_url=return_url)

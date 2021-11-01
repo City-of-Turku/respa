@@ -51,12 +51,18 @@ def get_price_period_display(price_period):
 
 
 def handle_customer_group_pricing(func):
-    from payments.models import ProductCustomerGroup
+    from payments.models import ProductCustomerGroup, Product
 
     @wraps(func)
     def wrapped(self, *args, **kwargs):
-        if ProductCustomerGroup.objects.filter(product=self.product).exists() \
+        original = Product.objects.get(id=self.product.id)
+        prod_cg = ProductCustomerGroup.objects.filter(product=self.product)
+
+
+        if prod_cg.exists() \
             and self.product_cg_price:
             self.product.price = self.product_cg_price
+        else:
+            self.product.price = original.price
         return func(self)
     return wrapped

@@ -355,7 +355,7 @@ class Order(models.Model):
     def customer_group_name(self):
         if hasattr(self, '_in_memory_order_customer_group_data'):
             return self._in_memory_order_customer_group_data.customer_group_name
-        order_cg = OrderCustomerGroupData.objects.filter(order=self).first()
+        order_cg = OrderCustomerGroupData.objects.filter(order_line__in=self.get_order_lines()).first()
         return order_cg.customer_group_name if order_cg else 'None'
 
 class OrderLine(models.Model):
@@ -395,7 +395,9 @@ class OrderLine(models.Model):
             order_cg = next(iter([order_cg for order_cg in self.order._in_memory_order_customer_group_data if order_cg.order_line == self]))
             return order_cg.product_cg_price
         order_cg = OrderCustomerGroupData.objects.filter(order_line=self).first()
-        return order_cg.product_cg_price if order_cg else 0
+        if order_cg:
+            return order_cg.product_cg_price
+        return 0
 
     @handle_customer_group_pricing
     def handle_customer_group_pricing(self):
