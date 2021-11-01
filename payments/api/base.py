@@ -4,6 +4,7 @@ from rest_framework import serializers
 from payments.api.product import ProductCustomerGroupSerializer
 
 from resources.api.base import TranslatedModelSerializer
+from resources.models.utils import get_translated_fields
 
 from ..models import Order, OrderLine, Product, ProductCustomerGroup
 
@@ -72,8 +73,13 @@ class OrderLineSerializer(serializers.ModelSerializer):
 class OrderSerializerBase(serializers.ModelSerializer):
     order_lines = OrderLineSerializer(many=True)
     price = serializers.CharField(source='get_price', read_only=True)
-    customer_group_name = serializers.CharField(read_only=True)
+    customer_group_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Order
         fields = ('state', 'order_lines', 'price', 'customer_group_name')
+
+
+    def get_customer_group_name(self, obj):
+        customer_group = obj.get_customer_group()
+        return get_translated_fields(customer_group)

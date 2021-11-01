@@ -12,6 +12,7 @@ from django.conf import settings
 from django.utils import formats
 from django.utils.translation import ungettext
 from django.core.mail import EmailMultiAlternatives
+from django.conf import settings
 from django.contrib.sites.models import Site
 from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, ContentType
 from django.utils.translation import ugettext_lazy as _
@@ -19,6 +20,8 @@ from django.utils import timezone
 from django.utils.timezone import localtime
 from rest_framework.reverse import reverse
 from icalendar import Calendar, Event, vDatetime, vText, vGeo
+from modeltranslation.translator import NotRegistered, translator
+
 import xlsxwriter
 
 
@@ -373,3 +376,16 @@ def log_entry(instance, user, *, is_edit, message : str):
         message
     )
 
+def get_translated_fields(instance):
+    translated = {}
+    try:
+        translation_options = translator.get_options_for_model(instance.__class__)
+        for field_name in translation_options.fields.keys():
+            for lang in [x[0] for x in settings.LANGUAGES]:
+                field = getattr(instance, '%s_%s' % (field_name, lang), None)
+                if not field:
+                    continue
+                translated[lang] = field
+        return translated
+    except NotRegistered:
+        return None

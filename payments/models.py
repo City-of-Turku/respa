@@ -16,7 +16,8 @@ from rest_framework import serializers
 
 from resources.models import Reservation, Resource
 from resources.models.base import AutoIdentifiedModel
-from resources.models.utils import generate_id
+from resources.models.utils import generate_id, get_translated_fields
+from modeltranslation.translator import NotRegistered, translator
 
 from .exceptions import OrderStateTransitionError
 from .utils import convert_aftertax_to_pretax, get_price_period_display, rounded, handle_customer_group_pricing
@@ -54,9 +55,22 @@ class OrderCustomerGroupData(models.Model):
         verbose_name_plural = _('Order customer groups')
         ordering = ('id',)
 
+    def copy_translated_fields(self, other):
+        fields = get_translated_fields(other)
+        if not fields:
+            return self
+        translation_options = translator.get_options_for_model(self.__class__)
+        for field_name in translation_options.fields.keys():
+            for lang in [x[0] for x in settings.LANGUAGES]:
+                val = fields.get(lang, None)
+                if not val:
+                    continue
+                setattr(self, '%s_%s' % (field_name, lang), val)
+        return self
+
 class CustomerGroup(AutoIdentifiedModel):
     id = models.CharField(primary_key=True, max_length=50)
-    name = models.CharField(verbose_name=_('Name'), max_length=200)
+    name = models.CharField(verbose_name=_('Name'), max_length=200, unique=True)
 
     def __str__(self) -> str:
         return self.name
@@ -73,7 +87,7 @@ class ProductCustomerGroupQuerySet(models.QuerySet):
 
     def get_customer_group_name(self, product):
         product_cg = self.filter(product=product).first()
-        return product_cg.customer_group.name if product_cg else 'None'
+        return product_cg.customer_group.name if product_cg else None
 
 class ProductCustomerGroup(AutoIdentifiedModel):
     id = models.CharField(primary_key=True, max_length=50)
@@ -351,12 +365,17 @@ class Order(models.Model):
         with translation.override(language_code):
             return NotificationOrderSerializer(self).data
 
-    @property
-    def customer_group_name(self):
+    def get_customer_group_name(self):
         if hasattr(self, '_in_memory_order_customer_group_data'):
             return self._in_memory_order_customer_group_data.customer_group_name
         order_cg = OrderCustomerGroupData.objects.filter(order_line__in=self.get_order_lines()).first()
         return order_cg.customer_group_name if order_cg else None
+
+    def get_customer_group(self):
+        customer_group_name = self.get_customer_group_name()
+        if not customer_group_name:
+            return
+        return CustomerGroup.objects.filter(name=customer_group_name).first()
 
 class OrderLine(models.Model):
     order = models.ForeignKey(Order, verbose_name=_('order'), related_name='order_lines', on_delete=models.CASCADE)

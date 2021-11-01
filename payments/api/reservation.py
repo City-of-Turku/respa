@@ -33,9 +33,11 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
             order_line = OrderLine.objects.create(order=order, **order_line_data)
             prod_cg = ProductCustomerGroup.objects.filter(product=product, customer_group__id=customer_group)
             if prod_cg.exists():
-                OrderCustomerGroupData.objects.create(order_line=order_line,
-                product_cg_price=prod_cg.get_price_for(order_line.product),
-                customer_group_name=prod_cg.get_customer_group_name(order_line.product))
+                ocgd = OrderCustomerGroupData.objects.create(order_line=order_line,
+                product_cg_price=prod_cg.get_price_for(order_line.product))
+                ocgd.copy_translated_fields(prod_cg.first().customer_group)
+                ocgd.save()
+
 
         payments = get_payment_provider(request=self.context['request'],
                                         ui_return_url=return_url)

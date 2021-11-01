@@ -1,6 +1,6 @@
 from modeltranslation.translator import TranslationOptions, register
 
-from .models import Product, CustomerGroup
+from .models import Product, CustomerGroup, OrderCustomerGroupData
 
 
 @register(Product)
@@ -11,3 +11,7 @@ class ProductTranslationOptions(TranslationOptions):
 @register(CustomerGroup)
 class CustomerGroupTranslationOptions(TranslationOptions):
     fields = ('name', )
+
+@register(OrderCustomerGroupData)
+class OrderCustomerGroupDataTranslationOptions(TranslationOptions):
+    fields = ('customer_group_name', )
