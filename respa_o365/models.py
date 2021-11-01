@@ -12,10 +12,8 @@ class OutlookTokenRequestData(models.Model):
                              blank=False, db_index=True, on_delete=models.CASCADE)
 
 class OutlookCalendarLink(models.Model):
-    resource = models.ForeignKey('resources.Resource', verbose_name=_('Resource'),
-                                     unique=True, blank=False, null=False, on_delete=models.CASCADE)
-    user = models.ForeignKey('users.User', verbose_name=_('User'), unique=True, 
-                             null=False, blank=False, on_delete=models.CASCADE)
+    resource = models.OneToOneField('resources.Resource', verbose_name=_('Resource'), blank=False, null=False, on_delete=models.CASCADE)
+    user = models.OneToOneField('users.User', verbose_name=_('User'), null=False, blank=False, on_delete=models.CASCADE)
     token = models.TextField(verbose_name=_('Token'))
     microsoft_user_id = models.TextField(verbose_name=('ID of user from Microsoft API'),
                                          unique=True, blank=False)

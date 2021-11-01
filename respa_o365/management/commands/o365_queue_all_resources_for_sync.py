@@ -8,7 +8,7 @@ from respa_o365.models import OutlookCalendarLink
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    'Syncs reservations and opening hours with linked Outlook calendars'
+    'Adds every resource to the O365 sync queue, to be processed by the o365_process_sync_queue command'
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument('--resource', help='Only sync the specified resource')
 
@@ -26,6 +26,3 @@ class Command(BaseCommand):
                 logger.info("Adding resource %s (%s) to sync queue.", link.resource.name, link.resource_id)
                 add_to_queue(link)
                 ensure_notification(link)
-
-        logger.info("Processing sync queue.")
-        process_queue()
