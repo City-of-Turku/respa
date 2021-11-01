@@ -114,7 +114,7 @@ def test_reservation_orders_field(user_api_client, order_with_products, endpoint
     order_data = reservation_data['order']
     if include is not None and 'order_detail' in include:
         # order should be nested data
-        assert set(order_data.keys()) == ORDER_FIELDS
+        assert set(order_data.keys()) == ORDER_FIELDS | {'customer_group_name'}
         assert order_data['id'] == order_with_products.order_number
         for ol in order_data['order_lines']:
             assert set(ol.keys()) == ORDER_LINE_FIELDS
@@ -183,7 +183,7 @@ def test_order_post(user_api_client, resource_in_unit, product, product_2, mock_
     mock_provider.initiate_payment.assert_called()
 
     # check response fields
-    order_create_response_fields = ORDER_FIELDS.copy() | {'payment_url'}
+    order_create_response_fields = ORDER_FIELDS.copy() | {'payment_url', 'customer_group_name'}
     order_data = response.data['order']
     assert set(order_data.keys()) == order_create_response_fields
     assert order_data['payment_url'].startswith('https://mocked-payment-url.com')

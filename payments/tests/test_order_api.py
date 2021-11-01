@@ -17,7 +17,8 @@ ORDER_LINE_FIELDS = {
 }
 
 PRODUCT_FIELDS = {
-    'id', 'type', 'name', 'description', 'price', 'max_quantity'
+    'id', 'type', 'name', 'description', 'price', 'max_quantity',
+    'product_customer_groups'
 }
 
 PRICE_FIELDS = {'type'}
