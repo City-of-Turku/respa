@@ -81,5 +81,5 @@ class OrderSerializerBase(serializers.ModelSerializer):
 
 
     def get_customer_group_name(self, obj):
-        customer_group = obj.get_customer_group()
-        return get_translated_fields(customer_group)
+        ocgd = obj.get_order_customer_group_data()
+        return get_translated_fields(ocgd)

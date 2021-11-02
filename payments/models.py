@@ -377,6 +377,9 @@ class Order(models.Model):
             return
         return CustomerGroup.objects.filter(name=customer_group_name).first()
 
+    def get_order_customer_group_data(self):
+        return OrderCustomerGroupData.objects.filter(order_line__in=self.get_order_lines()).first()
+
 class OrderLine(models.Model):
     order = models.ForeignKey(Order, verbose_name=_('order'), related_name='order_lines', on_delete=models.CASCADE)
     product = models.ForeignKey(
