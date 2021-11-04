@@ -17,7 +17,7 @@ def build_url(request, pk):
         return url
     return f"{url}{pk}/"
 
-class BaseSerializer(serializers.ModelSerializer):
+class BaseSerializer(TranslatedModelSerializer):
     def to_representation(self, instance):
         obj = super(BaseSerializer, self).to_representation(instance)
         return OrderedDict([(key, obj[key])
@@ -29,14 +29,13 @@ class BaseSerializer(serializers.ModelSerializer):
 
 
 class SentenceSerializer(BaseSerializer):
+    sentence = serializers.DictField(required=True)
 
-    sentence_fi = serializers.CharField(required=True)
-    sentence_sv = serializers.CharField(required=True)
-    sentence_en = serializers.CharField(required=True)
 
     class Meta:
         model = Sentence
-        fields = (
+        fields = ('sentence', )
+        required_translations = (
             'sentence_fi',
             'sentence_sv',
             'sentence_en'
@@ -44,11 +43,14 @@ class SentenceSerializer(BaseSerializer):
 
 class SentenceGroupSerializer(BaseSerializer):
     sentences = SentenceSerializer(many=True)
+    name = serializers.DictField(required=True)
+
+
     class Meta:
         model = SentenceGroup
-        fields = (
+        fields = ('name', 'sentences' )
+        required_translations = (
             'name_fi', 'name_en', 'name_sv',
-            'sentences'
         )
     
     def create(self, validated_data):
@@ -62,28 +64,34 @@ class SentenceGroupSerializer(BaseSerializer):
 
 class ServiceRequirementSerializer(BaseSerializer):
     id = serializers.IntegerField()
-    text_fi = serializers.CharField(required=True)
+    text = serializers.DictField(required=True)
 
     class Meta:
         model = ServiceRequirement
         fields = (
-            'id', 'text_fi', 'text_en', 'text_sv',
+            'id', 'text',
             'is_indoor_requirement', 'evaluation_zone'
+        )
+        required_translations = (
+            'text_fi',
         )
 
 
 
 class ServiceShortagesSerializer(BaseSerializer):
     id = serializers.IntegerField(required=False)
-
     viewpoint = serializers.IntegerField(required=True)
+    shortage = serializers.DictField(required=True)
 
     class Meta:
         model = ServiceShortage
         fields = (
             'id', 'viewpoint',
-            'shortage_fi', 'shortage_en', 'shortage_sv',
+            'shortage',
             'service_requirement'
+        )
+        required_translations = (
+            'shortage_fi', 'shortage_en', 'shortage_sv',
         )
 
     def to_representation(self, instance):
@@ -96,15 +104,17 @@ class ServiceSentenceSerializer(BaseSerializer):
     id = serializers.IntegerField(required=False)
     sentence_group = SentenceGroupSerializer()
 
-    sentence_order_text = serializers.CharField(required=True)
+    sentence_order_text = serializers.DictField(required=True)
 
 
     class Meta:
         model = ServiceSentence
         fields = (
-            'id',
-            'sentence_order_text',
+            'id', 'sentence_order_text',
             'sentence_group'
+        )
+        required_translations = (
+            'sentence_order_text_fi',
         )
 
     def create(self, validated_data):
@@ -121,20 +131,22 @@ class ServiceSentenceSerializer(BaseSerializer):
 
 class ServiceEntranceSerializer(BaseSerializer):
     id = serializers.IntegerField()
-
     photo_url = serializers.URLField(required=False, allow_null=True, allow_blank=True)
     street_view_url = serializers.URLField(required=False, allow_null=True, allow_blank=True)
     location = serializers.JSONField(required=False)
     is_main_entrance = serializers.BooleanField(required=False)
-
     service_sentences = ServiceSentenceSerializer(many=True, required=False)
+    name = serializers.DictField(required=True)
+
     class Meta:
         model = ServiceEntrance
         fields = (
             'id', 'is_main_entrance',
             'location', 'photo_url', 'street_view_url',
-            'name_fi', 'name_en', 'name_sv', 'service_sentences',
+            'name', 'service_sentences',
         )
+        required_translations = ('name_fi', )
+
     def validate_location(self, data, **kwargs):
         try:
             if not isinstance(data, dict):
@@ -156,17 +168,17 @@ class ServiceEntranceSerializer(BaseSerializer):
 class ServicePointSerializer(BaseSerializer):
     service_shortages = ServiceShortagesSerializer(many=True)
     service_entrances = ServiceEntranceSerializer(many=True)
-
     system_id = serializers.UUIDField(required=False, allow_null=True)
-
-    name_fi = serializers.CharField(required=True)
+    name = serializers.DictField(required=True)
 
     class Meta:
         model = ServicePoint
         fields = (
             'id', 'code', 'system_id',
-            'name_fi', 'name_en', 'name_sv',
-            'service_shortages', 'service_entrances'
+            'name', 'service_shortages', 'service_entrances'
+        )
+        required_translations = (
+            'name_fi', 
         )
 
     def create(self, validated_data):
@@ -216,9 +228,11 @@ class ServicePointUpdateSerializer(ServicePointSerializer):
     service_shortages = ServiceShortagesSerializer(many=True, required=False)
     service_entrances = ServiceEntranceSerializer(many=True, required=False)
 
-
-    name_fi = serializers.CharField(required=False)
+    name = serializers.DictField(required=False)
     code    = serializers.CharField(required=False)
+
+    class Meta(ServicePointSerializer.Meta):
+        required_translations = ()
 
     def validate(self, attrs):
         service_shortages = attrs.get('service_shortages', [])
