@@ -376,7 +376,7 @@ def log_entry(instance, user, *, is_edit, message : str):
         message
     )
 
-def get_translated_fields(instance):
+def get_translated_fields(instance, use_field_name=False):
     translated = {}
     try:
         translation_options = translator.get_options_for_model(instance.__class__)
@@ -385,7 +385,13 @@ def get_translated_fields(instance):
                 field = getattr(instance, '%s_%s' % (field_name, lang), None)
                 if not field:
                     continue
-                translated[lang] = field
+
+                if not use_field_name:
+                    translated[lang] = field
+                    continue
+                if field_name not in translated:
+                    translated[field_name] = {}
+                translated[field_name][lang] = field
         return translated
     except NotRegistered:
         return None

@@ -9,7 +9,7 @@ from resources.enums import UnitAuthorizationLevel
 from resources.models import Reservation
 from resources.models.reservation import ReservationMetadataField, ReservationMetadataSet
 from resources.models.unit import UnitAuthorization
-from resources.models.utils import generate_id
+from resources.models.utils import generate_id, get_translated_fields
 from resources.tests.conftest import resource_in_unit, user_api_client  # noqa
 from resources.tests.test_reservation_api import day_and_period  # noqa
 
@@ -218,9 +218,7 @@ def test_order_with_product_cg_post(user_api_client, resource_in_unit, product_w
     order_data = response.data['order']
     assert set(order_data.keys()) == order_create_response_fields
     assert order_data['payment_url'].startswith('https://mocked-payment-url.com')
-    customer_group_name = list(order_data['customer_group_name'].values())[0]
-    assert customer_group_name == product_cg.customer_group.name
-
+    assert order_data['customer_group_name'] == get_translated_fields(product_cg.customer_group)
     new_order = Order.objects.last()
     assert new_order.reservation == Reservation.objects.last()
 
