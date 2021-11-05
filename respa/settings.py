@@ -129,6 +129,28 @@ SECURE_PROXY_SSL_HEADER = env('SECURE_PROXY_SSL_HEADER')
 SITE_ID = 1
 
 USE_SWAGGER_OPENAPI_VIEW = env('USE_SWAGGER_OPENAPI_VIEW')
+if USE_SWAGGER_OPENAPI_VIEW:
+    SWAGGER_SETTINGS = {
+        'USE_SESSION_AUTH': False,
+        'SECURITY_DEFINITIONS': {
+            'JWT Token': {
+                'type': 'apiKey',
+                'name': 'Authorization',
+                'in': 'header',
+                'description': ('Token based authorization.\n'
+                                'Use JWT as prefix i.e. `JWT <my-token>`\n'
+                                'See: **api-token-auth**')
+            },
+            'Bearer Token': {
+                'type': 'apiKey',
+                'name': 'Authorization',
+                'in': 'header',
+                'description': ('Token based authorization. '
+                                'Use Bearer as prefix i.e. `Bearer <my-token>`')
+            },
+        }
+    }
+
 USE_RESPA_EXCHANGE = env('USE_RESPA_EXCHANGE')
 
 TIMMI_API_URL = env('TIMMI_API_URL')
