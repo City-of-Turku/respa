@@ -76,6 +76,20 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
                 raise serializers.ValidationError(_('The order must contain at least one product of type "rent".'))
 
         return order_lines
+    
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        order_lines = attrs.get('order_lines', None)
+        customer_group = attrs.get('customer_group', None)
+
+        query = Q()
+        for order_line in order_lines:
+            product = order_line['product']
+            query |= Q(product=product, customer_group__id=customer_group)
+        product_cgs = ProductCustomerGroup.objects.filter(query)
+        if customer_group and not product_cgs.exists():
+            raise serializers.ValidationError({'customer_group': _('Invalid customer group id')}, code='invalid_customer_group')
+        return attrs
 
     def to_internal_value(self, data):
         resource = self.context.get('resource')

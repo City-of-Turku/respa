@@ -8,7 +8,11 @@ import factory.random
 from resources.models import Reservation
 from resources.models.utils import generate_id
 
-from .models import ARCHIVED_AT_NONE, TAX_PERCENTAGES, Order, OrderLine, Product
+from .models import (
+    ARCHIVED_AT_NONE, TAX_PERCENTAGES, CustomerGroup,
+    Order, OrderCustomerGroupData, OrderLine,
+    Product, ProductCustomerGroup
+)
 
 
 class ProductFactory(factory.django.DjangoModelFactory):
@@ -106,3 +110,36 @@ class OrderLineFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = OrderLine
+
+
+class CustomerGroupFactory(factory.django.DjangoModelFactory):
+    """Mock CustomerGroup objects"""
+    name = factory.Sequence(lambda n: {
+            'fi': f'cg-{n}-fi',
+            'en': f'cg-{n}-en',
+            'sv': f'cg-{n}-sv'
+        })
+    class Meta:
+        model = CustomerGroup
+
+
+class ProductCustomerGroupFactory(factory.django.DjangoModelFactory):
+    """Mock ProductCustomerGroup objects"""
+    customer_group = factory.SubFactory(CustomerGroupFactory)
+    price = factory.fuzzy.FuzzyDecimal(5.00, 100.00)
+    product = factory.SubFactory(ProductFactory)
+    class Meta:
+        model = ProductCustomerGroup
+
+
+class OrderCustomerGroupDataFactory(factory.django.DjangoModelFactory):
+    """Mock OrderCustomerGroupData objects"""
+    customer_group_name = factory.Sequence(lambda n: {
+            'fi': f'order-cg-{n}-fi',
+            'en': f'order-cg-{n}-en',
+            'sv': f'order-cg-{n}-sv'
+        })
+    product_cg_price = factory.fuzzy.FuzzyDecimal(5.00, 100.00)
+    order_line = factory.SubFactory(OrderLineFactory)
+    class Meta:
+        model = OrderCustomerGroupData

@@ -36,6 +36,11 @@ TAX_PERCENTAGES = [Decimal(x) for x in (
 
 DEFAULT_TAX_PERCENTAGE = Decimal('24.00')
 
+
+class OrderCustomerGroupDataQuerySet(models.QuerySet):
+    def get_price(self):
+        return sum([i.product_cg_price for i in self])
+
 class OrderCustomerGroupData(models.Model):
     customer_group_name = models.CharField(max_length=255)
     product_cg_price = models.DecimalField(
@@ -44,6 +49,8 @@ class OrderCustomerGroupData(models.Model):
         help_text=_('Price of the product at that given time.')
     )
     order_line = models.OneToOneField('payments.OrderLine', on_delete=models.PROTECT, null=True)
+
+    objects = OrderCustomerGroupDataQuerySet.as_manager()
 
 
     def __str__(self) -> str:
@@ -372,10 +379,11 @@ class Order(models.Model):
         return order_cg.customer_group_name if order_cg else None
 
     def get_customer_group(self):
-        customer_group_name = self.get_customer_group_name()
-        if not customer_group_name:
+        product = self.get_order_lines().first().product
+        product_cg = ProductCustomerGroup.objects.filter(product=product).first()
+        if not product_cg:
             return
-        return CustomerGroup.objects.filter(name=customer_group_name).first()
+        return product_cg.customer_group
 
     def get_order_customer_group_data(self):
         return OrderCustomerGroupData.objects.filter(order_line__in=self.get_order_lines()).first()

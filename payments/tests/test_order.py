@@ -6,7 +6,7 @@ from resources.models import Reservation
 
 from ..exceptions import OrderStateTransitionError
 from ..factories import OrderFactory
-from ..models import Order
+from ..models import Order, OrderCustomerGroupData
 
 
 @pytest.fixture(autouse=True)
@@ -70,3 +70,8 @@ def test_set_state_allowed_transitions(two_hour_reservation, state, new_state):
     order = OrderFactory(reservation=two_hour_reservation, state=state)
     order.set_state(new_state)
     assert order.state == new_state
+
+
+def test_customer_group_price(order_with_product_customer_group):
+    ocgd = OrderCustomerGroupData.objects.filter(order_line__in=order_with_product_customer_group.get_order_lines())
+    assert order_with_product_customer_group.get_price() == ocgd.get_price() * 2 # Two hour reservation

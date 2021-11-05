@@ -9,11 +9,12 @@ from resources.enums import UnitAuthorizationLevel
 from resources.models import Reservation
 from resources.models.reservation import ReservationMetadataField, ReservationMetadataSet
 from resources.models.unit import UnitAuthorization
+from resources.models.utils import generate_id
 from resources.tests.conftest import resource_in_unit, user_api_client  # noqa
 from resources.tests.test_reservation_api import day_and_period  # noqa
 
 from ..factories import ProductFactory
-from ..models import Order, Product
+from ..models import Order, OrderCustomerGroupData, Product, ProductCustomerGroup
 from ..providers.base import PaymentProvider
 from .test_order_api import ORDER_LINE_FIELDS, PRODUCT_FIELDS
 
@@ -34,7 +35,7 @@ def build_reservation_data(resource):
     }
 
 
-def build_order_data(product, quantity=None, product_2=None, quantity_2=None):
+def build_order_data(product, quantity=None, product_2=None, quantity_2=None, customer_group=None):
     data = {
         "order_lines": [
             {
@@ -52,6 +53,9 @@ def build_order_data(product, quantity=None, product_2=None, quantity_2=None):
         if quantity_2:
             order_line_data['quantity'] = quantity_2
         data['order_lines'].append(order_line_data)
+    
+    if customer_group:
+        data['customer_group'] = customer_group
 
     return data
 
@@ -199,6 +203,41 @@ def test_order_post(user_api_client, resource_in_unit, product, product_2, mock_
     assert order_lines[0].quantity == 1
     assert order_lines[1].product == product_2
     assert order_lines[1].quantity == 5
+
+def test_order_with_product_cg_post(user_api_client, resource_in_unit, product_with_product_cg, mock_provider):
+    product_cg = ProductCustomerGroup.objects.get(product=product_with_product_cg)
+
+    reservation_data = build_reservation_data(resource_in_unit)
+    reservation_data['order'] = build_order_data(product=product_with_product_cg, quantity=2, customer_group=product_cg.customer_group.id)
+    response = user_api_client.post(LIST_URL, reservation_data)
+
+    assert response.status_code == 201, response.data
+    mock_provider.initiate_payment.assert_called()
+
+    order_create_response_fields = ORDER_FIELDS.copy() | {'payment_url', 'customer_group_name'}
+    order_data = response.data['order']
+    assert set(order_data.keys()) == order_create_response_fields
+    assert order_data['payment_url'].startswith('https://mocked-payment-url.com')
+    customer_group_name = list(order_data['customer_group_name'].values())[0]
+    assert customer_group_name == product_cg.customer_group.name
+
+    new_order = Order.objects.last()
+    assert new_order.reservation == Reservation.objects.last()
+
+    order_lines = new_order.order_lines.all()
+    assert order_lines.count() == 1
+    assert order_lines[0].product == product_with_product_cg
+    assert order_lines[0].quantity == 2
+
+    ocgd = OrderCustomerGroupData.objects.filter(order_line__in=new_order.get_order_lines(), order_line__product=product_with_product_cg)
+    assert ocgd.exists()
+
+def test_order_with_invalid_product_cg_post(user_api_client, resource_in_unit, product_with_product_cg):
+    reservation_data = build_reservation_data(resource_in_unit)
+    reservation_data['order'] = build_order_data(product=product_with_product_cg, quantity=2, customer_group=generate_id())
+    response = user_api_client.post(LIST_URL, reservation_data)
+
+    assert response.status_code == 400, response.data
 
 
 def test_order_product_must_match_resource(user_api_client, product, resource_in_unit, resource_in_unit2):

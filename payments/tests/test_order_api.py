@@ -3,7 +3,9 @@ from guardian.shortcuts import assign_perm
 from rest_framework.reverse import reverse
 
 from ..factories import ProductFactory
-from ..models import Order
+from ..models import Order, ProductCustomerGroup
+
+from resources.models.utils import generate_id
 
 CHECK_PRICE_URL = reverse('order-check-price')
 
@@ -90,3 +92,47 @@ def test_order_price_check_begin_time_after_end_time(user_api_client, product, t
     response = user_api_client.post(CHECK_PRICE_URL, price_check_data)
     assert response.status_code == 400
 
+
+@pytest.mark.django_db
+def test_order_price_check_success_customer_group(user_api_client, product_with_product_cg, two_hour_reservation):
+    prod_cg = ProductCustomerGroup.objects.get(product=product_with_product_cg)
+    order_count_before = Order.objects.count()
+    price_check_data = {
+        "order_lines": [
+            {
+                "product": product_with_product_cg.product_id,
+            }
+        ],
+        "begin": str(two_hour_reservation.begin),
+        "end": str(two_hour_reservation.end),
+        "customer_group": prod_cg.customer_group.id
+    }
+    response = user_api_client.post(CHECK_PRICE_URL, price_check_data)
+    
+    assert response.status_code == 200
+    assert len(response.data['order_lines']) == 1
+
+    order_line = dict((key, val) for key, val in enumerate(response.data['order_lines'])).get(0, None)
+
+    assert order_line is not None
+    assert order_line['price'] == str(prod_cg.price * 2) # Two hour price
+    assert order_count_before == Order.objects.count()
+
+def test_order_price_check_invalid_customer_group(user_api_client, product, two_hour_reservation):
+    """Test the endpoint returns 400 for non-existant customer_group"""
+
+    order_count_before = Order.objects.count()
+
+    price_check_data = {
+        "order_lines": [
+            {
+                "product": product.product_id,
+            }
+        ],
+        "begin": str(two_hour_reservation.begin),
+        "end": str(two_hour_reservation.end),
+        "customer_group": generate_id()
+    }
+
+    response = user_api_client.post(CHECK_PRICE_URL, price_check_data)
+    assert response.status_code == 400

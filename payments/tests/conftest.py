@@ -3,10 +3,14 @@ from decimal import Decimal
 
 import factory.random
 import pytest
+import datetime
 from pytz import UTC
 
-from payments.factories import OrderFactory, OrderLineFactory
-from payments.models import Order, Product
+from payments.factories import (
+    OrderFactory, OrderLineFactory, CustomerGroupFactory, ProductFactory,
+    ProductCustomerGroupFactory, OrderCustomerGroupDataFactory
+)
+from payments.models import CustomerGroup, Order, Product, ProductCustomerGroup
 from resources.models import Reservation
 from resources.tests.conftest import *  # noqa
 
@@ -107,4 +111,68 @@ def order_with_products(two_hour_reservation):
         product__price_type=Product.PRICE_FIXED,
         order=order
     )
+    return order
+
+@pytest.fixture
+def product_customer_group():
+    return ProductCustomerGroupFactory.create()
+
+@pytest.fixture
+def product_customer_groups():
+    return [ProductCustomerGroupFactory.create() for _ in range(0,5)]
+
+@pytest.fixture
+def customer_groups():
+    return [CustomerGroupFactory.create() for _ in range(0,5)]
+
+@pytest.fixture
+def customer_group():
+    return CustomerGroupFactory.create()
+
+@pytest.fixture
+def product_with_multiple_product_cg(product_customer_groups, resource_in_unit):
+    product = ProductFactory.create(
+            tax_percentage=Decimal('24.00'),
+            price=Decimal('7.25'),
+            price_type=Product.PRICE_PER_PERIOD,
+            resources=[resource_in_unit],
+            price_period=datetime.timedelta(hours=1)
+        )
+    for pcg in product_customer_groups:
+        pcg.product = product
+        pcg.save()
+    return product
+
+
+@pytest.fixture
+def product_with_product_cg(product_customer_group, resource_in_unit):
+    product = ProductFactory.create(
+            tax_percentage=Decimal('24.00'),
+            price=Decimal('50.25'),
+            price_type=Product.PRICE_PER_PERIOD,
+            resources=[resource_in_unit],
+            price_period=datetime.timedelta(hours=1)
+        )
+    product_customer_group.product = product
+    product_customer_group.save()
+    return product
+
+
+@pytest.fixture
+def order_with_product_customer_group(product_with_product_cg, two_hour_reservation):
+    prod_cg = ProductCustomerGroup.objects.get(product=product_with_product_cg)
+    order = OrderFactory.create(
+        order_number='abc123',
+        state=Order.WAITING,
+        reservation=two_hour_reservation
+    )
+    order_line = OrderLineFactory.create(
+        quantity=1,
+        product=product_with_product_cg,
+        order=order
+    )
+    ocgd = OrderCustomerGroupDataFactory.create(order_line=order_line,
+        product_cg_price=ProductCustomerGroup.objects.get_price_for(order_line.product))
+    ocgd.copy_translated_fields(prod_cg.customer_group)
+    ocgd.save()
     return order
