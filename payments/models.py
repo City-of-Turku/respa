@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
-from textwrap import wrap
 
 from django.conf import settings
 from django.core.exceptions import ValidationError

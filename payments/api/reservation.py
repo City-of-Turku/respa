@@ -79,13 +79,17 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
     
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        order_lines = attrs.get('order_lines', None)
+        order_lines = attrs.get('order_lines', [])
         customer_group = attrs.get('customer_group', None)
 
         query = Q()
         for order_line in order_lines:
             product = order_line['product']
             query |= Q(product=product, customer_group__id=customer_group)
+
+        if not query:
+            raise serializers.ValidationError(_('At least one order line required.'))
+
         product_cgs = ProductCustomerGroup.objects.filter(query)
         if customer_group and not product_cgs.exists():
             raise serializers.ValidationError({'customer_group': _('Invalid customer group id')}, code='invalid_customer_group')

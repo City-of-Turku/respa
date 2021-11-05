@@ -31,7 +31,7 @@ class PriceEndpointOrderSerializer(OrderSerializerBase):
         attrs = super().validate(attrs)
         begin = attrs['begin']
         end = attrs['end']
-        order_lines = attrs.get('order_lines', None)
+        order_lines = attrs.get('order_lines', [])
         customer_group = attrs.pop('customer_group', None)
         if end < begin:
             raise serializers.ValidationError(_('Begin time must be before end time'), code='invalid_date_range')
@@ -39,6 +39,9 @@ class PriceEndpointOrderSerializer(OrderSerializerBase):
         for order_line in order_lines:
             product = order_line['product']
             query |= Q(product=product, customer_group__id=customer_group)
+
+        if not query:
+            raise serializers.ValidationError(_('At least one order line required.'))
 
         product_cgs = ProductCustomerGroup.objects.filter(query)
 
