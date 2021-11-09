@@ -10,7 +10,7 @@ from payments.factories import (
     OrderFactory, OrderLineFactory, CustomerGroupFactory, ProductFactory,
     ProductCustomerGroupFactory, OrderCustomerGroupDataFactory
 )
-from payments.models import CustomerGroup, Order, Product, ProductCustomerGroup
+from payments.models import Order, Product, ProductCustomerGroup
 from resources.models import Reservation
 from resources.tests.conftest import *  # noqa
 

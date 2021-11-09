@@ -82,11 +82,15 @@ class CustomerGroup(AutoIdentifiedModel):
         return self.name
 
 class ProductCustomerGroupQuerySet(models.QuerySet):
+    """
+    Filter product customer groups with a customer group (cg) before calling these functions
+    """
     def get_price_for(self, product):
         """
-        Product can only have one product customer group,
-        Fetch product customer group use the price,
-        If one is not found, it means product has no product customer group, use the product price instead.
+        Product customer group (pcg) can only have one product.
+        If this pcg is connected to the given product, use this pcg's price.
+        If no pcg is found, it means that product has no pcg for a certain cg
+        -> use the product's default price instead
         """
         product_cg = self.filter(product=product).first()
         return product_cg.price if product_cg else product.price

@@ -63,12 +63,8 @@ def handle_customer_group_pricing(func):
             self.product.price = order_cg.product_cg_price
             return func(self)
 
-
-
-        if prod_cg.exists() \
-            and self.product_cg_price:
-            self.product.price = self.product_cg_price
-        else:
-            self.product.price = original.price
+        self.product.price = self.product_cg_price \
+            if prod_cg.exists() and self.product_cg_price \
+            else original.price
         return func(self)
     return wrapped
