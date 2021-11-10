@@ -41,6 +41,7 @@ class Event:
         return str(h)
 
 UTC = pytz.timezone("UTC")
+local_tz = pytz.timezone(settings.TIME_ZONE)
 time_format = '%Y-%m-%dT%H:%M:%S.%f%z'
 
 class O365Calendar:
@@ -113,8 +114,8 @@ class O365Calendar:
             return None
 
     def create_event(self, event):
-        begin = event.begin.isoformat()
-        end = event.end.isoformat()
+        begin = event.begin.astimezone(local_tz).isoformat()
+        end = event.end.astimezone(local_tz).isoformat()
         subject = event.subject
         body = event.body
         url = self._get_create_event_url()
@@ -154,8 +155,8 @@ class O365Calendar:
 
     def update_event(self, event_id, event):
         url = self._get_single_event_url(event_id)
-        begin = event.begin.isoformat()
-        end = event.end.isoformat()
+        begin = event.begin.astimezone(local_tz).isoformat()
+        end = event.end.astimezone(local_tz).isoformat()
         subject = event.subject
         body = event.body
         self._api.patch(
