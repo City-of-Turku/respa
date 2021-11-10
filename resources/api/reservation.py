@@ -982,13 +982,12 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
 
         resource = serializer.validated_data['resource']
 
+        order = instance.get_order()
+
         if resource.need_manual_confirmation and not resource.can_bypass_manual_confirmation(self.request.user):
             new_state = Reservation.REQUESTED
         else:
-            if instance.get_order():
-                new_state = Reservation.WAITING_FOR_PAYMENT
-            else:
-                new_state = Reservation.CONFIRMED
+            new_state = Reservation.CONFIRMED if order.state == Reservation.CONFIRMED else Reservation.WAITING_FOR_PAYMENT
 
         instance.set_state(new_state, self.request.user)
 

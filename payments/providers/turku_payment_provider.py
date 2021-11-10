@@ -1,3 +1,4 @@
+from decimal import Decimal
 import logging
 from requests.exceptions import RequestException
 from django.http import HttpResponse
@@ -10,7 +11,7 @@ import pytz
 from django.utils.translation import gettext_lazy as _
 
 from ..models import Order, OrderLine
-from ..utils import round_price, handle_customer_group_pricing
+from ..utils import is_free, round_price
 
 from .base import PaymentProvider
 logger = logging.getLogger(__name__)
@@ -49,6 +50,16 @@ class TurkuPaymentProvider(PaymentProvider):
             timmi_payload = TimmiManager().create_reservation(order.reservation)
             timmi = TimmiPayload(order=order)
             timmi.save(payload=timmi_payload)
+
+
+        if is_free(order.get_price()):
+            order.set_state(Order.CONFIRMED, 'Order has no price, selected with customer group.')
+            if order.reservation.resource.timmi_resource:
+                logger.debug('Confirming reservation with Timmi API.')
+                TimmiManager().confirm_reservation(order.reservation, timmi_payload.payload).save()
+                timmi_payload.delete()
+            return '/reservation-payment-return?payment_status=success&reservation_id={0}'.format(order.reservation.id)
+
 
         payload = {
             'orderNumber': str(order.order_number),

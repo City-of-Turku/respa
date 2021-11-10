@@ -64,7 +64,10 @@ def handle_customer_group_pricing(func):
             return func(self)
 
         self.product.price = self.product_cg_price \
-            if prod_cg.exists() and self.product_cg_price \
+            if prod_cg.exists() and is_free(self.product_cg_price) \
             else original.price
         return func(self)
     return wrapped
+
+def is_free(price) -> bool:
+    return isinstance(price, Decimal) and price == Decimal('0.00')

@@ -44,7 +44,7 @@ class OrderCustomerGroupData(models.Model):
     customer_group_name = models.CharField(max_length=255)
     product_cg_price = models.DecimalField(
         verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))],
+        validators=[MinValueValidator(Decimal('0.00'))],
         help_text=_('Price of the product at that given time.')
     )
     order_line = models.OneToOneField('payments.OrderLine', on_delete=models.PROTECT, null=True)
@@ -108,7 +108,7 @@ class ProductCustomerGroup(AutoIdentifiedModel):
     )
     price = models.DecimalField(
         verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))],
+        validators=[MinValueValidator(Decimal('0.00'))],
         help_text=_('This will override product price field.')
     )
 
@@ -430,7 +430,6 @@ class OrderLine(models.Model):
         order_cg = OrderCustomerGroupData.objects.filter(order_line=self).first()
         if order_cg:
             return order_cg.product_cg_price
-        return 0
 
     @handle_customer_group_pricing
     def handle_customer_group_pricing(self):
