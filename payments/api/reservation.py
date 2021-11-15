@@ -8,7 +8,7 @@ from payments.exceptions import (
 )
 from resources.api.reservation import ReservationSerializer
 
-from ..models import OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup
+from ..models import CustomerGroup, OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup
 from ..providers import get_payment_provider
 from .base import OrderSerializerBase
 
@@ -76,6 +76,11 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
                 raise serializers.ValidationError(_('The order must contain at least one product of type "rent".'))
 
         return order_lines
+
+    def validate_customer_group(self, customer_group):
+        if not CustomerGroup.objects.filter(id=customer_group).first():
+            raise serializers.ValidationError({'customer_group': _('Invalid customer group id')}, code='invalid_customer_group')
+        return customer_group
 
 
     def to_internal_value(self, data):
