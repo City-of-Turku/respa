@@ -230,9 +230,14 @@ def test_order_with_product_cg_post(user_api_client, resource_in_unit, product_w
     ocgd = OrderCustomerGroupData.objects.filter(order_line__in=new_order.get_order_lines(), order_line__product=product_with_product_cg)
     assert ocgd.exists()
 
-def test_order_with_invalid_product_cg_post(user_api_client, resource_in_unit, product_with_product_cg):
+
+@pytest.mark.parametrize('with_customer_group_id', (True, False))
+def test_order_with_invalid_product_cg_post(user_api_client, resource_in_unit, product_with_product_cg, with_customer_group_id):
     reservation_data = build_reservation_data(resource_in_unit)
-    reservation_data['order'] = build_order_data(product=product_with_product_cg, quantity=2, customer_group=generate_id())
+    if with_customer_group_id:
+        reservation_data['order'] = build_order_data(product=product_with_product_cg, quantity=2, customer_group=generate_id())
+    else:
+        reservation_data['order'] = build_order_data(product=product_with_product_cg, quantity=2)
     response = user_api_client.post(LIST_URL, reservation_data)
 
     assert response.status_code == 400, response.data

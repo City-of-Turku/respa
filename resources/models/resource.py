@@ -866,6 +866,10 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         if self.id:
             self.validate_id()
 
+    def get_products(self):
+        from payments.models import Product
+        return Product.objects.filter(resources=self)
+
 class ResourceImage(ModifiableModel):
     TYPES = (
         ('main', _('Main photo')),

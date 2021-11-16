@@ -83,6 +83,14 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
             raise serializers.ValidationError({'customer_group': _('Invalid customer group id')}, code='invalid_customer_group')
         return customer_group
 
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        customer_group = attrs.get('customer_group', None)
+        resource = self.context.get('resource')
+        for product in resource.get_products():
+            if product.has_customer_group() and not customer_group:
+                raise serializers.ValidationError(_('Order must have customer group id in it.'))
+        return attrs
 
     def to_internal_value(self, data):
         resource = self.context.get('resource')
