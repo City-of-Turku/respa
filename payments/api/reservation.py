@@ -27,7 +27,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         customer_group = validated_data.pop('customer_group', None)
         return_url = validated_data.pop('return_url', '')
         order = super().create(validated_data)
-    
+
         for order_line_data in order_lines_data:
             product = order_line_data['product']
             order_line = OrderLine.objects.create(order=order, **order_line_data)
@@ -71,7 +71,8 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
             raise serializers.ValidationError(_('Order lines cannot contain duplicate products.'))
 
         resource = self.context.get('resource')
-        if resource and resource.has_rent():
+        request = self.context.get('request')
+        if resource and resource.has_rent() and not resource.can_bypass_payment(request.user):
             if not any(ol['product'].type == Product.RENT for ol in order_lines):
                 raise serializers.ValidationError(_('The order must contain at least one product of type "rent".'))
 
