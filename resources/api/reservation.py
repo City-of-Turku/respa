@@ -60,6 +60,8 @@ from ..models.utils import dateparser
 
 from respa.renderers import ResourcesBrowsableAPIRenderer
 
+from payments.utils import is_free, get_price
+
 User = get_user_model()
 
 # FIXME: Make this configurable?
@@ -188,7 +190,8 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
 
             # reservations without an order don't require billing fields
             order = self.context['request'].data.get('order')
-            if not order:
+            begin, end = (self.context['request'].data.get('begin'), self.context['request'].data.get('end'))
+            if not order or is_free(get_price(order, begin=begin, end=end)):
                 required = [field for field in required if field not in RESERVATION_BILLING_FIELDS]
 
             # staff events have less requirements
@@ -656,7 +659,6 @@ class ReservationFilterSet(django_filters.rest_framework.FilterSet):
                 user__last_name__icontains=name1,
             )
             conditions.append(filters)
-
         return queryset.filter(reduce(operator.or_, conditions))
 
 

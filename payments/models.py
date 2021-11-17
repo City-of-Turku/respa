@@ -237,14 +237,16 @@ class Product(models.Model):
         return convert_aftertax_to_pretax(self.get_price_for_time_range(begin, end), self.tax_percentage)
 
     @rounded
-    def get_price_for_time_range(self, begin: datetime, end: datetime) -> Decimal:
+    def get_price_for_time_range(self, begin: datetime, end: datetime, product_cg = None) -> Decimal:
         assert begin < end
 
+        price = self.price if not product_cg else product_cg.price
+
         if self.price_type == Product.PRICE_FIXED:
-            return self.price
+            return price
         elif self.price_type == Product.PRICE_PER_PERIOD:
             assert self.price_period, '{} {}'.format(self, self.price_period)
-            return self.price * Decimal((end - begin) / self.price_period)
+            return price * Decimal((end - begin) / self.price_period)
         else:
             raise NotImplementedError('Cannot calculate price, unknown price type "{}".'.format(self.price_type))
 

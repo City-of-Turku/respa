@@ -3,7 +3,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
 
 from django.utils.translation import ugettext_lazy as _
-
+from django.utils.dateparse import parse_datetime
 
 def price_as_sub_units(price: Decimal) -> int:
     return int(round_price(price) * 100)
@@ -71,3 +71,18 @@ def handle_customer_group_pricing(func):
 
 def is_free(price) -> bool:
     return isinstance(price, Decimal) and price == Decimal('0.00')
+
+def get_price(order: dict, *, begin, end) -> Decimal:
+    from payments.models import Product, ProductCustomerGroup
+
+    products = [(ol['product'], ol['quantity']) for ol in order['order_lines']]
+    customer_group = order.get('customer_group', None)
+    price = Decimal()
+    for product, quantity in products:
+        product_cg = None
+        product = Product.objects.filter(product_id=product).current().first()
+        if customer_group:
+            product_cg = ProductCustomerGroup.objects.filter(product=product, customer_group__id=customer_group).first()
+        price += product.get_price_for_time_range(parse_datetime(begin), parse_datetime(end), product_cg=product_cg) * quantity
+    return price
+
