@@ -1,8 +1,9 @@
+from decimal import Decimal
 import pytest
 from guardian.shortcuts import assign_perm
 from rest_framework.reverse import reverse
 
-from ..factories import ProductFactory
+from ..factories import ProductCustomerGroupFactory, ProductFactory
 from ..models import Order, ProductCustomerGroup
 
 from resources.models.utils import generate_id
@@ -92,10 +93,13 @@ def test_order_price_check_begin_time_after_end_time(user_api_client, product, t
     response = user_api_client.post(CHECK_PRICE_URL, price_check_data)
     assert response.status_code == 400
 
-
+@pytest.mark.parametrize('no_cost', (True, False))
 @pytest.mark.django_db
-def test_order_price_check_success_customer_group(user_api_client, product_with_product_cg, two_hour_reservation):
-    prod_cg = ProductCustomerGroup.objects.get(product=product_with_product_cg)
+def test_order_price_check_success_customer_group(user_api_client, product_with_product_cg, two_hour_reservation, no_cost):
+    if no_cost:
+        prod_cg = ProductCustomerGroupFactory.create(product=product_with_product_cg, price=Decimal('0.00'))
+    else:
+        prod_cg = ProductCustomerGroup.objects.get(product=product_with_product_cg)
     order_count_before = Order.objects.count()
     price_check_data = {
         "order_lines": [
@@ -115,7 +119,10 @@ def test_order_price_check_success_customer_group(user_api_client, product_with_
     order_line = dict((key, val) for key, val in enumerate(response.data['order_lines'])).get(0, None)
 
     assert order_line is not None
-    assert order_line['price'] == str(prod_cg.price * 2) # Two hour price
+    if no_cost:
+        assert order_line['price'] == '0.00'
+    else:
+        assert order_line['price'] == str(prod_cg.price * 2), price_check_data # Two hour price
     assert order_count_before == Order.objects.count()
 
 def test_order_price_check_invalid_customer_group(user_api_client, product, two_hour_reservation):
@@ -136,3 +143,4 @@ def test_order_price_check_invalid_customer_group(user_api_client, product, two_
 
     response = user_api_client.post(CHECK_PRICE_URL, price_check_data)
     assert response.status_code == 400
+    assert order_count_before == 0
