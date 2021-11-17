@@ -8,7 +8,7 @@ from payments.exceptions import (
 )
 from resources.api.reservation import ReservationSerializer
 
-from ..models import OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup
+from ..models import CustomerGroup, OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup
 from ..providers import get_payment_provider
 from .base import OrderSerializerBase
 
@@ -27,7 +27,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         customer_group = validated_data.pop('customer_group', None)
         return_url = validated_data.pop('return_url', '')
         order = super().create(validated_data)
-    
+
         for order_line_data in order_lines_data:
             product = order_line_data['product']
             order_line = OrderLine.objects.create(order=order, **order_line_data)
@@ -71,28 +71,25 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
             raise serializers.ValidationError(_('Order lines cannot contain duplicate products.'))
 
         resource = self.context.get('resource')
-        if resource and resource.has_rent():
+        request = self.context.get('request')
+        if resource and resource.has_rent() and not resource.can_bypass_payment(request.user):
             if not any(ol['product'].type == Product.RENT for ol in order_lines):
                 raise serializers.ValidationError(_('The order must contain at least one product of type "rent".'))
 
         return order_lines
-    
+
+    def validate_customer_group(self, customer_group):
+        if not CustomerGroup.objects.filter(id=customer_group).first():
+            raise serializers.ValidationError({'customer_group': _('Invalid customer group id')}, code='invalid_customer_group')
+        return customer_group
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        order_lines = attrs.get('order_lines', [])
         customer_group = attrs.get('customer_group', None)
-
-        query = Q()
-        for order_line in order_lines:
-            product = order_line['product']
-            query |= Q(product=product, customer_group__id=customer_group)
-
-        if not query:
-            raise serializers.ValidationError(_('At least one order line required.'))
-
-        product_cgs = ProductCustomerGroup.objects.filter(query)
-        if customer_group and not product_cgs.exists():
-            raise serializers.ValidationError({'customer_group': _('Invalid customer group id')}, code='invalid_customer_group')
+        resource = self.context.get('resource')
+        for product in resource.get_products():
+            if product.has_customer_group() and not customer_group:
+                raise serializers.ValidationError(_('Order must have customer group id in it.'))
         return attrs
 
     def to_internal_value(self, data):

@@ -53,7 +53,7 @@ def build_order_data(product, quantity=None, product_2=None, quantity_2=None, cu
         if quantity_2:
             order_line_data['quantity'] = quantity_2
         data['order_lines'].append(order_line_data)
-    
+
     if customer_group:
         data['customer_group'] = customer_group
 
@@ -230,9 +230,14 @@ def test_order_with_product_cg_post(user_api_client, resource_in_unit, product_w
     ocgd = OrderCustomerGroupData.objects.filter(order_line__in=new_order.get_order_lines(), order_line__product=product_with_product_cg)
     assert ocgd.exists()
 
-def test_order_with_invalid_product_cg_post(user_api_client, resource_in_unit, product_with_product_cg):
+
+@pytest.mark.parametrize('with_customer_group_id', (True, False))
+def test_order_with_invalid_product_cg_post(user_api_client, resource_in_unit, product_with_product_cg, with_customer_group_id):
     reservation_data = build_reservation_data(resource_in_unit)
-    reservation_data['order'] = build_order_data(product=product_with_product_cg, quantity=2, customer_group=generate_id())
+    if with_customer_group_id:
+        reservation_data['order'] = build_order_data(product=product_with_product_cg, quantity=2, customer_group=generate_id())
+    else:
+        reservation_data['order'] = build_order_data(product=product_with_product_cg, quantity=2)
     response = user_api_client.post(LIST_URL, reservation_data)
 
     assert response.status_code == 400, response.data
@@ -330,6 +335,17 @@ def test_order_must_include_rent_if_one_exists(user_api_client, resource_in_unit
 
     response = user_api_client.post(LIST_URL, reservation_data)
     assert response.status_code == 400
+
+
+def test_unit_admin_can_bypass_include_rent_requirement(user_api_client, resource_in_unit, user):
+    reservation_data = build_reservation_data(resource_in_unit)
+    ProductFactory(type=Product.RENT, resources=[resource_in_unit])
+    extra = ProductFactory(type=Product.EXTRA, resources=[resource_in_unit])
+    reservation_data['order'] = build_order_data(product=extra)
+    UnitAuthorization.objects.create(subject=resource_in_unit.unit, level=UnitAuthorizationLevel.manager, authorized=user)
+
+    response = user_api_client.post(LIST_URL, reservation_data)
+    assert response.status_code == 201
 
 
 def test_unit_admin_and_unit_manager_may_bypass_payment(user_api_client, resource_in_unit, user):

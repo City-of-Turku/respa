@@ -257,6 +257,9 @@ class Product(models.Model):
     def get_tax_price(self) -> Decimal:
         return self.price - self.get_pretax_price()
 
+    def has_customer_group(self):
+        return ProductCustomerGroup.objects.filter(product=self).exists()
+
 class OrderQuerySet(models.QuerySet):
     def can_view(self, user):
         if not user.is_authenticated:

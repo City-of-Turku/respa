@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from functools import reduce
 from django.conf import settings
 from django.utils import timezone
@@ -29,7 +29,7 @@ class RespaAvailabilityRepository:
         period.end = naive_date(item.end)
         period._from_o365_sync = True
         period.save()
-        Day.objects.create(closed=False, weekday=item.begin.weekday(), opens=naive_time(item.begin), closes=naive_time(item.end), period=period)
+        Day.objects.create(closed=False, weekday=item.begin.weekday(), opens=naive_time(item.begin), closes=fixed_end_time(item.end), period=period)
         period.save()
         Resource.objects.get(pk=self.__resource_id).update_opening_hours()
         return period.id, period_change_key
@@ -40,7 +40,7 @@ class RespaAvailabilityRepository:
         period.start = naive_date(item.begin)
         period.end = naive_date(item.end)
         period._from_o365_sync = True
-        Day.objects.create(closed=False, weekday=item.begin.weekday(), opens=naive_time(item.begin), closes=naive_time(item.end), period=period)
+        Day.objects.create(closed=False, weekday=item.begin.weekday(), opens=naive_time(item.begin), closes=fixed_end_time(item.end), period=period)
         period.save()
         Resource.objects.get(pk=self.__resource_id).update_opening_hours()
         return period_change_key
@@ -78,3 +78,11 @@ def naive_time(datetime):
 
 def naive_date(datetime):
     return timezone.make_naive(datetime).date()
+
+def fixed_end_time(datetime):
+    end_time = naive_time(datetime)
+    if end_time.hour == 0 and end_time.minute == 0 and end_time.second == 0:
+        end_time = naive_time(datetime - timedelta(seconds=1))
+    return end_time
+
+
