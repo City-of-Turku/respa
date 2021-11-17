@@ -867,8 +867,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
             self.validate_id()
 
     def get_products(self):
-        from payments.models import Product
-        return Product.objects.filter(resources=self)
+        return self.products.current()
 
 class ResourceImage(ModifiableModel):
     TYPES = (

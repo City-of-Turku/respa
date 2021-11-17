@@ -94,7 +94,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
 
     def to_internal_value(self, data):
         resource = self.context.get('resource')
-        available_products = resource.products.current() if resource else []
+        available_products = resource.get_products() if resource else []
         self.context.update({'available_products': available_products})
         return super().to_internal_value(data)
 
