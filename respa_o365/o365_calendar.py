@@ -114,8 +114,8 @@ class O365Calendar:
             return None
 
     def create_event(self, event):
-        begin = event.begin.astimezone(local_tz).isoformat()
-        end = event.end.astimezone(local_tz).isoformat()
+        begin = event.begin.astimezone(local_tz).isoformat()[:-6]
+        end = event.end.astimezone(local_tz).isoformat()[:-6]
         subject = event.subject
         body = event.body
         url = self._get_create_event_url()
@@ -155,8 +155,8 @@ class O365Calendar:
 
     def update_event(self, event_id, event):
         url = self._get_single_event_url(event_id)
-        begin = event.begin.astimezone(local_tz).isoformat()
-        end = event.end.astimezone(local_tz).isoformat()
+        begin = event.begin.astimezone(local_tz).isoformat()[:-6]
+        end = event.end.astimezone(local_tz).isoformat()[:-6]
         subject = event.subject
         body = event.body
         self._api.patch(
