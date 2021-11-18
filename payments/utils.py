@@ -75,7 +75,7 @@ def is_free(price) -> bool:
 def get_price(order: dict, *, begin, end) -> Decimal:
     from payments.models import Product, ProductCustomerGroup
 
-    products = [(ol['product'], ol['quantity']) for ol in order['order_lines']]
+    products = [(ol['product'], ol.get('quantity', 1)) for ol in order['order_lines']]
     customer_group = order.get('customer_group', None)
     price = Decimal()
     for product, quantity in products:
