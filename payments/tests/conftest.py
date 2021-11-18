@@ -157,6 +157,20 @@ def product_with_product_cg(product_customer_group, resource_in_unit):
     product_customer_group.save()
     return product
 
+@pytest.fixture
+def product_with_no_price_product_cg(product_customer_group, resource_in_unit):
+    product = ProductFactory.create(
+            tax_percentage=Decimal('24.00'),
+            price=Decimal('50.25'),
+            price_type=Product.PRICE_PER_PERIOD,
+            resources=[resource_in_unit],
+            price_period=datetime.timedelta(hours=1)
+        )
+    product_customer_group.price = Decimal('0.00')
+    product_customer_group.product = product
+    product_customer_group.save()
+    return product
+
 
 @pytest.fixture
 def order_with_product_customer_group(product_with_product_cg, two_hour_reservation):
@@ -169,6 +183,25 @@ def order_with_product_customer_group(product_with_product_cg, two_hour_reservat
     order_line = OrderLineFactory.create(
         quantity=1,
         product=product_with_product_cg,
+        order=order
+    )
+    ocgd = OrderCustomerGroupDataFactory.create(order_line=order_line,
+        product_cg_price=ProductCustomerGroup.objects.get_price_for(order_line.product))
+    ocgd.copy_translated_fields(prod_cg.customer_group)
+    ocgd.save()
+    return order
+
+@pytest.fixture
+def order_with_no_price_product_customer_group(product_with_no_price_product_cg, two_hour_reservation):
+    prod_cg = ProductCustomerGroup.objects.get(product=product_with_no_price_product_cg)
+    order = OrderFactory.create(
+        order_number='abc123',
+        state=Order.WAITING,
+        reservation=two_hour_reservation
+    )
+    order_line = OrderLineFactory.create(
+        quantity=1,
+        product=product_with_no_price_product_cg,
         order=order
     )
     ocgd = OrderCustomerGroupDataFactory.create(order_line=order_line,

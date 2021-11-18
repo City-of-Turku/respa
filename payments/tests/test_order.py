@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 import pytest
+from payments.utils import is_free
 
 from resources.models import Reservation
 
@@ -74,4 +75,10 @@ def test_set_state_allowed_transitions(two_hour_reservation, state, new_state):
 
 def test_customer_group_price(order_with_product_customer_group):
     ocgd = OrderCustomerGroupData.objects.filter(order_line__in=order_with_product_customer_group.get_order_lines())
+    assert ocgd is not None
     assert order_with_product_customer_group.get_price() == ocgd.get_price() * 2 # Two hour reservation
+
+def test_no_price_customer_group_price(order_with_no_price_product_customer_group):
+    ocgd = OrderCustomerGroupData.objects.filter(order_line__in=order_with_no_price_product_customer_group.get_order_lines())
+    assert ocgd is not None
+    assert is_free(order_with_no_price_product_customer_group.get_price())
