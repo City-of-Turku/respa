@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from copy import copy
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, tzinfo
 from functools import reduce
 from urllib import parse
 import pytz
@@ -114,8 +114,8 @@ class O365Calendar:
             return None
 
     def create_event(self, event):
-        begin = event.begin.astimezone(local_tz).isoformat()[:-6]
-        end = event.end.astimezone(local_tz).isoformat()[:-6]
+        begin, begin_tz = dt_tz_str(event.begin, local_tz)
+        end, end_tz = dt_tz_str(event.end, local_tz)
         subject = event.subject
         body = event.body
         url = self._get_create_event_url()
@@ -129,12 +129,12 @@ class O365Calendar:
                 },
                 "start": {
                     "dateTime": begin,
-                    "timeZone": "FLE Standard Time"
+                    "timeZone": begin_tz
 
                 },
                 "end": {
                     "dateTime": end,
-                    "timeZone": "FLE Standard Time"
+                    "timeZone": end_tz
                 },
                 "location":{
                     "displayName": "Varaamo"
@@ -155,8 +155,8 @@ class O365Calendar:
 
     def update_event(self, event_id, event):
         url = self._get_single_event_url(event_id)
-        begin = event.begin.astimezone(local_tz).isoformat()[:-6]
-        end = event.end.astimezone(local_tz).isoformat()[:-6]
+        begin, begin_tz = dt_tz_str(event.begin, local_tz)
+        end, end_tz = dt_tz_str(event.end, local_tz)
         subject = event.subject
         body = event.body
         self._api.patch(
@@ -164,11 +164,11 @@ class O365Calendar:
             json={
                 "start": {
                     "dateTime": begin,
-                    "timeZone": "FLE Standard Time"
+                    "timeZone": begin_tz
                 },
                 "end": {
                     "dateTime": end,
-                    "timeZone": "FLE Standard Time"
+                    "timeZone": end_tz
                 },
                 "subject": subject,
                 "body": {
@@ -321,6 +321,10 @@ def urljoin(*args):
         return a.rstrip('/') + '/' + b.lstrip('/')
     return reduce(join_slash, args) if args else ''
 
+def dt_tz_str(dt, tz):
+    fmt = '%Y-%m-%dT%H:%M:%S'
+    dt = dt.astimezone(tz)
+    return dt.strftime(fmt), tz.zone
 
 class O365CalendarError(Exception):
     pass
