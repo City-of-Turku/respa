@@ -39,12 +39,6 @@ class ProductForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['resources'] = forms.ModelMultipleChoiceField(queryset=Resource.objects.order_by('name'))
 
-    def clean_resources(self):
-        resources = self.cleaned_data.get('resources', [])
-        if resources:
-            if any(r.need_manual_confirmation for r in resources):
-                raise ValidationError(_('All the resources must have manual reservation confirmation disabled.'))
-        return resources
 
 
 class ProductCGInlineFormSet(BaseInlineFormSet):

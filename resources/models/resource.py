@@ -823,10 +823,6 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         if self.cooldown % self.slot_size != datetime.timedelta(0):
             raise ValidationError({'cooldown': _('This value must be a multiple of slot_size')})
 
-        if self.need_manual_confirmation and self.products.current().exists():
-            raise ValidationError(
-                {'need_manual_confirmation': _('This cannot be enabled because the resource has product(s).')}
-            )
         if self.authentication == 'unauthenticated':
             if self.min_age and self.min_age > 0:
                 raise ValidationError(
