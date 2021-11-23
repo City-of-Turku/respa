@@ -37,6 +37,7 @@ import phonenumbers
 from phonenumbers.phonenumberutil import (
     region_code_for_country_code
 )
+from payments.models import Order
 
 
 from resources.models import (
@@ -210,6 +211,11 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
                 self.fields[field_name].required = True
 
         self.context.update({'resource': resource})
+    
+
+    def get_required_fields(self):
+        return [field_name for field_name in self.fields if self.fields[field_name].required]
+
 
     def get_extra_fields(self, includes, context):
         from .resource import ResourceInlineSerializer
@@ -993,6 +999,10 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
                 new_state = Reservation.CONFIRMED if order.state == Reservation.CONFIRMED else Reservation.WAITING_FOR_PAYMENT
             else:
                 new_state = Reservation.CONFIRMED
+
+        if new_state == Reservation.CONFIRMED and \
+            order and order.state == Order.WAITING:
+            new_state = Reservation.WAITING_FOR_PAYMENT
 
         instance.set_state(new_state, self.request.user)
 

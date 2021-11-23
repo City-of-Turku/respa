@@ -7,6 +7,7 @@ from payments.exceptions import (
     DuplicateOrderError, PayloadValidationError, RespaPaymentError, ServiceUnavailableError, UnknownReturnCodeError
 )
 from resources.api.reservation import ReservationSerializer
+from resources.models.reservation import Reservation
 
 from ..models import CustomerGroup, OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup
 from ..providers import get_payment_provider
@@ -113,7 +114,7 @@ class PaymentsReservationSerializer(ReservationSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if self.context['view'].action == 'create':
+        if self.context['view'].action == 'create' or self.context['view'].action == 'update':
             request = self.context.get('request')
             resource = self.context.get('resource')
 
@@ -144,7 +145,7 @@ class PaymentsReservationSerializer(ReservationSerializer):
         order_data = validated_data.pop('order', None)
         reservation = super().create(validated_data)
 
-        if order_data:
+        if order_data and not reservation.resource.need_manual_confirmation:
             if not reservation.can_add_product_order(self.context['request'].user):
                 raise PermissionDenied()
 
@@ -153,8 +154,38 @@ class PaymentsReservationSerializer(ReservationSerializer):
 
         return reservation
 
+    def update(self, instance, validated_data):
+        order_data = validated_data.pop('order', None)
+        if order_data and instance.resource.need_manual_confirmation and instance.state == Reservation.CONFIRMED:
+            if not instance.can_add_product_order(self.context['request'].user):
+                raise PermissionDenied()
+
+            order_data['reservation'] = instance
+            ReservationEndpointOrderSerializer(context=self.context).create(validated_data=order_data)
+
+        return super().update(instance, validated_data)
+
     def validate(self, data):
         order_data = data.pop('order', None)
         data = super().validate(data)
+        data['order'] = order_data
+
+        request = self.context['request']
+        if request.method in ('PUT', 'PATCH'):
+            return self.validate_update(data)
+        return data
+
+    def validate_update(self, data):
+        if self.instance.get_order():
+            raise serializers.ValidationError(_('Cannot update this reservation.'))
+
+        required = self.get_required_fields()
+        order_data = data.pop('order', None)
+        for key, val in data.items():
+            if key not in required:
+                raise serializers.ValidationError(_('Missing required fields.'))
+            attr = getattr(self.instance, key)
+            if attr != val:
+                raise serializers.ValidationError(_('Cannot change field: %s' % key))
         data['order'] = order_data
         return data
