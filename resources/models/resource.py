@@ -719,7 +719,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         return self._has_perm(user, 'can_view_reservation_product_orders', allow_admin=False)
 
     def can_modify_paid_reservations(self, user):
-        return self._has_perm(user, 'can_modify_paid_reservations', allow_admin=False)
+        return self._has_perm(user, 'can_modify_paid_reservations', allow_admin=False) or self.is_manager(user)
 
     def can_approve_reservations(self, user):
         return self._has_perm(user, 'can_approve_reservation', allow_admin=False)

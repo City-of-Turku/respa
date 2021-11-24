@@ -65,6 +65,7 @@ class OrderViewSet(viewsets.ViewSet):
         product_cgs = order_data.pop('product_cgs', None)
         begin = order_data.pop('begin')
         end = order_data.pop('end')
+        order_data['state'] = 'price_check'
         order = Order(**order_data)
         order_lines = [OrderLine(order=order, **data) for data in order_lines_data]
 

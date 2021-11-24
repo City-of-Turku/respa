@@ -52,10 +52,11 @@ class OrderLineSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['product'] = ProductSerializer(instance.product).data
+
         if instance.order.state == Order.WAITING:
             data['product'] = str(instance.product.product_id)
-            del data['price']
-            del data['unit_price']
+            data.pop('price', None)
+            data.pop('unit_price', None)
         return data
 
     def validate(self, order_line):
@@ -92,6 +93,6 @@ class OrderSerializerBase(serializers.ModelSerializer):
         data = super().to_representation(instance)
         if instance.state == Order.WAITING:
             for item in ['price', 'state', 'customer_group_name', 'id']:
-                del data[item]
+                data.pop(item, None)
             data['customer_group'] = str(instance.get_customer_group().id)
         return data

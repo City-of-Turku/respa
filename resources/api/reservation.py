@@ -191,9 +191,9 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             required = resource.get_required_reservation_extra_field_names(cache=cache)
 
             # reservations without an order don't require billing fields
-            order = self.instance.get_order()
+            order = self.context['request'].data.get('order')
             begin, end = (self.context['request'].data.get('begin', None), self.context['request'].data.get('end', None))
-            if not order or (order and is_free(get_price(order, begin=begin or self.instance.begin, end=end or self.instance.end))):
+            if not order or (order and is_free(get_price(order, begin=begin, end=end))):
                 required = [field for field in required if field not in RESERVATION_BILLING_FIELDS]
 
             # staff events have less requirements
@@ -212,7 +212,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
                 self.fields[field_name].required = True
 
         self.context.update({'resource': resource})
-    
+
 
     def get_required_fields(self):
         return [field_name for field_name in self.fields if self.fields[field_name].required]

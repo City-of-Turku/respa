@@ -387,7 +387,10 @@ class Order(models.Model):
         return order_cg.customer_group_name if order_cg else None
 
     def get_customer_group(self):
-        product = self.get_order_lines().first().product
+        if hasattr(self, '_in_memory_order_lines'):
+            product = self.get_order_lines()[0].product
+        else:
+            product = self.get_order_lines().first().product
         product_cg = ProductCustomerGroup.objects.filter(product=product).first()
         if not product_cg:
             return
