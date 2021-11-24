@@ -9,10 +9,16 @@ from payments.exceptions import (
 from resources.api.reservation import ReservationSerializer
 from resources.models.reservation import Reservation
 
-from ..models import CustomerGroup, OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup
+from ..models import CustomerGroup, OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup, Order
 from ..providers import get_payment_provider
 from .base import OrderSerializerBase
 
+
+MODIFIABLE_FIELDS = (
+    'state',
+    'begin',
+    'end',
+)
 
 class ReservationEndpointOrderSerializer(OrderSerializerBase):
     id = serializers.ReadOnlyField(source='order_number')
@@ -28,6 +34,11 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         customer_group = validated_data.pop('customer_group', None)
         return_url = validated_data.pop('return_url', '')
         order = super().create(validated_data)
+        reservation = validated_data['reservation']
+
+        if reservation.state == Reservation.CREATED and reservation.resource.need_manual_confirmation:
+            order.state = Order.WAITING
+            return order
 
         for order_line_data in order_lines_data:
             product = order_line_data['product']
@@ -38,7 +49,6 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
                 product_cg_price=prod_cg.get_price_for(order_line.product))
                 ocgd.copy_translated_fields(prod_cg.first().customer_group)
                 ocgd.save()
-
 
         payments = get_payment_provider(request=self.context['request'],
                                         ui_return_url=return_url)
@@ -57,6 +67,33 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
             raise exceptions.APIException(detail=str(pe),
                                           code=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return order
+
+
+    def update(self, instance, validated_data):
+        order_lines_data = validated_data.pop('order_lines', [])
+        customer_group = validated_data.pop('customer_group', None)
+        return_url = validated_data.pop('return_url', '')
+
+        order = super().update(instance, validated_data)
+        payments = get_payment_provider(request=self.context['request'],
+                                ui_return_url=return_url)
+        try:
+            self.context['payment_url'] = payments.initiate_payment(order)
+        except DuplicateOrderError as doe:
+            raise exceptions.APIException(detail=str(doe),
+                                          code=status.HTTP_409_CONFLICT)
+        except (PayloadValidationError, UnknownReturnCodeError) as e:
+            raise exceptions.APIException(detail=str(e),
+                                          code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except ServiceUnavailableError as sue:
+            raise exceptions.APIException(detail=str(sue),
+                                          code=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except RespaPaymentError as pe:
+            raise exceptions.APIException(detail=str(pe),
+                                          code=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+        return order
+
+    
 
     def get_payment_url(self, obj):
         return self.context.get('payment_url', '')
@@ -145,7 +182,7 @@ class PaymentsReservationSerializer(ReservationSerializer):
         order_data = validated_data.pop('order', None)
         reservation = super().create(validated_data)
 
-        if order_data and not reservation.resource.need_manual_confirmation:
+        if order_data:
             if not reservation.can_add_product_order(self.context['request'].user):
                 raise PermissionDenied()
 
@@ -156,13 +193,12 @@ class PaymentsReservationSerializer(ReservationSerializer):
 
     def update(self, instance, validated_data):
         order_data = validated_data.pop('order', None)
-        if order_data and instance.resource.need_manual_confirmation and instance.state == Reservation.CONFIRMED:
+        if order_data and instance.resource.need_manual_confirmation:
             if not instance.can_add_product_order(self.context['request'].user):
                 raise PermissionDenied()
 
             order_data['reservation'] = instance
-            ReservationEndpointOrderSerializer(context=self.context).create(validated_data=order_data)
-
+            ReservationEndpointOrderSerializer(context=self.context).update(instance.get_order(), validated_data=order_data)
         return super().update(instance, validated_data)
 
     def validate(self, data):
@@ -176,7 +212,8 @@ class PaymentsReservationSerializer(ReservationSerializer):
         return data
 
     def validate_update(self, data):
-        if self.instance.get_order():
+        order = self.instance.get_order()
+        if order and order.state != Order.WAITING:
             raise serializers.ValidationError(_('Cannot update this reservation.'))
 
         required = self.get_required_fields()
@@ -186,6 +223,9 @@ class PaymentsReservationSerializer(ReservationSerializer):
                 raise serializers.ValidationError(_('Missing required field: %s' % field))
 
         for key, val in data.items():
+            if key in MODIFIABLE_FIELDS:
+                continue
+
             attr = getattr(self.instance, key)
             if attr != val:
                 raise serializers.ValidationError(_('Cannot change field: %s' % key))

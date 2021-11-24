@@ -1009,6 +1009,11 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
     def perform_update(self, serializer):
         old_instance = self.get_object()
         new_state = serializer.validated_data.pop('state', old_instance.state)
+        order = old_instance.get_order()
+        if new_state == Reservation.CONFIRMED and \
+            order and order.state == Order.WAITING:
+            new_state = Reservation.WAITING_FOR_PAYMENT
+
         new_instance = serializer.save(modified_by=self.request.user)
         new_instance.set_state(new_state, self.request.user)
         if new_state == old_instance.state and new_state not in ['denied'] and self.request.method != 'PATCH': # Reservation was modified, don't send modified upon patch.
