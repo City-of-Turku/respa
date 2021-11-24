@@ -181,9 +181,11 @@ class PaymentsReservationSerializer(ReservationSerializer):
 
         required = self.get_required_fields()
         order_data = data.pop('order', None)
+        for field in required:
+            if field not in data:
+                raise serializers.ValidationError(_('Missing required field: %s' % field))
+
         for key, val in data.items():
-            if key not in required:
-                raise serializers.ValidationError(_('Missing required fields.'))
             attr = getattr(self.instance, key)
             if attr != val:
                 raise serializers.ValidationError(_('Cannot change field: %s' % key))
