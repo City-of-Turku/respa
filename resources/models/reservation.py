@@ -457,7 +457,7 @@ class Reservation(ModifiableModel):
 
         original_reservation = self if self.pk else kwargs.get('original_reservation', None)
         if self.resource.check_reservation_collision(self.begin, self.end, original_reservation):
-            raise ValidationError(_("The resource is already reserved for some of the period"))
+            raise ValidationError({'period': _("The resource is already reserved for some of the period")}, code='invalid_period_range')
 
         if not user_is_admin:
             if (self.end - self.begin) < self.resource.min_period:
