@@ -72,17 +72,23 @@ def handle_customer_group_pricing(func):
 def is_free(price) -> bool:
     return isinstance(price, Decimal) and price == Decimal('0.00')
 
-def get_price(order: dict, *, begin, end) -> Decimal:
+def get_price(order, *, begin, end) -> Decimal:
     from payments.models import Product, ProductCustomerGroup
 
-    products = [(ol['product'], ol.get('quantity', 1)) for ol in order['order_lines']]
-    customer_group = order.get('customer_group', None)
+    products = [(ol.product, ol.quantity) for ol in order.get_order_lines()]
+    customer_group = order.get_customer_group()
     price = Decimal()
+
+    if isinstance(begin, str):
+        begin = parse_datetime(begin)
+    if isinstance(end, str):
+        end = parse_datetime(end)
+
     for product, quantity in products:
         product_cg = None
-        product = Product.objects.filter(product_id=product).current().first()
+        product = Product.objects.filter(product_id=product.product_id).current().first()
         if customer_group:
-            product_cg = ProductCustomerGroup.objects.filter(product=product, customer_group__id=customer_group).first()
-        price += product.get_price_for_time_range(parse_datetime(begin), parse_datetime(end), product_cg=product_cg) * quantity
+            product_cg = ProductCustomerGroup.objects.filter(product=product, customer_group__id=customer_group.id).first()
+        price += product.get_price_for_time_range(begin, end, product_cg=product_cg) * quantity
     return price
 

@@ -36,10 +36,6 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         order = super().create(validated_data)
         reservation = validated_data['reservation']
 
-        if reservation.state == Reservation.CREATED and reservation.resource.need_manual_confirmation:
-            order.state = Order.WAITING
-            return order
-
         for order_line_data in order_lines_data:
             product = order_line_data['product']
             order_line = OrderLine.objects.create(order=order, **order_line_data)
@@ -49,6 +45,10 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
                 product_cg_price=prod_cg.get_price_for(order_line.product))
                 ocgd.copy_translated_fields(prod_cg.first().customer_group)
                 ocgd.save()
+
+        if reservation.state == Reservation.CREATED and reservation.resource.need_manual_confirmation:
+            order.state = Order.WAITING
+            return order
 
         payments = get_payment_provider(request=self.context['request'],
                                         ui_return_url=return_url)
@@ -138,7 +138,6 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-
         if self.context['view'].action != 'create':
             data.pop('payment_url', None)
 
@@ -217,11 +216,11 @@ class PaymentsReservationSerializer(ReservationSerializer):
             raise serializers.ValidationError(_('Cannot update this reservation.'))
 
         required = self.get_required_fields()
-        order_data = data.pop('order', None)
         for field in required:
             if field not in data:
-                raise serializers.ValidationError(_('Missing required field: %s' % field))
+                raise serializers.ValidationError({field: _('This field is required.')})
 
+        order_data = data.pop('order', None)
         for key, val in data.items():
             if key in MODIFIABLE_FIELDS:
                 continue

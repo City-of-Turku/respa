@@ -37,6 +37,7 @@ import phonenumbers
 from phonenumbers.phonenumberutil import (
     region_code_for_country_code
 )
+from payments.api.base import OrderSerializerBase
 from payments.models import Order
 
 
@@ -190,9 +191,9 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             required = resource.get_required_reservation_extra_field_names(cache=cache)
 
             # reservations without an order don't require billing fields
-            order = self.context['request'].data.get('order')
-            begin, end = (self.context['request'].data.get('begin'), self.context['request'].data.get('end'))
-            if not order or is_free(get_price(order, begin=begin, end=end)):
+            order = self.instance.get_order()
+            begin, end = (self.context['request'].data.get('begin', None), self.context['request'].data.get('end', None))
+            if not order or (order and is_free(get_price(order, begin=begin or self.instance.begin, end=end or self.instance.end))):
                 required = [field for field in required if field not in RESERVATION_BILLING_FIELDS]
 
             # staff events have less requirements
@@ -242,6 +243,8 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             allowed_states = (Reservation.REQUESTED, Reservation.CONFIRMED, Reservation.DENIED)
             if instance.state in allowed_states and value in allowed_states:
                 return value
+        if value == Reservation.WAITING_FOR_PAYMENT:
+            return value
 
         raise ValidationError(_('Illegal state change'))
 
@@ -680,11 +683,9 @@ class ReservationPermission(permissions.BasePermission):
         if resource.authentication == 'strong' and \
             not request.user.is_strong_auth:
             return False
-
         if request.method in permissions.SAFE_METHODS or \
             request.user and request.user.is_authenticated:
             return True
-
         return request.method == 'POST' and resource.authentication == 'unauthenticated'
 
     def has_object_permission(self, request, view, obj):
@@ -1012,7 +1013,7 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         order = old_instance.get_order()
         if new_state == Reservation.CONFIRMED and \
             order and order.state == Order.WAITING:
-            new_state = Reservation.WAITING_FOR_PAYMENT
+            new_state = Reservation.READY_FOR_PAYMENT
 
         new_instance = serializer.save(modified_by=self.request.user)
         new_instance.set_state(new_state, self.request.user)

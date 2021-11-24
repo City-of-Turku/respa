@@ -1,5 +1,6 @@
 import base64
 import datetime
+from decimal import Decimal
 import struct
 import time
 import io
@@ -313,6 +314,12 @@ def get_order_quantity(item):
 
     e.g. 2 hour reservation with 10euro per 30min price period, 40 / 10 = 4.
     '''
+
+    price = item["product"]["price"].replace(',','.')
+
+    if Decimal(price) == Decimal('0.00'):
+        return float(item["quantity"])
+
     if item["product"]["price_type"] == 'per_period':
         if item["product"]["type"] != "rent":
             '''
@@ -341,6 +348,12 @@ def get_order_tax_price(item):
     '''
     Returns the correct tax price/amount for this item.
     '''
+    price = item["product"]["price"].replace(',','.')
+
+    if Decimal(price) == Decimal('0.00'):
+        return float(price)
+
+
     if item["product"]["price_type"] == 'per_period':
         if item["product"]["type"] != "rent":
             # Use the precalculated tax price if type is not 'rent'
@@ -357,6 +370,12 @@ def get_order_pretax_price(item):
     '''
     Returns the correct tax-free price for this item.
     '''
+
+    price = item["product"]["price"].replace(',','.')
+
+    if Decimal(price) == Decimal('0.00'):
+        return float(price)
+
     if item["product"]["price_type"] == 'per_period':
         quantity = float(item["unit_price"].replace(',','.')) / float(item["product"]["price"].replace(',','.'))
         if quantity < 1 or item["product"]["type"] != "rent":

@@ -104,6 +104,7 @@ class Reservation(ModifiableModel):
     DENIED = 'denied'
     REQUESTED = 'requested'
     WAITING_FOR_PAYMENT = 'waiting_for_payment'
+    READY_FOR_PAYMENT = 'ready_for_payment'
     STATE_CHOICES = (
         (CREATED, _('created')),
         (CANCELLED, _('cancelled')),
@@ -111,6 +112,7 @@ class Reservation(ModifiableModel):
         (DENIED, _('denied')),
         (REQUESTED, _('requested')),
         (WAITING_FOR_PAYMENT, _('waiting for payment')),
+        (READY_FOR_PAYMENT, _('ready for payment')),
     )
 
     TYPE_NORMAL = 'normal'
@@ -265,7 +267,8 @@ class Reservation(ModifiableModel):
         # Make sure it is a known state
         assert new_state in (
             Reservation.REQUESTED, Reservation.CONFIRMED, Reservation.DENIED,
-            Reservation.CANCELLED, Reservation.WAITING_FOR_PAYMENT
+            Reservation.CANCELLED, Reservation.WAITING_FOR_PAYMENT,
+            Reservation.READY_FOR_PAYMENT
         )
         old_state = self.state
         if new_state == old_state:
@@ -335,7 +338,9 @@ class Reservation(ModifiableModel):
             return False
 
         if self.get_order():
-            return self.resource.can_modify_paid_reservations(user)
+            return self.resource.can_modify_paid_reservations(user) or (
+                self.user == user and self.state == Reservation.READY_FOR_PAYMENT
+            )
 
         # reservations that need manual confirmation and are confirmed cannot be
         # modified or cancelled without reservation approve permission
