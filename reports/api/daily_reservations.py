@@ -106,6 +106,7 @@ class DailyReservationsReport(BaseReport):
         context = super().get_serializer_context()
         context['start'] = self.start
         context['end'] = self.end
+        self.action = self.request.method
         return context
 
     def filter_queryset(self, queryset):
