@@ -22,6 +22,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
+from payments.api.reservation import PaymentsReservationSerializer
 from resources.timmi import TimmiManager
 from PIL import Image
 from io import BytesIO
@@ -606,9 +607,9 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
         rv_list = list(rv_list)
         if not rv_list:
             return []
-
-        rv_ser_list = ReservationSerializer(rv_list, many=True, context=self.context).data
-        return rv_ser_list
+        if settings.RESPA_PAYMENTS_ENABLED:
+            return PaymentsReservationSerializer(rv_list, many=True, context=self.context).data
+        return ReservationSerializer(rv_list, many=True, context=self.context).data
 
     class Meta:
         model = Resource
