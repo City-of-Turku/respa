@@ -52,11 +52,6 @@ class OrderLineSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['product'] = ProductSerializer(instance.product).data
-
-        if instance.order.state == Order.WAITING:
-            data['product'] = str(instance.product.product_id)
-            data.pop('price', None)
-            data.pop('unit_price', None)
         return data
 
     def validate(self, order_line):
@@ -88,11 +83,3 @@ class OrderSerializerBase(serializers.ModelSerializer):
     def get_customer_group_name(self, obj):
         ocgd = obj.get_order_customer_group_data()
         return get_translated_fields(ocgd)
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        if instance.state == Order.WAITING:
-            for item in ['price', 'state', 'customer_group_name', 'id']:
-                data.pop(item, None)
-            data['customer_group'] = str(instance.get_customer_group().id)
-        return data
