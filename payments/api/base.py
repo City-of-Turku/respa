@@ -4,6 +4,7 @@ from rest_framework import serializers
 from payments.api.product import ProductCustomerGroupSerializer
 
 from resources.api.base import TranslatedModelSerializer
+from resources.models.reservation import Reservation
 from resources.models.utils import get_translated_fields
 
 from ..models import Order, OrderLine, Product, ProductCustomerGroup
@@ -78,6 +79,14 @@ class OrderSerializerBase(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ('state', 'order_lines', 'price', 'customer_group_name')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context['request']
+        if request.method in ('PUT', 'PATCH'):
+            if self.instance.has_order() and \
+                self.instance.state in (Reservation.READY_FOR_PAYMENT, Reservation.WAITING_FOR_PAYMENT):
+                    self.fields['order_lines'].required = False
 
 
     def get_customer_group_name(self, obj):

@@ -391,7 +391,7 @@ class Order(models.Model):
             product = self.get_order_lines()[0].product
         else:
             product = self.get_order_lines().first().product
-        product_cg = ProductCustomerGroup.objects.filter(product=product).first()
+        product_cg = ProductCustomerGroup.objects.filter(product__product_id=product.product_id).first()
         if not product_cg:
             return
         return product_cg.customer_group

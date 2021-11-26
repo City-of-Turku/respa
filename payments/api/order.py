@@ -56,7 +56,7 @@ class OrderViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['POST'])
     def check_price(self, request):
         # validate incoming Order and OrderLine data
-        write_serializer = PriceEndpointOrderSerializer(data=request.data)
+        write_serializer = PriceEndpointOrderSerializer(data=request.data, context={'request':request})
         write_serializer.is_valid(raise_exception=True)
 
         # build Order and OrderLine objects in memory only
@@ -87,7 +87,7 @@ class OrderViewSet(viewsets.ViewSet):
 
 
         # serialize the in-memory objects
-        read_serializer = PriceEndpointOrderSerializer(order)
+        read_serializer = PriceEndpointOrderSerializer(order, context={'request':request})
         order_data = read_serializer.data
         order_data['order_lines'] = [OrderLineSerializer(ol).data for ol in order_lines]
         order_data.update({'begin': begin, 'end': end})

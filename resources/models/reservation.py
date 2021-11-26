@@ -378,6 +378,9 @@ class Reservation(ModifiableModel):
     def get_order(self):
         return getattr(self, 'order', None)
 
+    def has_order(self):
+        return hasattr(self, 'order')
+
     def format_time(self):
         tz = self.resource.unit.get_tz()
         begin = self.begin.astimezone(tz)

@@ -70,8 +70,8 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
 
 
     def update(self, instance, validated_data):
-        order_lines_data = validated_data.pop('order_lines', [])
-        customer_group = validated_data.pop('customer_group', None)
+        validated_data.pop('order_lines', [])
+        validated_data.pop('customer_group', None)
         return_url = validated_data.pop('return_url', '')
 
         order = super().update(instance, validated_data)
@@ -90,7 +90,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
                                           code=status.HTTP_503_SERVICE_UNAVAILABLE)
         except RespaPaymentError as pe:
             raise exceptions.APIException(detail=str(pe),
-                                          code=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+                                          code=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return order
 
     
@@ -122,9 +122,12 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         return customer_group
 
     def validate(self, attrs):
+        request = self.context['request']
         attrs = super().validate(attrs)
         customer_group = attrs.get('customer_group', None)
         resource = self.context.get('resource')
+        if request.method in ('PUT', 'PATCH') and not customer_group:
+            customer_group = self.instance.get_order().get_order_customer_group_data().customer_group_name
         for product in resource.get_products():
             if product.has_customer_group() and not customer_group:
                 raise serializers.ValidationError(_('Order must have customer group id in it.'))
@@ -150,20 +153,23 @@ class PaymentsReservationSerializer(ReservationSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if self.context['view'].action == 'create' or self.context['view'].action == 'update':
-            request = self.context.get('request')
-            resource = self.context.get('resource')
+        request = self.context.get('request')
+        resource = self.context.get('resource')
+        action = self.context['view'].action
 
-            if resource and request:
-                order_required = resource.has_rent() and not resource.can_bypass_payment(request.user)
-            elif resource:
-                order_required = resource.has_rent()
-            else:
-                order_required = True
+        if resource and request:
+            order_required = resource.has_rent() and not resource.can_bypass_payment(request.user)
+        elif resource:
+            order_required = resource.has_rent()
+        else:
+            order_required = True
 
-            self.fields['order'] = ReservationEndpointOrderSerializer(required=order_required)
+        if action == 'create':
+            self.fields['order'] = ReservationEndpointOrderSerializer(required=order_required, context=self.context)
+        elif action == 'update':
+            self.fields['order'] = ReservationEndpointOrderSerializer(required=order_required, context=self.context, instance=self.instance)
         elif 'order_detail' in self.context['includes']:
-            self.fields['order'] = ReservationEndpointOrderSerializer(read_only=True)
+            self.fields['order'] = ReservationEndpointOrderSerializer(read_only=True, context=self.context)
 
     class Meta(ReservationSerializer.Meta):
         fields = ReservationSerializer.Meta.fields + ['order']
@@ -186,7 +192,7 @@ class PaymentsReservationSerializer(ReservationSerializer):
                 raise PermissionDenied()
 
             order_data['reservation'] = reservation
-            ReservationEndpointOrderSerializer(context=self.context).create(validated_data=order_data)
+            ReservationEndpointOrderSerializer(context=self.context, instance=reservation).create(validated_data=order_data)
 
         return reservation
 
@@ -197,7 +203,7 @@ class PaymentsReservationSerializer(ReservationSerializer):
                 raise PermissionDenied()
 
             order_data['reservation'] = instance
-            ReservationEndpointOrderSerializer(context=self.context).update(instance.get_order(), validated_data=order_data)
+            ReservationEndpointOrderSerializer(context=self.context, instance=instance).update(instance.get_order(), validated_data=order_data)
         return super().update(instance, validated_data)
 
     def validate(self, data):
