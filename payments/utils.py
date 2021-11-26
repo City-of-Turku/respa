@@ -89,7 +89,7 @@ def get_price(order: dict, begin, end, **kwargs) -> Decimal:
     if not order.get('order_lines', None):
         raise serializers.ValidationError({'order_lines': _('This is field required.')})
     if not isinstance(order['order_lines'], list):
-        raise serializers.ValidationError({'product': _('Expected list, got type %s') % type(order['order_lines']).__name__})
+        raise serializers.ValidationError({'order_lines': _('Expected list, got type %s') % type(order['order_lines']).__name__})
 
     products = [handle(ol) for ol in order['order_lines']]
     customer_group = order.get('customer_group', None)
