@@ -142,7 +142,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        if self.context['view'].action != 'create':
+        if self.context['view'].action not in ('create', 'update'):
             data.pop('payment_url', None)
 
         return data
