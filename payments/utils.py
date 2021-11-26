@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
@@ -74,8 +75,12 @@ def is_free(price) -> bool:
 
 def get_price(order: dict, *, begin, end) -> Decimal:
     from payments.models import Product, ProductCustomerGroup
+    def get_or_raise(order_line):
+        if not isinstance(order_line['product'], str):
+            raise serializers.ValidationError({'product': 'Expected str, got type %s' % type(order_line['product']).__name__})
+        return order_line['product'], order_line.get('quantity', 1)
 
-    products = [(ol['product'], ol.get('quantity', 1)) for ol in order['order_lines']]
+    products = [get_or_raise(ol) for ol in order['order_lines']]
     customer_group = order.get('customer_group', None)
     price = Decimal()
 
