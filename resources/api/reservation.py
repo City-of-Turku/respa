@@ -1022,7 +1022,11 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         old_instance = self.get_object()
         new_state = serializer.validated_data.pop('state', old_instance.state)
         order = old_instance.get_order()
-        if new_state == Reservation.CONFIRMED and \
+
+        if new_state == Reservation.READY_FOR_PAYMENT and \
+            order and order.state == Order.WAITING:
+            new_state = Reservation.WAITING_FOR_PAYMENT
+        elif new_state == Reservation.CONFIRMED and \
             order and order.state == Order.WAITING:
             new_state = Reservation.READY_FOR_PAYMENT
 
