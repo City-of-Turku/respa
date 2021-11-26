@@ -74,18 +74,24 @@ def is_free(price) -> bool:
     return isinstance(price, Decimal) and price == Decimal('0.00')
 
 def get_price(order: dict, begin, end, **kwargs) -> Decimal:
-    from payments.models import Product, ProductCustomerGroup
-    def get_or_raise(order_line):
+    from payments.models import Product, ProductCustomerGroup, Order
+    def handle(order_line):
         if not isinstance(order_line['product'], str):
             raise serializers.ValidationError({'product': _('Expected str, got type %s') % type(order_line['product']).__name__})
         return order_line['product'], order_line.get('quantity', 1)
+
+    if 'id' in order:
+        order = Order.objects.filter(order_number=order['id']).first()
+        if not order:
+            raise serializers.ValidationError({'order': _('Invalid order id.')})
+        return order.get_price()
     
     if not order.get('order_lines', None):
         raise serializers.ValidationError({'order_lines': _('This is field required.')})
     if not isinstance(order['order_lines'], list):
         raise serializers.ValidationError({'product': _('Expected list, got type %s') % type(order['order_lines']).__name__})
 
-    products = [get_or_raise(ol) for ol in order['order_lines']]
+    products = [handle(ol) for ol in order['order_lines']]
     customer_group = order.get('customer_group', None)
     price = Decimal()
 
