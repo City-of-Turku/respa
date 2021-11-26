@@ -173,6 +173,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         super().__init__(*args, **kwargs)
         data = self.get_initial()
         resource = None
+        request = self.context['request']
 
         # try to find out the related resource using initial data if that is given
         resource_id = data.get('resource') if data else None
@@ -191,16 +192,18 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             required = resource.get_required_reservation_extra_field_names(cache=cache)
 
             # reservations without an order don't require billing fields
-            order = self.context['request'].data.get('order')
-            begin, end = (self.context['request'].data.get('begin', None), self.context['request'].data.get('end', None))
+            self.handle_manual_confirmation_payload(request, resource)
+            order = request.data.get('order')
+
+
+            begin, end = (request.data.get('begin', None), request.data.get('end', None))
             if not order or isinstance(order, str) or (order and is_free(get_price(order, begin=begin, end=end))):
                 required = [field for field in required if field not in RESERVATION_BILLING_FIELDS]
 
             # staff events have less requirements
-            request_user = self.context['request'].user
             is_staff_event = data.get('staff_event', False)
 
-            if is_staff_event and resource.can_create_staff_event(request_user):
+            if is_staff_event and resource.can_create_staff_event(request.user):
                 required = {'reserver_name', 'event_description'}
 
             # we don't need to remove a field here if it isn't supported, as it will be read-only and will be more
@@ -212,6 +215,14 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
                 self.fields[field_name].required = True
 
         self.context.update({'resource': resource})
+
+
+    def handle_manual_confirmation_payload(self, request, resource):
+        if (self.instance and resource.need_manual_confirmation) and \
+            request.data.get('state') in (Reservation.CONFIRMED, Reservation.CANCELLED, Reservation.DENIED) and \
+            (resource.is_manager(request.user) or resource.is_admin(request.user)) and \
+            request.user != self.instance.user and 'order' in request.data:
+                del request.data['order']
 
 
     def get_required_fields(self):
