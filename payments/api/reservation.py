@@ -124,10 +124,11 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
     def validate(self, attrs):
         request = self.context['request']
         attrs = super().validate(attrs)
+        if request.method in ('PUT', 'PATCH'):
+            return attrs
+
         customer_group = attrs.get('customer_group', None)
         resource = self.context.get('resource')
-        if request.method in ('PUT', 'PATCH') and not customer_group:
-            customer_group = self.instance.get_order().get_order_customer_group_data()
         for product in resource.get_products():
             if product.has_customer_group() and not customer_group:
                 raise serializers.ValidationError(_('Order must have customer group id in it.'))
