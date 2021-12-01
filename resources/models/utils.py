@@ -109,7 +109,8 @@ notification_logger = logging.getLogger('respa.notifications')
 
 def send_respa_mail(email_address, subject, body, html_body=None, attachments=None):
     if not getattr(settings, 'RESPA_MAILS_ENABLED', False):
-        return False, "Respa mail is not enabled."
+        notification_logger.info('Respa mail is not enabled.')
+        return False
 
     try:
         from_address = (getattr(settings, 'RESPA_MAILS_FROM_ADDRESS', None) or
@@ -122,9 +123,10 @@ def send_respa_mail(email_address, subject, body, html_body=None, attachments=No
         if html_body:
             msg.attach_alternative(html_body, 'text/html')
         msg.send()
-        return True, "Respa mail success"
-    except Exception as ex:
-        return False, ex
+        return True
+    except Exception as exc:
+        notification_logger.error('Respa mail error %s', exc)
+        return False
 
 def generate_reservation_xlsx(reservations):
     """

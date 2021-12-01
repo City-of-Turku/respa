@@ -267,65 +267,50 @@ class Reservation(ModifiableModel):
             Reservation.REQUESTED, Reservation.CONFIRMED, Reservation.DENIED,
             Reservation.CANCELLED, Reservation.WAITING_FOR_PAYMENT
         )
-        old_state = self.state
-        if new_state == old_state:
-            if old_state == Reservation.CONFIRMED:
-                reservation_modified.send(sender=self.__class__, instance=self, user=user)
+        if new_state == self.state and self.state == Reservation.CONFIRMED:
+            reservation_modified.send(sender=self.__class__, instance=self, user=user)
             return
-        if new_state == Reservation.CONFIRMED:
+        elif new_state == Reservation.CONFIRMED:
             self.approver = user if user and user.is_authenticated else None
-            if user and user.is_authenticated or self.resource.authentication == 'unauthenticated':
-                reservation_confirmed.send(sender=self.__class__, instance=self,
-                                           user=user)
-        elif old_state == Reservation.CONFIRMED:
+            if user or self.resource.authentication == 'unauthenticated':
+                reservation_confirmed.send(sender=self.__class__, instance=self, user=user)
+        elif new_state == Reservation.CANCELLED:
+            reservation_cancelled.send(sender=self.__class__, instance=self, user=user)
+        elif self.state == Reservation.CONFIRMED:
             self.approver = None
 
+        self.state = new_state
+        self.save()
+        self.handle_notification(new_state, user)
+    
+    def handle_notification(self, state, user):
+        obj_user_is_staff = bool(self.user and self.user.is_staff)
+        action_by_official = obj_user_is_staff and self.reserver_email_address != self.user.email
 
-        user_is_staff = self.user is not None and self.user.is_staff
-
-        # Notifications
-        if new_state == Reservation.REQUESTED:
-            if not user_is_staff:
-                self.send_reservation_requested_mail()
+        if state == Reservation.REQUESTED:
+            self.send_reservation_requested_mail(action_by_official=action_by_official)
+            if not action_by_official:
                 self.notify_staff_about_reservation(NotificationType.RESERVATION_REQUESTED_OFFICIAL)
-            else:
-                if self.reserver_email_address != self.user.email:
-                    self.send_reservation_requested_mail(action_by_official=True)
-        elif new_state == Reservation.CONFIRMED:
+        elif state == Reservation.CONFIRMED:
             if self.need_manual_confirmation():
                 self.send_reservation_confirmed_mail()
             elif self.access_code:
-                if not user_is_staff:
-                    self.send_reservation_created_with_access_code_mail()
+                self.send_reservation_created_with_access_code_mail(action_by_official=action_by_official)
+                if not action_by_official:
                     self.notify_staff_about_reservation(NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE_OFFICIAL)
-                else:
-                    if self.reserver_email_address != self.user.email:
-                        self.send_reservation_created_with_access_code_mail(action_by_official=True)
             else:
-                if not user_is_staff:
-                    self.send_reservation_created_mail()
-                    self.notify_staff_about_reservation(NotificationType.RESERVATION_CREATED_OFFICIAL)
-                else:
-                    if self.reserver_email_address != self.user.email:
-                        self.send_reservation_created_mail(action_by_official=True)
-                        self.notify_staff_about_reservation(NotificationType.RESERVATION_CREATED_OFFICIAL)
-        elif new_state == Reservation.DENIED:
+                self.send_reservation_created_mail(action_by_official=action_by_official)
+                self.notify_staff_about_reservation(NotificationType.RESERVATION_CREATED_OFFICIAL)
+        elif state == Reservation.DENIED:
             self.send_reservation_denied_mail()
-        elif new_state == Reservation.CANCELLED:
-            if self.user:
-                order = self.get_order()
-                if order:
-                    if order.state == order.CANCELLED:
-                        self.send_reservation_cancelled_mail()
-                else:
-                    if user.is_staff and (user.email != self.user.email): # Assume staff cancelled it
-                        self.send_reservation_cancelled_mail(action_by_official=True)
-                    else:
-                        self.send_reservation_cancelled_mail()
-                        self.notify_staff_about_reservation(NotificationType.RESERVATION_CANCELLED_OFFICIAL)
-            reservation_cancelled.send(sender=self.__class__, instance=self, user=user)
-        self.state = new_state
-        self.save()
+        elif state == Reservation.CANCELLED and self.user:
+            action_by_official = bool(user and user.is_staff and user.email != self.user.email)
+            order = self.get_order()
+            if not order or order and order.state == order.CANCELLED:
+                self.send_reservation_cancelled_mail(action_by_official=action_by_official)
+                if not action_by_official:
+                    self.notify_staff_about_reservation(NotificationType.RESERVATION_CANCELLED_OFFICIAL)
+
 
     def can_modify(self, user):
         if not user:
@@ -715,39 +700,25 @@ class Reservation(ModifiableModel):
                 language = DEFAULT_LANG
             rendered_notification = notification_template.render(context, language)
         except NotificationTemplateException as e:
-            print('NotifcationTemplateException: %s' % e)
             logger.error(e, exc_info=True, extra={'user': user.uuid})
             return
 
+
         if is_reminder:
-            print("Sending SMS notification :: (%s) %s || LOCALE: %s"  % (self.reserver_phone_number, rendered_notification['subject'], language))
-            ret = send_respa_mail(
-                email_address='%s@%s' % (self.reserver_phone_number, settings.GSM_NOTIFICATION_ADDRESS),
-                subject=rendered_notification['subject'],
-                body=rendered_notification['short_message'],
-            )
-            print(ret[1])
+            logger.info(f"Sending SMS notification {rendered_notification['subject']} || LOCALE: {language}")
+            email_address = f'{self.reserver_phone_number}@{settings.GSM_NOTIFICATION_ADDRESS}'
+            success = send_respa_mail(email_address, rendered_notification['subject'], rendered_notification['short_message'])
+            if not success:
+                logger.info('Failed to send SMS notification.')
             return
-        if staff_email:
-            print("Sending automated mail :: (%s) %s || LOCALE: %s"  % (staff_email, rendered_notification['subject'], language))
-            ret = send_respa_mail(
-                staff_email,
-                rendered_notification['subject'],
-                rendered_notification['body'],
-                rendered_notification['html_body'],
-                attachments
-            )
-            print(ret[1])
-        else:
-            print("Sending automated mail :: (%s) %s || LOCALE: %s"  % (email_address, rendered_notification['subject'], language))
-            ret = send_respa_mail(
-                email_address,
-                rendered_notification['subject'],
-                rendered_notification['body'],
-                rendered_notification['html_body'],
-                attachments
-            )
-            print(ret[1])
+
+        logger.info(f"Sending automated mail {rendered_notification['subject']} || LOCALE: {language}")
+        email_address = staff_email if staff_email else email_address
+        success = send_respa_mail(email_address, rendered_notification['subject'],
+                rendered_notification['body'], rendered_notification['html_body'], attachments)
+        if not success:
+            logger.info('Failed to send automated mail.')
+
     def notify_staff_about_reservation(self, notification):
         if self.resource.resource_staff_emails:
             for email in self.resource.resource_staff_emails:
