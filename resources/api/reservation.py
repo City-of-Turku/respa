@@ -1002,10 +1002,7 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         new_instance = serializer.save(modified_by=self.request.user)
         new_instance.set_state(new_state, self.request.user)
         if new_state == old_instance.state and new_state not in ['denied'] and self.request.method != 'PATCH': # Reservation was modified, don't send modified upon patch.
-            if self.request.user.is_staff:
-                self.send_modified_mail(new_instance, staff=True)
-            else:
-                self.send_modified_mail(new_instance)
+            self.send_modified_mail(new_instance, is_staff=self.request.user.is_staff)
 
     def perform_destroy(self, instance):
         instance.set_state(Reservation.CANCELLED, self.request.user)
@@ -1022,11 +1019,9 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
             response['Content-Disposition'] = 'attachment; filename={}-{}.xlsx'.format(_('reservation'), kwargs['pk'])
         return response
 
-    def send_modified_mail(self, new_instance, staff=False):
-        if staff:
-            new_instance.send_reservation_modified_mail(action_by_official=True)
-        else:
-            new_instance.send_reservation_modified_mail()
+    def send_modified_mail(self, new_instance, is_staff=False):
+        new_instance.send_reservation_modified_mail(action_by_official=is_staff)
+        if not is_staff:
             new_instance.notify_staff_about_reservation(NotificationType.RESERVATION_MODIFIED_OFFICIAL)
 
 register_view(ReservationViewSet, 'reservation')
