@@ -221,7 +221,9 @@ class PaymentsReservationSerializer(ReservationSerializer):
         order = self.instance.get_order()
         if order and order.state != Order.WAITING:
             raise serializers.ValidationError(_('Cannot update this reservation.'))
-
+        elif not order:
+            return data
+    
         required = self.get_required_fields()
         for field in required:
             if field not in data:
