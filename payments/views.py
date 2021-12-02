@@ -3,7 +3,6 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .providers import get_payment_provider
 
-
 class SuccessView(View):
     def get(self, request):
         return get_payment_provider(request).handle_success_request()

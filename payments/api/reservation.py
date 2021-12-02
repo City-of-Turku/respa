@@ -2,12 +2,13 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models import Q
 from rest_framework import exceptions, serializers, status
 from rest_framework.exceptions import PermissionDenied
+from dateutil.parser import parse
 
 from payments.exceptions import (
     DuplicateOrderError, PayloadValidationError, RespaPaymentError, ServiceUnavailableError, UnknownReturnCodeError
 )
 from resources.api.reservation import ReservationSerializer
-from resources.models.reservation import Reservation
+from resources.models.reservation import RESERVATION_BILLING_FIELDS, Reservation
 
 from ..models import CustomerGroup, OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup, Order
 from ..providers import get_payment_provider
@@ -198,6 +199,9 @@ class PaymentsReservationSerializer(ReservationSerializer):
         return reservation
 
     def update(self, instance, validated_data):
+        if instance.has_order() and any(field for field in self._changed_fields if field[0] in ('Begin', 'End')):
+            setattr(self, '__old_price', instance.get_order().get_price())
+
         order_data = validated_data.pop('order', None)
         if order_data and instance.resource.need_manual_confirmation:
             if not instance.can_add_product_order(self.context['request'].user):
@@ -205,7 +209,15 @@ class PaymentsReservationSerializer(ReservationSerializer):
 
             order_data['reservation'] = instance
             ReservationEndpointOrderSerializer(context=self.context, instance=instance).update(instance.get_order(), validated_data=order_data)
+        instance = super().update(instance, validated_data)
+        if instance.has_order():
+            order = instance.get_order()
+            modified = '\n'.join([f'{key}: {val}' for key,val in self._changed_fields])
+            if hasattr(self, '__old_price') and order.get_price() != getattr(self, '__old_price'):
+                modified += f"\nPrice: {getattr(self, '__old_price')} -> {order.get_price()}"
+            order.create_log_entry('Order reservation was modified.\n%s' % modified, order.state)
         return super().update(instance, validated_data)
+
 
     def validate(self, data):
         order_data = data.pop('order', None)
@@ -218,10 +230,9 @@ class PaymentsReservationSerializer(ReservationSerializer):
         return data
 
     def validate_update(self, data):
+        self._get_changed_fields(data)
         order = self.instance.get_order()
-        if order and order.state != Order.WAITING:
-            raise serializers.ValidationError(_('Cannot update this reservation.'))
-        elif not order:
+        if not order:
             return data
     
         request = self.context['request']
@@ -233,11 +244,28 @@ class PaymentsReservationSerializer(ReservationSerializer):
 
         order_data = data.pop('order', None)
         for key, val in data.items():
-            if key in MODIFIABLE_FIELDS:
+            if key in set(RESERVATION_BILLING_FIELDS) | set(MODIFIABLE_FIELDS):
                 continue
 
             attr = getattr(self.instance, key)
-            if attr != val and not resource.can_modify_paid_reservations(request.user):
+            if val != attr and not resource.can_modify_paid_reservations(request.user):
                 raise serializers.ValidationError(_('Cannot change field: %s' % key))
         data['order'] = order_data
         return data
+
+
+    def _get_changed_fields(self, data):
+        self._changed_fields = []
+        for key, val in data.items():
+            if key not in set(RESERVATION_BILLING_FIELDS) | set(MODIFIABLE_FIELDS):
+                continue
+            attr = getattr(self.instance, key)
+            if val != attr:
+                if key in ('begin', 'end'):
+                    val = val.strftime('%Y-%m-%d %H:%M:%S')
+                    attr = attr.strftime('%Y-%m-%d %H:%M:%S')
+                key = key.replace('_',' ').capitalize()
+                changed = '%s -> %s' % (attr, val)
+                self._changed_fields.append(
+                    (key, changed)
+                )

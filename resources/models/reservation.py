@@ -270,7 +270,7 @@ class Reservation(ModifiableModel):
             Reservation.CANCELLED, Reservation.WAITING_FOR_PAYMENT,
             Reservation.READY_FOR_PAYMENT
         )
-        if new_state == self.state and self.state == Reservation.CONFIRMED:
+        if new_state == self.state and self.state in (Reservation.CONFIRMED, Reservation.REQUESTED):
             reservation_modified.send(sender=self.__class__, instance=self, user=user)
             return
         elif new_state == Reservation.CONFIRMED:

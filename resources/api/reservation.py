@@ -1039,6 +1039,9 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
 
     def perform_destroy(self, instance):
         instance.set_state(Reservation.CANCELLED, self.request.user)
+        if instance.has_order():
+            order = instance.get_order()
+            order.set_state(Order.CANCELLED, 'Order reservation was cancelled.')
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)

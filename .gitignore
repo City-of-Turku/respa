@@ -6,7 +6,7 @@ db.sqlite3
 media/
 static/
 .django_secret
-./local_settings.py
+local_settings.py
 /venv*
 /.idea
 .coverage

@@ -349,10 +349,12 @@ class Order(models.Model):
             return
 
         valid_state_changes = {
-            Order.WAITING: (Order.CONFIRMED, Order.REJECTED, Order.EXPIRED),
+            Order.WAITING: (Order.CONFIRMED, Order.REJECTED, Order.EXPIRED, ),
             Order.CONFIRMED: (Order.CANCELLED,),
+            Reservation.CANCELLED: (Order.CANCELLED, ),
         }
-        valid_new_states = valid_state_changes.get(old_state, ())
+
+        valid_new_states = set(valid_state_changes.get(old_state, ())) | set(valid_state_changes.get(self.reservation.state, ()))
 
         if new_state not in valid_new_states:
             raise OrderStateTransitionError(
@@ -417,10 +419,14 @@ class OrderLine(models.Model):
 
     @handle_customer_group_pricing
     def get_unit_price(self) -> Decimal:
+        if self.order.state == Order.CONFIRMED:
+            return self.product_cg_price
         return self.product.get_price_for_reservation(self.order.reservation)
 
     @handle_customer_group_pricing
     def get_price(self) -> Decimal:
+        if self.order.state == Order.CONFIRMED:
+            return self.product_cg_price * self.quantity
         return self.product.get_price_for_reservation(self.order.reservation) * self.quantity
 
     @handle_customer_group_pricing
