@@ -224,6 +224,8 @@ class PaymentsReservationSerializer(ReservationSerializer):
         elif not order:
             return data
     
+        request = self.context['request']
+        resource = data['resource']
         required = self.get_required_fields()
         for field in required:
             if field not in data:
@@ -235,7 +237,7 @@ class PaymentsReservationSerializer(ReservationSerializer):
                 continue
 
             attr = getattr(self.instance, key)
-            if attr != val:
+            if attr != val and not resource.can_modify_paid_reservations(request.user):
                 raise serializers.ValidationError(_('Cannot change field: %s' % key))
         data['order'] = order_data
         return data

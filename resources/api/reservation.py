@@ -219,7 +219,9 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
 
     def handle_manual_confirmation_payload(self, request, resource):
         if (self.instance and resource.need_manual_confirmation) and \
-            request.data.get('state') in (Reservation.CONFIRMED, Reservation.CANCELLED, Reservation.DENIED) and \
+            request.data.get('state') in (
+                Reservation.CONFIRMED, Reservation.CANCELLED, 
+                Reservation.DENIED, Reservation.REQUESTED) and \
             (resource.is_manager(request.user) or resource.is_admin(request.user)) and \
             request.user != self.instance.user and 'order' in request.data:
                 del request.data['order']
