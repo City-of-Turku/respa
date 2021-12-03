@@ -84,11 +84,12 @@ class OrderSerializerBase(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
         request = self.context['request']
         if request.method in ('PUT', 'PATCH'):
-            if self.instance.has_order() and \
+            if (self.instance and self.instance.has_order()) and \
                 self.instance.state in (Reservation.READY_FOR_PAYMENT, Reservation.WAITING_FOR_PAYMENT):
                     self.fields['order_lines'].required = False
 
 
     def get_customer_group_name(self, obj):
         ocgd = obj.get_order_customer_group_data()
-        return get_translated_fields(ocgd)
+        customer_group = get_translated_fields(ocgd)
+        return customer_group if customer_group else None

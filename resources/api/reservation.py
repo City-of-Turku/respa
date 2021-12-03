@@ -192,7 +192,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             required = resource.get_required_reservation_extra_field_names(cache=cache)
 
             # reservations without an order don't require billing fields
-            self.handle_manual_confirmation_payload(request, resource)
+            self.handle_reservation_modify_request(request, resource)
             order = request.data.get('order')
 
 
@@ -217,8 +217,8 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         self.context.update({'resource': resource})
 
 
-    def handle_manual_confirmation_payload(self, request, resource):
-        if (self.instance and resource.need_manual_confirmation) and \
+    def handle_reservation_modify_request(self, request, resource):
+        if (self.instance and resource.has_products()) and \
             request.data.get('state') in (
                 Reservation.CONFIRMED, Reservation.CANCELLED, 
                 Reservation.DENIED, Reservation.REQUESTED) and \

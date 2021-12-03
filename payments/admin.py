@@ -151,7 +151,7 @@ class OrderLineInline(admin.TabularInline):
 
     def customer_group(self, obj):
         order_cg = OrderCustomerGroupData.objects.filter(order_line=obj).first()
-        return order_cg.customer_group_name if order_cg else 'None'
+        return order_cg.customer_group_name if order_cg and order_cg.customer_group_name else _('None')
 
     customer_group.short_description = _('selected customer group')
 

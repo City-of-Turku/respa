@@ -419,13 +419,13 @@ class OrderLine(models.Model):
 
     @handle_customer_group_pricing
     def get_unit_price(self) -> Decimal:
-        if self.order.state == Order.CONFIRMED:
+        if self.product_cg_price and self.order.state == Order.CONFIRMED:
             return self.product_cg_price
         return self.product.get_price_for_reservation(self.order.reservation)
 
     @handle_customer_group_pricing
     def get_price(self) -> Decimal:
-        if self.order.state == Order.CONFIRMED:
+        if self.product_cg_price and self.order.state == Order.CONFIRMED:
             return self.product_cg_price * self.quantity
         return self.product.get_price_for_reservation(self.order.reservation) * self.quantity
 
@@ -441,9 +441,9 @@ class OrderLine(models.Model):
         if hasattr(self.order, '_in_memory_order_customer_group_data'):
             order_cg = next(iter([order_cg for order_cg in self.order._in_memory_order_customer_group_data if order_cg.order_line == self]))
             return order_cg.product_cg_price
-        order_cg = OrderCustomerGroupData.objects.filter(order_line=self).first()
-        if order_cg:
-            return order_cg.product_cg_price
+        order_cg = OrderCustomerGroupData.objects.filter(order_line=self)
+        if order_cg.exists():
+            return order_cg.first().product_cg_price
 
     @handle_customer_group_pricing
     def handle_customer_group_pricing(self):
