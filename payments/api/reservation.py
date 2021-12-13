@@ -169,6 +169,7 @@ class PaymentsReservationSerializer(ReservationSerializer):
         if action == 'create':
             self.fields['order'] = ReservationEndpointOrderSerializer(required=order_required, context=self.context)
         elif action == 'update':
+            order_required = not self.instance.can_modify(request.user)
             self.fields['order'] = ReservationEndpointOrderSerializer(required=order_required, context=self.context, instance=self.instance)
         elif 'order_detail' in self.context['includes']:
             self.fields['order'] = ReservationEndpointOrderSerializer(read_only=True, context=self.context)

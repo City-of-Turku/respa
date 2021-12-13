@@ -324,7 +324,7 @@ class Reservation(ModifiableModel):
 
         if self.get_order():
             return self.resource.can_modify_paid_reservations(user) or (
-                self.user == user and self.state == Reservation.READY_FOR_PAYMENT
+                self.user == user and self.state in (Reservation.READY_FOR_PAYMENT, Reservation.REQUESTED)
             )
 
         # reservations that need manual confirmation and are confirmed cannot be

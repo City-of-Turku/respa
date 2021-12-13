@@ -222,8 +222,8 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             request.data.get('state') in (
                 Reservation.CONFIRMED, Reservation.CANCELLED, 
                 Reservation.DENIED, Reservation.REQUESTED) and \
-            (resource.is_manager(request.user) or resource.is_admin(request.user)) and \
-            request.user != self.instance.user and 'order' in request.data:
+            (resource.is_manager(request.user) or resource.is_admin(request.user) or self.instance.can_modify(request.user)) and \
+            'order' in request.data:
                 del request.data['order']
 
 
