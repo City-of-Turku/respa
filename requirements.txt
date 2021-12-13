@@ -140,7 +140,7 @@ django-mptt==0.12.0
     # via
     #   -r requirements.in
     #   django-munigeo
-git+https://github.com/Christophe31/django-multi-email-field.git@master#django-multi-email-field
+django-multi-email-field @ git+https://github.com/Christophe31/django-multi-email-field.git@master
     # via -r requirements.in
 django-munigeo==0.3.6
     # via -r requirements.in
@@ -240,7 +240,7 @@ lazy-object-proxy==1.6.0
     # via
     #   -r requirements.in
     #   astroid
-lxml==4.6.3
+lxml==4.6.5
     # via
     #   -r requirements.in
     #   exchangelib
@@ -419,9 +419,7 @@ ruamel.yaml==0.17.4
     #   -r requirements.in
     #   drf-yasg
 ruamel.yaml.clib==0.2.2
-    # via
-    #   -r requirements.in
-    #   ruamel.yaml
+    # via -r requirements.in
 sentry-sdk==1.0.0
     # via -r requirements.in
 six==1.15.0
