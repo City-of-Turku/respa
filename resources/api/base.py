@@ -11,8 +11,6 @@ from resources.models.availability import Period, Day
 from resources.models.resource import Resource
 from resources.models.unit import Unit
 
-from collections import OrderedDict
-
 all_views = []
 
 

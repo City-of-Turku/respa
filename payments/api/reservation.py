@@ -249,7 +249,7 @@ class PaymentsReservationSerializer(ReservationSerializer):
                 continue
 
             attr = getattr(self.instance, key)
-            if val != attr and not resource.can_modify_paid_reservations(request.user):
+            if val != attr and not self.instance.can_modify(request.user):
                 raise serializers.ValidationError(_('Cannot change field: %s' % key))
         data['order'] = order_data
         return data
