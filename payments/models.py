@@ -419,14 +419,10 @@ class OrderLine(models.Model):
 
     @handle_customer_group_pricing
     def get_unit_price(self) -> Decimal:
-        if self.product_cg_price and self.order.state == Order.CONFIRMED:
-            return self.product_cg_price
         return self.product.get_price_for_reservation(self.order.reservation)
 
     @handle_customer_group_pricing
     def get_price(self) -> Decimal:
-        if self.product_cg_price and self.order.state == Order.CONFIRMED:
-            return self.product_cg_price * self.quantity
         return self.product.get_price_for_reservation(self.order.reservation) * self.quantity
 
     @handle_customer_group_pricing
