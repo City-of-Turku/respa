@@ -47,9 +47,14 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
                 ocgd.copy_translated_fields(prod_cg.first().customer_group)
             ocgd.save()
 
-        if reservation.state == Reservation.CREATED and reservation.resource.need_manual_confirmation:
-            order.state = Order.WAITING
-            return order
+        resource = reservation.resource
+        request = self.context.get('request')
+        has_staff_perms = resource.is_viewer(request.user) or resource.is_manager(request.user) or resource.is_admin(request.user)
+        # non staff members i.e. customers don't pay for manually confirmed reservations in creation
+        if not has_staff_perms:
+            if reservation.state == Reservation.CREATED and resource.need_manual_confirmation:
+                order.state = Order.WAITING
+                return order
 
         payments = get_payment_provider(request=self.context['request'],
                                         ui_return_url=return_url)
@@ -94,7 +99,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
                                           code=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return order
 
-    
+
 
     def get_payment_url(self, obj):
         return self.context.get('payment_url', '')
@@ -235,7 +240,7 @@ class PaymentsReservationSerializer(ReservationSerializer):
         order = self.instance.get_order()
         if not order:
             return data
-    
+
         request = self.context['request']
         resource = data['resource']
         required = self.get_required_fields()
