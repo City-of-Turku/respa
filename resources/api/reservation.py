@@ -37,7 +37,6 @@ import phonenumbers
 from phonenumbers.phonenumberutil import (
     region_code_for_country_code
 )
-from payments.api.base import OrderSerializerBase
 from payments.models import Order
 
 
@@ -1009,7 +1008,7 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         if resource.need_manual_confirmation and not resource.can_bypass_manual_confirmation(self.request.user):
             new_state = Reservation.REQUESTED
         else:
-            if order and order != Order.CONFIRMED:
+            if order and order.state != Order.CONFIRMED:
                 new_state = Reservation.WAITING_FOR_PAYMENT
             else:
                 new_state = Reservation.CONFIRMED
