@@ -191,13 +191,18 @@ class O365Calendar:
         else:
             time = datetime(1970, 1, 1, tzinfo=timezone.utc)
         events = self.get_events()
-        deleted = set(self._known_events).difference(events.keys())
-        self._known_events = {k for k in events.keys()}
+        deleted_keys = set(self._known_events) - set(events)
+        deleted = { key: self._known_events[key] for key in deleted_keys }
+        self._known_events = events
         events = {i: e for i, e in events.items() if e.modified_at > time}
         new_memento = reduce(lambda a, b: max(a, b.modified_at), events.values(), time)
         result = {id: (status(r, time), r.change_key()) for id, r in events.items()}
-        for i in deleted:
-            result[i] = (ChangeType.DELETED, "")
+        for key, value in deleted.items():
+            if value['end'] and value['end'] > self._start_date and value['end'] < self._end_date:
+                result[key] = (ChangeType.DELETED, "")
+            else:
+                result[key] = (ChangeType.EXPIRED, "")
+
         return result, new_memento.strftime(time_format)
 
     def get_changes_by_ids(self, item_ids, memento=None):

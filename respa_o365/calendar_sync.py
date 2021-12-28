@@ -80,16 +80,18 @@ def _perform_sync(link, func, respa_memento_field, o365_memento_field, outlook_m
     o365_memento = getattr(link, o365_memento_field)
     id_mappings = {}
     reservation_item_data = {}
-    known_exchange_items = set()
+    known_exchange_items = {}
     respa_change_keys = {}
     exchange_change_keys = {}
     for res in outlook_model.objects.filter(calendar_link=link):
         event_id = getattr(res, outlook_model_event_id_property)
         id_mappings[event_id] = res.exchange_id
         reservation_item_data[event_id] = res
-        known_exchange_items.add(res.exchange_id)
+        known_exchange_items[res.exchange_id] = {"begin": res.begin, "end": res.end }
         respa_change_keys[event_id] = res.respa_change_key
         exchange_change_keys[res.exchange_id] = res.exchange_change_key
+
+
     # Initialise components
     mapper = IdMapper(id_mappings)
     api = MicrosoftApi(token)

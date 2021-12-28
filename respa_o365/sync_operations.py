@@ -117,6 +117,7 @@ class ChangeType(Enum):
     CREATED = 2
     UPDATED = 3
     DELETED = 4
+    EXPIRED = 5
 
 
 class TargetSystem(Enum):
@@ -172,31 +173,37 @@ def build_reservation_sync_actions_dict():
             ChangeType.NO_CHANGE: s.to(RESPA, s.create),
             ChangeType.CREATED: s.to(RESPA, s.create),
             ChangeType.UPDATED: s.to(RESPA, s.create),
-            ChangeType.DELETED: s.nop},
+            ChangeType.DELETED: s.nop,
+            ChangeType.EXPIRED: s.removeMapping},
         ChangeType.NO_CHANGE: {
             None: s.to(REMOTE, s.create),
             ChangeType.NO_CHANGE: s.nop,
             ChangeType.CREATED: s.to(RESPA, s.update),
             ChangeType.UPDATED: s.to(RESPA, s.update),
-            ChangeType.DELETED: s.to(RESPA, s.delete)},
+            ChangeType.DELETED: s.to(RESPA, s.delete),
+            ChangeType.EXPIRED: s.removeMapping},
         ChangeType.CREATED: {
             None: s.to(REMOTE, s.create),
             ChangeType.NO_CHANGE: s.to(REMOTE, s.update),
             ChangeType.CREATED: s.to(REMOTE, s.update),
             ChangeType.UPDATED: s.to(REMOTE, s.update),
-            ChangeType.DELETED: s.to(REMOTE, s.create)},
+            ChangeType.DELETED: s.to(REMOTE, s.create),
+            ChangeType.EXPIRED: s.removeMapping},            
         ChangeType.UPDATED: {
             None: s.to(REMOTE, s.create),
             ChangeType.NO_CHANGE: s.to(REMOTE, s.update),
             ChangeType.CREATED: s.to(REMOTE, s.update),
             ChangeType.UPDATED: s.to(REMOTE, s.update),
-            ChangeType.DELETED: s.to(REMOTE, s.create)},
+            ChangeType.DELETED: s.to(REMOTE, s.create),
+            ChangeType.EXPIRED: s.removeMapping},
         ChangeType.DELETED: {
             None: s.nop,
             ChangeType.NO_CHANGE: s.to(REMOTE, s.delete),
             ChangeType.CREATED: s.to(REMOTE, s.delete),
             ChangeType.UPDATED: s.to(REMOTE, s.delete),
-            ChangeType.DELETED: s.removeMapping}
+            ChangeType.DELETED: s.removeMapping,
+            ChangeType.EXPIRED: s.removeMapping},
+
     }
     return statesToAction
 
