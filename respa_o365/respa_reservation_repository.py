@@ -76,7 +76,7 @@ class RespaReservations:
         else:
             time = datetime(1970, 1, 1, tzinfo=timezone.utc)
         reservations = Reservation.objects.filter(resource_id=self.__resource_id, modified_at__gt=time)
-        reservations = reservations.filter(begin__range=(self._start_date, self._end_date))
+        reservations = reservations.filter(end__range=(self._start_date, self._end_date))
         new_memento = reduce(lambda a, b: max(a, b.modified_at), reservations, time)
         return {r.id: (status(r, time), reservation_change_key(r)) for r in reservations}, new_memento.strftime(time_format)
 

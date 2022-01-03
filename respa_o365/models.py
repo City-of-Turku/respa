@@ -2,6 +2,9 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
+from datetime import datetime
+import pytz
+
 from respa_o365.availability_sync_item import period_to_item
 
 class OutlookTokenRequestData(models.Model):
@@ -56,21 +59,24 @@ class OutlookCalendarAvailability(models.Model):
 
     @property
     def begin(self):
-        item = period_to_item(self)
+        item = period_to_item(self.period)
         if item:
-            return item.begin
+            return utc_datetime(item.begin)
         return None
 
+    @property 
     def end(self):
-        item = period_to_item(self)
+        item = period_to_item(self.period)
         if item:
-            return item.end
+            return utc_datetime(item.end)
         return None
-
+    
 
 class OutlookSyncQueue(models.Model):
     calendar_link = models.ForeignKey('OutlookCalendarLink', verbose_name=_('Calendar Link'),
                     blank=False, null=False, on_delete=models.CASCADE)
     created_at = models.DateTimeField(verbose_name=_('Time of creation'), auto_now_add=True)
 
-    
+def utc_datetime(local_datetime):
+    tz = pytz.timezone(settings.TIME_ZONE)
+    return tz.localize(local_datetime, is_dst=False).astimezone(pytz.utc)

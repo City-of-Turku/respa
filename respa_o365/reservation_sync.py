@@ -97,7 +97,7 @@ class ChangeKeyWrapper(SyncItemRepository):
     def filter_seen(self, changes_with_change_keys):
         filtered = {}
         for item_id, (change_type, change_key) in changes_with_change_keys.items():
-            if self.seen(item_id, change_key) and change_type != ChangeType.DELETED:
+            if self.seen(item_id, change_key) and change_type != ChangeType.DELETED and change_type != ChangeType.EXPIRED:
                 filtered[item_id] = ChangeType.NO_CHANGE
             else:
                 filtered[item_id] = change_type

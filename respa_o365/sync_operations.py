@@ -203,7 +203,13 @@ def build_reservation_sync_actions_dict():
             ChangeType.UPDATED: s.to(REMOTE, s.delete),
             ChangeType.DELETED: s.removeMapping,
             ChangeType.EXPIRED: s.removeMapping},
-
+        ChangeType.EXPIRED: {
+            None: s.nop,
+            ChangeType.NO_CHANGE: s.removeMapping,
+            ChangeType.CREATED: s.removeMapping,
+            ChangeType.UPDATED: s.removeMapping,
+            ChangeType.DELETED: s.removeMapping,
+            ChangeType.EXPIRED: s.removeMapping}
     }
     return statesToAction
 
@@ -218,31 +224,43 @@ def build_availability_sync_actions_dict():
             ChangeType.NO_CHANGE: s.to(RESPA, s.create),
             ChangeType.CREATED: s.to(RESPA, s.create),
             ChangeType.UPDATED: s.to(RESPA, s.create),
-            ChangeType.DELETED: s.nop},
+            ChangeType.DELETED: s.nop,
+            ChangeType.EXPIRED: s.nop},
         ChangeType.NO_CHANGE: {
             None: s.to(RESPA, s.delete),
             ChangeType.NO_CHANGE: s.nop,
             ChangeType.CREATED: s.to(RESPA, s.update),
             ChangeType.UPDATED: s.to(RESPA, s.update),
-            ChangeType.DELETED: s.to(RESPA, s.delete)},
+            ChangeType.DELETED: s.to(RESPA, s.delete),
+            ChangeType.EXPIRED: s.removeMapping},
         ChangeType.CREATED: {
             None: s.to(RESPA, s.delete),
             ChangeType.NO_CHANGE: s.to(RESPA, s.update),
             ChangeType.CREATED: s.to(RESPA, s.update),
             ChangeType.UPDATED: s.to(RESPA, s.update),
-            ChangeType.DELETED: s.to(RESPA, s.delete)},
+            ChangeType.DELETED: s.to(RESPA, s.delete),
+            ChangeType.EXPIRED: s.removeMapping},
         ChangeType.UPDATED: {
             None: s.to(RESPA, s.delete),
             ChangeType.NO_CHANGE: s.to(RESPA, s.update),
             ChangeType.CREATED: s.to(RESPA, s.update),
             ChangeType.UPDATED: s.to(RESPA, s.update),
-            ChangeType.DELETED: s.to(RESPA, s.delete)},
+            ChangeType.DELETED: s.to(RESPA, s.delete),
+            ChangeType.EXPIRED: s.removeMapping},
         ChangeType.DELETED: {
             None: s.nop,
             ChangeType.NO_CHANGE: s.to(RESPA, s.create),
             ChangeType.CREATED: s.to(RESPA, s.create),
             ChangeType.UPDATED: s.to(RESPA, s.create),
-            ChangeType.DELETED: s.removeMapping}
+            ChangeType.DELETED: s.removeMapping,
+            ChangeType.EXPIRED: s.removeMapping},
+        ChangeType.EXPIRED: {
+            None: s.nop,
+            ChangeType.NO_CHANGE: s.removeMapping,
+            ChangeType.CREATED: s.removeMapping,
+            ChangeType.UPDATED: s.removeMapping,
+            ChangeType.DELETED: s.removeMapping,
+            ChangeType.EXPIRED: s.removeMapping}
     }
 
     return statesToAction
