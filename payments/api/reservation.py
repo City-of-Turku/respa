@@ -7,6 +7,7 @@ from dateutil.parser import parse
 from payments.exceptions import (
     DuplicateOrderError, PayloadValidationError, RespaPaymentError, ServiceUnavailableError, UnknownReturnCodeError
 )
+from payments.utils import is_free
 from resources.api.reservation import ReservationSerializer
 from resources.models.reservation import RESERVATION_BILLING_FIELDS, Reservation
 
@@ -51,7 +52,8 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         request = self.context.get('request')
         has_staff_perms = resource.is_viewer(request.user) or resource.is_manager(request.user) or resource.is_admin(request.user)
         # non staff members i.e. customers don't pay for manually confirmed reservations in creation
-        if not has_staff_perms:
+        # free manually confirmed orders are handled in the payment provider
+        if not has_staff_perms and not is_free(order.get_price()):
             if reservation.state == Reservation.CREATED and resource.need_manual_confirmation:
                 order.state = Order.WAITING
                 return order
