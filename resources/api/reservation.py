@@ -217,13 +217,19 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
 
 
     def handle_reservation_modify_request(self, request, resource):
-        if (self.instance and resource.has_products()) and \
-            request.data.get('state') in (
-                Reservation.CONFIRMED, Reservation.CANCELLED, 
-                Reservation.DENIED, Reservation.REQUESTED) and \
-            (resource.is_manager(request.user) or resource.is_admin(request.user) or self.instance.can_modify(request.user)) and \
-            'order' in request.data:
-                del request.data['order']
+        # handle removing order from data when updating reservation without paying
+        if self.instance and resource.has_products() and 'order' in request.data:
+            state = request.data.get('state')
+            # states where reservation updates can be made
+            if state in (
+                Reservation.CONFIRMED, Reservation.CANCELLED, Reservation.DENIED,
+                Reservation.REQUESTED, Reservation.READY_FOR_PAYMENT):
+                has_staff_perms = resource.is_manager(request.user) or resource.is_admin(request.user)
+                user_can_modify = self.instance.can_modify(request.user)
+                # staff members never pay after reservation creation and their order can be removed safely here
+                # non staff members i.e. clients must include order when state is ready for payment
+                if has_staff_perms or (user_can_modify and state != Reservation.READY_FOR_PAYMENT):
+                    del request.data['order']
 
 
     def get_required_fields(self):
@@ -1023,9 +1029,12 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         old_instance = self.get_object()
         new_state = serializer.validated_data.pop('state', old_instance.state)
         order = old_instance.get_order()
+        resource = serializer.validated_data['resource']
+        can_edit_paid = resource.can_modify_paid_reservations(self.request.user)
 
+        # when staff makes an update (can edit paid perm), state should not change to waiting for payment
         if new_state == Reservation.READY_FOR_PAYMENT and \
-            order and order.state == Order.WAITING:
+            order and order.state == Order.WAITING and not can_edit_paid:
             new_state = Reservation.WAITING_FOR_PAYMENT
         elif new_state == Reservation.CONFIRMED and \
             order and order.state == Order.WAITING:
