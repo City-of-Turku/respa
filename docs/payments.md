@@ -1,6 +1,6 @@
 # Payments
 
-Payments app adds support for Respa resources to have paid reservations. In addition to requiring a mandatory rent for a resource's usage, it is also possible to offer optional extra accessories to be ordered and paid (not yet supported in Varaamo).
+Payments app adds support for Respa resources to have paid reservations. In addition to requiring a mandatory rent for a resource's usage, it is also possible to offer optional extra accessories to be ordered and paid.
 
 Transactions are handled by a third party payment provider. Currently implemented provider integrations:
 
@@ -62,6 +62,38 @@ An order can be in state `waiting`, `confirmed`, `rejected`, `expired` or `cance
 
 An order is created by providing its data in `order` field when creating a reservation via the API. The UI must also provide a return URL to which the user will be redirected after the payment process has been completed. In the creation response the UI gets back a payment URL, to which it must redirect the user to start the actual payment process.
 
+## Customer Groups
+
+Products can have special pricing based on customer groups (cg). Cgs are represented with the following models:
+
+- `CustomerGroup`: Common to all products containing cg naming e.g. Elders, Adults or Children.
+
+- `ProductCustomerGroup`: Unique special pricing for certain cg for a product. 
+
+Cgs are not required in products and there can be any number of them defined per product.
+
+Normally a product's price must be over 0.00 EUR, but product customer groups (pcg) can be defined to have special pricing of 0.00 EUR. If a reservation's order total price is 0.00 EUR, the reservation is completed without the payment process.
+
+Orders can be made with products which have differing cgs or no cgs at all. Pricing is calculated based on given order's cg and if a product doesn't contain the given cg, the product's default pricing is used instead.
+
+Model `OrderProductCustomerGroupData` is used to store pcg price and cg name (if order's cg is defined in the product) per order line. Price data is stored so that later modifications to pcgs won't change the order line price after the payment has been made.
+
+## Manually confirmed reservations
+
+Reservations which require manual confirmation are not paid during initial reservation creation. Instead, the payment flow is as follows:
+
+1. Customer makes the initial reservation.
+
+2. Staff confirms the reservation which changes the reservation state from `requested` to `ready_for_payment`.
+
+3. Customer initiates the payment process by making a reservation update request with order which changes the reservation state from `ready_for_payment` to `waiting_for_payment`.
+
+4. Reservation process continues like normal paid reservations.
+
+If a reservation's order total price is 0.00 EUR, the reservation is treated like a manually confirmed reservation without an order i.e. when staff confirms the reservation, its state changes directly from `requested` to `confirmed`.
+
+Staff members follow the normal payment flow when making reservations to resources requiring manual confirmation i.e. they make the payment at the initial reservation creation.
+
 ## Administration
 
 Currently Django Admin needs to be used for all administrative tasks, ie. adding / modifying / deleting products, and viewing / cancelling orders.
@@ -69,6 +101,7 @@ Currently Django Admin needs to be used for all administrative tasks, ie. adding
 ## Permissions
 
 - By default it is not possible to modify reservations that have an order using the API. Permission to modify a paid reservation can be granted using resource permission `can_modify_paid_reservation`.
+    - Manually confirmed reservations that have an order are an exception. Modifications to reservations are allowed without special permissions before reservation state is changed to `confirmed`.
 
 - Everyone can see only their own orders' data in the API. With resource permission `can_view_reservation_product_orders` one can view all other users' order data as well.
 
@@ -99,7 +132,20 @@ Example response (GET `/v1/resource/`):
         "price": "10.00",
         "price_type": "per_period",
         "price_period": "01:00:00",
-        "max_quantity": 1
+        "max_quantity": 1,
+        "product_customer_groups": [
+            {
+                "id": "adults-pcg-id",
+                "price": "9.00",
+                "customer_group": {
+                    "id": "adults-cg-id",
+                    "name": {
+                        "fi": "Aikuiset",
+                        "en": "Adults"
+                    }
+                }
+            }
+        ]
     }
 ],
 
@@ -125,6 +171,8 @@ Example request (POST `/v1/order/check_price/`):
 }
 ```
 
+Adding `"customer_group": "some-cg-id"` to above request's root will apply customer group pricing to the return values.
+
 Example response:
 
 ```json
@@ -146,8 +194,21 @@ Example response:
                     "tax_percentage": "24.00",
                     "amount": "10.00",
                     "period": "01:00:00",
-                }
-                "max_quantity": 10
+                },
+                "max_quantity": 10,
+                "product_customer_groups": [
+                    {
+                        "id": "adults-pcg-id",
+                        "price": "9.00",
+                        "customer_group": {
+                            "id": "adults-cg-id",
+                            "name": {
+                                "fi": "Aikuiset",
+                                "en": "Adults"
+                            }
+                        }
+                    }
+                ]
             },
             "quantity": 5,
             "unit_price": "20.00",
@@ -181,6 +242,7 @@ Example request (POST `/v1/reservation/`):
     "billing_last_name": "Virtanen",
     "billing_phone_number": "555-123456",
     "order": {
+        "customer_group": "adults-cg-id",
         "order_lines": [
             {
                 "product": "awevmfmr3w5a",
@@ -191,6 +253,8 @@ Example request (POST `/v1/reservation/`):
     }
 }
 ```
+
+`customer_group` can be omitted when the order's products don't contain any customer groups.
 
 `return_url` is the URL where the user's browser will be redirected after the payment process. Typically it should be some kind of "payment done" view in the UI.
 
@@ -222,8 +286,9 @@ Example response:
                         "tax_percentage": "24.00",
                         "amount": "10.00",
                         "period": "01:00:00",
-                    }
-                    "max_quantity": 1
+                    },
+                    "max_quantity": 1,
+                    "product_customer_groups": [{...}, {...}]
                 },
                 "quantity": 1,
                 "unit_price": "20.00",
@@ -231,8 +296,12 @@ Example response:
             }
         ],
         "price": "20.00",
+        "customer_group_name": {
+            "fi": "Aikuiset",
+            "en": "Adults"
+        },
         "payment_url": "https://payform.bambora.com/pbwapi/token/d02317692040937087a4c04c303dd0da14441f6f492346e40cea8e6a6c7ffc7c",
-        "status": "waiting"
+        "state": "waiting"
     }
 
 ...
@@ -289,8 +358,9 @@ Example response (GET `/v1/reservation/?include=order_detail`):
                         "tax_percentage": "24.00",
                         "amount": "10.00",
                         "period": "01:00:00",
-                    }
-                    "max_quantity": 1
+                    },
+                    "max_quantity": 1,
+                    "product_customer_groups": [{...}, {...}]
                 },
                 "quantity": 1,
                 "unit_price": "20.00",
@@ -298,7 +368,11 @@ Example response (GET `/v1/reservation/?include=order_detail`):
             }
         ],
         "price": "20.00",
-        "status": "confirmed"
+        "customer_group_name": {
+            "fi": "Aikuiset",
+            "en": "Adults"
+        },
+        "state": "confirmed"
     }
 
 ...
@@ -347,6 +421,10 @@ After the status has been checked, the customer is redirected to the `ui_return_
 ### Data structure
 
 ![payments models](payments_models.png "payments models")
+
+#### Customer Groups
+
+![customer group models](customer_group_models.png "customer group models")
 
 ### Payment flow
 
