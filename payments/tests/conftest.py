@@ -171,6 +171,15 @@ def product_with_no_price_product_cg(product_customer_group, resource_in_unit):
     product_customer_group.save()
     return product
 
+@pytest.fixture
+def product_extra_manual_confirmation(resource_with_manual_confirmation, customer_group):
+    product = ProductFactory.create(
+        type=Product.EXTRA,
+        resources=[resource_with_manual_confirmation]
+    )
+    ProductCustomerGroupFactory.create(product=product, customer_group=customer_group)
+    return product
+
 
 @pytest.fixture
 def order_with_product_customer_group(product_with_product_cg, two_hour_reservation):

@@ -23,6 +23,11 @@ def staff_api_client(staff_user):
     api_client.force_authenticate(user=staff_user)
     return api_client
 
+@pytest.fixture
+def unit_manager_api_client(unit_manager_user):
+    api_client = APIClient()
+    api_client.force_authenticate(user=unit_manager_user)
+    return api_client
 
 @pytest.fixture
 def user_api_client(user):
@@ -150,6 +155,12 @@ def resource_with_opening_hours(resource_in_unit):
                            closes=datetime.time(18, 0))
     resource_in_unit.update_opening_hours()
     return resource_in_unit
+
+@pytest.fixture
+def resource_with_manual_confirmation(resource_with_opening_hours):
+    resource_with_opening_hours.need_manual_confirmation = True
+    resource_with_opening_hours.save()
+    return resource_with_opening_hours
 
 @pytest.mark.django_db
 @pytest.fixture
@@ -280,21 +291,6 @@ def unit_admin_user(resource_in_unit):
 
 @pytest.mark.django_db
 @pytest.fixture
-def unit_admin_user(resource_in_unit):
-    user = get_user_model().objects.create(
-        username='test_admin_user',
-        first_name='Inspector',
-        last_name='Lestrade',
-        email='lestrade@scotlandyard.co.uk',
-        is_staff=True,
-        preferred_language='en'
-    )
-    user.unit_authorizations.create(subject=resource_in_unit.unit, level=UnitAuthorizationLevel.admin)
-    return user
-
-
-@pytest.mark.django_db
-@pytest.fixture
 def unit_manager_user(resource_in_unit):
     user = get_user_model().objects.create(
         username='test_manager_user',
@@ -320,22 +316,6 @@ def unit_viewer_user(resource_in_unit):
     )
     user.unit_authorizations.create(subject=resource_in_unit.unit, level=UnitAuthorizationLevel.viewer)
     return user
-
-
-@pytest.mark.django_db
-@pytest.fixture
-def unit_viewer_user(resource_in_unit):
-    user = get_user_model().objects.create(
-        username='test_viewer_user',
-        first_name='Inspector',
-        last_name='Watson',
-        email='watson@scotlandyard.co.uk',
-        is_staff=True,
-        preferred_language='en'
-    )
-    user.unit_authorizations.create(subject=resource_in_unit.unit, level=UnitAuthorizationLevel.viewer)
-    return user
-
 
 @pytest.mark.django_db
 @pytest.fixture

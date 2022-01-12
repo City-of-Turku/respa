@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest.mock import MagicMock, create_autospec, patch
 from urllib.parse import urlencode
 
@@ -311,7 +312,7 @@ def test_order_cannot_be_modified(user_api_client, order_with_products, user):
 
     response = user_api_client.put(get_detail_url(order_with_products.reservation), reservation_data)
 
-    assert response.status_code == 200, response.data
+    assert response.status_code == 400, response.data
     order_with_products.refresh_from_db()
     assert order_with_products.order_lines.first().product != new_product
     assert order_with_products.order_lines.first().quantity != 777
@@ -423,3 +424,113 @@ def test_reservation_with_order_requires_billing_fields_when_they_are_set_requir
 
     response = user_api_client.post(LIST_URL, data=reservation_data)
     assert response.status_code == 400
+
+
+@pytest.mark.parametrize('is_staff', (True, False))
+def test_manual_confirmation_reservation_no_price(
+    resource_with_manual_confirmation, api_client,
+    unit_manager_user, user, product_extra_manual_confirmation, is_staff,
+    product_customer_group
+):
+    reservation_data = build_reservation_data(resource_with_manual_confirmation)
+    reservation_data['reserver_name'] = 'Nordea Demo'
+
+    product_customer_group.price = Decimal('0.00')
+    product_customer_group.product = product_extra_manual_confirmation
+    product_customer_group.save()
+
+    reservation_data['order'] = build_order_data(product_extra_manual_confirmation, customer_group=product_customer_group.customer_group.id)
+
+    if is_staff:
+        api_client.force_authenticate(user=unit_manager_user)
+    else:
+        api_client.force_authenticate(user=user)
+
+    response = api_client.post(LIST_URL, data=reservation_data)
+
+    assert response.status_code == 201, response.data
+    state = response.data['state']
+
+    if is_staff:
+        assert state == Reservation.CONFIRMED, state
+    else:
+        assert state == Reservation.REQUESTED, state
+
+
+
+
+@pytest.mark.parametrize('with_product', (True, False))
+@pytest.mark.parametrize('customer_group_selected', (True, False))
+def test_staff_manual_confirmation_reservation_with_product(
+    resource_with_manual_confirmation, unit_manager_api_client,
+    customer_group, customer_group_selected, with_product, product_extra_manual_confirmation):
+
+    reservation_data = build_reservation_data(resource_with_manual_confirmation)
+    reservation_data['reserver_name'] = 'Nordea Demo'
+
+    if with_product:
+        order_data = build_order_data(product_extra_manual_confirmation, customer_group=customer_group.id)
+        if not customer_group_selected:
+            del order_data['customer_group']
+        reservation_data['order'] = order_data
+    
+    response = unit_manager_api_client.post(LIST_URL, data=reservation_data)
+
+    if with_product and not customer_group_selected:
+        assert response.status_code == 400, response.data # POST shouldn't go through if data has no customer_group
+        return
+
+    assert response.status_code == 201, response.data
+    state = response.data['state']
+
+    reservation = Reservation.objects.get(pk=response.data['id'])
+
+    assert state == Reservation.CONFIRMED, state
+
+@pytest.mark.parametrize('with_product', (True, False))
+@pytest.mark.parametrize('customer_group_selected', (True, False))
+def test_regular_manual_confirmation_reservation_with_product(
+    resource_with_manual_confirmation, user_api_client,
+    unit_manager_user,
+    customer_group, customer_group_selected, with_product, 
+    product_extra_manual_confirmation):
+
+    reservation_data = build_reservation_data(resource_with_manual_confirmation)
+    reservation_data['reserver_name'] = 'Nordea Demo'
+    reservation_data['reserver_email_address'] = 'jey@example.com'
+    reservation_data['reserver_phone_number'] = '0401234567'
+
+    if with_product:
+        order_data = build_order_data(product_extra_manual_confirmation, customer_group=customer_group.id)
+        if not customer_group_selected:
+            del order_data['customer_group']
+        reservation_data['order'] = order_data
+    
+
+
+    response = user_api_client.post(LIST_URL, data=reservation_data)
+
+    if with_product and not customer_group_selected:
+        assert response.status_code == 400, response.data # POST shouldn't go through if data has no customer_group
+        return
+
+    assert response.status_code == 201, response.data
+    reservation = Reservation.objects.get(pk=response.data['id'])
+    state = response.data['state']
+
+    if reservation.has_order():
+        order = reservation.get_order()
+        assert order.state == Order.WAITING, order.state
+    assert state == Reservation.REQUESTED, state
+
+
+    response = user_api_client.put(get_detail_url(reservation), data=reservation_data)
+    assert response.status_code == 200, response.data   # PUT / PATCH should be OK for regular user before reservation state is confirmed.
+
+
+    for state in (
+        Reservation.WAITING_FOR_PAYMENT,
+        Reservation.CONFIRMED): # Modifying reservation after confirmation should not be allowed as user.
+        reservation.set_state(state, None)
+        response = user_api_client.put(get_detail_url(reservation), data=reservation_data)
+        assert response.status_code == 403, state
