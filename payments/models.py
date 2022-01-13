@@ -351,6 +351,7 @@ class Order(models.Model):
         valid_state_changes = {
             Order.WAITING: (Order.CONFIRMED, Order.REJECTED, Order.EXPIRED, ),
             Order.CONFIRMED: (Order.CANCELLED,),
+            Reservation.CANCELLED: (Order.CANCELLED, ),
         }
 
         valid_new_states = set(valid_state_changes.get(old_state, ())) | set(valid_state_changes.get(self.reservation.state, ()))
