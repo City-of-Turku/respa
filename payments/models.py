@@ -349,12 +349,11 @@ class Order(models.Model):
             return
 
         valid_state_changes = {
-            Order.WAITING: (Order.CONFIRMED, Order.REJECTED, Order.EXPIRED, ),
+            Order.WAITING: (Order.CONFIRMED, Order.REJECTED, Order.EXPIRED, Order.CANCELLED, ),
             Order.CONFIRMED: (Order.CANCELLED,),
-            Reservation.CANCELLED: (Order.CANCELLED, ),
         }
 
-        valid_new_states = set(valid_state_changes.get(old_state, ())) | set(valid_state_changes.get(self.reservation.state, ()))
+        valid_new_states = valid_state_changes.get(old_state, ())
 
         if new_state not in valid_new_states:
             raise OrderStateTransitionError(

@@ -53,7 +53,6 @@ def test_set_state_sets_reservation_state(two_hour_reservation, order_state, exp
     (Order.CANCELLED, Order.REJECTED),
     (Order.CANCELLED, Order.CONFIRMED),
     (Order.CANCELLED, Order.EXPIRED),
-    (Order.WAITING, Order.CANCELLED),
 ))
 def test_set_state_denied_transitions(two_hour_reservation, state, new_state):
     order = OrderFactory(reservation=two_hour_reservation, state=state)
