@@ -112,6 +112,7 @@ social-auth-app-django
 social-auth-core==4.0.2
 sqlparse
 swagger-spec-validator
+tendo
 text-unidecode
 typed-ast
 tzlocal

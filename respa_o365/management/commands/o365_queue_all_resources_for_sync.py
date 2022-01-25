@@ -2,6 +2,7 @@ import logging
 from typing import Any, Optional
 from django.db import transaction
 from django.core.management.base import BaseCommand, CommandParser
+from tendo import singleton
 from respa_o365.calendar_sync import add_to_queue, ensure_notification, process_queue
 from respa_o365.models import OutlookCalendarLink
 
@@ -13,6 +14,10 @@ class Command(BaseCommand):
         parser.add_argument('--resource', help='Only sync the specified resource')
 
     def handle(self, *args: Any, **options: Any) -> Optional[str]:
+        try:
+            me = singleton.SingleInstance()
+        except singleton.SingleInstanceException:
+            return
 
         resource_id = options['resource']
 
