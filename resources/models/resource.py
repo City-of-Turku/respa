@@ -864,7 +864,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
 
     def get_products(self):
         return self.products.current()
-    
+
     def has_products(self):
         return self.products.current().exists()
 class ResourceImage(ModifiableModel):

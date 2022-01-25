@@ -285,7 +285,7 @@ class Reservation(ModifiableModel):
         self.state = new_state
         self.save()
         self.handle_notification(new_state, user)
-    
+
     def handle_notification(self, state, user):
         obj_user_is_staff = bool(self.user and self.user.is_staff)
         action_by_official = obj_user_is_staff and self.reserver_email_address != self.user.email
@@ -313,6 +313,11 @@ class Reservation(ModifiableModel):
                 self.send_reservation_cancelled_mail(action_by_official=action_by_official)
                 if not action_by_official:
                     self.notify_staff_about_reservation(NotificationType.RESERVATION_CANCELLED_OFFICIAL)
+        elif state == Reservation.READY_FOR_PAYMENT:
+            order = self.get_order()
+            if order:
+                order.set_confirmed_by_staff()
+                self.send_reservation_waiting_for_payment_mail()
 
 
     def can_modify(self, user):
@@ -526,6 +531,8 @@ class Reservation(ModifiableModel):
             elif notification_type == NotificationType.RESERVATION_REQUESTED:
                 if self.resource.reservation_requested_notification_extra:
                     context['extra_content'] = self.resource.reservation_requested_notification_extra
+            elif notification_type in [NotificationType.RESERVATION_WAITING_FOR_PAYMENT]:
+                context['payment_url'] = self.order.payment_url
 
             # Get last main and ground plan images. Normally there shouldn't be more than one of each
             # of those images.
@@ -775,6 +782,10 @@ class Reservation(ModifiableModel):
         notification = NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE_OFFICIAL_BY_OFFICIAL if action_by_official else NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE
         self.send_reservation_mail(notification,
                                    attachments=[attachment], action_by_official=action_by_official)
+
+    def send_reservation_waiting_for_payment_mail(self):
+        self.send_reservation_mail(NotificationType.RESERVATION_WAITING_FOR_PAYMENT,
+                                   attachments=[])
 
     def send_access_code_created_mail(self):
         self.send_reservation_mail(NotificationType.RESERVATION_ACCESS_CODE_CREATED)

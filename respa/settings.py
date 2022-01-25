@@ -51,6 +51,7 @@ env = environ.Env(
     RESPA_PAYMENTS_ENABLED=(bool, False),
     RESPA_PAYMENTS_PROVIDER_CLASS=(str, ''),
     RESPA_PAYMENTS_PAYMENT_WAITING_TIME=(int, 15),
+    RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME=(int, 24),
     RESPA_ADMIN_LOGOUT_REDIRECT_URL=(str, 'https://hel.fi'),
     DJANGO_ADMIN_LOGOUT_REDIRECT_URL=(str, 'https://hel.fi'),
     TUNNISTAMO_BASE_URL=(str, ''),
@@ -507,6 +508,8 @@ RESPA_PAYMENTS_PROVIDER_CLASS = env('RESPA_PAYMENTS_PROVIDER_CLASS')
 
 # amount of minutes before orders in state "waiting" will be set to state "expired"
 RESPA_PAYMENTS_PAYMENT_WAITING_TIME = env('RESPA_PAYMENTS_PAYMENT_WAITING_TIME')
+# amount of hours before manually confirmed / requested reservations will be expired
+RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME = env('RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME')
 
 # local_settings.py can be used to override environment-specific settings
 # like database and email that differ between development and production.
