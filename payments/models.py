@@ -290,16 +290,32 @@ class OrderQuerySet(models.QuerySet):
 
         earliest_allowed_requested = now() - timedelta(hours=settings.RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME)
 
-        too_old_waiting_requested_orders = self.filter(
+        # set requested orders which customer hasn't tried to pay to expire
+        too_old_ready_requested_orders = self.filter(
             state=Order.WAITING,
-            is_requested_order=True
+            is_requested_order=True,
+            reservation__state=Reservation.READY_FOR_PAYMENT
         ).filter(
             confirmed_by_staff_at__lt=earliest_allowed_requested
         )
+
+        for order in too_old_ready_requested_orders:
+            order.set_state(Order.EXPIRED)
+
+        # set requested orders which customer has tried to pay to expire faster
+        too_old_waiting_requested_orders = self.filter(
+            state=Order.WAITING,
+            is_requested_order=True,
+            reservation__state=Reservation.WAITING_FOR_PAYMENT
+        ).filter(
+            confirmed_by_staff_at__lt=earliest_allowed_timestamp
+        )
+
         for order in too_old_waiting_requested_orders:
             order.set_state(Order.EXPIRED)
 
-        return too_old_waiting_orders.count() + too_old_waiting_requested_orders.count()
+        return too_old_waiting_orders.count() + too_old_ready_requested_orders.count() \
+                + too_old_waiting_requested_orders.count()
 
 
 class Order(models.Model):
