@@ -10,6 +10,18 @@
                 <span class="dropdowns-label">{% trans 'Filter' %}:</span>
 
                 <form name="filter-dropdowns" method="get">
+                    <div class="custom-checkbox select-box pull-left">
+                        <input
+                            class="checkbox-custom"
+                            id="external-filter"
+                            type="checkbox"
+                            name="external_resource"
+                            onchange="this.form.submit();"
+                            {% if selected_external_resource %}
+                            checked
+                            {% endif %} />
+                        <label class="checkbox-custom-label" for="external-filter">{% trans "External" %}</label>
+                    </div>
                     <div class='select-dropdown btn btn-primary'>
                         <select id="type-selector" name="resource_type" onchange="this.form.submit();">
                             <option
@@ -75,7 +87,7 @@
                         </a>
                 </li>
                 {% for resource in resources %}
-                    <li class="list-group-item">
+                    <li class="list-group-item {% if resource.is_external %} disabled {% endif %}">
                         <div class='panel panel-default'>
                             <img
                                 class="img-rounded pull-left"
@@ -88,10 +100,17 @@
                             >
                             <div class="panel-body">
                                 <div class="col-2">
+                                    {% if resource.is_external %}
+                                    <div>
+                                        <span>{{ resource.unit.name }}</span>
+                                        <h4>{{ resource.name }}</h4>
+                                    </div>
+                                    {% else %}
                                     <a href="{% url 'respa_admin:edit-resource' resource_id=resource.id %}">
                                         <span>{{ resource.unit.name }}</span>
                                         <h4>{{ resource.name }}</h4>
                                     </a>
+                                    {% endif %}
                                 </div>
 
                                 <div class="col-3">
@@ -111,10 +130,14 @@
                                 </div>
 
                                 <div class="col-5">
+                                    {% if resource.is_external %}
+                                    <h6> <div class='shape-danger'></div> {% trans 'Uneditable' %}</h6>
+                                    {% else %}
                                     <h6>
                                         <span class='glyphicon glyphicon-pencil icon-left' aria-hidden="true"></span>
                                         <a href="{% url 'respa_admin:edit-resource' resource_id=resource.id %}">{% trans 'Edit' %}</a>
                                     </h6>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

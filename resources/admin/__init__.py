@@ -133,6 +133,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
         }),
         (_('Resource Information'), {
             'fields': (
+                'is_external',
                 'public', 'reservable',
                 'name', 'description',
                 'authentication',
@@ -187,8 +188,15 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj=obj, **kwargs)
-        form.base_fields['id'].initial = generate_id()
+        if 'id' in form.base_fields:
+            form.base_fields['id'].initial = generate_id()
         return form
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj.is_external:
+            self.inlines = []
+            return [field.name for field in self.model._meta.fields if field.name != 'is_external'] + [ 'tags', 'purposes' ]
+        return super().get_readonly_fields(request, obj)
 
 
 class UnitAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, FixedGuardedModelAdminMixin,

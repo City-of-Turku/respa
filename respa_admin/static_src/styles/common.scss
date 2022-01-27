@@ -174,3 +174,11 @@
     color: $white;
   }
 }
+
+
+.select-box {
+  display: flex;
+  justify-self: flex-start;
+  align-items: center;
+  height: $input-height-default;
+}
