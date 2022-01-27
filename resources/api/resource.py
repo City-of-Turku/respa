@@ -313,6 +313,45 @@ class ResourceEquipmentSerializer(TranslatedModelSerializer):
         return ret
 
 
+class ResourceEquipmentRelationSerializer(serializers.ModelSerializer):
+    remove = serializers.BooleanField(write_only=True, required=False, help_text=_('This field is used to remove equipment from Resource.'))
+    equipment = serializers.CharField(help_text=_('Equipment id'))
+
+    class Meta:
+        model = ResourceEquipment
+        fields = ('equipment', 'remove', )
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        request = self.context['request']
+        try:
+            equipment = Equipment.objects.get(pk=attrs['equipment'])
+            if request.method in ('PUT', 'PATCH',):
+                if ResourceEquipment.objects.filter(resource=self.instance, equipment=equipment).exists() and not attrs.get('remove', False):
+                    raise serializers.ValidationError({'equipment': 'Resource already has this equipment.'})
+        except Equipment.DoesNotExist:
+            raise serializers.ValidationError({'equipment': 'Invalid id'})
+        attrs['equipment'] = equipment.pk
+        return attrs
+
+    def update(self, resource, validated_data):
+        remove = validated_data.pop('remove', False)
+        equipment = validated_data.get('equipment')
+        if remove:
+            ResourceEquipment.objects.filter(resource=resource, equipment__pk=equipment).delete()
+            return resource
+        equipment = Equipment.objects.get(pk=equipment)
+        if not ResourceEquipment.objects.filter(resource=resource, equipment=equipment).exists():
+            return ResourceEquipment.objects.create(resource=resource, equipment=equipment)
+        return resource
+
+    def create(self, validated_data):
+        equipment = validated_data.get('equipment')
+        equipment = Equipment.objects.get(pk=equipment)
+        validated_data['equipment'] = equipment
+        return super().create(validated_data)
+
+
 class TermsOfUseSerializer(TranslatedModelSerializer):
     id = serializers.CharField(required=False)
     name = serializers.DictField(required=True)
@@ -1380,6 +1419,8 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
     reservation_metadata_set = MetadataSetSerializer(required=False)
     reservation_home_municipality_set = ReservationHomeMunicipalitySetSerializer(required=False)
 
+    equipments = ResourceEquipmentRelationSerializer(many=True, required=False, help_text=_('Create relation between Equipment and Resource'))
+
     location = LocationField(required=False, help_text='example: {"type": "Point", "coordinates": [22.00000, 60.0000]}')
 
     class Meta:
@@ -1413,7 +1454,8 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
             'periods': PeriodSerializer,
             'terms_of_use': TermsOfUseSerializer,
             'reservation_metadata_set': MetadataSetSerializer,
-            'reservation_home_municipality_set': ReservationHomeMunicipalitySetSerializer
+            'reservation_home_municipality_set': ReservationHomeMunicipalitySetSerializer,
+            'equipments': ResourceEquipmentRelationSerializer,
         }
 
     def validate(self, attrs):
@@ -1465,6 +1507,10 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
             ('periods', 
                 { 'kwargs': { 'many': True, 'context': self.context, 'data': validated_data.pop('periods', {}), },
                     'validate': ( (lambda data: len(data) <= 10,  _('Invalid length, max: 10')), ),
+                    'save_kw': { 'resource_fk': True }, } ),
+    
+            ('equipments', 
+                { 'kwargs': { 'many': True, 'context': self.context, 'data': validated_data.pop('equipments', {}), },
                     'save_kw': { 'resource_fk': True }, } ),
 
             ('terms_of_use', 
