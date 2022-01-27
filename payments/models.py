@@ -307,8 +307,12 @@ class OrderQuerySet(models.QuerySet):
             state=Order.WAITING,
             is_requested_order=True,
             reservation__state=Reservation.WAITING_FOR_PAYMENT
+        ).annotate(
+            last_modified_at=Subquery(
+                log_entry_timestamps.reverse()[:1]
+            )
         ).filter(
-            confirmed_by_staff_at__lt=earliest_allowed_timestamp
+            last_modified_at__lt=earliest_allowed_timestamp
         )
 
         for order in too_old_waiting_requested_orders:
