@@ -53,7 +53,8 @@ class TurkuPaymentProvider(PaymentProvider):
 
 
         if is_free(order.get_price()):
-            order.set_state(Order.CONFIRMED, 'Order has no price, selected with customer group.')
+            # don't update reservation state here, it is handled later
+            order.set_state(Order.CONFIRMED, 'Order has no price, selected with customer group.', True, False)
             if order.reservation.resource.timmi_resource:
                 logger.debug('Confirming reservation with Timmi API.')
                 TimmiManager().confirm_reservation(order.reservation, timmi_payload.payload).save()
