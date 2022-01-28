@@ -7,7 +7,7 @@ if [ -z "$DOCKER_PASSWORD" ]; then
     exit 0
 fi
 
-if [ "$TRAVIS_PYTHON_VERSION" != "3.6" ]; then
+if [ "$TRAVIS_PYTHON_VERSION" != "3.7" ]; then
     echo "Only deploy on production Python build"
     exit 0
 fi
