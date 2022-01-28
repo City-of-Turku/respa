@@ -215,6 +215,12 @@ main {
         width: $list-item-height;
         height: $list-item-height;
       }
+      &.disabled {
+        color: #666685;
+        div.panel {
+          background-color: #e8e8e8;
+        }
+      }
     }
   }
 }

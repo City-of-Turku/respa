@@ -313,6 +313,8 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
     timmi_resource = models.BooleanField(verbose_name=_('Is Timmi resource?'), default=False, blank=True, help_text=_('Is this resource part of Timmi integration?'))
     timmi_room_id = models.PositiveIntegerField(verbose_name=_('Timmi ID'), null=True, blank=True, help_text=_('This field will attempt to auto-fill if room id isn\'t provided.'))
 
+    is_external = models.BooleanField(verbose_name=_('Externally managed resource'), default=False, blank=True)
+
     objects = ResourceQuerySet.as_manager()
 
     class Meta:

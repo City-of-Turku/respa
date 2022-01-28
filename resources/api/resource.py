@@ -1578,7 +1578,7 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
 
             for action in actions:
                 action(instance, serializer)
-
+        instance.is_external = True
         instance.save()
         return instance
 

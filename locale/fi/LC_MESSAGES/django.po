@@ -1842,3 +1842,12 @@ msgstr "Lataa"
 
 msgid "Reports"
 msgstr "Raportit"
+
+msgid "Uneditable"
+msgstr "Ei muokattavissa"
+
+msgid "External"
+msgstr "Ulkoinen"
+
+msgid "Integration"
+msgstr "Integraatio"

@@ -1777,3 +1777,12 @@ msgstr "Ladda ner"
 
 msgid "Reports"
 msgstr "Rapporter"
+
+msgid "Uneditable"
+msgstr "Oredigerbar"
+
+msgid "External"
+msgstr "Extern"
+
+msgid "Integration"
+msgstr ""

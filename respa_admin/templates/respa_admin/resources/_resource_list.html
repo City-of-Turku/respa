@@ -11,6 +11,31 @@
 
                 <form name="filter-dropdowns" method="get">
                     <div class='select-dropdown btn btn-primary'>
+                        <select id="ext-dropdown" name="resource_integration" onchange="this.form.submit();">
+                            <option
+                                {% if not selected_resource_integration %}
+                                    selected="selected"
+                                {% endif %}
+                                    value=""
+                            >
+                                {% trans "Integration" %}...
+                            </option>
+                            <option value="ra" 
+                                {% if selected_resource_integration == "ra" %} 
+                                    selected="selected"
+                                {% endif %}>
+                                RA
+                            </option>
+                            <option value="plm"
+                                {% if selected_resource_integration == "plm" %}
+                                    selected="selected"
+                                {% endif %}>
+                                PLM
+                            </option>
+                        </select>
+                        <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+                    </div>
+                    <div class='select-dropdown btn btn-primary'>
                         <select id="type-selector" name="resource_type" onchange="this.form.submit();">
                             <option
                                 {% if not selected_resource_type %}
@@ -75,7 +100,7 @@
                         </a>
                 </li>
                 {% for resource in resources %}
-                    <li class="list-group-item">
+                    <li class="list-group-item {% if resource.is_external %} disabled {% endif %}">
                         <div class='panel panel-default'>
                             <img
                                 class="img-rounded pull-left"
@@ -88,10 +113,17 @@
                             >
                             <div class="panel-body">
                                 <div class="col-2">
+                                    {% if resource.is_external %}
+                                    <div>
+                                        <span>{{ resource.unit.name }}</span>
+                                        <h4>{{ resource.name }}</h4>
+                                    </div>
+                                    {% else %}
                                     <a href="{% url 'respa_admin:edit-resource' resource_id=resource.id %}">
                                         <span>{{ resource.unit.name }}</span>
                                         <h4>{{ resource.name }}</h4>
                                     </a>
+                                    {% endif %}
                                 </div>
 
                                 <div class="col-3">
@@ -111,10 +143,14 @@
                                 </div>
 
                                 <div class="col-5">
+                                    {% if resource.is_external %}
+                                    <h6> <div class='shape-danger'></div> {% trans 'Uneditable' %}</h6>
+                                    {% else %}
                                     <h6>
                                         <span class='glyphicon glyphicon-pencil icon-left' aria-hidden="true"></span>
                                         <a href="{% url 'respa_admin:edit-resource' resource_id=resource.id %}">{% trans 'Edit' %}</a>
                                     </h6>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

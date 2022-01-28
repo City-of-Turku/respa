@@ -48,6 +48,7 @@ class ResourceListView(ExtraContextMixin, ListView):
         self.search_query = get_params.get('search_query')
         self.resource_type = get_params.get('resource_type')
         self.resource_unit = get_params.get('resource_unit')
+        self.resource_integration = get_params.get('resource_integration')
         self.order_by = get_params.get('order_by')
         return super().get(request, *args, **kwargs)
 
@@ -61,6 +62,7 @@ class ResourceListView(ExtraContextMixin, ListView):
         context['search_query'] = self.search_query or ''
         context['selected_resource_type'] = self.resource_type or ''
         context['selected_resource_unit'] = self.resource_unit or ''
+        context['selected_resource_integration'] = self.resource_integration or ''
         context['order_by'] = self.order_by or ''
         return context
 
@@ -78,6 +80,8 @@ class ResourceListView(ExtraContextMixin, ListView):
             qs = qs.filter(type=self.resource_type)
         if self.resource_unit:
             qs = qs.filter(unit=self.resource_unit)
+        if self.resource_integration:
+            qs = qs.exclude(is_external=self.resource_integration == 'ra')
         if self.order_by:
             order_by_param = self.order_by.strip('-')
             try:
@@ -283,7 +287,7 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.modifiable_by(self.request.user)
+        return qs.modifiable_by(self.request.user).exclude(is_external=True)
 
     def get_success_url(self, **kwargs):
         messages.success(self.request, 'Resurssi tallennettu')
@@ -350,10 +354,15 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
         else:
             self.object = None
 
+
         form = self.get_form()
 
         period_formset_with_days = self.get_period_formset()
         resource_image_formset = get_resource_image_formset(request=request, instance=self.object)
+
+        if self.object and self.object.is_external:
+            messages.error(self.request, _('Failed to save. External resources are noneditable.'))
+            return self.forms_invalid(form, period_formset_with_days, resource_image_formset)
 
         if self._validate_forms(form, period_formset_with_days, resource_image_formset):
             return self.forms_valid(form, period_formset_with_days, resource_image_formset)

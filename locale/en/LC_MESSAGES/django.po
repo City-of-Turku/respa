@@ -2467,3 +2467,12 @@ msgstr ""
 
 msgid "Reports"
 msgstr ""
+
+msgid "Uneditable"
+msgstr ""
+
+msgid "External"
+msgstr ""
+
+msgid "Integration"
+msgstr ""
