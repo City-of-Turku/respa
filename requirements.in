@@ -37,7 +37,7 @@ django-js-asset
 django-modeltranslation
 django-mptt
 django-taggit
-git+https://github.com/Christophe31/django-multi-email-field.git@master#django-multi-email-field
+django-multi-email-field
 django-munigeo
 django-parler
 django-parler-rest

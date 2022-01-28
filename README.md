@@ -89,7 +89,7 @@ psql -U postgres --dbname=respa -c "create extension postgis;"
 
 ### Build Respa Admin static resources
 
-Make sure you have Node 8 or LTS and npm installed.
+Make sure you have Node 14 and npm installed.
 
 ```shell
 ./build-resources
@@ -310,10 +310,6 @@ To remove a dependency, remove it from `requirements.in`,
 run `pip-compile` and then `pip-sync`. If everything works
 as expected, commit the changes.
 
-
-Also uses [django_multi_email_field](https://github.com/Christophe31/django-multi-email-field.git)
-
-Installation via `pip install -U git+https://github.com/Christophe31/django-multi-email-field.git`
 
 Documentation
 -------------
