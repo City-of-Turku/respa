@@ -1844,7 +1844,10 @@ msgid "Reports"
 msgstr "Raportit"
 
 msgid "Uneditable"
-msgstr "Ei muokattava"
+msgstr "Ei muokattavissa"
 
 msgid "External"
 msgstr "Ulkoinen"
+
+msgid "Integration"
+msgstr "Integraatio"

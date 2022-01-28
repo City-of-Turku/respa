@@ -10,17 +10,30 @@
                 <span class="dropdowns-label">{% trans 'Filter' %}:</span>
 
                 <form name="filter-dropdowns" method="get">
-                    <div class="custom-checkbox select-box pull-left">
-                        <input
-                            class="checkbox-custom"
-                            id="external-filter"
-                            type="checkbox"
-                            name="external_resource"
-                            onchange="this.form.submit();"
-                            {% if selected_external_resource %}
-                            checked
-                            {% endif %} />
-                        <label class="checkbox-custom-label" for="external-filter">{% trans "External" %}</label>
+                    <div class='select-dropdown btn btn-primary'>
+                        <select id="ext-dropdown" name="resource_integration" onchange="this.form.submit();">
+                            <option
+                                {% if not selected_resource_integration %}
+                                    selected="selected"
+                                {% endif %}
+                                    value=""
+                            >
+                                {% trans "Integration" %}...
+                            </option>
+                            <option value="ra" 
+                                {% if selected_resource_integration == "ra" %} 
+                                    selected="selected"
+                                {% endif %}>
+                                RA
+                            </option>
+                            <option value="plm"
+                                {% if selected_resource_integration == "plm" %}
+                                    selected="selected"
+                                {% endif %}>
+                                PLM
+                            </option>
+                        </select>
+                        <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
                     </div>
                     <div class='select-dropdown btn btn-primary'>
                         <select id="type-selector" name="resource_type" onchange="this.form.submit();">

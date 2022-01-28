@@ -48,7 +48,7 @@ class ResourceListView(ExtraContextMixin, ListView):
         self.search_query = get_params.get('search_query')
         self.resource_type = get_params.get('resource_type')
         self.resource_unit = get_params.get('resource_unit')
-        self.external_resource = get_params.get('external_resource') == 'on'
+        self.resource_integration = get_params.get('resource_integration')
         self.order_by = get_params.get('order_by')
         return super().get(request, *args, **kwargs)
 
@@ -62,7 +62,7 @@ class ResourceListView(ExtraContextMixin, ListView):
         context['search_query'] = self.search_query or ''
         context['selected_resource_type'] = self.resource_type or ''
         context['selected_resource_unit'] = self.resource_unit or ''
-        context['selected_external_resource'] = self.external_resource
+        context['selected_resource_integration'] = self.resource_integration or ''
         context['order_by'] = self.order_by or ''
         return context
 
@@ -80,8 +80,8 @@ class ResourceListView(ExtraContextMixin, ListView):
             qs = qs.filter(type=self.resource_type)
         if self.resource_unit:
             qs = qs.filter(unit=self.resource_unit)
-        if self.external_resource:
-            qs = qs.filter(is_external=self.external_resource)
+        if self.resource_integration:
+            qs = qs.exclude(is_external=self.resource_integration == 'ra')
         if self.order_by:
             order_by_param = self.order_by.strip('-')
             try:

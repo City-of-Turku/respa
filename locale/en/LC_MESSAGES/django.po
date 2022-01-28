@@ -2473,3 +2473,6 @@ msgstr ""
 
 msgid "External"
 msgstr ""
+
+msgid "Integration"
+msgstr ""

@@ -1783,3 +1783,6 @@ msgstr "Oredigerbar"
 
 msgid "External"
 msgstr "Extern"
+
+msgid "Integration"
+msgstr ""
