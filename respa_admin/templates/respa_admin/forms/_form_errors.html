@@ -4,23 +4,32 @@
     <div class="alert alert-danger">
         <strong>{% trans "Tarkista seuraavat virheet" %}:</strong>
         <ul>
+            {% if form.errors %}
+            {% trans "Resource"|capfirst %}
             {% for error in form.errors %}
                 <li>
                     {{ error }}
                 </li>
             {% endfor %}
-
+            {% endif %}
+            
+            {% if resource_image_formset.errors %}
+            {% trans "resource image"|capfirst %}
             {% for error in resource_image_formset.errors %}
                 <li>
                     {{ error }}
                 </li>
             {% endfor %}
-
+            {% endif %}
+            
+            {% if period_formset_with_days.errors %}
+            {% trans "Period"|capfirst %}
             {% for error in period_formset_with_days.errors %}
                 <li>
                     {{ error }}
                 </li>
             {% endfor %}
+            {% endif %}
         </ul>
     </div>
 {% endif %}
