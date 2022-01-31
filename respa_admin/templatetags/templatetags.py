@@ -41,3 +41,7 @@ def get_value_from_dict(dict_data, key):
 @register.simple_tag
 def user_has_permission(user, permission, obj):
     return user.has_perm(permission, obj)
+
+@register.filter
+def is_truthy(list):
+    return any([bool(i) for i in list])
