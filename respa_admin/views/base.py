@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core import exceptions
 from django.contrib.staticfiles.storage import staticfiles_storage
 from resources.auth import is_any_admin
 from resources.models import Day, Period
@@ -38,10 +39,14 @@ class PeriodMixin():
         )
 
     def save_period_formset(self, period_formset):
-        self._delete_extra_periods_days(period_formset)
-        period_formset.instance = self.object
-        period_formset.save()
-        self.object.update_opening_hours()
+        try:
+            self._delete_extra_periods_days(period_formset)
+            period_formset.instance = self.object
+            period_formset.save()
+            self.object.update_opening_hours()
+        except exceptions.ValidationError as exc:
+            period_formset.errors.extend(exc.messages)
+            raise
 
     def add_empty_forms(self, period_formset):
         # Extra forms are not added upon post so they

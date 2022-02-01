@@ -7,7 +7,7 @@
         <ul>
             {% if form.errors|is_truthy %}
             <strong>{% trans "Resource"|capfirst %}</strong>
-            {% for error in form.errors %}
+            {% for error in form.errors|remove_empty %}
                 <li>
                     {{ error }}
                 </li>
@@ -16,7 +16,7 @@
             
             {% if resource_image_formset.errors|is_truthy %}
             <strong>{% trans "resource image"|capfirst %}</strong>
-            {% for error in resource_image_formset.errors %}
+            {% for error in resource_image_formset.errors|remove_empty %}
                 <li>
                     {{ error }}
                 </li>
@@ -25,9 +25,9 @@
             
             {% if period_formset_with_days.errors|is_truthy %}
             <strong>{% trans "Period"|capfirst %}</strong>
-            {% for error in period_formset_with_days.errors %}
+            {% for error in period_formset_with_days.errors|remove_empty %}
                 <li>
-                    {{ error|escape }}
+                    {{ error }}
                 </li>
             {% endfor %}
             {% endif %}

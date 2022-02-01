@@ -365,7 +365,10 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
             return self.forms_invalid(form, period_formset_with_days, resource_image_formset)
 
         if self._validate_forms(form, period_formset_with_days, resource_image_formset):
-            return self.forms_valid(form, period_formset_with_days, resource_image_formset)
+            try:
+                return self.forms_valid(form, period_formset_with_days, resource_image_formset)
+            except:
+                return self.forms_invalid(form, period_formset_with_days, resource_image_formset)
         else:
             return self.forms_invalid(form, period_formset_with_days, resource_image_formset)
 

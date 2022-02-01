@@ -42,6 +42,12 @@ def get_value_from_dict(dict_data, key):
 def user_has_permission(user, permission, obj):
     return user.has_perm(permission, obj)
 
+
 @register.filter
-def is_truthy(list):
-    return any([bool(i) for i in list])
+def is_truthy(collection):
+    return any([bool(value) for value in collection])
+
+
+@register.filter
+def remove_empty(collection):
+    return [value for value in collection if bool(value)]
