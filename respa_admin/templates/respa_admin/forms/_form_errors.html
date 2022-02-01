@@ -4,33 +4,34 @@
 {% if form.errors or resource_image_formset.errors or period_formset_with_days.errors %}
     <div class="alert alert-danger">
         <strong>{% trans "Tarkista seuraavat virheet" %}:</strong>
-        <ul>
             {% if form.errors|is_truthy %}
-            <strong>{% trans "Resource"|capfirst %}</strong>
-            {% for error in form.errors|remove_empty %}
+            <div>
+                <strong>{% trans "Resource"|capfirst %}</strong>
+            </div>
+            <ul>
+                {% for error in form.errors|remove_empty %}
                 <li>
                     {{ error }}
                 </li>
-            {% endfor %}
-            {% endif %}
-            
+                {% endfor %}
+                {% endif %}
+            </ul>     
             {% if resource_image_formset.errors|is_truthy %}
-            <strong>{% trans "resource image"|capfirst %}</strong>
+            <div>
+                <strong>{% trans "resource image"|capfirst %}</strong>
+            </div>
             {% for error in resource_image_formset.errors|remove_empty %}
-                <li>
-                    {{ error }}
-                </li>
+                {{ error }}
             {% endfor %}
             {% endif %}
             
             {% if period_formset_with_days.errors|is_truthy %}
-            <strong>{% trans "Period"|capfirst %}</strong>
+            <div>
+                <strong>{% trans "Period"|capfirst %}</strong>
+            </div>
             {% for error in period_formset_with_days.errors|remove_empty %}
-                <li>
-                    {{ error }}
-                </li>
+                {{ error }}
             {% endfor %}
             {% endif %}
-        </ul>
     </div>
 {% endif %}
