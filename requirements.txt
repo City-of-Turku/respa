@@ -62,7 +62,6 @@ coverage==5.5
 cryptography==3.4.7
     # via
     #   -r requirements.in
-    #   pyjwt
     #   requests-ntlm
     #   social-auth-core
 daemonize==2.5.0
@@ -79,7 +78,7 @@ defusedxml==0.7.1
     #   social-auth-core
 delorean==1.0.0
     # via -r requirements.in
-django==2.2.26
+django==2.2.27
     # via
     #   -r requirements.in
     #   django-admin-json-editor
@@ -208,12 +207,6 @@ idna==2.10
     # via
     #   -r requirements.in
     #   requests
-importlib-metadata==4.10.1
-    # via
-    #   flake8
-    #   jsonschema
-    #   pluggy
-    #   pytest
 inflection==0.5.1
     # via
     #   -r requirements.in
@@ -423,14 +416,12 @@ rsa==4.7.2
     # via
     #   -r requirements.in
     #   python-jose
-ruamel.yaml==0.17.4
+ruamel-yaml==0.17.4
     # via
     #   -r requirements.in
     #   drf-yasg
-ruamel.yaml.clib==0.2.2
-    # via
-    #   -r requirements.in
-    #   ruamel.yaml
+ruamel-yaml-clib==0.2.2
+    # via -r requirements.in
 sentry-sdk==1.0.0
     # via -r requirements.in
 six==1.15.0
@@ -441,7 +432,6 @@ six==1.15.0
     #   django-munigeo
     #   django-sanitized-dump
     #   ecdsa
-    #   isodate
     #   jsonschema
     #   pyjwkest
     #   python-dateutil
@@ -450,7 +440,6 @@ six==1.15.0
     #   social-auth-core
     #   swagger-spec-validator
     #   tendo
-    #   url-normalize
 social-auth-app-django==4.0.0
     # via -r requirements.in
 social-auth-core==4.0.2
@@ -476,13 +465,7 @@ toml==0.10.2
     #   pylint
     #   pytest
 typed-ast==1.4.3
-    # via
-    #   -r requirements.in
-    #   astroid
-typing-extensions==4.0.1
-    # via
-    #   arrow
-    #   importlib-metadata
+    # via -r requirements.in
 tzdata==2021.1
     # via exchangelib
 tzlocal==2.1
@@ -508,8 +491,6 @@ wrapt==1.12.1
     #   astroid
 xlsxwriter==1.4.0
     # via -r requirements.in
-zipp==3.7.0
-    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
