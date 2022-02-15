@@ -283,7 +283,7 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.modifiable_by(self.request.user).exclude(is_external=True)
+        return qs.modifiable_by(self.request.user)
 
     def get_success_url(self, **kwargs):
         messages.success(self.request, 'Resurssi tallennettu')
@@ -309,6 +309,17 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
         trans_fields = forms.get_translated_field_count(resource_image_formset)
 
         accessibility_data_link = self._get_accessibility_data_link(request)
+        
+        disabled_fields_set = self.object.get_disabled_fields()
+
+        extra = {
+            'images_is_disabled': 'images' in disabled_fields_set,
+            'free_of_charge_is_disabled': 'free_of_charge' in disabled_fields_set,
+            'periods_field_is_disabled': 'periods' in disabled_fields_set,
+            'public_is_disabled': 'public' in disabled_fields_set,
+            'reservable_is_disabled': 'reservable' in disabled_fields_set,
+            'all_fields_disabled': len(disabled_fields_set) == len(ResourceForm.Meta.fields + ['groups', 'periods', 'images', 'free_of_charge'])
+        }
 
         return self.render_to_response(
             self.get_context_data(
@@ -317,6 +328,7 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
                 resource_image_formset=resource_image_formset,
                 trans_fields=trans_fields,
                 page_headline=page_headline,
+                **extra
             )
         )
 
@@ -356,9 +368,6 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
         period_formset_with_days = self.get_period_formset()
         resource_image_formset = get_resource_image_formset(request=request, instance=self.object)
 
-        if self.object and self.object.is_external:
-            messages.error(self.request, _('Failed to save. External resources are noneditable.'))
-            return self.forms_invalid(form, period_formset_with_days, resource_image_formset)
 
         if self._validate_forms(form, period_formset_with_days, resource_image_formset):
             try:
@@ -381,14 +390,19 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
         user = self.request.user
         is_edit = self.object is not None
         self.object = form.save()
+        df_set = self.object.get_disabled_fields()
 
         log_entry(self.object, user, is_edit=is_edit, message=construct_change_message(
             form, None, not is_edit
         ))
-        self._save_resource_purposes()
-        self._delete_extra_images(resource_image_formset)
-        self._save_resource_images(resource_image_formset)
-        self.save_period_formset(period_formset_with_days)
+
+        if df_set and 'purposes' not in df_set:
+            self._save_resource_purposes()
+        if df_set and 'images' not in df_set:
+            self._delete_extra_images(resource_image_formset)
+            self._save_resource_images(resource_image_formset)
+        if df_set and 'periods' not in df_set:
+            self.save_period_formset(period_formset_with_days)
         return HttpResponseRedirect(self.get_success_url())
 
     def forms_invalid(self, form, period_formset_with_days, resource_image_formset):
@@ -422,11 +436,19 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
         )
 
     def _validate_forms(self, form, period_formset, image_formset):
-        valid_form = form.is_valid()
-        valid_period_form = period_formset.is_valid()
-        valid_image_formset = image_formset.is_valid()
+        df_set = []
+        is_valid = []
+    
+        if self.object:
+            df_set = self.object.get_disabled_fields()
 
-        return valid_form and valid_period_form and valid_image_formset
+        is_valid.append(form.is_valid())
+        if df_set and 'periods' not in df_set:
+            is_valid.append(period_formset.is_valid())
+        if df_set and 'images' not in df_set:
+            is_valid.append(image_formset.is_valid())
+
+        return all(is_valid)
 
     def _save_resource_purposes(self):
         checked_purposes = self.request.POST.getlist('purposes')

@@ -13,10 +13,11 @@
         <div class="textarea-with-toolbar">
             <ul
             id="tags-list-box"
-            class="listed-values">
+            class="listed-values"
+            {% if field.field.disabled %} disabled="disabled" {% endif %}>
                 {% if field.value %}
                     {% for value in field.value %}
-                        <li>{{ value }}&#13;&#10;</li>
+                        <li {% if field.field.disabled %} class="disabled" {% endif %}>{{ value }}&#13;&#10;</li>
                     {% endfor %}
                 {% endif %}
             </ul>
@@ -24,12 +25,21 @@
                 <input 
                     class="form-control text-input flex-align-end" 
                     type="text" placeholder="{% trans 'Comma-separated keywords' %}"
-                    id="tagInput"> </input>
+                    id="tagInput"
+                    {% if field.field.disabled %} disabled="disabled" {% endif %}> 
+                </input>
                 <div class="button-section">
-                    <button id="removeTagSelection" class="resources-button delete-section" type="button">
+                    <button
+                        id="removeTagSelection"
+                        class="resources-button delete-section"
+                        type="button">
                             {% trans 'Remove selected' %}
                     </button>
-                    <button id="appendTagButton" type="button" class="resources-button" disabled="disabled">
+                    <button 
+                        id="appendTagButton"
+                        type="button"
+                        class="resources-button"
+                        disabled="disabled">
                             {% trans 'Add keywords' %}
                     </button>
                 </div>

@@ -45,6 +45,13 @@
     text-decoration: none;
     color: $white;
   }
+
+  &:disabled {
+    background-color: rgb(96, 104, 108) !important;
+    border: none;
+    color: $white !important;
+    cursor: not-allowed;
+  }
 }
 
 .accordion-item {

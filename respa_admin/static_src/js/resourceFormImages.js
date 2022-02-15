@@ -71,7 +71,7 @@ export function removeImage(imageItem) {
 }
 
 function getImageCount() {
-  return $('#images-list')[0].children.length;
+    return $('#images-list')[0].children.length;
 }
 
 function attachImageEventHandlers(imageItem) {

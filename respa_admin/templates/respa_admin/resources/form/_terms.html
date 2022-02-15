@@ -27,11 +27,11 @@
             <span class="control-label input-label">{% trans "The space is free of charge" %}</span>
             <div class="radio-group">
                 <div class="rdio rdio-primary radio-inline">
-                    <input name="radio" value="true" id="radio-pricing-true" type="radio" checked>
+                    <input name="radio" value="true" id="radio-pricing-true" type="radio" checked {% if free_of_charge_is_disabled %} disabled="disabled" {% endif %}>
                     <label for="radio-pricing-true">{% trans "Yes" %}</label>
                 </div>
                 <div class="rdio rdio-primary radio-inline">
-                    <input name="radio" value="2" id="radio-pricing-false" type="radio">
+                    <input name="radio" value="2" id="radio-pricing-false" type="radio" {% if free_of_charge_is_disabled %} disabled="disabled" {% endif %}>
                     <label for="radio-pricing-false">Ei</label>
                 </div>
             </div>

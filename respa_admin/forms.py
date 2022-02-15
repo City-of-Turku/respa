@@ -1,4 +1,5 @@
 from django.utils.translation import ugettext_lazy as _
+from django.db.models import Q
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
@@ -223,6 +224,13 @@ class ResourceForm(forms.ModelForm):
         super(ResourceForm, self).__init__(*args, **kwargs)
         self.fields['generic_terms'].queryset = TermsOfUse.objects.filter(terms_type=TermsOfUse.TERMS_TYPE_GENERIC)
         self.fields['payment_terms'].queryset = TermsOfUse.objects.filter(terms_type=TermsOfUse.TERMS_TYPE_PAYMENT)
+        if self.instance:
+            df_set = self.instance.get_disabled_fields()
+            if df_set:
+                for field in set(df_set) - set(['groups', 'periods', 'images', 'free_of_charge']):
+                    self.fields[field].disabled = True
+                
+                    
 
     class Meta:
         model = Resource
@@ -398,6 +406,13 @@ class PeriodFormset(forms.BaseInlineFormSet):
             validate_max=True
         )
 
+        if self.instance and self.instance.pk:
+            df_set = self.instance.get_disabled_fields()
+            for _, field in days_formset.form.base_fields.items():
+                field.disabled = 'periods' in df_set
+                if field.disabled:
+                    field.required = False
+
         return days_formset(
             instance=form.instance,
             data=form.data if form.is_bound else None,
@@ -421,7 +436,8 @@ class PeriodFormset(forms.BaseInlineFormSet):
         for form in self.forms:
             valid_days.append(form.days.is_valid())
             if not form.days.is_valid():
-                form.add_error(None, _('Please check the opening hours.'))
+                if hasattr(form, 'cleaned_data'):
+                    form.add_error(None, _('Please check the opening hours.'))
 
         return valid_form and all(valid_days)
 
@@ -447,6 +463,14 @@ def get_period_formset(request=None, extra=1, instance=None, parent_class=Resour
         extra=extra,
     )
 
+    if instance:
+        df_set = instance.get_disabled_fields()
+        for _, field in period_formset_with_days.form.base_fields.items():
+            field.disabled = 'periods' in df_set
+            if field.disabled:
+                field.required = False
+
+
     if not request:
         return period_formset_with_days(instance=instance)
     if request.method == 'GET':
@@ -463,12 +487,20 @@ def get_resource_image_formset(request=None, extra=1, instance=None):
         extra=extra,
     )
 
+    if instance:
+        df_set = instance.get_disabled_fields()
+        for _, field in resource_image_formset.form.base_fields.items():
+            field.disabled = 'images' in df_set
+            if field.disabled:
+                field.required = False
+
     if not request:
         return resource_image_formset(instance=instance)
+
+
     if request.method == 'GET':
         return resource_image_formset(instance=instance)
-    else:
-        return resource_image_formset(data=request.POST, files=request.FILES, instance=instance)
+    return resource_image_formset(data=request.POST, files=request.FILES, instance=instance)
 
 
 def get_translated_field_count(image_formset=None):

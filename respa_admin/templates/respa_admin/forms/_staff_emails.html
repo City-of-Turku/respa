@@ -13,10 +13,11 @@
         <div class="textarea-with-toolbar">
             <ul
             id="emails-list-box"
-            class="listed-values">
+            class="listed-values"
+            {% if field.field.disabled %} disabled="disabled" {% endif %}>
                 {% if field.value %}
                     {% for value in field.value %}
-                        <li>{{ value }}&#13;&#10;</li>
+                        <li {% if field.field.disabled %} class="disabled" {% endif %}>{{ value }}&#13;&#10;</li>
                     {% endfor %}
                 {% endif %}
             </ul>
@@ -24,7 +25,9 @@
                 <input 
                     class="form-control text-input flex-align-end" 
                     type="email" placeholder="{% trans 'Email' %}"
-                    id="staffEmailInput"> </input>
+                    id="staffEmailInput"
+                    {% if field.field.disabled %} disabled="disabled" {% endif %}> 
+                </input>
                 <div class="button-section">
                     <button id="removeEmailSelection" class="resources-button delete-section" type="button">
                             {% trans 'Remove selected' %}

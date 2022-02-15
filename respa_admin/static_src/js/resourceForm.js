@@ -182,6 +182,8 @@ export function coloredDropdownListener(event) {
 }
 
 function updateListItems(field, deleteBtn) {
+  if ($(field).attr('disabled'))
+    return;
   $(field).find('li').each((index, item) => {
     $(item).unbind('click');
     $(item).click((f) => {

@@ -1786,3 +1786,15 @@ msgstr "Extern"
 
 msgid "Integration"
 msgstr ""
+
+msgid "disabled field set"
+msgstr ""
+
+msgid "disabled fields set"
+msgstr ""
+
+msgid "disabled fields"
+msgstr ""
+
+msgid "View time period"
+msgstr "Se tidsperiod"

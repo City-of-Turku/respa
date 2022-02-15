@@ -27,10 +27,12 @@
         </div>
 
         <div class="form-group">
+            {% if not periods_field_is_disabled %}
             <button class="btn copy-next" type="button" id="copy-next-{{ id }}">
                 <span class="glyphicon glyphicon-duplicate icon-left" aria-hidden="true"></span>
                 {% trans "Copy to next" %}
             </button>
+            {% endif %}
         </div>
     </div>
 {% endwith %}

@@ -6,9 +6,20 @@
     </div>
 
     <div>
-        <button class="resources-button" type="button" id="add-new-hour">{% trans "Add new time period" %}</button>
-        <div class="select-dropdown btn btn-primary">
-            <select>
+        <button 
+            class="resources-button"
+            type="button"
+            id="add-new-hour"
+            {% if periods_field_is_disabled %} disabled="disabled" {% endif %}>
+            {% trans "Add new time period" %}
+        </button>
+        <div class="{% if periods_field_is_disabled %} 
+                    select-dropdown-disabled 
+                    {% else %}
+                    select-dropdown
+                    {% endif %}
+                    btn btn-primary">
+            <select {% if periods_field_is_disabled %} disabled="disabled" {% endif %}>
                 <option>{% trans "Add general time period" %}</option>
             </select>
             <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>

@@ -185,6 +185,9 @@ class ResourceQuerySet(models.QuerySet):
         units_where_role = Unit.objects.by_roles(user, allowed_roles)
 
         return self.filter(Q(unit__in=list(units) + list(units_where_role)) | Q(groups__in=resource_groups)).distinct()
+    
+    def external(self):
+        return self.filter(is_external=True)
 
 
 class CleanResourceID(CommonGenericTaggedItemBase, TaggedItemBase):
@@ -332,6 +335,16 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
             None)
 
         return resource_image.image if resource_image else None
+
+    def get_disabled_fields(self):
+        """
+        Check if Resource or Unit has disabled fields set,
+        Resource takes priority
+        """
+        disabled_fields = self.disabled_fields_set.first() \
+            or self.unit.disabled_fields_set.first()
+
+        return getattr(disabled_fields, 'disabled_fields', [])
 
     def validate_reservation_period(self, reservation, user, data=None):
         """

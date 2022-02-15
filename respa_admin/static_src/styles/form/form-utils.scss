@@ -50,7 +50,7 @@ $input-height-default: 50px;
   @extend .select-dropdown;
   background-color: #e5e5e5;
 
-  &:hover {
+  &:hover, &:active {
     background-color: #e5e5e5;
     cursor: not-allowed;
   }
@@ -108,10 +108,17 @@ ul.listed-values {
       font-weight: lighter;
     }
 
+    &.disabled {
+      cursor: not-allowed;
+    }
+
 
     &:hover {
       &.active {
         background-color: $brand-dark;
+      }
+      &.disabled {
+        background-color: $brand-grey;
       }
       background-color: $brand-light;
     }

@@ -18,6 +18,7 @@
         {% endif %}
         class="form-control text-input"
         {% include "django/forms/widgets/attrs.html" %}
+        {% if field.field.disabled %} disabled="disabled" {% endif %}
     >
     {% if prefix_text %}
         <span class="">{{ prefix_text }}</span>

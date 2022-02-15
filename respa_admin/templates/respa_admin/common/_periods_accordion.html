@@ -15,13 +15,19 @@
                 <span class="panel-heading-period">{{ period.start.value|date:"j.n.Y" }} - {{ period.end.value|date:"j.n.Y" }}</span>
             </div>
             <div class="right-group">
+                {% if not periods_field_is_disabled %}
                 <button class="btn copy-time-btn" type="button" id="copy-time-period-{{ id }}">
                     <span class="glyphicon glyphicon-duplicate icon-left" aria-hidden="true"></span>
                     {% trans "Copy time period" %}
                 </button>
+                {% endif %}
                 <a class="btn" role="button" data-toggle="collapse" data-parent="#accordion{{id}}" href="#collapse{{id}}" aria-expanded="true" aria-controls="#collapse{{id}}" data-bs-toggle="collapse">
                     <span class="glyphicon glyphicon-edit icon-left"></span>
-                    {% trans "Edit time period" %}
+                    {% if periods_field_is_disabled %}
+                        {% trans "View time period" %}
+                    {% else %}
+                        {% trans "Edit time period" %}
+                    {% endif %}
                     <span class="glyphicon glyphicon-chevron-down icon-right"></span>
                 </a>
             </div>
@@ -58,9 +64,11 @@
             </div>
 
             <div class="footer-buttons">
+                {% if not periods_field_is_disabled %}
                 <button class="btn pull-left delete-time btn-danger" type="button" id="remove-button-{{ id }}">
                     {% trans "Remove time period" %}
                 </button>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -89,18 +89,18 @@
             <ul class='list-group'>
                 <li class="list-group-item sort-bar">
                     <div class='pull-left empty-holder col-1'></div>
-                        <a class="col-2 btn order-by-link" href="?resource_type={{ selected_resource_type }}&resource_unit={{ selected_resource_unit }}&order_by={% if order_by == 'name' %}-name{% else %}name{% endif %}">
+                        <a class="col-2 btn order-by-link" href="?resource_integration={{ selected_resource_integration }}&resource_type={{ selected_resource_type }}&resource_unit={{ selected_resource_unit }}&order_by={% if order_by == 'name' %}-name{% else %}name{% endif %}">
                             {% trans 'Name' %} <span class='glyphicon glyphicon-sort' aria-hidden="true"></span>
                         </a>
-                        <a class="col-3 btn order-by-link" href="?resource_type={{ selected_resource_type }}&resource_unit={{ selected_resource_unit }}&order_by={% if order_by == 'reservable' %}-reservable{% else %}reservable{% endif %}">
+                        <a class="col-3 btn order-by-link" href="?resource_integration={{ selected_resource_integration }}&resource_type={{ selected_resource_type }}&resource_unit={{ selected_resource_unit }}&order_by={% if order_by == 'reservable' %}-reservable{% else %}reservable{% endif %}">
                             {% trans 'Availability' %} <span class='glyphicon glyphicon-sort' aria-hidden="true"></span>
                         </a>
-                        <a class="col-4 btn order-by-link" href="?resource_type={{ selected_resource_type }}&resource_unit={{ selected_resource_unit }}&order_by={% if order_by == 'public' %}-public{% else %}public{% endif %}">
+                        <a class="col-4 btn order-by-link" href="?resource_integration={{ selected_resource_integration }}&resource_type={{ selected_resource_type }}&resource_unit={{ selected_resource_unit }}&order_by={% if order_by == 'public' %}-public{% else %}public{% endif %}">
                             {% trans 'Visibility' %} <span class='glyphicon glyphicon-sort' aria-hidden="true"></span>
                         </a>
                 </li>
                 {% for resource in resources %}
-                    <li class="list-group-item {% if resource.is_external %} disabled {% endif %}">
+                    <li class="list-group-item">
                         <div class='panel panel-default'>
                             <img
                                 class="img-rounded pull-left"
@@ -113,17 +113,10 @@
                             >
                             <div class="panel-body">
                                 <div class="col-2">
-                                    {% if resource.is_external %}
-                                    <div>
-                                        <span>{{ resource.unit.name }}</span>
-                                        <h4>{{ resource.name }}</h4>
-                                    </div>
-                                    {% else %}
                                     <a href="{% url 'respa_admin:edit-resource' resource_id=resource.id %}">
                                         <span>{{ resource.unit.name }}</span>
                                         <h4>{{ resource.name }}</h4>
                                     </a>
-                                    {% endif %}
                                 </div>
 
                                 <div class="col-3">
@@ -143,14 +136,10 @@
                                 </div>
 
                                 <div class="col-5">
-                                    {% if resource.is_external %}
-                                    <h6> <div class='shape-danger'></div> {% trans 'Uneditable' %}</h6>
-                                    {% else %}
                                     <h6>
                                         <span class='glyphicon glyphicon-pencil icon-left' aria-hidden="true"></span>
                                         <a href="{% url 'respa_admin:edit-resource' resource_id=resource.id %}">{% trans 'Edit' %}</a>
                                     </h6>
-                                    {% endif %}
                                 </div>
                             </div>
                         </div>

@@ -12,6 +12,7 @@
                 class="form-control"
                 rows="5"
                 name="{{ field.name }}"
+                {% if field.field.disabled %} disabled="disabled" {% endif %}
             >{% if field.value %}{{ field.value }}{% endif %}</textarea>
             <span class="help-text">{{ field.help_text }}</span>
             {% include "respa_admin/forms/_errors.html" with field=field %}

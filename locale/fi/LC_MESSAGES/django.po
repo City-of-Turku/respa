@@ -1851,3 +1851,15 @@ msgstr "Ulkoinen"
 
 msgid "Integration"
 msgstr "Integraatio"
+
+msgid "disabled field set"
+msgstr "Rajoitetut kentät"
+
+msgid "disabled fields set"
+msgstr "Rajoitetut kentät"
+
+msgid "disabled fields"
+msgstr "Rajoitetut kentät"
+
+msgid "View time period"
+msgstr "Katso ajanjaksoa"

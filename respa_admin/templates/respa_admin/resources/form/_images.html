@@ -8,7 +8,11 @@
 
     <p>{% trans "You can only choose one main image." %}</p>
 
-    <button id="image-picker" type="button" class="resources-button">
+    <button 
+        id="image-picker"
+        type="button"
+        class="resources-button"
+        {% if images_is_disabled %} disabled="disabled" {% endif %}>
         {% trans "Add image" %}
     </button>
 

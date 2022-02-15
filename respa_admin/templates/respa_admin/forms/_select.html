@@ -5,7 +5,7 @@
             {% if field.field.required %}*{% endif %}
         </label>
     {% endif %}
-    {% if disabled %}
+    {% if field.field.disabled %}
         <div class="select-dropdown-disabled btn-primary {% if extra_classes %}{{ extra_classes }}{% endif %}">
             {{ field }}
             <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
