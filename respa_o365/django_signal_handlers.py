@@ -28,6 +28,7 @@ def handle_period_save(instance, **kwargs):
         raise Exception("Editing the period directly is not allowed when the resource is connected to an Outlook calendar.")
 
 def handle_calendar_link_delete(instance, **kwargs):
+    logger.info("Removing calendar link for resource %s and calendar subscription %s", instance.resource_id, instance.exchange_subscription_id)
     # Clear outlook
     token = instance.token
     api = MicrosoftApi(token)
