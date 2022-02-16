@@ -16,7 +16,7 @@ UNSAFE_METHODS = ('post', 'put', 'patch', 'delete')
 MAX_QUERIES = 50
 
 
-def get_test_image_data(size=(32, 32), color=(250, 250, 210), format="JPEG"):
+def get_test_image_data(size=(128, 128), color=(250, 250, 210), format="JPEG"):
     """
     Get binary image data with the given specs.
 
@@ -36,7 +36,7 @@ def get_test_image_data(size=(32, 32), color=(250, 250, 210), format="JPEG"):
     return sio.getvalue()
 
 
-def create_resource_image(resource, size=(32, 32), color=(250, 250, 210), format="JPEG", **instance_kwargs):
+def create_resource_image(resource, size=(128, 128), color=(250, 250, 210), format="JPEG", **instance_kwargs):
     """
     Create a ResourceImage object with image data with the given specs.
 

@@ -5,7 +5,7 @@ import datetime
 from django.core.files.base import ContentFile
 from django.core.exceptions import ValidationError
 from django.utils.translation import activate
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 from resources.enums import UnitAuthorizationLevel, UnitGroupAuthorizationLevel
 from resources.errors import InvalidImage
@@ -78,9 +78,10 @@ def test_invalid_image(space_resource):
         type="main",
         image=ContentFile(data, name="bogus.xyz")
     )
-    with pytest.raises(InvalidImage) as ei:
+    with pytest.raises((InvalidImage, UnidentifiedImageError, )) as ei:
         ri.full_clean()
-    assert "cannot identify" in ei.value.message
+    if isinstance(ei, UnidentifiedImageError):
+        assert "cannot identify" in ei.value.message
 
 
 @pytest.mark.django_db

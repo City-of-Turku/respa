@@ -909,9 +909,9 @@ class ResourceImage(ModifiableModel):
             self._process_image()
         return super(ResourceImage, self).full_clean(exclude, validate_unique)
 
-    def _get_io_stream(self, img, format='PNG', **kwargs):
+    def _get_io_stream(self, img, **kwargs):
         _bytes_io = BytesIO()
-        img.save(_bytes_io, format=format, **kwargs)
+        img.save(_bytes_io, format=self.image_format, **kwargs)
         return _bytes_io
 
     def _get_content_file(self, img, **kwargs):
