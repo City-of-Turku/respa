@@ -309,17 +309,19 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
         trans_fields = forms.get_translated_field_count(resource_image_formset)
 
         accessibility_data_link = self._get_accessibility_data_link(request)
-        
-        disabled_fields_set = self.object.get_disabled_fields()
 
-        extra = {
-            'images_is_disabled': 'images' in disabled_fields_set,
-            'free_of_charge_is_disabled': 'free_of_charge' in disabled_fields_set,
-            'periods_field_is_disabled': 'periods' in disabled_fields_set,
-            'public_is_disabled': 'public' in disabled_fields_set,
-            'reservable_is_disabled': 'reservable' in disabled_fields_set,
-            'all_fields_disabled': len(disabled_fields_set) == len(ResourceForm.Meta.fields + ['groups', 'periods', 'images', 'free_of_charge'])
-        }
+        extra = {}
+        
+        if self.object:
+            disabled_fields_set = self.object.get_disabled_fields()
+            extra.update({
+                'images_is_disabled': 'images' in disabled_fields_set,
+                'free_of_charge_is_disabled': 'free_of_charge' in disabled_fields_set,
+                'periods_field_is_disabled': 'periods' in disabled_fields_set,
+                'public_is_disabled': 'public' in disabled_fields_set,
+                'reservable_is_disabled': 'reservable' in disabled_fields_set,
+                'all_fields_disabled': len(disabled_fields_set) == len(ResourceForm.Meta.fields + ['groups', 'periods', 'images', 'free_of_charge'])
+            })
 
         return self.render_to_response(
             self.get_context_data(
@@ -396,12 +398,18 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
             form, None, not is_edit
         ))
 
-        if df_set and 'purposes' not in df_set:
+        if not df_set or \
+            (df_set and 'purposes' not in df_set) or \
+            (df_set and 'purposes' in df_set and not is_edit):
             self._save_resource_purposes()
-        if df_set and 'images' not in df_set:
-            self._delete_extra_images(resource_image_formset)
-            self._save_resource_images(resource_image_formset)
-        if df_set and 'periods' not in df_set:
+        if not df_set or \
+            (df_set and 'images' not in df_set) or \
+            (df_set and 'images' in df_set and not is_edit):
+                self._delete_extra_images(resource_image_formset)
+                self._save_resource_images(resource_image_formset)
+        if not df_set or \
+            (df_set and 'periods' not in df_set) or \
+            (df_set and 'periods' in df_set and not is_edit):
             self.save_period_formset(period_formset_with_days)
         return HttpResponseRedirect(self.get_success_url())
 
@@ -443,9 +451,9 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
             df_set = self.object.get_disabled_fields()
 
         is_valid.append(form.is_valid())
-        if df_set and 'periods' not in df_set:
+        if not df_set or (df_set and 'periods' not in df_set):
             is_valid.append(period_formset.is_valid())
-        if df_set and 'images' not in df_set:
+        if not df_set or (df_set and 'images' not in df_set):
             is_valid.append(image_formset.is_valid())
 
         return all(is_valid)

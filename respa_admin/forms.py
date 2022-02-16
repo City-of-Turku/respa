@@ -469,6 +469,9 @@ def get_period_formset(request=None, extra=1, instance=None, parent_class=Resour
             field.disabled = 'periods' in df_set
             if field.disabled:
                 field.required = False
+    else: # fields are getting cached? 
+        for _, field in period_formset_with_days.form.base_fields.items():
+            field.disabled = False
 
 
     if not request:
@@ -493,6 +496,9 @@ def get_resource_image_formset(request=None, extra=1, instance=None):
             field.disabled = 'images' in df_set
             if field.disabled:
                 field.required = False
+    else: # fields are getting cached? 
+        for _, field in resource_image_formset.form.base_fields.items():
+            field.disabled = False
 
     if not request:
         return resource_image_formset(instance=instance)
