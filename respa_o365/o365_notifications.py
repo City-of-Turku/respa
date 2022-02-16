@@ -39,6 +39,7 @@ class O365Notifications:
 
     def delete(self, id):
         result = self._api.delete("subscriptions/{}".format(id))
+        return result
 
     def renew(self, id):
         expirationDatetime = datetime.utcnow()+timedelta(hours=48)

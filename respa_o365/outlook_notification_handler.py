@@ -8,7 +8,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from respa_o365.calendar_sync import add_to_queue
+from respa_o365.calendar_sync import add_to_queue, ensure_notification
 from respa_o365.models import OutlookCalendarLink, OutlookCalendarReservation
 from respa_o365.o365_calendar import MicrosoftApi, O365Calendar
 
@@ -48,12 +48,25 @@ class NotificationCallback(View):
         try:
             for notification in notifications:
                 sub_id = notification.get("subscriptionId")
-                exchange_id = notification.get("resourceData").get("id")
                 link = OutlookCalendarLink.objects.filter(exchange_subscription_id=sub_id).first()
-                if not link or link.exchange_subscription_secret != notification.get("clientState"):
-                    logger.warning("Received notification from subscription %s not connected to any calendar link.", sub_id)
+                res_data = notification.get("resourceData")
+                if not link:
+                    logger.info("Received notification from subscription %s not connected to any calendar link.", sub_id)
+                    continue
+                elif link.exchange_subscription_secret != notification.get("clientState"):
+                    logger.warning("Notification from subscription %s has wrong subscription secret.", sub_id)
+                    continue
+                elif not res_data:
+                    # It's a different kind of notification
+                    ls_event = notification.get("lifecycleEvent")
+                    if ls_event == "subscriptionRemoved":
+                        logger.info("Renewing notification for subscription %s", sub_id)
+                        ensure_notification(link)
+                        continue
+                    logger.info("Unknown type of notification for subscription %s", sub_id)
                     continue
 
+                exchange_id = res_data.get("id")
                 mapping = OutlookCalendarReservation.objects.filter(exchange_id=exchange_id).first()
                 if mapping:
                     api = MicrosoftApi(link.token)
