@@ -909,6 +909,17 @@ class ResourceImage(ModifiableModel):
             self._process_image()
         return super(ResourceImage, self).full_clean(exclude, validate_unique)
 
+    def _get_io_stream(self, img, format='PNG', **kwargs):
+        _bytes_io = BytesIO()
+        img.save(_bytes_io, format=format, **kwargs)
+        return _bytes_io
+
+    def _get_content_file(self, img, **kwargs):
+        return ContentFile(
+            self._get_io_stream(img, **kwargs).getvalue(),
+            name=os.path.splitext(self.image.name)[0] + ".%s" % self.image_format.lower()
+        )
+
     def _process_image(self):
         """
         Preprocess the uploaded image file, if required.
@@ -919,40 +930,28 @@ class ResourceImage(ModifiableModel):
         """
         if not self.image:  # No image set - we can't do this right now
             return
+        save_kwargs = {}
+        with Image.open(self.image) as img:
+            if img.size > (1920, 1080):
+                img.thumbnail((1920, 1080), Image.ANTIALIAS)
+                setattr(self, '_processing_required', True)
+            elif img.size < (128, 128):
+                raise InvalidImage("Image %s not valid (Image is too small)" % self.image)
 
-        if self.image_format:  # Assume that if image_format is set, no further processing is required
-            return
-
-        try:
-            img = Image.open(self.image)
-            img.load()
-            if (img.size[0] < 5 or img.size[1] < 5):
-                raise ValidationError(_("Image has to be larger than 5x5"))
-            elif (img.size[0] > 1920 or img.size[1] > 1280):
-                raise ValidationError(_("Image has to be less than 1920x1280"))
-        except Exception as exc:
-            if isinstance(exc, AttributeError):
-                raise ValidationError ("Picture must be bigger than 5x5 or smaller than 1920x1280")
-            else:
-                raise InvalidImage("Image %s not valid (%s)" % (self.image, exc)) from exc
-
-        if img.format not in ("JPEG", "PNG"):  # Needs transcoding.
-            if self.type in ("map", "ground_plan"):
-                target_format = "PNG"
-                save_kwargs = {}
-            else:
-                target_format = "JPEG"
-                save_kwargs = {"quality": 75, "progressive": True}
-            image_bio = BytesIO()
-            img.save(image_bio, format=target_format, **save_kwargs)
-            self.image = ContentFile(
-                image_bio.getvalue(),
-                name=os.path.splitext(self.image.name)[0] + ".%s" % target_format.lower()
-            )
-            self.image_format = target_format
-        else:  # All good -- keep the file as-is.
-            self.image_format = img.format
-
+            if img.format not in ("JPEG", "PNG"):  # Needs transcoding.
+                if self.type in ("map", "ground_plan"):
+                    target_format = "PNG"
+                else:
+                    target_format = "JPEG"
+                    save_kwargs = {"quality": 75, "progressive": True}
+                self.image_format = target_format
+                setattr(self, '_processing_required', True)
+            else:  # All good -- keep the file as-is.
+                self.image_format = img.format
+            
+            if getattr(self, '_processing_required', False):
+                self.image = self._get_content_file(img, **save_kwargs)
+            
     def get_full_url(self):
         base_url = getattr(settings, 'RESPA_IMAGE_BASE_URL', None)
         if not base_url:
