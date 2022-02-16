@@ -934,6 +934,7 @@ class ResourceImage(ModifiableModel):
         with Image.open(self.image) as img:
             if img.size > (1920, 1080):
                 img.thumbnail((1920, 1080), Image.ANTIALIAS)
+                self.cropping = None
                 setattr(self, '_processing_required', True)
             elif img.size < (128, 128):
                 raise InvalidImage("Image %s not valid (Image is too small)" % self.image)
