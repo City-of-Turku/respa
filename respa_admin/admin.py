@@ -18,7 +18,11 @@ class DisabledFieldsForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['disabled_fields'].choices = sorted([(field, field) for field in ResourceForm.Meta.fields + ['groups', 'periods', 'images', 'free_of_charge']])
+        self.fields['units'].queryset = self._get_unit_queryset()
 
+
+    def _get_unit_queryset(self):
+        return self.fields['units'].queryset.distinct()
 
     def clean_resources(self):
         resources = self.cleaned_data.get('resources', [])

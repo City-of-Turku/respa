@@ -341,11 +341,11 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         Check if Resource or Unit has disabled fields set,
         Resource takes priority
         """
-        disabled_fields = None
+        disabled_fields = []
         if self.pk:
-            disabled_fields = self.disabled_fields_set.first() \
-                or self.unit.disabled_fields_set.first()
-        return getattr(disabled_fields, 'disabled_fields', [])
+            disabled_fields = getattr(self.disabled_fields_set.first(), 'disabled_fields', []) \
+                or self.unit.get_disabled_fields()
+        return disabled_fields
 
     def validate_reservation_period(self, reservation, user, data=None):
         """

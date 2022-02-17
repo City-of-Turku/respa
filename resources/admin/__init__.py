@@ -193,7 +193,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
         return form
 
     def get_readonly_fields(self, request, obj=None):
-        if obj.is_external:
+        if obj and obj.is_external:
             self.inlines = []
             return [field.name for field in self.model._meta.fields if field.name != 'is_external'] + [ 'tags', 'purposes' ]
         return super().get_readonly_fields(request, obj)

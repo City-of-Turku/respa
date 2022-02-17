@@ -143,6 +143,15 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
     def __str__(self):
         return "%s (%s)" % (get_translated(self, 'name'), self.id)
 
+    def get_disabled_fields(self):
+        """
+        Check if Unit has disabled fields set
+        """
+        disabled_fields = []
+        if self.pk:
+            disabled_fields = getattr(self.disabled_fields_set.first(), 'disabled_fields', [])
+        return disabled_fields
+
     def get_opening_hours(self, begin=None, end=None):
         """
         :rtype : dict[str, list[dict[str, datetime.datetime]]]
