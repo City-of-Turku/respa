@@ -1863,3 +1863,13 @@ msgstr "Rajoitetut kentät"
 
 msgid "View time period"
 msgstr "Katso ajanjaksoa"
+
+msgid "Preliminary reservation payment waiting time"
+msgstr "Vahvistettavien varausten maksujen odotusaika"
+
+msgid ""
+"Amount of hours before confirmed preliminary reservations with payments expire."
+" Value 0 means this setting is not in use."
+msgstr ""
+"Tuntimäärä maksullisten vahvistettujen varausten vanhentumiselle."
+" Arvo 0 tarkoittaa, että asetus ei ole käytössä."

@@ -90,7 +90,7 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
     municipality = models.ForeignKey(Municipality, null=True, blank=True, verbose_name=_('Municipality'),
                                      on_delete=models.SET_NULL)
 
-    
+
     notification_template_group = models.ForeignKey(NotificationTemplateGroup,
                                     null=True,
                                     blank=True,
@@ -123,8 +123,14 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
 
     sms_reminder_delay = models.IntegerField(verbose_name=_('How many hours before reservation the reminder is sent'), default=1,
                                     validators=[MinValueValidator(1), MaxValueValidator(8766)])
-    
+
     timmi_profile_id = models.IntegerField(verbose_name=_('Timmi profile id'), null=True, blank=True)
+
+    payment_requested_waiting_time = models.PositiveIntegerField(
+        verbose_name=_('Preliminary reservation payment waiting time'),
+        help_text=_('Amount of hours before confirmed preliminary reservations with payments expire.'
+            ' Value 0 means this setting is not in use.'),
+        default=0, blank=True)
 
     objects = UnitQuerySet.as_manager()
 

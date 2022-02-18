@@ -292,7 +292,8 @@ class ResourceForm(forms.ModelForm):
             'public',
             'reservation_metadata_set',
             'reservation_home_municipality_set',
-            'resource_tags'
+            'resource_tags',
+            'payment_requested_waiting_time'
         ] + translated_fields
 
         widgets = {
@@ -382,7 +383,8 @@ class UnitForm(forms.ModelForm):
             'municipality',
             'phone',
             'disallow_overlapping_reservations',
-            'disallow_overlapping_reservations_per_user'
+            'disallow_overlapping_reservations_per_user',
+            'payment_requested_waiting_time'
         ] + translated_fields
 
         widgets = {

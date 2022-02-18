@@ -1798,3 +1798,13 @@ msgstr ""
 
 msgid "View time period"
 msgstr "Se tidsperiod"
+
+msgid "Preliminary reservation payment waiting time"
+msgstr "Preliminär reservation betalning väntetid"
+
+msgid ""
+"Amount of hours before confirmed preliminary reservations with payments expire."
+" Value 0 means this setting is not in use."
+msgstr ""
+"Antal timmar innan bekräftade preliminära bokningar med betalningar löper ut."
+" Värde 0 betyder att denna inställning inte används."

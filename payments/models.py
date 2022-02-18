@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import OuterRef, Q, Subquery
+from django.db.models import Case, DateTimeField, ExpressionWrapper, F, OuterRef, Q, Subquery, When
 from django.utils import translation
 from django.utils.formats import localize
 from django.utils.functional import cached_property
@@ -288,15 +288,31 @@ class OrderQuerySet(models.QuerySet):
         for order in too_old_waiting_orders:
             order.set_state(Order.EXPIRED)
 
-        earliest_allowed_requested = now() - timedelta(hours=settings.RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME)
+        time_now = now()
+        earliest_allowed_requested = time_now - timedelta(hours=settings.RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME)
 
-        # set requested orders which customer hasn't tried to pay to expire
+        # Set requested orders which customer hasn't tried to pay to expire.
+        # Most specific waiting time setting is used to calculate expiration time
+        # i.e. in order: resource > unit > global.
+        # Waiting time value 0 means that it is not in use.
         too_old_ready_requested_orders = self.filter(
             state=Order.WAITING,
             is_requested_order=True,
             reservation__state=Reservation.READY_FOR_PAYMENT
         ).filter(
-            confirmed_by_staff_at__lt=earliest_allowed_requested
+            confirmed_by_staff_at__lt=Case(
+                When(reservation__resource__payment_requested_waiting_time__gt=0,
+                    then=ExpressionWrapper(
+                        time_now - timedelta(hours=1) * F('reservation__resource__payment_requested_waiting_time'),
+                        output_field=DateTimeField()
+                    )),
+                When(reservation__resource__unit__payment_requested_waiting_time__gt=0,
+                    then=ExpressionWrapper(
+                        time_now - timedelta(hours=1) * F('reservation__resource__unit__payment_requested_waiting_time'),
+                        output_field=DateTimeField()
+                    )),
+                default=earliest_allowed_requested
+            )
         )
 
         for order in too_old_ready_requested_orders:

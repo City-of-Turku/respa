@@ -282,6 +282,12 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         max_length=32, verbose_name=_('price type'), choices=PRICE_TYPE_CHOICES, default=PRICE_TYPE_HOURLY
     )
 
+    payment_requested_waiting_time = models.PositiveIntegerField(
+        verbose_name=_('Preliminary reservation payment waiting time'),
+        help_text=_('Amount of hours before confirmed preliminary reservations with payments expire.'
+            ' Value 0 means this setting is not in use.'),
+        default=0, blank=True)
+
     access_code_type = models.CharField(verbose_name=_('Access code type'), max_length=20, choices=ACCESS_CODE_TYPES,
                                         default=ACCESS_CODE_TYPE_NONE)
     # Access codes can be generated either by the general Respa code or
@@ -963,10 +969,10 @@ class ResourceImage(ModifiableModel):
                 setattr(self, '_processing_required', True)
             else:  # All good -- keep the file as-is.
                 self.image_format = img.format
-            
+
             if getattr(self, '_processing_required', False):
                 self.image = self._get_content_file(img, **save_kwargs)
-            
+
     def get_full_url(self):
         base_url = getattr(settings, 'RESPA_IMAGE_BASE_URL', None)
         if not base_url:

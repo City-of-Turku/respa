@@ -13,4 +13,7 @@
         <span class="control-label input-label">{{ form.disallow_overlapping_reservations_per_user.label }}</span>
         {{ form.disallow_overlapping_reservations_per_user }}
     </div>
+    <div class="input-row">
+        {% include "respa_admin/forms/_input.html" with field=form.payment_requested_waiting_time %}
+    </div>
 </div>
