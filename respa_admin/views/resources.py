@@ -1,3 +1,4 @@
+import itertools
 from django.conf import settings
 from django.contrib import messages
 from django.db.models import FieldDoesNotExist, Q
@@ -163,7 +164,13 @@ class ManageUserPermissionsView(ExtraContextMixin, UpdateView):
                         log_entry(self.object, user, is_edit=is_edit, message="Unit '%s' authorization added: %s" % (subject.name, level))
 
 
-        unit_authorization_formset.save()
+        unit_auths = unit_authorization_formset.save()
+        if not unit_auths:
+            unit_auths = UnitAuthorization.objects.filter(authorized=self.object)
+        for _, unit_auths in itertools.groupby(unit_auths, lambda unit_auth: unit_auth.subject):
+            max(unit_auths)._ensure_lower_auth()
+
+
         return HttpResponseRedirect(self.get_success_url())
 
     def forms_invalid(self, form, unit_authorization_formset):
@@ -222,6 +229,8 @@ class ManageUserPermissionsListView(ExtraContextMixin, ListView):
         context['selected_unit'] = self.selected_unit or ''
         context['all_available_units'] = self.get_all_available_units()
         context['user_list_template_name'] = self.user_list_template_name
+        unit_auth_users = UnitAuthorization.objects.all().values_list('authorized', flat=True).distinct()
+        context['sorted_authorization_list'] = [max(UnitAuthorization.objects.filter(authorized=user)) for user in unit_auth_users]
         return context
 
 

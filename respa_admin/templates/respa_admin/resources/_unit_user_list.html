@@ -33,7 +33,7 @@
             {% for unit in units %}
             <span class="sub-header">{{ unit.name }}</span>
 
-                {% for authorization in unit.authorizations.all %}
+                {% for authorization in sorted_authorization_list %}
                 {% with authorization.authorized as unit_user %}
                 {% user_has_permission unit_user 'can_approve_reservation' unit as user_can_approve %}
 
@@ -55,13 +55,13 @@
                                 <span>{% trans 'Admin' %}</span>
                             </div>
                             <div>
-                                <span class="{% if authorization.level == authorization.level.viewer %}shape-success{% else %}shape-danger{% endif %}"></span>
+                                <span class="{% if authorization.level >= authorization.level.viewer %}shape-success{% else %}shape-danger{% endif %}"></span>
                                 <span>{% trans 'Viewer' %}</span>
                             </div>
                         </div>
                         <div class="col-md-8">
                             <div>
-                                <span class="{% if authorization.level == authorization.level.manager %}shape-success{% else %}shape-danger{% endif %}"></span>
+                                <span class="{% if authorization.level >= authorization.level.manager %}shape-success{% else %}shape-danger{% endif %}"></span>
                                 <span>{% trans 'Manager' %}</span>
                             </div>
                             <div>
