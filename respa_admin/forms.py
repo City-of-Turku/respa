@@ -578,7 +578,7 @@ class UnitAuthorizationForm(forms.ModelForm):
             user_has_unit_group_auth = self.request.user.unit_group_authorizations.to_unit(unit).admin_level().exists()
             can_approve_initial_value = permission_checker.has_perm(
                 "unit:can_approve_reservation", self.instance.subject
-            )
+            ) or self.instance.subject.is_manager(self.instance.authorized)
             if not user_has_unit_auth and not user_has_unit_group_auth:
                 self.fields['subject'].disabled = True
                 self.fields['level'].disabled = True
