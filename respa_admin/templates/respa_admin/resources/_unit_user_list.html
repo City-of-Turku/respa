@@ -33,7 +33,7 @@
             {% for unit in units %}
             <span class="sub-header">{{ unit.name }}</span>
 
-                {% for authorization in sorted_authorization_list %}
+                {% for authorization in unit.authorizations.highest_per_user %}
                 {% with authorization.authorized as unit_user %}
                 {% user_has_permission unit_user 'can_approve_reservation' unit as user_can_approve %}
 

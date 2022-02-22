@@ -219,7 +219,12 @@ class UnitAuthorizationQuerySet(models.QuerySet):
             UnitAuthorizationLevel.admin,
             UnitAuthorizationLevel.manager,
         })
-
+    
+    def highest_per_user(self):
+        return self.filter(id__in=[
+            max(self.filter(authorized=user)).id 
+            for user in self.values_list('authorized', flat=True).distinct()
+        ])
 
 class UnitAuthorization(models.Model):
     subject = models.ForeignKey(
