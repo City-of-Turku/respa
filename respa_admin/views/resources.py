@@ -229,8 +229,6 @@ class ManageUserPermissionsListView(ExtraContextMixin, ListView):
         context['selected_unit'] = self.selected_unit or ''
         context['all_available_units'] = self.get_all_available_units()
         context['user_list_template_name'] = self.user_list_template_name
-        unit_auth_users = UnitAuthorization.objects.all().values_list('authorized', flat=True).distinct()
-        context['sorted_authorization_list'] = [max(UnitAuthorization.objects.filter(authorized=user)) for user in unit_auth_users]
         return context
 
 
