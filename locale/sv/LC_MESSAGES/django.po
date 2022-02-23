@@ -1808,3 +1808,9 @@ msgid ""
 msgstr ""
 "Antal timmar innan bekräftade preliminära bokningar med betalningar löper ut."
 " Värde 0 betyder att denna inställning inte används."
+
+msgid "Reservation hours total"
+msgstr "Bokningstimmar totalt"
+
+msgid "%(hours)s hours"
+msgstr "%(hours)s timmar"

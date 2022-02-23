@@ -2496,3 +2496,9 @@ msgid ""
 "Amount of hours before confirmed preliminary reservations with payments expire."
 " Value 0 means this setting is not in use."
 msgstr ""
+
+msgid "Reservation hours total"
+msgstr ""
+
+msgid "%(hours)s hours"
+msgstr ""

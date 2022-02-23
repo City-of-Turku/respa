@@ -11,11 +11,12 @@ import pytz
 import arrow
 from django.conf import settings
 from django.utils import formats
-from django.utils.translation import ungettext
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, ContentType
+from django.utils.translation import ugettext
+from django.utils.translation import ungettext
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 from django.utils.timezone import localtime
@@ -168,8 +169,8 @@ def generate_reservation_xlsx(reservations):
     headers = [
         ('Unit', 30),
         ('Resource', 30),
-        ('Begin time', 30),
-        ('End time', 30),
+        ('Begin time', 35),
+        ('End time', 35),
         ('Created at', 30),
         ('User', 30),
         ('Comments', 30),
@@ -185,13 +186,16 @@ def generate_reservation_xlsx(reservations):
         worksheet.set_column(column, column, header[1])
 
     date_format = workbook.add_format({'num_format': 'dd.mm.yyyy hh:mm', 'align': 'left'})
+    total_hours = 0
     for row, reservation in enumerate(reservations, 1):
         for key in reservation:
             reservation[key] = clean(reservation[key])
+        begin = localtime(reservation['begin']).replace(tzinfo=None)
+        end = localtime(reservation['end']).replace(tzinfo=None)
         worksheet.write(row, 0, reservation['unit'])
         worksheet.write(row, 1, reservation['resource'])
-        worksheet.write(row, 2, localtime(reservation['begin']).replace(tzinfo=None), date_format)
-        worksheet.write(row, 3, localtime(reservation['end']).replace(tzinfo=None), date_format)
+        worksheet.write(row, 2, begin, date_format)
+        worksheet.write(row, 3, end, date_format)
         worksheet.write(row, 4, localtime(reservation['created_at']).replace(tzinfo=None), date_format)
         if 'user' in reservation:
             worksheet.write(row, 5, reservation['user'])
@@ -206,6 +210,10 @@ def generate_reservation_xlsx(reservations):
                     except:
                         continue
                 worksheet.write(row, i, reservation[field])
+        total_hours += (end-begin).total_seconds()
+    col_format = workbook.add_format({'color': 'red', 'font': 'bold'})
+    worksheet.write(row+2, 2, ugettext('Reservation hours total'), col_format)
+    worksheet.write(row+2, 3, ugettext('%(hours)s hours') % ({'hours': int((total_hours / 60) / 60)}), col_format)
     workbook.close()
     return output.getvalue()
 

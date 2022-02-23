@@ -1873,3 +1873,9 @@ msgid ""
 msgstr ""
 "Tuntimäärä maksullisten vahvistettujen varausten vanhentumiselle."
 " Arvo 0 tarkoittaa, että asetus ei ole käytössä."
+
+msgid "Reservation hours total"
+msgstr "Varausten tuntimäärä yhteensä"
+
+msgid "%(hours)s hours"
+msgstr "%(hours)s tuntia"
