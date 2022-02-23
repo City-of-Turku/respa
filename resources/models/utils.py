@@ -187,6 +187,7 @@ def generate_reservation_xlsx(reservations):
 
     date_format = workbook.add_format({'num_format': 'dd.mm.yyyy hh:mm', 'align': 'left'})
     total_hours = 0
+    row = 0
     for row, reservation in enumerate(reservations, 1):
         for key in reservation:
             reservation[key] = clean(reservation[key])
@@ -211,9 +212,10 @@ def generate_reservation_xlsx(reservations):
                         continue
                 worksheet.write(row, i, reservation[field])
         total_hours += (end-begin).total_seconds()
-    col_format = workbook.add_format({'color': 'red', 'font': 'bold'})
-    worksheet.write(row+2, 2, ugettext('Reservation hours total'), col_format)
-    worksheet.write(row+2, 3, ugettext('%(hours)s hours') % ({'hours': int((total_hours / 60) / 60)}), col_format)
+    if row:
+        col_format = workbook.add_format({'color': 'red', 'font': 'bold'})
+        worksheet.write(row+2, 2, ugettext('Reservation hours total'), col_format)
+        worksheet.write(row+2, 3, ugettext('%(hours)s hours') % ({'hours': int((total_hours / 60) / 60)}), col_format)
     workbook.close()
     return output.getvalue()
 
