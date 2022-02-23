@@ -91,10 +91,12 @@ function bindGenerateButton() {
                 dl.href = url;
                 dl.download = 'report.xlsx';
                 dl.click();
+                $("body").css("cursor", "default");
             }
         }
         http.open('GET', buildUrl(resources, begin, end, 5000));
         http.send();
+        $("body").css("cursor", "progress");
     });
 
     setInterval(() => {
