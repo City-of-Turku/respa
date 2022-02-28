@@ -1,7 +1,7 @@
-FROM postgres:9.5
+FROM postgis/postgis:14-master
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
-        postgis postgresql-9.5-postgis-2.4 postgresql-9.5-postgis-2.4-scripts
+        postgis postgresql postgresql-contrib
 
 RUN localedef -i fi_FI -c -f UTF-8 -A /usr/share/locale/locale.alias fi_FI.UTF-8
 
