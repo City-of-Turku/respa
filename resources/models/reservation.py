@@ -24,7 +24,7 @@ from .resource import Resource
 from .utils import (
     get_dt, save_dt, is_valid_time_slot, humanize_duration, send_respa_mail,
     DEFAULT_LANG, localize_datetime, format_dt_range, build_reservations_ical_file,
-    get_order_quantity, get_order_tax_price, get_order_pretax_price
+    get_order_quantity, get_order_tax_price, get_order_pretax_price, get_payment_requested_waiting_time
 )
 
 from random import sample
@@ -550,7 +550,15 @@ class Reservation(ModifiableModel):
                     context['resource_ground_plan_image_url'] = ground_plan_image_url
 
             order = getattr(self, 'order', None)
-            if order:
+            if order:  
+                '''
+                'RESERVATION_WAITING_FOR_PAYMENT' notifications required payment due date so it's calculated and added to context.
+                e.g. datetime when order was confirmed + RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME = payment due date.
+                20.01.2022 15:30:00 + 48 = 22.01.2022 15:30:00.
+                '''
+                if notification_type in [NotificationType.RESERVATION_WAITING_FOR_PAYMENT]:
+                    context['payment_due_date'] = get_payment_requested_waiting_time(self)
+
                 context['order'] = order.get_notification_context(language_code)
 
                 all_products = []

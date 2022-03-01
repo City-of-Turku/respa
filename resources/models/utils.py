@@ -426,3 +426,25 @@ def get_translated_fields(instance, use_field_name=False):
         return translated
     except NotRegistered:
         return None
+
+def get_payment_requested_waiting_time(self):
+    '''
+    Returns the date and time of when a order should be paid by.
+    Time is calculated by adding order.confirmed_by_staff_at datetime + waiting_time,
+    after this exact calculation the datetime is rounded down to the nearest hour.
+
+    waiting_time is based on the payment_requested_waiting_time value found in
+    the resource or the resources unit, if neither have this value set then the
+    env variable RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME is used instead.
+    '''
+
+    waiting_time = settings.RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME
+    if getattr(self.resource,'payment_requested_waiting_time', None):
+        waiting_time = self.resource.payment_requested_waiting_time
+    elif getattr(self.resource.unit, 'payment_requested_waiting_time', None):
+        waiting_time = self.resource.unit.payment_requested_waiting_time
+
+    exact_value = self.order.confirmed_by_staff_at + datetime.timedelta(hours=waiting_time)
+    rounded_value = exact_value.replace(microsecond=0, second=0, minute=0)
+
+    return rounded_value.astimezone(self.resource.unit.get_tz()).strftime('%d.%m.%Y %H:%M')
