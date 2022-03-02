@@ -1,0 +1,8 @@
+services:
+  api:
+    volumes:
+      - .:/srv/app
+      - ./static:/var/www/static/
+
+volumes:
+  static-files:
