@@ -41,7 +41,7 @@ from ..errors import InvalidImage
 from ..fields import EquipmentField
 from .accessibility import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility
 from .base import AutoIdentifiedModel, NameIdentifiedModel, ModifiableModel, ValidatedIdentifier
-from .utils import create_datetime_days_from_now, get_translated, get_translated_name, humanize_duration
+from .utils import create_datetime_days_from_now, generate_id, get_translated, get_translated_name, humanize_duration
 from .equipment import Equipment
 from .unit import Unit
 from .availability import get_opening_hours
@@ -905,6 +905,7 @@ class ResourceImage(ModifiableModel):
     image_format = models.CharField(max_length=10)
     cropping = ImageRatioField('image', '800x800', verbose_name=_('Cropping'))
     sort_order = models.PositiveSmallIntegerField(verbose_name=_('Sort order'))
+    stamp = models.CharField(max_length=255, null=True, blank=True, unique=True)
 
     def save(self, *args, **kwargs):
         self._process_image()
@@ -922,6 +923,11 @@ class ResourceImage(ModifiableModel):
                 # lead to a more awkward API experience (having to first patch other
                 # images for the resource, then fix the last one).
                 other_main_images.update(type="other")
+        if not self.stamp:
+            stamp = generate_id()
+            while ResourceImage.objects.filter(stamp=stamp).exists():
+                stamp = generate_id()
+            self.stamp = stamp
         return super(ResourceImage, self).save(*args, **kwargs)
 
     def full_clean(self, exclude=(), validate_unique=True):
