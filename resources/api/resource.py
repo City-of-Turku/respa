@@ -230,14 +230,34 @@ class ResourceImageSerializer(TranslatedModelSerializer):
             'caption_fi', 'caption_en', 'caption_sv'
         )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        initial_data = getattr(self, 'initial_data', None)
+        if initial_data:
+            remove = initial_data.get('remove', False)
+            if remove:
+                for field in ('type', 'caption', ):
+                    self.fields[field].required = False
+
     def validate(self, attrs):
-        request = self.context['request']
+        attrs = super().validate(attrs)
+        remove = attrs.get('remove', False)
+        if remove:
+            ident = attrs.get('stamp', attrs.get('id', None))
+            if not ident:
+                raise serializers.ValidationError({
+                    'image': {
+                        'remove': 'Missing required field: id or stamp'
+                    }
+                })
+            return attrs
+
         if 'image' not in attrs:
             raise serializers.ValidationError({
                 'image': [_('This field is required.')]
             })
 
-        return super().validate(attrs)
+        return attrs
 
     def create(self, validated_data):
         if 'id' in validated_data:
@@ -259,13 +279,7 @@ class ResourceImageSerializer(TranslatedModelSerializer):
         remove = validated_data.pop('remove', False)
         ident = validated_data.pop('stamp', validated_data.get('id', None))
 
-        if remove and not ident:
-            raise serializers.ValidationError({
-                'image': {
-                    'remove': 'Missing required field: id or stamp'
-                }
-            })
-        elif remove and ident:
+        if remove:
             query = Q(pk=ident) if isinstance(ident, int) else Q(stamp=ident)
             ResourceImage.objects.filter(query, resource=resource).delete()
             return resource
