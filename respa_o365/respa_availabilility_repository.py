@@ -59,6 +59,7 @@ class RespaAvailabilityRepository:
             logger.error("Failed deleting period {}".format(item_id), exc_info=True)
 
     def get_changes(self, memento=None):
+        logger.debug("get_changes")
         # Changing periods through other means is prevented when there are calendar links connected to the resource.
         # For this reason, the periods do not change on the Respa side.
         if not memento:
@@ -66,6 +67,7 @@ class RespaAvailabilityRepository:
         return {}, memento
 
     def get_changes_by_ids(self, item_ids, memento=None):
+        logger.debug("get_changes_by_ids")
         # Changing periods through other means is prevented when there are calendar links connected to the resource.
         # For this reason, the periods do not change on the Respa side.
         periods = Period.objects.filter(id__in=item_ids)

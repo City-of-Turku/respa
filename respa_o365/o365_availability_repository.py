@@ -1,7 +1,10 @@
+import logging
 from django.conf import settings
 from respa_o365.availability_sync_item import AvailabilitySyncItem
 from respa_o365.o365_calendar import Event
 from respa_o365.reservation_sync import SyncItemRepository
+
+logger = logging.getLogger(__name__)
 
 class O365AvailabilityRepository(SyncItemRepository):
     def __init__(self, o365_calendar):
@@ -36,8 +39,10 @@ class O365AvailabilityRepository(SyncItemRepository):
         self._o365_calendar.remove_event(item_id)
 
     def get_changes(self, memento=None):
+        logger.debug("get_changes")
         return self._o365_calendar.get_changes(memento)
 
     def get_changes_by_ids(self, item_ids, memento=None):
+        logger.debug("get_changes_by_ids")
         return self._o365_calendar.get_changes_by_ids(item_ids, memento)
 

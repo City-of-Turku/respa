@@ -4,6 +4,7 @@ from respa_o365.id_mapper import IdMapper
 from respa_o365.sync_operations import ChangeType, SyncActionVisitor, TargetSystem, \
     SyncOperations, reservationSyncActions
 
+logger = logging.getLogger(__name__)
 
 class SyncItemRepository:
     def create_item(self, item):
@@ -157,14 +158,18 @@ class ReservationSync:
             respa_id = self.__id_map.reverse.get(remote_id, None)
             changes.add(build_status_pair(respa_id, remote_id))
 
-        
+        logger.debug("Creating sync operations")
         ops = SyncOperations(changes, self._sync_actions).get_sync_operations()
-
+        logger.debug("Performing %d sync operations...", len(ops))
         visitor = OpVisitor(self.__respa, self.__remote, self.__id_map)
+        index = 0
         for op in ops:
+            index = index + 1
+            logger.debug("%d: %s", index, str(op))
             op.accept(visitor)
 
     def sync_all(self):
+        logger.debug("sync_all")
         respa_statuses, memento_respa = self.__respa.get_changes(self.__respa_memento)
         remote_statuses, memento_remote = self.__remote.get_changes(self.__remote_memento)
         self._sync(respa_statuses, remote_statuses)

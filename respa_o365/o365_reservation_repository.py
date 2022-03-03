@@ -52,9 +52,11 @@ class O365ReservationRepository(SyncItemRepository):
         self._o365_calendar.remove_event(item_id)
 
     def get_changes(self, memento=None):
+        logger.debug("get_changes")
         return self._o365_calendar.get_changes(memento)
 
     def get_changes_by_ids(self, item_ids, memento=None):
+        logger.debug("get_changes_by_ids")
         return self._o365_calendar.get_changes_by_ids(item_ids, memento)
 
 class ReservationBody:

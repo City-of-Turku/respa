@@ -71,6 +71,7 @@ class RespaReservations:
             logger.error("Unable to cancel reservation {}".format(item_id), exc_info=True)
 
     def get_changes(self, memento=None):
+        logger.debug("get_changes")
         if memento:
             time = datetime.strptime(memento, time_format)
         else:
@@ -81,6 +82,7 @@ class RespaReservations:
         return {r.id: (status(r, time), reservation_change_key(r)) for r in reservations}, new_memento.strftime(time_format)
 
     def get_changes_by_ids(self, item_ids, memento=None):
+        logger.debug("get_changes_by_ids")
         reservations = Reservation.objects.filter(id__in=item_ids)
         if memento:
             time = datetime.strptime(memento, time_format)

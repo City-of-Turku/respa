@@ -10,6 +10,7 @@ class SyncOperations:
         self.sync_actions = sync_actions
 
     def get_sync_operations(self):
+        logger.debug("get_sync_operations")
         """Returns list of operations that would synchronise the given changes between systems.
         Changes is expected to be a list of id-state-tuplet pairs. Each tuplet represents the
         item in either Respa (first one) or in other system (second one). Caller is expected to

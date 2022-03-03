@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def handle_reservation_save(instance, **kwargs):
+    logger.debug("handle_reservation_save")
     if getattr(instance, "_from_o365_sync", False):
         return
     links = OutlookCalendarLink.objects.filter(resource=instance.resource)
@@ -21,6 +22,7 @@ def handle_reservation_save(instance, **kwargs):
         add_to_queue(link)
 
 def handle_period_save(instance, **kwargs):
+    logger.debug("handle_period_save")
     if getattr(instance, "_from_o365_sync", False):
         return
 
