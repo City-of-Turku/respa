@@ -1,5 +1,6 @@
 # Docker image for Respa
 FROM node:14-alpine AS nodebase
+FROM python:3.9-slim-bullseye AS pythonbase
 
 FROM nodebase AS respa_admin_deps
 WORKDIR /app
@@ -13,7 +14,7 @@ COPY --from=respa_admin_deps /app/package.json /app/package-lock.json ./
 COPY respa_admin/ .
 RUN npm run-script build
 
-FROM python:3.9-slim-bullseye AS respa_setup
+FROM pythonbase AS respa_setup
 
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONDONTWRITEBYTECODE 1

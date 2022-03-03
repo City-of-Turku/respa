@@ -2,6 +2,10 @@
 
 set -e
 
+function _log(){
+  echo $(date "+%F_%T %Z"): $@
+}
+
 if [ -n "$DATABASE_HOST" ]; then
   until nc -z -v -w30 "$DATABASE_HOST" 5432
   do
@@ -11,12 +15,29 @@ if [ -n "$DATABASE_HOST" ]; then
   echo "Database is up!"
 fi
 
-python manage.py migrate
+_log "Running Respa entrypoint..."
 
-if [[ ! -z "$@" ]]; then
-    "$@"
-elif [[ "$PRODUCTION" = "1" ]]; then
-    uwsgi --http :8000 --wsgi-file deploy/wsgi.py --check-static /srv/www
+if [ "$1" = "start_respa_dev_server" ]; then
+  _log "Starting dev server..."
+  python ./manage.py runserver 0.0.0.0:8000
+
+elif [ "$1" = "apply_migrations" ]; then
+  _log "Applying database migrations..."
+  python manage.py migrate
+
+elif [ "$1" = "run_tests" ]; then
+  _log "Running tests..."
+  pytest
+
+elif [ "$1" = "e" ]; then
+  shift
+  _log "Executing $@"
+  exec "$@"
+
 else
-    python ./manage.py runserver 0.0.0.0:8000
+  _log "Starting production server..."
+  uwsgi --http :8000 --wsgi-file deploy/wsgi.py --check-static /srv/www
+
 fi
+
+_log "Respa entrypoint completed..."
