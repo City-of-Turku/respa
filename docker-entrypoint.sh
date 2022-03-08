@@ -17,7 +17,7 @@ fi
 
 _log "Running Respa entrypoint..."
 
-if [ "$1" = "start_respa_dev_server" ]; then
+if [ "$1" = "dev_server" ]; then
   _log "Starting dev server..."
   python ./manage.py runserver 0.0.0.0:8000
 
@@ -27,7 +27,7 @@ elif [ "$1" = "apply_migrations" ]; then
 
 elif [ "$1" = "run_tests" ]; then
   _log "Running tests..."
-  pytest
+  pytest --cov . --doctest-modules
 
 elif [ "$1" = "e" ]; then
   shift
@@ -35,9 +35,8 @@ elif [ "$1" = "e" ]; then
   exec "$@"
 
 else
-  _log "Starting production server..."
-  uwsgi --http :8000 --wsgi-file deploy/wsgi.py --check-static /srv/www
-
+  _log "Starting the uwsgi web server"
+  uwsgi --ini deploy/uwsgi.ini --check-static /var/www
 fi
 
 _log "Respa entrypoint completed..."

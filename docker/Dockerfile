@@ -32,6 +32,8 @@ RUN apt-get update \
 RUN pip install --upgrade pip --no-cache-dir \
     && pip install -r deploy/requirements.txt --no-cache-dir
 
+RUN mkdir -p /srv/logs && chown respa:respa /srv/logs
+
 RUN python manage.py compilemessages
 RUN python manage.py collectstatic --no-input
 
