@@ -3,7 +3,7 @@ services:
     build:
       context: .
       target: development
-    command: start_respa_dev_server
+    command: dev_server
     volumes:
       - .:/srv/app
       - ./static:/var/www/static/

@@ -3,25 +3,23 @@ services:
     build:
       context: .
       dockerfile: ./docker/Dockerfile
-    environment:
-      DATABASE_URL: postgis://respa:respa@db:5432/respa
     ports:
       - 8000:8000
     depends_on:
       - db
+    env_file:
+      - ./docker-compose.env
 
   db:
     build:
       context: .
       dockerfile: ./docker/postgres/Dockerfile
-    environment:
-       - POSTGRES_USER=respa
-       - POSTGRES_PASSWORD=respa
-       - POSTGRES_DB=respa
     volumes:
       - db_respa_data:/var/lib/postgresql
     ports:
       - "5432:5432"
+    env_file:
+      - ./docker-compose.env
 
 volumes:
   db_respa_data:
