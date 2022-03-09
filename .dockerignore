@@ -6,6 +6,7 @@
 **/.django_secret
 **/.dockerignore
 **/.editorconfig
+**/.env
 **/.env.example
 **/.git
 **/.gitignore

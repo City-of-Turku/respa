@@ -44,7 +44,6 @@ ENV PRODUCTION=0
 ENV DEBUG=True
 
 FROM respa_setup AS production
-RUN rm -rf /srv/app/respa/.env
 ENV PRODUCTION=1
 ENV DEBUG=False
 USER respa
