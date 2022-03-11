@@ -1058,3 +1058,35 @@ class ResourceDailyOpeningHours(models.Model):
             lower = self.open_between.lower
             upper = self.open_between.upper
         return "%s: %s -> %s" % (self.resource, lower, upper)
+
+
+class MaintenanceMessageQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(start__lt=timezone.now(), end__gt=timezone.now())
+
+class MaintenanceMessage(ModifiableModel):
+    message = models.TextField(verbose_name=_('Message'), null=False, blank=False)
+    start = models.DateTimeField(verbose_name=_('Begin time'), null=False, blank=False)
+    end = models.DateTimeField(verbose_name=_('End time'), null=False, blank=False)
+
+
+    objects = MaintenanceMessageQuerySet.as_manager()
+    class Meta:
+        verbose_name = _('maintenance message')
+        verbose_name_plural = _('maintenance messages')
+        ordering = ('start', )
+
+
+    def __str__(self):
+        return f"{_('maintenance message')} \
+                {timezone.localtime(self.start).replace(tzinfo=None)} - \
+                {timezone.localtime(self.end).replace(tzinfo=None)}" \
+                .capitalize()
+
+    
+    def clean(self):
+        super().clean()
+        if self.end <= self.start:
+            raise ValidationError(_("Invalid start or end time"))
+        
+        

@@ -27,7 +27,9 @@ from ..models import (
     Reservation, ReservationBulk, ReservationReminder, ReservationMetadataField, ReservationMetadataSet,
     ReservationHomeMunicipalityField, ReservationHomeMunicipalitySet, Resource, ResourceTag, ResourceAccessibility,
     ResourceEquipment, ResourceGroup, ResourceImage, ResourceType, TermsOfUse,
-    Unit, UnitAuthorization, UnitIdentifier, UnitGroup, UnitGroupAuthorization)
+    Unit, UnitAuthorization, UnitIdentifier, UnitGroup, UnitGroupAuthorization,
+    MaintenanceMessage
+)
 from ..models.utils import generate_id
 from munigeo.models import Municipality
 from rest_framework.authtoken.admin import Token
@@ -472,6 +474,33 @@ class RespaTokenAdmin(admin.ModelAdmin):
     raw_id_fields = ('user',)
 
 
+class MaintenanceMessageAdminForm(forms.ModelForm):
+    class Meta:
+        model = MaintenanceMessage
+        fields = ('start', 'end', 'message', )
+
+    def clean(self):
+        start = self.cleaned_data['start']
+        end = self.cleaned_data['end']
+        query = Q(end__gt=start, start__lt=end)
+        if self.instance and self.instance.pk:
+            query &= ~Q(pk=self.instance.pk)
+        collision = MaintenanceMessage.objects.filter(query)
+        if collision.exists():
+            raise ValidationError(_('maintenance message already exists.'))
+
+class MaintenanceMessageAdmin(TranslationAdmin):
+    form = MaintenanceMessageAdminForm
+    fieldsets = (
+        (_('General'), {
+            'fields': (
+                'start',
+                'end',
+                'message'
+            ),
+        }),
+    )
+
 admin_site.register(ResourceImage, ResourceImageAdmin)
 admin_site.register(Resource, ResourceAdmin)
 admin_site.register(Reservation, ReservationAdmin)
@@ -500,3 +529,4 @@ admin.site.register(ResourceAccessibility, ResourceAccessibilityAdmin)
 if admin.site.is_registered(Token):
     admin.site.unregister(Token)
 admin_site.register(Token, RespaTokenAdmin)
+admin_site.register(MaintenanceMessage, MaintenanceMessageAdmin)

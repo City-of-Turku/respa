@@ -1814,3 +1814,12 @@ msgstr "Bokningstimmar totalt"
 
 msgid "%(hours)s hours"
 msgstr "%(hours)s timmar"
+
+msgid "maintenance message"
+msgstr "underhåll meddelande"
+
+msgid "maintenance messages"
+msgstr "underhåll meddelanden"
+
+msgid "General"
+msgstr "Allmän"

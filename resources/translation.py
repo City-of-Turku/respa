@@ -1,8 +1,12 @@
 from modeltranslation.translator import TranslationOptions, register
 
 from .models import (
-    AccessibilityViewpoint, Equipment, EquipmentCategory, Purpose, Resource, ResourceEquipment,
-    ResourceImage, ResourceType, TermsOfUse, Unit, UnitGroup, Reservation, ReservationHomeMunicipalityField)
+    AccessibilityViewpoint, Equipment, EquipmentCategory,
+    Purpose, Resource, ResourceEquipment,
+    ResourceImage, ResourceType, TermsOfUse, Unit,
+    UnitGroup, Reservation, ReservationHomeMunicipalityField,
+    MaintenanceMessage
+)
 
 
 @register(UnitGroup)
@@ -69,3 +73,8 @@ class AccessibilityViewpointTranslationOptions(TranslationOptions):
 class ReservationHomeMunicipalityFieldTranslationOptions(TranslationOptions):
     fields = ('name',)
     required_languages = ('fi', 'en', 'sv')
+
+@register(MaintenanceMessage)
+class MaintenanceMessageTranslationOptions(TranslationOptions):
+    fields = ('message', )
+    required_languages = ('fi', 'en', 'sv', )

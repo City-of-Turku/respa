@@ -1879,3 +1879,12 @@ msgstr "Varausten tuntimäärä yhteensä"
 
 msgid "%(hours)s hours"
 msgstr "%(hours)s tuntia"
+
+msgid "maintenance message"
+msgstr "huoltoviesti"
+
+msgid "maintenance messages"
+msgstr "huoltoviestit"
+
+msgid "General"
+msgstr "Yleinen"

@@ -8,6 +8,7 @@ from .reservation import ReservationViewSet
 from .unit import UnitViewSet
 from .search import TypeaheadViewSet
 from .equipment import EquipmentViewSet
+from .announcements import MaintenanceMessageViewSet
 
 from rest_framework import routers
 

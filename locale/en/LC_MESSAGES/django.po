@@ -2502,3 +2502,12 @@ msgstr ""
 
 msgid "%(hours)s hours"
 msgstr ""
+
+msgid "maintenance message"
+msgstr ""
+
+msgid "maintenance messages"
+msgstr ""
+
+msgid "General"
+msgstr ""
