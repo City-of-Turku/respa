@@ -275,7 +275,7 @@ pbr==5.8.0
     # via tendo
 phonenumbers==8.12.22
     # via -r requirements.in
-pillow==9.0.0
+pillow==9.0.1
     # via
     #   -r requirements.in
     #   easy-thumbnails
