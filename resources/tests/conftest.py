@@ -3,12 +3,13 @@ import pytest
 import datetime
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.utils import timezone
 from rest_framework.test import APIClient, APIRequestFactory
 
 from resources.enums import UnitAuthorizationLevel
 from resources.models import Resource, ResourceType, Unit, Purpose, Day, Period
 from resources.models import Equipment, EquipmentAlias, ResourceEquipment, EquipmentCategory, TermsOfUse, ResourceGroup
-from resources.models import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility, UnitAccessibility
+from resources.models import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility, UnitAccessibility, MaintenanceMessage
 from munigeo.models import Municipality
 
 
@@ -476,3 +477,13 @@ def resource_with_accessibility_data3(resource_in_unit3, accessibility_viewpoint
     )
     return resource_in_unit3
 
+@pytest.fixture
+def maintenance_message():
+    return MaintenanceMessage.objects.create(
+        start=timezone.now() - datetime.timedelta(hours=1),
+        end=timezone.now() + datetime.timedelta(hours=1),
+        message='Tämä on ilmoitus',
+        message_fi='Tämä on ilmoitus',
+        message_en='This is a notice',
+        message_sv='Detta är ett meddelande'
+    )

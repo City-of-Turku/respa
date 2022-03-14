@@ -22,4 +22,4 @@ class MaintenanceMessageViewSet(viewsets.ModelViewSet):
         return self.queryset.active()
 
 
-register_view(MaintenanceMessageViewSet, 'announcements')
+register_view(MaintenanceMessageViewSet, 'announcements', base_name='announcements')
