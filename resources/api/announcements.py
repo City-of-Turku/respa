@@ -1,5 +1,4 @@
-from rest_framework import serializers, viewsets
-from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
+from rest_framework import viewsets
 from .base import TranslatedModelSerializer, register_view
 from resources.models import MaintenanceMessage
 
@@ -12,10 +11,9 @@ class MaintenanceMessageSerializer(TranslatedModelSerializer):
 
 
 
-class MaintenanceMessageViewSet(viewsets.ModelViewSet):
+class MaintenanceMessageViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = MaintenanceMessage.objects.all()
     serializer_class = MaintenanceMessageSerializer
-    permission_classes = (DjangoModelPermissionsOrAnonReadOnly, )
 
 
     def get_queryset(self):
