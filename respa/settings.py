@@ -99,7 +99,8 @@ env = environ.Env(
     TIMMI_TIMEOUT=(int, 60),
     TIMMI_USERNAME=(str, ''), #base64 encoded username
     TIMMI_PASSWORD=(str, ''), #base64 encoded password
-    STRONG_AUTH_CLAIMS=(tuple, ())
+    STRONG_AUTH_CLAIMS=(tuple, ()),
+    DEFAULT_DISABLED_FIELDS_SET_ID=(int, 0),
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -496,6 +497,8 @@ elif USE_DJANGO_DEFAULT_EMAIL:
     DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_DISABLED_FIELDS_SET_ID = env('DEFAULT_DISABLED_FIELDS_SET_ID')
 
 RESPA_ADMIN_USERNAME_LOGIN = env.bool(
     'RESPA_ADMIN_USERNAME_LOGIN', default=True)

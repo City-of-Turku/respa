@@ -47,6 +47,7 @@ from resources.models import (
 )
 from resources.models.resource import determine_hours_time_range
 from payments.models import Product
+from respa_admin.models import DisabledFieldsSet
 
 from ..auth import has_permission, is_general_admin, is_staff
 from .accessibility import ResourceAccessibilitySerializer
@@ -1617,6 +1618,12 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
 
             for action in actions:
                 action(instance, serializer)
+        if settings.DEFAULT_DISABLED_FIELDS_SET_ID:
+            try:
+                dsf = DisabledFieldsSet.objects.get(pk=settings.DEFAULT_DISABLED_FIELDS_SET_ID)
+                dsf.resources.add(instance)
+            except DisabledFieldsSet.DoesNotExist:
+                logger.error('Invalid disabled fields set id provided. Does not exist.')
         instance.is_external = True
         instance.save()
         return instance
