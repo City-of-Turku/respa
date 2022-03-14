@@ -1496,6 +1496,27 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
             'reservation_home_municipality_set': ReservationHomeMunicipalitySetSerializer,
             'equipments': ResourceEquipmentRelationSerializer,
         }
+    
+    def validate_slot_size(self, slot_size):
+        if slot_size.total_seconds() < 300:
+            raise serializers.ValidationError({
+                'slot_size': _('Invalid %(field)s, must be equal or more than 5 minutes.') % ({ 'field': 'slot_size' })
+            })
+        return slot_size
+
+    def validate_min_period(self, min_period):
+        if min_period.total_seconds() < 300:
+            raise serializers.ValidationError({
+                'min_period': _('Invalid %(field)s, must be equal or more than 5 minutes.') % ({ 'field': 'min_period' })
+            })
+        return min_period
+
+    def validate_max_period(self, max_period):
+        if max_period.total_seconds() < 300:
+            raise serializers.ValidationError({
+                'max_period': _('Invalid %(field)s, must be equal or more than 5 minutes.') % ({ 'field': 'max_period' })
+            })
+        return max_period
 
     def validate(self, attrs):
         request = self.context['request']
