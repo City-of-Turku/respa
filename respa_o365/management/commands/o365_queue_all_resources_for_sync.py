@@ -15,7 +15,7 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any) -> Optional[str]:
         try:
-            me = singleton.SingleInstance()
+            me = singleton.SingleInstance(flavor_id="o365_queue_all_resources_for_sync")
         except singleton.SingleInstanceException:
             return
 

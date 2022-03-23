@@ -12,7 +12,7 @@ class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> Optional[str]:
         logger.info("Processing sync queue.")
         try:
-            me = singleton.SingleInstance()
+            me = singleton.SingleInstance(flavor_id="o365_process_sync_queue")
         except singleton.SingleInstanceException:
             return
         process_queue()
