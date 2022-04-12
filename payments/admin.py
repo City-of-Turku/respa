@@ -12,8 +12,8 @@ from payments.utils import get_price_period_display
 from resources.models import Resource
 
 from .models import (
-    ARCHIVED_AT_NONE, Order, OrderCustomerGroupData, OrderLine, OrderLogEntry, Product,
-    CustomerGroup, ProductCustomerGroup
+    ARCHIVED_AT_NONE, CustomerGroupTimeSlotPrice, Order, OrderCustomerGroupData, OrderLine, OrderLogEntry,
+    Product, CustomerGroup, ProductCustomerGroup, TimeSlotPrice
 )
 
 
@@ -22,13 +22,56 @@ def get_datetime_display(dt):
         return None
     return localtime(dt).strftime('%d %b %Y %H:%M:%S')
 
+
+class CustomerGroupTimeSlotPriceInline(admin.TabularInline):
+    model = CustomerGroupTimeSlotPrice
+    fields = ('price', 'customer_group')
+    extra = 0
+    can_delete = True
+
+
+class TimeSlotPriceAdmin(admin.ModelAdmin):
+    inlines = (CustomerGroupTimeSlotPriceInline, )
+    class Meta:
+        model = TimeSlotPrice
+        fields = '__all__'
+
+
+class TimeSlotPriceInlineFormSet(BaseInlineFormSet):
+    def save_existing_objects(self, commit=True):
+        for form in self.initial_forms:
+            # time slot price has old archived product here, update product to the new one
+            obj = form.instance
+            new_product = Product.objects.filter(product_id=obj.product.product_id).get(archived_at=ARCHIVED_AT_NONE)
+            obj.product = new_product
+            obj.save()
+        saved_instances = super(TimeSlotPriceInlineFormSet, self).save_existing_objects(commit)
+        return saved_instances
+
+
+class TimeSlotPriceInline(admin.TabularInline):
+    model = TimeSlotPrice
+    fields = ('begin', 'end', 'price', 'customer_group_time_slot_prices')
+    readonly_fields = ('customer_group_time_slot_prices', )
+    extra = 0
+    can_delete = True
+    show_change_link = True
+    formset = TimeSlotPriceInlineFormSet
+
+    def customer_group_time_slot_prices(self, obj):
+        cg_time_slot_prices = CustomerGroupTimeSlotPrice.objects.filter(time_slot_price=obj.id)
+        return ", ".join([cg_slot.customer_group.name for cg_slot in cg_time_slot_prices])
+
+
 class CustomerGroupAdmin(TranslationAdmin):
     fields = ('name', )
+
 
 class ProductCustomerGroupAdmin(admin.ModelAdmin):
     def render_change_form(self, request, context, *args, **kwargs):
         context['adminform'].form.fields['product'].queryset = Product.objects.current()
         return super().render_change_form(request, context, *args, **kwargs)
+
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -58,11 +101,13 @@ class ProductCustomerGroupInline(admin.TabularInline):
     fields = ('id', 'customer_group', 'price', )
     extra = 0
     can_delete = True
+    show_change_link = True
     formset = ProductCGInlineFormSet
 
 
 class ProductAdmin(TranslationAdmin):
     inlines = (
+        TimeSlotPriceInline,
         ProductCustomerGroupInline,
     )
 
@@ -247,3 +292,4 @@ if settings.RESPA_PAYMENTS_ENABLED:
     admin.site.register(Order, OrderAdmin)
     admin.site.register(CustomerGroup, CustomerGroupAdmin)
     admin.site.register(ProductCustomerGroup, ProductCustomerGroupAdmin)
+    admin.site.register(TimeSlotPrice, TimeSlotPriceAdmin)

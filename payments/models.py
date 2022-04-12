@@ -19,7 +19,10 @@ from resources.models.utils import generate_id, get_translated_fields
 from modeltranslation.translator import NotRegistered, translator
 
 from .exceptions import OrderStateTransitionError
-from .utils import convert_aftertax_to_pretax, get_price_period_display, rounded, handle_customer_group_pricing
+from .utils import (
+    convert_aftertax_to_pretax, get_price_period_display, is_datetime_range_between_times,
+    rounded, handle_customer_group_pricing
+)
 
 # The best way for representing non existing archived_at would be using None for it,
 # but that would not work with the unique_together constraint, which brings many
@@ -34,6 +37,38 @@ TAX_PERCENTAGES = [Decimal(x) for x in (
 )]
 
 DEFAULT_TAX_PERCENTAGE = Decimal('24.00')
+
+class CustomerGroupTimeSlotPrice(AutoIdentifiedModel):
+    price = models.DecimalField(
+        verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))],
+        help_text=_('This will override product price.')
+    )
+    customer_group = models.ForeignKey('payments.CustomerGroup',
+        verbose_name=_('customer group'), related_name='customer_group_time_slot_prices',
+        on_delete=models.CASCADE,
+    )
+    time_slot_price = models.ForeignKey('payments.TimeSlotPrice',
+        verbose_name=_('time slot price'), related_name='customer_group_time_slot_prices',
+        on_delete=models.CASCADE,
+    )
+
+
+class TimeSlotPrice(AutoIdentifiedModel):
+    begin = models.TimeField(verbose_name=_('Time slot begins'))
+    end = models.TimeField(verbose_name=_('Time slot ends'))
+    price = models.DecimalField(
+        verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))],
+        help_text=_('This will override product price.')
+    )
+    product = models.ForeignKey('payments.Product',
+        verbose_name=_('Product'), related_name='time_slot_prices',
+        on_delete=models.CASCADE
+    )
+
+    def __str__(self) -> str:
+        return f'({self.id}) {self.product.name}: {self.begin}-{self.end}'
 
 
 class OrderCustomerGroupDataQuerySet(models.QuerySet):
@@ -245,6 +280,32 @@ class Product(models.Model):
         if self.price_type == Product.PRICE_FIXED:
             return price
         elif self.price_type == Product.PRICE_PER_PERIOD:
+            time_slot_prices = TimeSlotPrice.objects.filter(product=self)
+            if time_slot_prices:
+                slot_begin = begin
+                check_interval = timedelta(minutes=5)
+                price_sum = 0
+                # calculate price for each time chunk and use their sum as final price
+                while slot_begin + check_interval <= end:
+                    price_was_added = False
+                    for time_slot_price in time_slot_prices:
+                        if is_datetime_range_between_times(begin_x=slot_begin, end_x=slot_begin + check_interval,
+                            begin_y=time_slot_price.begin, end_y=time_slot_price.end):
+                                cg_time_slot_price = CustomerGroupTimeSlotPrice.objects.filter(
+                                    time_slot_price=time_slot_price, customer_group_id=self._in_memory_cg).first()
+                                slot_price = cg_time_slot_price.price if cg_time_slot_price else time_slot_price.price
+                                interval_price = slot_price * Decimal(check_interval / self.price_period)
+                                price_sum += interval_price
+                                price_was_added = True
+                                break
+
+                    if not price_was_added:
+                        # time chunk was not in any priced slot -> use default pricing
+                        interval_price = price * Decimal(check_interval / self.price_period)
+                        price_sum += interval_price
+                    slot_begin += check_interval
+                return price_sum
+
             assert self.price_period, '{} {}'.format(self, self.price_period)
             return price * Decimal((end - begin) / self.price_period)
         else:

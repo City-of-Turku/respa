@@ -36,6 +36,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         customer_group = validated_data.pop('customer_group', None)
         return_url = validated_data.pop('return_url', '')
         order = super().create(validated_data)
+        order._in_memory_customer_group_id = customer_group
         reservation = validated_data['reservation']
 
         for order_line_data in order_lines_data:
