@@ -165,7 +165,10 @@ class TurkuPaymentProvider(PaymentProvider):
         if resource.timmi_resource:
             timmi_payload = TimmiPayload.objects.get(order=order)
         for order_line in order_lines:
-            order_line.handle_customer_group_pricing()
+            # add customer group id to order if it's not stored yet
+            if order.customer_group and not order_line.order.customer_group:
+                order_line.order._in_memory_customer_group_id = order.customer_group.id
+
             product = order_line.product
             int_tax = int(product.tax_percentage)
             assert int_tax == product.tax_percentage
@@ -174,7 +177,7 @@ class TurkuPaymentProvider(PaymentProvider):
                 'code': product.sku,
                 'sapCode': product.sap_code,
                 'amount': str(order_line.quantity),
-                'price':  str(round_price(product.get_pretax_price_for_reservation(reservation))),
+                'price':  str(round_price(order_line.get_pretax_price_for_reservation(reservation))),
                 'vat': str(int_tax),
                 'discount': '0.00',
                 'type': '1'

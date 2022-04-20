@@ -46,7 +46,7 @@ class CustomerGroupTimeSlotPrice(AutoIdentifiedModel):
     )
     customer_group = models.ForeignKey('payments.CustomerGroup',
         verbose_name=_('customer group'), related_name='customer_group_time_slot_prices',
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
     )
     time_slot_price = models.ForeignKey('payments.TimeSlotPrice',
         verbose_name=_('time slot price'), related_name='customer_group_time_slot_prices',
@@ -66,9 +66,11 @@ class TimeSlotPrice(AutoIdentifiedModel):
         verbose_name=_('Product'), related_name='time_slot_prices',
         on_delete=models.CASCADE
     )
+    is_archived = models.BooleanField(default=False, verbose_name=_('Is archived'))
 
     def __str__(self) -> str:
-        return f'({self.id}) {self.product.name}: {self.begin}-{self.end}'
+        archived_text = f' ({_("Is archived")})' if self.is_archived else ""
+        return f'({self.id}) {self.product.name}: {self.begin}-{self.end}{archived_text}'
 
 
 class OrderCustomerGroupDataQuerySet(models.QuerySet):
@@ -245,10 +247,12 @@ class Product(models.Model):
             resources = self.resources.all()
             Product.objects.filter(id=self.id).update(archived_at=now())
             product_groups = ProductCustomerGroup.objects.filter(product=self)
+            time_slot_prices = TimeSlotPrice.objects.filter(product=self)
             self.id = None
         else:
             resources = []
             product_groups = []
+            time_slot_prices = []
             self.product_id = generate_id()
 
         super().save(*args, **kwargs)
@@ -259,6 +263,17 @@ class Product(models.Model):
         for product_group in product_groups:
             product_group.product = self
             product_group.save()
+
+        for time_slot_price in time_slot_prices:
+            cg_time_slot_prices = CustomerGroupTimeSlotPrice.objects.filter(time_slot_price=time_slot_price)
+            time_slot_price.is_archived = True
+            time_slot_price.id = None
+            time_slot_price.save()
+            for cg_time_slot_price in cg_time_slot_prices:
+                cg_time_slot_price.id = None
+                cg_time_slot_price.time_slot_price = time_slot_price
+                cg_time_slot_price.save()
+
 
     def delete(self, *args, **kwargs):
         Product.objects.filter(id=self.id).update(archived_at=now())
@@ -282,18 +297,29 @@ class Product(models.Model):
         elif self.price_type == Product.PRICE_PER_PERIOD:
             time_slot_prices = TimeSlotPrice.objects.filter(product=self)
             if time_slot_prices:
-                slot_begin = begin
+                tz = self.resources.first().unit.get_tz()
+                local_tz_begin = begin.astimezone(tz)
+                local_tz_end = end.astimezone(tz)
+                slot_begin = local_tz_begin
                 check_interval = timedelta(minutes=5)
                 price_sum = 0
                 # calculate price for each time chunk and use their sum as final price
-                while slot_begin + check_interval <= end:
+                while slot_begin + check_interval <= local_tz_end:
                     price_was_added = False
                     for time_slot_price in time_slot_prices:
                         if is_datetime_range_between_times(begin_x=slot_begin, end_x=slot_begin + check_interval,
                             begin_y=time_slot_price.begin, end_y=time_slot_price.end):
                                 cg_time_slot_price = CustomerGroupTimeSlotPrice.objects.filter(
                                     time_slot_price=time_slot_price, customer_group_id=self._in_memory_cg).first()
-                                slot_price = cg_time_slot_price.price if cg_time_slot_price else time_slot_price.price
+                                slot_price = time_slot_price.price
+                                if cg_time_slot_price:
+                                    slot_price = cg_time_slot_price.price
+                                elif ProductCustomerGroup.objects.filter(
+                                    product=self, customer_group_id=self._in_memory_cg).exists():
+                                    # customer group exists in product but not in time slot ->
+                                    # use default pricing
+                                    break
+
                                 interval_price = slot_price * Decimal(check_interval / self.price_period)
                                 price_sum += interval_price
                                 price_was_added = True
@@ -304,7 +330,7 @@ class Product(models.Model):
                         interval_price = price * Decimal(check_interval / self.price_period)
                         price_sum += interval_price
                     slot_begin += check_interval
-                return price_sum
+                return Decimal(price_sum)
 
             assert self.price_period, '{} {}'.format(self, self.price_period)
             return price * Decimal((end - begin) / self.price_period)
@@ -422,6 +448,10 @@ class Order(models.Model):
     payment_url = models.TextField(verbose_name=_('payment url'), blank=True, default='')
     is_requested_order = models.BooleanField(verbose_name=_('is requested order'), default=False)
     confirmed_by_staff_at = models.DateTimeField(verbose_name=_('confirmed by staff at'), blank=True, null=True)
+    customer_group = models.ForeignKey(CustomerGroup,
+        verbose_name=_('Customer group'), related_name='orders',
+        blank=True, null=True, on_delete=models.PROTECT
+    )
 
     objects = OrderQuerySet.as_manager()
 

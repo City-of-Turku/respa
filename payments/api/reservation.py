@@ -36,7 +36,10 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         customer_group = validated_data.pop('customer_group', None)
         return_url = validated_data.pop('return_url', '')
         order = super().create(validated_data)
-        order._in_memory_customer_group_id = customer_group
+        try:
+            order.customer_group = CustomerGroup.objects.get(id=customer_group)
+        except:
+            order.customer_group = None
         reservation = validated_data['reservation']
 
         for order_line_data in order_lines_data:
@@ -57,6 +60,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         if not has_staff_perms and not is_free(order.get_price()):
             if reservation.state == Reservation.CREATED and resource.need_manual_confirmation:
                 order.state = Order.WAITING
+                order.save()
                 return order
 
         payments = get_payment_provider(request=self.context['request'],

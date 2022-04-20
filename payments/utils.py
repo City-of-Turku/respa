@@ -60,16 +60,18 @@ def handle_customer_group_pricing(func):
         prod_cg = ProductCustomerGroup.objects.filter(product=self.product)
         order_cg = OrderCustomerGroupData.objects.filter(order_line=self).first()
 
-        if order_cg:
-            # TODO: fix pricing with time slots
+        if self.order:
             _in_memory_cg = None
-            if hasattr(self.order, "_in_memory_customer_group_id"):
+            if self.order.customer_group:
+                _in_memory_cg = self.order.customer_group.id
+            elif hasattr(self.order, '_in_memory_customer_group_id'):
                 _in_memory_cg = self.order._in_memory_customer_group_id
             self.product._in_memory_cg = _in_memory_cg
+
+        if order_cg:
             self.product.price = order_cg.product_cg_price
             return func(self)
 
-        self.product._in_memory_cg = self.order._in_memory_customer_group_id
         self.product.price = self.product_cg_price \
             if prod_cg.exists() and (self.product_cg_price or is_free(self.product_cg_price)) \
             else original.price
