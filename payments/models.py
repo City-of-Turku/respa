@@ -53,6 +53,9 @@ class CustomerGroupTimeSlotPrice(AutoIdentifiedModel):
         on_delete=models.CASCADE,
     )
 
+    class Meta:
+        unique_together = ('customer_group', 'time_slot_price')
+
 
 class TimeSlotPrice(AutoIdentifiedModel):
     begin = models.TimeField(verbose_name=_('Time slot begins'))
@@ -71,6 +74,14 @@ class TimeSlotPrice(AutoIdentifiedModel):
     def __str__(self) -> str:
         archived_text = f' ({_("Is archived")})' if self.is_archived else ""
         return f'({self.id}) {self.product.name}: {self.begin}-{self.end}{archived_text}'
+
+    def time_slot_overlaps(self):
+        return TimeSlotPrice.objects.filter(
+            product=self.product, begin__lt=self.end, end__gt=self.begin).exclude(id=self.id).exists()
+
+    def clean(self) -> None:
+        if self.time_slot_overlaps():
+            raise ValidationError(_('Overlapping time slot prices'))
 
 
 class OrderCustomerGroupDataQuerySet(models.QuerySet):
