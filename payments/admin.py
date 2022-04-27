@@ -36,6 +36,16 @@ class TimeSlotPriceAdmin(admin.ModelAdmin):
         model = TimeSlotPrice
         fields = '__all__'
 
+    def save_model(self, request, obj, form, change) -> None:
+        time_slots_to_update = TimeSlotPrice.objects.filter(product=obj.product, is_archived=False)
+        # save product to create an archived version to hold old data
+        obj.product.save()
+        # time slots have old archived product here, update product to the new one
+        for time_slot in time_slots_to_update:
+            time_slot.product = obj.product
+            time_slot.save()
+
+        return super().save_model(request, obj, form, change)
 
 class TimeSlotPriceInlineFormSet(BaseInlineFormSet):
     def save_existing_objects(self, commit=True):

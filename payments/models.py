@@ -76,12 +76,23 @@ class TimeSlotPrice(AutoIdentifiedModel):
         return f'({self.id}) {self.product.name}: {self.begin}-{self.end}{archived_text}'
 
     def time_slot_overlaps(self):
+        if self.is_archived:
+            return False
         return TimeSlotPrice.objects.filter(
-            product=self.product, begin__lt=self.end, end__gt=self.begin).exclude(id=self.id).exists()
+            product=self.product, begin__lt=self.end, end__gt=self.begin).exclude(
+                is_archived=True).exclude(id=self.id).exists()
 
     def clean(self) -> None:
         if self.time_slot_overlaps():
             raise ValidationError(_('Overlapping time slot prices'))
+
+    def save(self, *args, **kwargs):
+        _saved_via_product = kwargs.pop('_saved_via_product', False)
+        if not _saved_via_product and not self.is_archived:
+            self.product = Product.objects.filter(
+                product_id=self.product.product_id).get(archived_at=ARCHIVED_AT_NONE)
+
+        super().save(*args, **kwargs)
 
 
 class OrderCustomerGroupDataQuerySet(models.QuerySet):
@@ -258,7 +269,7 @@ class Product(models.Model):
             resources = self.resources.all()
             Product.objects.filter(id=self.id).update(archived_at=now())
             product_groups = ProductCustomerGroup.objects.filter(product=self)
-            time_slot_prices = TimeSlotPrice.objects.filter(product=self)
+            time_slot_prices = TimeSlotPrice.objects.filter(product=self, is_archived=False)
             self.id = None
         else:
             resources = []
@@ -279,7 +290,7 @@ class Product(models.Model):
             cg_time_slot_prices = CustomerGroupTimeSlotPrice.objects.filter(time_slot_price=time_slot_price)
             time_slot_price.is_archived = True
             time_slot_price.id = None
-            time_slot_price.save()
+            time_slot_price.save(_saved_via_product=True)
             for cg_time_slot_price in cg_time_slot_prices:
                 cg_time_slot_price.id = None
                 cg_time_slot_price.time_slot_price = time_slot_price
@@ -325,9 +336,10 @@ class Product(models.Model):
                                 slot_price = time_slot_price.price
                                 if cg_time_slot_price:
                                     slot_price = cg_time_slot_price.price
-                                elif ProductCustomerGroup.objects.filter(
-                                    product=self, customer_group_id=self._in_memory_cg).exists():
-                                    # customer group exists in product but not in time slot ->
+                                elif (ProductCustomerGroup.objects.filter(
+                                    product=self, customer_group_id=self._in_memory_cg).exists()
+                                    or hasattr(self, '_orderline_has_stored_pcg_price')):
+                                    # customer group data exists for product but not for time slot ->
                                     # use default pricing
                                     break
 

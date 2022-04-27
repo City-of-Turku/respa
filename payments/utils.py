@@ -69,6 +69,7 @@ def handle_customer_group_pricing(func):
             self.product._in_memory_cg = _in_memory_cg
 
         if order_cg:
+            self.product._orderline_has_stored_pcg_price = True
             self.product.price = order_cg.product_cg_price
             return func(self)
 
