@@ -23,22 +23,17 @@ class CustomerGroupTimeSlotPriceSerializer(TranslatedModelSerializer):
 
 
 class TimeSlotPriceSerializer(TranslatedModelSerializer):
-    customer_group_time_slot_prices = serializers.SerializerMethodField()
+    customer_group_time_slot_prices = CustomerGroupTimeSlotPriceSerializer(many=True, required=False)
     class Meta:
         model = TimeSlotPrice
         fields = ('id', 'begin', 'end', 'price', 'customer_group_time_slot_prices')
-
-    def get_customer_group_time_slot_prices(self, obj):
-        cg_time_slot_prices = CustomerGroupTimeSlotPrice.objects.filter(time_slot_price=obj)
-        serializer = CustomerGroupTimeSlotPriceSerializer(cg_time_slot_prices, many=True)
-        return serializer.data
 
 
 class ProductSerializer(TranslatedModelSerializer):
     name = serializers.DictField(required=False)
     description = serializers.DictField(required=False)
     product_customer_groups = serializers.SerializerMethodField()
-    time_slot_prices = serializers.SerializerMethodField()
+    time_slot_prices = TimeSlotPriceSerializer(many=True, required=False)
 
     class Meta:
         model = Product
@@ -48,11 +43,6 @@ class ProductSerializer(TranslatedModelSerializer):
     def get_product_customer_groups(self, obj):
         prod_groups = ProductCustomerGroup.objects.filter(product=obj)
         serializer = ProductCustomerGroupSerializer(prod_groups, many=True)
-        return serializer.data
-
-    def get_time_slot_prices(self, obj):
-        time_slots = TimeSlotPrice.objects.filter(product=obj)
-        serializer = TimeSlotPriceSerializer(time_slots, many=True)
         return serializer.data
 
 
