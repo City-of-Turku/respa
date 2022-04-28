@@ -83,6 +83,8 @@ class TimeSlotPrice(AutoIdentifiedModel):
                 is_archived=True).exclude(id=self.id).exists()
 
     def clean(self) -> None:
+        if self.begin >= self.end:
+            raise ValidationError(_('Begin should be before end'))
         if self.time_slot_overlaps():
             raise ValidationError(_('Overlapping time slot prices'))
 
