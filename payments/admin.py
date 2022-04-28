@@ -32,6 +32,7 @@ class CustomerGroupTimeSlotPriceInline(admin.TabularInline):
 
 class TimeSlotPriceAdmin(admin.ModelAdmin):
     inlines = (CustomerGroupTimeSlotPriceInline, )
+    readonly_fields = ('is_archived', )
     class Meta:
         model = TimeSlotPrice
         fields = '__all__'
