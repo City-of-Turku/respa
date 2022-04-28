@@ -1888,3 +1888,12 @@ msgstr "huoltoviestit"
 
 msgid "General"
 msgstr "Yleinen"
+
+msgid "Resource utilization for period %(start)s - %(end)s"
+msgstr "Resurssin käyttöasteet ajalta %(start)s - %(end)s"
+
+msgid "Resource utilization"
+msgstr "Resurssin käyttöaste"
+
+msgid "Opening hours total"
+msgstr "Aukiolojat yhteensä"

@@ -1823,3 +1823,12 @@ msgstr "underhåll meddelanden"
 
 msgid "General"
 msgstr "Allmän"
+
+msgid "Resource utilization for period %(start)s - %(end)s"
+msgstr "Resursens beläggningsgrad för tidsperioden %(start)s - %(end)s"
+
+msgid "Resource utilization"
+msgstr "Resursens beläggningsgrad"
+
+msgid "Opening hours total"
+msgstr "Öppna tider totalt"

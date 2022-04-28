@@ -130,7 +130,7 @@ def send_respa_mail(email_address, subject, body, html_body=None, attachments=No
         notification_logger.error('Respa mail error %s', exc)
         return False
 
-def generate_reservation_xlsx(reservations):
+def generate_reservation_xlsx(reservations, **kwargs):
     """
     Return reservations in Excel xlsx format
 
@@ -146,7 +146,7 @@ def generate_reservation_xlsx(reservations):
 
     :rtype: bytes
     """
-    from resources.models import Reservation, RESERVATION_EXTRA_FIELDS
+    from resources.models import Resource, Reservation, RESERVATION_EXTRA_FIELDS
     def clean(string):
         if not string:
             return ''
@@ -162,13 +162,14 @@ def generate_reservation_xlsx(reservations):
             string = string[1:]
         return string
 
+    request = kwargs.get('request', None)
     output = io.BytesIO()
     workbook = xlsxwriter.Workbook(output)
     worksheet = workbook.add_worksheet()
 
     headers = [
         ('Unit', 30),
-        ('Resource', 30),
+        ('Resource', 40),
         ('Begin time', 35),
         ('End time', 35),
         ('Created at', 30),
@@ -185,12 +186,47 @@ def generate_reservation_xlsx(reservations):
         worksheet.write(0, column, str(_(header[0])), header_format)
         worksheet.set_column(column, column, header[1])
 
+    opening_hours = {}
+    resource_usage_info = {}
+
+    if request:
+        query_start = datetime\
+            .datetime\
+            .strptime(request.query_params.get('start', '1970-01-01'), '%Y-%m-%d')
+        query_end = datetime\
+            .datetime\
+            .strptime(request.query_params.get('end', '1970-01-01'), '%Y-%m-%d')
+
+        try:
+            resources = request.query_params.get('resource').split(',')
+        except:
+            resources = []
+
+        opening_hours = {
+            resource:resource.get_opening_hours(query_start, query_end) \
+            for resource in Resource.objects.filter(id__in=resources)
+        }
+
+    for resource in opening_hours:
+        for date, time_range in opening_hours[resource].items():
+            for time_slot in time_range:
+                opens, closes = time_slot.items()
+                if not opens[1] or not closes[1]:
+                    continue
+                if resource not in resource_usage_info:
+                    resource_usage_info[resource] = {'total_opening_hours': 0, 'total_reservation_hours': 0}
+                resource_usage_info[resource]['total_opening_hours'] += (closes[1] - opens[1]).total_seconds() / 3600
+    
     date_format = workbook.add_format({'num_format': 'dd.mm.yyyy hh:mm', 'align': 'left'})
-    total_hours = 0
+    total_reservation_hours = 0
     row = 0
+
+
     for row, reservation in enumerate(reservations, 1):
         for key in reservation:
             reservation[key] = clean(reservation[key])
+        obj = Reservation.objects.get(pk=reservation['id'])
+        usage_info = resource_usage_info.get(obj.resource, None)
         begin = localtime(reservation['begin']).replace(tzinfo=None)
         end = localtime(reservation['end']).replace(tzinfo=None)
         worksheet.write(row, 0, reservation['unit'])
@@ -211,11 +247,60 @@ def generate_reservation_xlsx(reservations):
                     except:
                         continue
                 worksheet.write(row, i, reservation[field])
-        total_hours += (end-begin).total_seconds()
-    if row:
+        total_reservation_hours += (end-begin).total_seconds() # Overall total
+        if usage_info:
+            usage_info['total_reservation_hours'] += (end-begin).total_seconds() / 3600 # Resource specific total
+
+    if row > 0:
+        row = row+2
         col_format = workbook.add_format({'color': 'red', 'font': 'bold'})
-        worksheet.write(row+2, 2, ugettext('Reservation hours total'), col_format)
-        worksheet.write(row+2, 3, ugettext('%(hours)s hours') % ({'hours': int((total_hours / 60) / 60)}), col_format)
+        worksheet.write(row, 0, ugettext('Reservation hours total'), col_format)
+        worksheet.write(row, 1, ugettext('%(hours)s hours') % ({'hours': int((total_reservation_hours / 60) / 60)}), col_format)
+
+
+    col_format = workbook.add_format()
+    col_format.set_bg_color('black')
+    col_format.set_font_color('white')
+    col_format.set_bold()
+
+
+    worksheet.write(row+2, 0, '', col_format)
+    worksheet.write(row+2, 1, '', col_format)
+    if request:
+        worksheet.write(row+2, 2, ugettext('Resource utilization for period %(start)s - %(end)s') % ({
+            'start': query_start.date(),
+            'end': query_end.date()
+        }), col_format)
+    else:
+        worksheet.write(row+2, 2, ugettext('Resource utilization'), col_format)
+    worksheet.write(row+2, 3, '', col_format)
+    worksheet.write(row+2, 4, '', col_format)
+
+
+    col_format = workbook.add_format({'color': 'black'})
+    col_format.set_bold()
+
+
+    worksheet.write(row+3, 0, ugettext('Unit'), col_format)
+    worksheet.write(row+3, 1, ugettext('Resource'), col_format)
+    worksheet.write(row+3, 2, ugettext('Resource utilization'), col_format)
+    worksheet.write(row+3, 3, ugettext('Opening hours total'), col_format)
+    worksheet.write(row+3, 4, ugettext('Reservation hours total'), col_format)
+
+    row = row+4
+    for idx, resource_info in enumerate(resource_usage_info.items()):
+        resource, info = resource_info
+
+
+        worksheet.write(row+idx, 0, resource.unit.name)
+        worksheet.write(row+idx, 1, resource.name)
+        worksheet.write(row+idx, 2, "%.2f%%" % float(
+        (info.get('total_reservation_hours') / info.get('total_opening_hours')) * 100))
+        worksheet.write(row+idx, 3, "%sh" % info.get('total_opening_hours'))
+        worksheet.write(row+idx, 4, "%sh" % info.get('total_reservation_hours'))
+
+
+
     workbook.close()
     return output.getvalue()
 

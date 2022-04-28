@@ -2511,3 +2511,12 @@ msgstr ""
 
 msgid "General"
 msgstr ""
+
+msgid "Resource utilization for period %(start)s - %(end)s"
+msgstr ""
+
+msgid "Resource utilization"
+msgstr ""
+
+msgid "Opening hours total"
+msgstr ""
