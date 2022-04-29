@@ -75,10 +75,13 @@ class TimeSlotPriceInline(admin.TabularInline):
     formset = TimeSlotPriceInlineFormSet
 
     def customer_group_time_slot_prices(self, obj):
-        cg_time_slot_prices = CustomerGroupTimeSlotPrice.objects.filter(time_slot_price=obj.id)
-        cg_names = [cg_slot.customer_group.name for cg_slot in cg_time_slot_prices]
-        cg_names.sort()
-        return ", ".join(cg_names)
+        cg_time_slot_prices = CustomerGroupTimeSlotPrice.objects.filter(
+            time_slot_price=obj.id).order_by('customer_group__name')
+
+        cg_names_and_prices = []
+        for cg_time_slot_price in cg_time_slot_prices:
+            cg_names_and_prices.append(f'{cg_time_slot_price.customer_group.name} {cg_time_slot_price.price}')
+        return ", ".join(cg_names_and_prices)
 
 
 class CustomerGroupAdmin(TranslationAdmin):
