@@ -57,6 +57,11 @@ class CustomerGroupTimeSlotPrice(AutoIdentifiedModel):
         unique_together = ('customer_group', 'time_slot_price')
 
 
+class TimeSlotPriceQuerySet(models.QuerySet):
+    def current(self):
+        return self.filter(is_archived=False)
+
+
 class TimeSlotPrice(AutoIdentifiedModel):
     begin = models.TimeField(verbose_name=_('Time slot begins'))
     end = models.TimeField(verbose_name=_('Time slot ends'))
@@ -70,6 +75,8 @@ class TimeSlotPrice(AutoIdentifiedModel):
         on_delete=models.CASCADE
     )
     is_archived = models.BooleanField(default=False, verbose_name=_('Is archived'))
+
+    objects = TimeSlotPriceQuerySet.as_manager()
 
     def __str__(self) -> str:
         archived_text = f' ({_("Is archived")})' if self.is_archived else ""

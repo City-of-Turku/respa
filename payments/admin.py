@@ -48,6 +48,10 @@ class TimeSlotPriceAdmin(admin.ModelAdmin):
 
         return super().save_model(request, obj, form, change)
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).current()
+
+
 class TimeSlotPriceInlineFormSet(BaseInlineFormSet):
     def save_existing_objects(self, commit=True):
         for form in self.initial_forms:
