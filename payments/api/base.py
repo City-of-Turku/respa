@@ -1,7 +1,7 @@
 from django.utils.duration import duration_string
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
-from payments.api.product import ProductCustomerGroupSerializer
+from payments.api.product import ProductCustomerGroupSerializer, TimeSlotPriceSerializer
 
 from resources.api.base import TranslatedModelSerializer
 from resources.models.reservation import Reservation
@@ -14,11 +14,13 @@ class ProductSerializer(TranslatedModelSerializer):
     id = serializers.CharField(source='product_id')
     price = serializers.SerializerMethodField()
     product_customer_groups = serializers.SerializerMethodField()
+    time_slot_prices = TimeSlotPriceSerializer(many=True, required=False)
 
     class Meta:
         model = Product
         fields = (
-            'id', 'type', 'name', 'description', 'price', 'max_quantity', 'product_customer_groups'
+            'id', 'type', 'name', 'description', 'price', 'max_quantity',
+            'product_customer_groups', 'time_slot_prices'
         )
 
     def get_price(self, obj):
