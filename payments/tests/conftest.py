@@ -113,6 +113,37 @@ def order_with_products(two_hour_reservation):
     )
     return order
 
+
+@pytest.fixture
+def order_with_selected_cg_and_product_with_pcgs_and_time_slots(two_hour_reservation,
+    product_with_pcgs_and_time_slot_prices, customer_group_adults):
+    Reservation.objects.filter(id=two_hour_reservation.id).update(
+        state=Reservation.WAITING_FOR_PAYMENT,
+        begin=datetime.datetime(2119, 5, 5, 10, 0, 0),
+        end=datetime.datetime(2119, 5, 5, 12, 0, 0)
+    )
+    two_hour_reservation.refresh_from_db()
+
+    order = OrderFactory.create(
+        order_number='abc123',
+        state=Order.WAITING,
+        reservation=two_hour_reservation,
+        customer_group=customer_group_adults
+    )
+    order_line = OrderLineFactory.create(
+        quantity=1,
+        product=product_with_pcgs_and_time_slot_prices,
+        order=order
+    )
+    prod_cg = ProductCustomerGroup.objects.get(customer_group=customer_group_adults)
+    ocgd = OrderCustomerGroupDataFactory.create(order_line=order_line,
+        product_cg_price=ProductCustomerGroup.objects.get_price_for(order_line.product))
+    ocgd.copy_translated_fields(prod_cg.customer_group)
+    ocgd.save()
+
+    return order
+
+
 @pytest.fixture
 def product_customer_group():
     return ProductCustomerGroupFactory.create()
