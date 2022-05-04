@@ -347,7 +347,7 @@ class Product(models.Model):
                                     slot_price = cg_time_slot_price.price
                                 elif (ProductCustomerGroup.objects.filter(
                                     product=self, customer_group_id=self._in_memory_cg).exists()
-                                    or hasattr(self, '_orderline_has_stored_pcg_price')):
+                                    or hasattr(self, '_orderline_has_stored_pcg_price_for_non_null_cg')):
                                     # customer group data exists for product but not for time slot ->
                                     # use default pricing
                                     break
