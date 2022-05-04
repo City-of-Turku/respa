@@ -30,6 +30,8 @@ from users.models import User
 
 from respa.settings import LANGUAGES
 
+from multi_email_field.forms import MultiEmailField
+
 hour_increment_choices = (
     ('00:00:00', '0 h'),
     ('01:00:00', '1 h'),
@@ -197,6 +199,15 @@ class ResourceTagField(forms.CharField):
                 data['create'].append(tag)
         return data
 
+class RespaMultiEmailField(MultiEmailField):
+    def to_python(self, value):
+        if not value:
+            return []
+        if isinstance(value, list):
+            return value
+        return [val.strip() for val in value.splitlines() if val]
+
+
 class ResourceForm(forms.ModelForm):
     purposes = forms.ModelMultipleChoiceField(
         widget=RespaCheckboxSelect,
@@ -218,6 +229,12 @@ class ResourceForm(forms.ModelForm):
     resource_tags = ResourceTagField(
         required=False,
         label=_('Keywords')
+    )
+
+
+    resource_staff_emails = RespaMultiEmailField(
+        required=False,
+        label=_('E-mail addresses for client correspondence')
     )
 
     def __init__(self, *args, **kwargs):

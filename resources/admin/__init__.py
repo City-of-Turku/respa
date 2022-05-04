@@ -110,13 +110,6 @@ class ResourceTagInline(admin.TabularInline):
     extra = 0
 
 class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin, HttpsFriendlyGeoAdmin):
-    inlines = [
-        PeriodInline,
-        ResourceEquipmentInline,
-        ResourceGroupInline,
-        ResourceTagInline
-    ]
-
     default_lon = 2478871  # Central Railway Station in EPSG:3857
     default_lat = 8501259
     default_zoom = 12
@@ -192,13 +185,21 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
         form = super().get_form(request, obj=obj, **kwargs)
         if 'id' in form.base_fields:
             form.base_fields['id'].initial = generate_id()
+        self.inlines = self.get_inlines(obj)
         return form
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.is_external:
-            self.inlines = []
             return [field.name for field in self.model._meta.fields if field.name != 'is_external'] + [ 'tags', 'purposes' ]
         return super().get_readonly_fields(request, obj)
+
+    def get_inlines(self, obj):
+        return [] if obj and obj.is_external else [
+            PeriodInline,
+            ResourceEquipmentInline,
+            ResourceGroupInline,
+            ResourceTagInline
+        ]
 
 
 class UnitAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, FixedGuardedModelAdminMixin,

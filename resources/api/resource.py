@@ -67,6 +67,8 @@ from random import sample
 
 logger = logging.getLogger(__name__)
 
+ALLOWED_IMAGE_FORMATS = ("JPEG", "JPG", "PNG", "SVG", "MPO", "WEBP")
+
 
 def parse_query_time_range(params):
     times = {}
@@ -199,7 +201,7 @@ class ImageSerializer(serializers.Serializer):
     def validate(self, attrs):
         try:
             img = Image.open(BytesIO(base64.b64decode(attrs['data'].encode())))
-            if img.format not in ("JPEG", "PNG", "SVG"):
+            if img.format not in ALLOWED_IMAGE_FORMATS:
                 raise Exception("Invalid format: %s" % img.format)
         except Exception as exc:
             raise serializers.ValidationError({
