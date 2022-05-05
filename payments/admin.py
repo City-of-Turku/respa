@@ -82,6 +82,7 @@ class TimeSlotPriceInline(admin.TabularInline):
         for cg_time_slot_price in cg_time_slot_prices:
             cg_names_and_prices.append(f'{cg_time_slot_price.customer_group.name} {cg_time_slot_price.price}')
         return ", ".join(cg_names_and_prices)
+    customer_group_time_slot_prices.short_description = _('Customer group time slot prices')
 
 
 class CustomerGroupAdmin(TranslationAdmin):

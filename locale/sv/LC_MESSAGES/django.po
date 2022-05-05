@@ -1823,3 +1823,36 @@ msgstr "underhåll meddelanden"
 
 msgid "General"
 msgstr "Allmän"
+
+msgid "Customer group time slot price"
+msgstr "Kundgruppens tidsluckans pris"
+
+msgid "Customer group time slot prices"
+msgstr "Kundgruppernas tidsluckornas priser"
+
+msgid "Time slot price"
+msgstr "Tidsluckans pris"
+
+msgid "Time slot prices"
+msgstr "Tidsluckornas pris"
+
+msgid "Time slot begins"
+msgstr "Tidsluckan börjar"
+
+msgid "Time slot ends"
+msgstr "Tidsluckan slutar"
+
+msgid "This will override product price when applicable."
+msgstr "Skriver över produktens pris när tillämpligt."
+
+msgid "Customer group"
+msgstr "Kundgrupp"
+
+msgid "Is archived"
+msgstr "Arkiverad"
+
+msgid "Begin should be before end"
+msgstr "Början måste vara före slutet"
+
+msgid "Overlapping time slot prices"
+msgstr "Överlappande tidsluckornas priser"

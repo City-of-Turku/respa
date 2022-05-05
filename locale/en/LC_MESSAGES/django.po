@@ -2511,3 +2511,36 @@ msgstr ""
 
 msgid "General"
 msgstr ""
+
+msgid "Customer group time slot price"
+msgstr ""
+
+msgid "Customer group time slot prices"
+msgstr ""
+
+msgid "Time slot price"
+msgstr ""
+
+msgid "Time slot prices"
+msgstr ""
+
+msgid "Time slot begins"
+msgstr ""
+
+msgid "Time slot ends"
+msgstr ""
+
+msgid "This will override product price when applicable."
+msgstr ""
+
+msgid "Customer group"
+msgstr ""
+
+msgid "Is archived"
+msgstr ""
+
+msgid "Begin should be before end"
+msgstr ""
+
+msgid "Overlapping time slot prices"
+msgstr ""

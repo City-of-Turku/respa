@@ -42,19 +42,21 @@ class CustomerGroupTimeSlotPrice(AutoIdentifiedModel):
     price = models.DecimalField(
         verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
         validators=[MinValueValidator(Decimal('0.00'))],
-        help_text=_('This will override product price.')
+        help_text=_('This will override product price when applicable.')
     )
     customer_group = models.ForeignKey('payments.CustomerGroup',
-        verbose_name=_('customer group'), related_name='customer_group_time_slot_prices',
+        verbose_name=_('Customer group'), related_name='customer_group_time_slot_prices',
         on_delete=models.PROTECT,
     )
     time_slot_price = models.ForeignKey('payments.TimeSlotPrice',
-        verbose_name=_('time slot price'), related_name='customer_group_time_slot_prices',
+        verbose_name=_('Time slot price'), related_name='customer_group_time_slot_prices',
         on_delete=models.CASCADE,
     )
 
     class Meta:
         unique_together = ('customer_group', 'time_slot_price')
+        verbose_name = _('Customer group time slot price')
+        verbose_name_plural = _('Customer group time slot prices')
 
 
 class TimeSlotPriceQuerySet(models.QuerySet):
@@ -68,7 +70,7 @@ class TimeSlotPrice(AutoIdentifiedModel):
     price = models.DecimalField(
         verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
         validators=[MinValueValidator(Decimal('0.00'))],
-        help_text=_('This will override product price.')
+        help_text=_('This will override product price when applicable.')
     )
     product = models.ForeignKey('payments.Product',
         verbose_name=_('Product'), related_name='time_slot_prices',
@@ -102,6 +104,10 @@ class TimeSlotPrice(AutoIdentifiedModel):
                 product_id=self.product.product_id).get(archived_at=ARCHIVED_AT_NONE)
 
         super().save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = _('Time slot price')
+        verbose_name_plural = _('Time slot prices')
 
 
 class OrderCustomerGroupDataQuerySet(models.QuerySet):

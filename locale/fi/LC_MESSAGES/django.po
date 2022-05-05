@@ -1888,3 +1888,36 @@ msgstr "huoltoviestit"
 
 msgid "General"
 msgstr "Yleinen"
+
+msgid "Customer group time slot price"
+msgstr "Asiakasryhmän aikavälin hinta"
+
+msgid "Customer group time slot prices"
+msgstr "Asiakasryhmien aikavälien hinnat"
+
+msgid "Time slot price"
+msgstr "Aikavälin hinta"
+
+msgid "Time slot prices"
+msgstr "Aikavälien hinnat"
+
+msgid "Time slot begins"
+msgstr "Aikaväli alkaa"
+
+msgid "Time slot ends"
+msgstr "Aikaväli loppuu"
+
+msgid "This will override product price when applicable."
+msgstr "Ylikirjoittaa tuotteen hinnan kun sovellettavissa."
+
+msgid "Customer group"
+msgstr "Asiakasryhmä"
+
+msgid "Is archived"
+msgstr "Arkistoitu"
+
+msgid "Begin should be before end"
+msgstr "Alkuajan tulee olla ennen loppuaikaa"
+
+msgid "Overlapping time slot prices"
+msgstr "Päällekkäisiä aikavälihintoja"
