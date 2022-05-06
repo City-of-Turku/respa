@@ -108,6 +108,7 @@ class TimeSlotPrice(AutoIdentifiedModel):
     class Meta:
         verbose_name = _('Time slot price')
         verbose_name_plural = _('Time slot prices')
+        ordering = ('product', 'begin')
 
 
 class OrderCustomerGroupDataQuerySet(models.QuerySet):
