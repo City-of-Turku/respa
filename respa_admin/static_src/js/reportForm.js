@@ -11,8 +11,8 @@ function setDefaultDate() {
     $("#begin-date").attr('value', date.toISOString().substr(0, 10));
 }
 
-function buildUrl(resources, start, end, page_size, format = 'xlsx') {
-    return `${window.location.origin}/v1/reservation/?format=${format}&resource=${resources.join()}&start=${start}&end=${end}&page_size=${page_size}`;
+function buildUrl(resources, start, end, page_size = 50000, format = 'xlsx') {
+    return `${window.location.origin}/v1/reservation/?format=${format}&resource=${resources.join()}&start=${start}&end=${end}&page_size=${page_size}&state=confirmed`;
 }
 
 
@@ -94,7 +94,7 @@ function bindGenerateButton() {
                 $("body").css("cursor", "default");
             }
         }
-        http.open('GET', buildUrl(resources, begin, end, 5000));
+        http.open('GET', buildUrl(resources, begin, end));
         http.send();
         $("body").css("cursor", "progress");
     });
