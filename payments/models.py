@@ -122,6 +122,9 @@ class OrderCustomerGroupData(models.Model):
         validators=[MinValueValidator(Decimal('0.00'))],
         help_text=_('Price of the product at that given time.')
     )
+    price_is_based_on_product_cg = models.BooleanField(
+        default=False,
+        help_text=_("Is price based on product customer group price and not product's own default price"))
     order_line = models.OneToOneField('payments.OrderLine', on_delete=models.PROTECT, null=True)
 
     objects = OrderCustomerGroupDataQuerySet.as_manager()

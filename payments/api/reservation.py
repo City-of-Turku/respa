@@ -50,6 +50,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
             product_cg_price=prod_cg.get_price_for(order_line.product))
             if prod_cg:
                 ocgd.copy_translated_fields(prod_cg.first().customer_group)
+                ocgd.price_is_based_on_product_cg = True
             ocgd.save()
 
         resource = reservation.resource

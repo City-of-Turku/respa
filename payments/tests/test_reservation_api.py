@@ -174,6 +174,9 @@ def test_reservation_order_with_time_slot_product_has_correct_price(begin, end, 
     ocgd.product_cg_price=prod_cg.get_price_for(order_line.product)
     if prod_cg:
         ocgd.copy_translated_fields(prod_cg.first().customer_group)
+        ocgd.price_is_based_on_product_cg = True
+    else:
+        ocgd.price_is_based_on_product_cg = False
     ocgd.save()
 
     url = get_detail_url(order.reservation)

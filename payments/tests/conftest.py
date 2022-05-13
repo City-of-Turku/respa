@@ -139,6 +139,7 @@ def order_with_selected_cg_and_product_with_pcgs_and_time_slots(two_hour_reserva
     ocgd = OrderCustomerGroupDataFactory.create(order_line=order_line,
         product_cg_price=ProductCustomerGroup.objects.get_price_for(order_line.product))
     ocgd.copy_translated_fields(prod_cg.customer_group)
+    ocgd.price_is_based_on_product_cg = True
     ocgd.save()
 
     return order
