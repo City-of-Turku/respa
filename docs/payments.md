@@ -68,7 +68,7 @@ Products can have special pricing based on customer groups (cg). Cgs are represe
 
 - `CustomerGroup`: Common to all products containing cg naming e.g. Elders, Adults or Children.
 
-- `ProductCustomerGroup`: Unique special pricing for certain cg for a product. 
+- `ProductCustomerGroup`: Unique special pricing for certain cg for a product.
 
 Cgs are not required in products and there can be any number of them defined per product.
 
@@ -77,6 +77,39 @@ Normally a product's price must be over 0.00 EUR, but product customer groups (p
 Orders can be made with products which have differing cgs or no cgs at all. Pricing is calculated based on given order's cg and if a product doesn't contain the given cg, the product's default pricing is used instead.
 
 Model `OrderProductCustomerGroupData` is used to store pcg price and cg name (if order's cg is defined in the product) per order line. Price data is stored so that later modifications to pcgs won't change the order line price after the payment has been made.
+
+## Time slot pricing
+
+Products can have differently priced time slots e.g., 10-12 with price of 10 EUR/h and 14-16 with price of 12 EUR/h. In the previous example if the product's default price is 6 EUR/h a reservation made between 11-12 would cost 10 EUR and a reservation made between 13-15 would cost 18 EUR.
+
+Time slot pricing is represented by the following models:
+
+- `TimeSlotPrice`: Defines a time range with special pricing for a product.
+
+- `CustomerGroupTimeSlotPrice`: Unique special pricing for certain cg for a time slot.
+
+Time slot pricing is only active when product's price type is `per_period`. The priced time slots use the product's `price_period` unit e.g., per one hour.
+
+Each time slot can have any number of cg prices in addition to the time slot's default price. Product's time slots don't have to have the same cgs between themselves. Similarly, product's time slot cgs and product's own pcgs don't have to be the same but it is advisable to define all the desired cgs used by time slots for the product itself as well. Doing so makes the product's pricing easier to understand and easier to use by the applications using the product API.
+
+Every time a product or time slot price is saved via admin interface, new copies of time slot objects are created in the db, so product or time slot modifying does not affect already existing orders.
+
+## Pricing priority
+
+Time slots and customer groups create complex pricing situations for products. A product with time slots but no cgs use time slot pricing when reservation overlaps with time slots and default pricing otherwise. Similarly, a product with cgs but no time slots use cg pricing when reservation's cg is defined in the product and when not defined, default pricing is used. When cgs and time slots are used at the same time in product the following priority rules apply:
+
+- Product default price is used:
+    - When reservation takes place outside of defined time slots and no cg is given or given cg is not defined in the product.
+
+- Time slot default price is used:
+    - When reservation takes place over defined time slots and no cg is given or given cg is not defined in the time slot and product.
+
+- Time slot cg price is used:
+    - When reservation takes place over defined time slots and given cg is defined in the time slots.
+
+- Product cg price is used:
+    - When reservation takes place outside of defined time slots and given cg is defined in the product
+    - When reservation takes place over time slots but these time slots don't have the given cg defined in them, but the product does have the given cg defined.
 
 ## Manually confirmed reservations
 
@@ -145,6 +178,27 @@ Example response (GET `/v1/resource/`):
                     }
                 }
             }
+        ],
+        "time_slot_prices": [
+            {
+                "id": 123,
+                "begin": "10:00:00",
+                "end": "12:00:00",
+                "price": "15.00",
+                "customer_group_time_slot_prices": [
+                    {
+                        "id": 123,
+                        "price": "5.00",
+                        "customer_group": {
+                            "id": "adults-cg-id",
+                            "name": {
+                                "fi": "Aikuiset",
+                                "en": "Adults"
+                            }
+                        }
+                    }
+                ]
+            }
         ]
     }
 ],
@@ -207,6 +261,27 @@ Example response:
                                 "en": "Adults"
                             }
                         }
+                    }
+                ],
+                "time_slot_prices": [
+                    {
+                        "id": 123,
+                        "begin": "10:00:00",
+                        "end": "12:00:00",
+                        "price": "15.00",
+                        "customer_group_time_slot_prices": [
+                            {
+                                "id": 123,
+                                "price": "5.00",
+                                "customer_group": {
+                                    "id": "adults-cg-id",
+                                    "name": {
+                                        "fi": "Aikuiset",
+                                        "en": "Adults"
+                                    }
+                                }
+                            }
+                        ]
                     }
                 ]
             },
@@ -288,7 +363,8 @@ Example response:
                         "period": "01:00:00",
                     },
                     "max_quantity": 1,
-                    "product_customer_groups": [{...}, {...}]
+                    "product_customer_groups": [{...}, {...}],
+                    "time_slot_prices": [{...}, {...}]
                 },
                 "quantity": 1,
                 "unit_price": "20.00",
@@ -360,7 +436,8 @@ Example response (GET `/v1/reservation/?include=order_detail`):
                         "period": "01:00:00",
                     },
                     "max_quantity": 1,
-                    "product_customer_groups": [{...}, {...}]
+                    "product_customer_groups": [{...}, {...}],
+                    "time_slot_prices": [{...}, {...}]
                 },
                 "quantity": 1,
                 "unit_price": "20.00",
@@ -426,6 +503,14 @@ After the status has been checked, the customer is redirected to the `ui_return_
 
 ![customer group models](customer_group_models.png "customer group models")
 
+#### Time slot prices
+
+![time slot price models](time_slot_price_models.png "time slot price models")
+
 ### Payment flow
 
 ![payments flow](payment_flow.png "payments flow")
+
+### Pricing examples
+
+![pricing examples](pricing_examples.png "pricing examples")

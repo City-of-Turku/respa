@@ -12,8 +12,8 @@ from payments.utils import get_price_period_display
 from resources.models import Resource
 
 from .models import (
-    ARCHIVED_AT_NONE, Order, OrderCustomerGroupData, OrderLine, OrderLogEntry, Product,
-    CustomerGroup, ProductCustomerGroup
+    ARCHIVED_AT_NONE, CustomerGroupTimeSlotPrice, Order, OrderCustomerGroupData, OrderLine, OrderLogEntry,
+    Product, CustomerGroup, ProductCustomerGroup, TimeSlotPrice
 )
 
 
@@ -22,13 +22,83 @@ def get_datetime_display(dt):
         return None
     return localtime(dt).strftime('%d %b %Y %H:%M:%S')
 
+
+class CustomerGroupTimeSlotPriceInline(admin.TabularInline):
+    model = CustomerGroupTimeSlotPrice
+    fields = ('price', 'customer_group')
+    extra = 0
+    can_delete = True
+
+
+class TimeSlotPriceAdmin(admin.ModelAdmin):
+    inlines = (CustomerGroupTimeSlotPriceInline, )
+    readonly_fields = ('is_archived', )
+    class Meta:
+        model = TimeSlotPrice
+        fields = '__all__'
+
+    def save_model(self, request, obj, form, change) -> None:
+        time_slots_to_update = TimeSlotPrice.objects.filter(product=obj.product, is_archived=False)
+        # save product to create an archived version to hold old data
+        obj.product.save()
+        # time slots have old archived product here, update product to the new one
+        for time_slot in time_slots_to_update:
+            time_slot.product = obj.product
+            time_slot.save()
+
+        return super().save_model(request, obj, form, change)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).current()
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super(TimeSlotPriceAdmin, self).get_form(request, obj, **kwargs)
+        form.base_fields['product'].queryset = Product.objects.current()
+        return form
+
+
+class TimeSlotPriceInlineFormSet(BaseInlineFormSet):
+    def save_existing_objects(self, commit=True):
+        for form in self.initial_forms:
+            # time slot price has old archived product here, update product to the new one
+            obj = form.instance
+            new_product = Product.objects.filter(product_id=obj.product.product_id).get(archived_at=ARCHIVED_AT_NONE)
+            obj.product = new_product
+            obj.save()
+        saved_instances = super(TimeSlotPriceInlineFormSet, self).save_existing_objects(commit)
+        return saved_instances
+
+
+class TimeSlotPriceInline(admin.TabularInline):
+    model = TimeSlotPrice
+    fields = ('begin', 'end', 'price', 'customer_group_time_slot_prices')
+    readonly_fields = ('customer_group_time_slot_prices', )
+    extra = 0
+    can_delete = True
+    show_change_link = True
+    ordering = ('begin',)
+    formset = TimeSlotPriceInlineFormSet
+
+    def customer_group_time_slot_prices(self, obj):
+        cg_time_slot_prices = CustomerGroupTimeSlotPrice.objects.filter(
+            time_slot_price=obj.id).order_by('customer_group__name')
+
+        cg_names_and_prices = []
+        for cg_time_slot_price in cg_time_slot_prices:
+            cg_names_and_prices.append(f'{cg_time_slot_price.customer_group.name} {cg_time_slot_price.price}')
+        return ", ".join(cg_names_and_prices)
+    customer_group_time_slot_prices.short_description = _('Customer group time slot prices')
+
+
 class CustomerGroupAdmin(TranslationAdmin):
     fields = ('name', )
+
 
 class ProductCustomerGroupAdmin(admin.ModelAdmin):
     def render_change_form(self, request, context, *args, **kwargs):
         context['adminform'].form.fields['product'].queryset = Product.objects.current()
         return super().render_change_form(request, context, *args, **kwargs)
+
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -58,11 +128,13 @@ class ProductCustomerGroupInline(admin.TabularInline):
     fields = ('id', 'customer_group', 'price', )
     extra = 0
     can_delete = True
+    show_change_link = True
     formset = ProductCGInlineFormSet
 
 
 class ProductAdmin(TranslationAdmin):
     inlines = (
+        TimeSlotPriceInline,
         ProductCustomerGroupInline,
     )
 
@@ -192,9 +264,9 @@ class OrderCustomerGroupDataInline(admin.TabularInline):
     product_cg_price.short_description = _('product price')
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_number', 'user', 'created_at', 'state', 'reservation', 'price')
+    list_display = ('order_number', 'user', 'created_at', 'state', 'reservation', 'price', 'customer_group')
 
-    fields = ('order_number', 'created_at', 'state', 'reservation', 'user', 'price')
+    fields = ('order_number', 'created_at', 'state', 'reservation', 'user', 'price', 'customer_group')
 
     raw_id_fields = ('reservation',)
     inlines = (OrderLineInline, OrderLogEntryInline, )
@@ -247,3 +319,4 @@ if settings.RESPA_PAYMENTS_ENABLED:
     admin.site.register(Order, OrderAdmin)
     admin.site.register(CustomerGroup, CustomerGroupAdmin)
     admin.site.register(ProductCustomerGroup, ProductCustomerGroupAdmin)
+    admin.site.register(TimeSlotPrice, TimeSlotPriceAdmin)

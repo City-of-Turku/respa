@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
 
@@ -60,7 +60,18 @@ def handle_customer_group_pricing(func):
         prod_cg = ProductCustomerGroup.objects.filter(product=self.product)
         order_cg = OrderCustomerGroupData.objects.filter(order_line=self).first()
 
+        if self.order:
+            _in_memory_cg = None
+            if self.order.customer_group:
+                _in_memory_cg = self.order.customer_group.id
+            elif hasattr(self.order, '_in_memory_customer_group_id'):
+                _in_memory_cg = self.order._in_memory_customer_group_id
+            self.product._in_memory_cg = _in_memory_cg
+
         if order_cg:
+            if (self.order and self.order.customer_group
+                and order_cg.price_is_based_on_product_cg):
+                self.product._orderline_has_stored_pcg_price_for_non_null_cg = True
             self.product.price = order_cg.product_cg_price
             return func(self)
 
@@ -85,7 +96,7 @@ def get_price(order: dict, begin, end, **kwargs) -> Decimal:
         if not order:
             raise serializers.ValidationError({'order': _('Invalid order id.')})
         return order.get_price()
-    
+
     if not order.get('order_lines', None):
         raise serializers.ValidationError({'order_lines': _('This is field required.')})
     if not isinstance(order['order_lines'], list):
@@ -95,12 +106,26 @@ def get_price(order: dict, begin, end, **kwargs) -> Decimal:
     customer_group = order.get('customer_group', None)
     price = Decimal()
 
-
     for product, quantity in products:
         product_cg = None
         product = Product.objects.filter(product_id=product).current().first()
+        product._in_memory_cg = customer_group
         if customer_group:
             product_cg = ProductCustomerGroup.objects.filter(product=product, customer_group__id=customer_group).first()
         price += product.get_price_for_time_range(parse_datetime(begin), parse_datetime(end), product_cg=product_cg) * quantity
     return price
 
+
+def is_datetime_between_times(time: datetime, begin: time, end: time) -> bool:
+    '''Checks if given datetime is between given begin and end times'''
+    if begin <= time.time() <= end:
+        return True
+    return False
+
+
+def is_datetime_range_between_times(begin_x: datetime, end_x: datetime, begin_y: time, end_y: time) -> bool:
+    '''Checks if given begin and end datetimes are both between given begin and end times'''
+    if (is_datetime_between_times(time=begin_x, begin=begin_y, end=end_y)
+        and is_datetime_between_times(time=end_x, begin=begin_y, end=end_y)):
+            return True
+    return False

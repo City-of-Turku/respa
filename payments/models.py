@@ -19,7 +19,10 @@ from resources.models.utils import generate_id, get_translated_fields
 from modeltranslation.translator import NotRegistered, translator
 
 from .exceptions import OrderStateTransitionError
-from .utils import convert_aftertax_to_pretax, get_price_period_display, rounded, handle_customer_group_pricing
+from .utils import (
+    convert_aftertax_to_pretax, get_price_period_display, is_datetime_range_between_times,
+    rounded, handle_customer_group_pricing
+)
 
 # The best way for representing non existing archived_at would be using None for it,
 # but that would not work with the unique_together constraint, which brings many
@@ -35,6 +38,78 @@ TAX_PERCENTAGES = [Decimal(x) for x in (
 
 DEFAULT_TAX_PERCENTAGE = Decimal('24.00')
 
+class CustomerGroupTimeSlotPrice(AutoIdentifiedModel):
+    price = models.DecimalField(
+        verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))],
+        help_text=_('This will override product price when applicable.')
+    )
+    customer_group = models.ForeignKey('payments.CustomerGroup',
+        verbose_name=_('Customer group'), related_name='customer_group_time_slot_prices',
+        on_delete=models.PROTECT,
+    )
+    time_slot_price = models.ForeignKey('payments.TimeSlotPrice',
+        verbose_name=_('Time slot price'), related_name='customer_group_time_slot_prices',
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        unique_together = ('customer_group', 'time_slot_price')
+        verbose_name = _('Customer group time slot price')
+        verbose_name_plural = _('Customer group time slot prices')
+
+
+class TimeSlotPriceQuerySet(models.QuerySet):
+    def current(self):
+        return self.filter(is_archived=False)
+
+
+class TimeSlotPrice(AutoIdentifiedModel):
+    begin = models.TimeField(verbose_name=_('Time slot begins'))
+    end = models.TimeField(verbose_name=_('Time slot ends'))
+    price = models.DecimalField(
+        verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))],
+        help_text=_('This will override product price when applicable.')
+    )
+    product = models.ForeignKey('payments.Product',
+        verbose_name=_('Product'), related_name='time_slot_prices',
+        on_delete=models.CASCADE
+    )
+    is_archived = models.BooleanField(default=False, verbose_name=_('Is archived'))
+
+    objects = TimeSlotPriceQuerySet.as_manager()
+
+    def __str__(self) -> str:
+        archived_text = f' ({_("Is archived")})' if self.is_archived else ""
+        return f'({self.id}) {self.product.name}: {self.begin}-{self.end}{archived_text}'
+
+    def time_slot_overlaps(self):
+        if self.is_archived:
+            return False
+        return TimeSlotPrice.objects.filter(
+            product=self.product, begin__lt=self.end, end__gt=self.begin).exclude(
+                is_archived=True).exclude(id=self.id).exists()
+
+    def clean(self) -> None:
+        if self.begin >= self.end:
+            raise ValidationError(_('Begin should be before end'))
+        if self.time_slot_overlaps():
+            raise ValidationError(_('Overlapping time slot prices'))
+
+    def save(self, *args, **kwargs):
+        _saved_via_product = kwargs.pop('_saved_via_product', False)
+        if not _saved_via_product and not self.is_archived:
+            self.product = Product.objects.filter(
+                product_id=self.product.product_id).get(archived_at=ARCHIVED_AT_NONE)
+
+        super().save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = _('Time slot price')
+        verbose_name_plural = _('Time slot prices')
+        ordering = ('product', 'begin')
+
 
 class OrderCustomerGroupDataQuerySet(models.QuerySet):
     def get_price(self):
@@ -47,6 +122,9 @@ class OrderCustomerGroupData(models.Model):
         validators=[MinValueValidator(Decimal('0.00'))],
         help_text=_('Price of the product at that given time.')
     )
+    price_is_based_on_product_cg = models.BooleanField(
+        default=False,
+        help_text=_("Is price based on product customer group price and not product's own default price"))
     order_line = models.OneToOneField('payments.OrderLine', on_delete=models.PROTECT, null=True)
 
     objects = OrderCustomerGroupDataQuerySet.as_manager()
@@ -210,10 +288,12 @@ class Product(models.Model):
             resources = self.resources.all()
             Product.objects.filter(id=self.id).update(archived_at=now())
             product_groups = ProductCustomerGroup.objects.filter(product=self)
+            time_slot_prices = TimeSlotPrice.objects.filter(product=self, is_archived=False)
             self.id = None
         else:
             resources = []
             product_groups = []
+            time_slot_prices = []
             self.product_id = generate_id()
 
         super().save(*args, **kwargs)
@@ -224,6 +304,17 @@ class Product(models.Model):
         for product_group in product_groups:
             product_group.product = self
             product_group.save()
+
+        for time_slot_price in time_slot_prices:
+            cg_time_slot_prices = CustomerGroupTimeSlotPrice.objects.filter(time_slot_price=time_slot_price)
+            time_slot_price.is_archived = True
+            time_slot_price.id = None
+            time_slot_price.save(_saved_via_product=True)
+            for cg_time_slot_price in cg_time_slot_prices:
+                cg_time_slot_price.id = None
+                cg_time_slot_price.time_slot_price = time_slot_price
+                cg_time_slot_price.save()
+
 
     def delete(self, *args, **kwargs):
         Product.objects.filter(id=self.id).update(archived_at=now())
@@ -245,6 +336,44 @@ class Product(models.Model):
         if self.price_type == Product.PRICE_FIXED:
             return price
         elif self.price_type == Product.PRICE_PER_PERIOD:
+            time_slot_prices = TimeSlotPrice.objects.filter(product=self)
+            if time_slot_prices:
+                tz = self.resources.first().unit.get_tz()
+                local_tz_begin = begin.astimezone(tz)
+                local_tz_end = end.astimezone(tz)
+                slot_begin = local_tz_begin
+                check_interval = timedelta(minutes=5)
+                price_sum = 0
+                # calculate price for each time chunk and use their sum as final price
+                while slot_begin + check_interval <= local_tz_end:
+                    price_was_added = False
+                    for time_slot_price in time_slot_prices:
+                        if is_datetime_range_between_times(begin_x=slot_begin, end_x=slot_begin + check_interval,
+                            begin_y=time_slot_price.begin, end_y=time_slot_price.end):
+                                cg_time_slot_price = CustomerGroupTimeSlotPrice.objects.filter(
+                                    time_slot_price=time_slot_price, customer_group_id=self._in_memory_cg).first()
+                                slot_price = time_slot_price.price
+                                if cg_time_slot_price:
+                                    slot_price = cg_time_slot_price.price
+                                elif (ProductCustomerGroup.objects.filter(
+                                    product=self, customer_group_id=self._in_memory_cg).exists()
+                                    or hasattr(self, '_orderline_has_stored_pcg_price_for_non_null_cg')):
+                                    # customer group data exists for product but not for time slot ->
+                                    # use default pricing
+                                    break
+
+                                interval_price = slot_price * Decimal(check_interval / self.price_period)
+                                price_sum += interval_price
+                                price_was_added = True
+                                break
+
+                    if not price_was_added:
+                        # time chunk was not in any priced slot -> use default pricing
+                        interval_price = price * Decimal(check_interval / self.price_period)
+                        price_sum += interval_price
+                    slot_begin += check_interval
+                return Decimal(price_sum)
+
             assert self.price_period, '{} {}'.format(self, self.price_period)
             return price * Decimal((end - begin) / self.price_period)
         else:
@@ -361,6 +490,10 @@ class Order(models.Model):
     payment_url = models.TextField(verbose_name=_('payment url'), blank=True, default='')
     is_requested_order = models.BooleanField(verbose_name=_('is requested order'), default=False)
     confirmed_by_staff_at = models.DateTimeField(verbose_name=_('confirmed by staff at'), blank=True, null=True)
+    customer_group = models.ForeignKey(CustomerGroup,
+        verbose_name=_('Customer group'), related_name='orders',
+        blank=True, null=True, on_delete=models.PROTECT
+    )
 
     objects = OrderQuerySet.as_manager()
 

@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import time, timedelta
 from random import randint
 
 import factory
@@ -9,9 +9,9 @@ from resources.models import Reservation
 from resources.models.utils import generate_id
 
 from .models import (
-    ARCHIVED_AT_NONE, TAX_PERCENTAGES, CustomerGroup,
+    ARCHIVED_AT_NONE, TAX_PERCENTAGES, CustomerGroup, CustomerGroupTimeSlotPrice,
     Order, OrderCustomerGroupData, OrderLine,
-    Product, ProductCustomerGroup
+    Product, ProductCustomerGroup, TimeSlotPrice
 )
 
 class ProductFactory(factory.django.DjangoModelFactory):
@@ -114,6 +114,7 @@ class OrderLineFactory(factory.django.DjangoModelFactory):
 class CustomerGroupFactory(factory.django.DjangoModelFactory):
     """Mock CustomerGroup objects"""
     name = factory.Faker('catch_phrase')
+    id = factory.Faker('uuid4')
     class Meta:
         model = CustomerGroup
 
@@ -134,3 +135,23 @@ class OrderCustomerGroupDataFactory(factory.django.DjangoModelFactory):
     order_line = factory.SubFactory(OrderLineFactory)
     class Meta:
         model = OrderCustomerGroupData
+
+
+class TimeSlotPriceFactory(factory.django.DjangoModelFactory):
+    """Mock TimeSlotPrice objects"""
+    begin = time(8, 0)
+    end = time(12, 0)
+    price = factory.fuzzy.FuzzyDecimal(5.00, 100.00)
+    product = factory.SubFactory(ProductFactory)
+    is_archived = False
+    class Meta:
+        model = TimeSlotPrice
+
+
+class CustomerGroupTimeSlotPriceFactory(factory.django.DjangoModelFactory):
+    """Mock CustomerGroupTimeSlotPrice objects"""
+    price = factory.fuzzy.FuzzyDecimal(5.00, 100.00)
+    customer_group = factory.SubFactory(CustomerGroupFactory)
+    time_slot_price = factory.SubFactory(TimeSlotPriceFactory)
+    class Meta:
+        model = CustomerGroupTimeSlotPrice
