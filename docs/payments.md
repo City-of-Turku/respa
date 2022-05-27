@@ -88,7 +88,11 @@ Time slot pricing is represented by the following models:
 
 - `CustomerGroupTimeSlotPrice`: Unique special pricing for certain cg for a time slot.
 
-Time slot pricing is only active when product's price type is `per_period`. The priced time slots use the product's `price_period` unit e.g., per one hour.
+Time slot pricing can be used with both product price types `per_period` and `fixed`.
+
+Type `per_period` products' time slots use the product's `price_period` unit e.g., per one hour for pricing.
+
+Type `fixed` products' time slots work by selecting the most accurate i.e., smallest duration time slot which fits for the given reservation. For example, a product that has time slots 10-12 and 10-14 would price a reservation made between 11-12 with the 10-12 time slot's price.
 
 Each time slot can have any number of cg prices in addition to the time slot's default price. Product's time slots don't have to have the same cgs between themselves. Similarly, product's time slot cgs and product's own pcgs don't have to be the same but it is advisable to define all the desired cgs used by time slots for the product itself as well. Doing so makes the product's pricing easier to understand and easier to use by the applications using the product API.
 

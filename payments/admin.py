@@ -76,7 +76,7 @@ class TimeSlotPriceInline(admin.TabularInline):
     extra = 0
     can_delete = True
     show_change_link = True
-    ordering = ('begin',)
+    ordering = ('begin', 'end')
     formset = TimeSlotPriceInlineFormSet
 
     def customer_group_time_slot_prices(self, obj):

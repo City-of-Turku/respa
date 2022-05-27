@@ -63,7 +63,7 @@ def three_hour_thirty_minute_reservation(resource_in_unit, user):
     )
 
 @pytest.fixture()
-def order_with_product(three_hour_thirty_minute_reservation):
+def order_with_product(three_hour_thirty_minute_reservation, resource_in_unit):
     Reservation.objects.filter(id=three_hour_thirty_minute_reservation.id).update(state=Reservation.WAITING_FOR_PAYMENT)
     three_hour_thirty_minute_reservation.refresh_from_db()
 
@@ -72,20 +72,24 @@ def order_with_product(three_hour_thirty_minute_reservation):
         state=Order.WAITING,
         reservation=three_hour_thirty_minute_reservation
     )
+    product = ProductFactory.create(
+        name="Test product",
+        price=Decimal('18.00'),
+        tax_percentage=Decimal('24.00'),
+        price_type=Product.PRICE_PER_PERIOD,
+        price_period=datetime.timedelta(hours=0.5),
+        resources=[resource_in_unit],
+    )
     OrderLineFactory.create(
         quantity=1,
-        product__name="Test product",
-        product__price=Decimal('18.00'),
-        product__tax_percentage=Decimal('24.00'),
-        product__price_type=Product.PRICE_PER_PERIOD,
-        product__price_period=datetime.timedelta(hours=0.5),
+        product=product,
         order=order
     )
 
     return order
 
 @pytest.fixture()
-def order_with_products(two_hour_reservation):
+def order_with_products(two_hour_reservation, resource_in_unit):
     Reservation.objects.filter(id=two_hour_reservation.id).update(state=Reservation.WAITING_FOR_PAYMENT)
     two_hour_reservation.refresh_from_db()
 
@@ -94,21 +98,29 @@ def order_with_products(two_hour_reservation):
         state=Order.WAITING,
         reservation=two_hour_reservation
     )
+    product1 = ProductFactory.create(
+        name="Test product",
+        price=Decimal('12.40'),
+        tax_percentage=Decimal('24.00'),
+        price_type=Product.PRICE_PER_PERIOD,
+        price_period=datetime.timedelta(hours=1),
+        resources=[resource_in_unit],
+    )
+    product2 = ProductFactory.create(
+        name="Test product 2",
+        price=Decimal('12.40'),
+        tax_percentage=Decimal('24.00'),
+        price_type=Product.PRICE_FIXED,
+        resources=[resource_in_unit],
+    )
     OrderLineFactory.create(
         quantity=1,
-        product__name="Test product",
-        product__price=Decimal('12.40'),
-        product__tax_percentage=Decimal('24.00'),
-        product__price_type=Product.PRICE_PER_PERIOD,
-        product__price_period=datetime.timedelta(hours=1),
+        product=product1,
         order=order
     )
     OrderLineFactory.create(
         quantity=1,
-        product__name="Test product 2",
-        product__price=Decimal('12.40'),
-        product__tax_percentage=Decimal('24.00'),
-        product__price_type=Product.PRICE_FIXED,
+        product=product2,
         order=order
     )
     return order
@@ -210,6 +222,53 @@ def product_extra_manual_confirmation(resource_with_manual_confirmation, custome
         resources=[resource_with_manual_confirmation]
     )
     ProductCustomerGroupFactory.create(product=product, customer_group=customer_group)
+    return product
+
+
+@pytest.fixture
+def product_with_fixed_price_type_and_time_slots(resource_in_unit, customer_group_adults,
+    customer_group_children):
+    product = ProductFactory.create(
+        price_type=Product.PRICE_FIXED,
+        price=Decimal('50.25'),
+        resources=[resource_in_unit],
+    )
+    ProductCustomerGroupFactory.create(
+        customer_group=customer_group_children,
+        product=product, price=Decimal('6.50')
+    )
+    TimeSlotPriceFactory.create(
+        begin=datetime.time(10, 0), end=datetime.time(12, 0),
+        price=Decimal('10.00'), product=product
+    )
+    TimeSlotPriceFactory.create(
+        begin=datetime.time(12, 0), end=datetime.time(14, 0),
+        price=Decimal('12.00'), product=product
+    )
+    TimeSlotPriceFactory.create(
+        begin=datetime.time(14, 0), end=datetime.time(15, 0),
+        price=Decimal('14.50'), product=product
+    )
+    time_slot_14_to_16 = TimeSlotPriceFactory.create(
+        begin=datetime.time(14, 0), end=datetime.time(16, 0),
+        price=Decimal('14.00'), product=product
+    )
+    time_slot_15_to_16 = TimeSlotPriceFactory.create(
+        begin=datetime.time(15, 0), end=datetime.time(16, 0),
+        price=Decimal('15.60'), product=product
+    )
+    TimeSlotPriceFactory.create(
+        begin=datetime.time(12, 0), end=datetime.time(16, 0),
+        price=Decimal('11.50'), product=product
+    )
+    CustomerGroupTimeSlotPriceFactory.create(
+        customer_group=customer_group_adults, price=Decimal('8.00'),
+        time_slot_price=time_slot_14_to_16
+    )
+    CustomerGroupTimeSlotPriceFactory.create(
+        customer_group=customer_group_adults, price=Decimal('7.00'),
+        time_slot_price=time_slot_15_to_16
+    )
     return product
 
 

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
 
@@ -129,3 +129,61 @@ def is_datetime_range_between_times(begin_x: datetime, end_x: datetime, begin_y:
         and is_datetime_between_times(time=end_x, begin=begin_y, end=end_y)):
             return True
     return False
+
+
+def find_time_slot_with_smallest_duration(time_slots):
+    '''Finds and returns the time slot with smallest duration within given queryset'''
+    smallest_duration_slot = time_slots.first()
+    today = date.today()
+    for time_slot in time_slots:
+        slot_begin_dt = datetime.combine(today, time_slot.begin)
+        slot_end_dt = datetime.combine(today, time_slot.end)
+        smallest_begin_dt = datetime.combine(today, smallest_duration_slot.begin)
+        smallest_end_dt = datetime.combine(today, smallest_duration_slot.end)
+        if slot_end_dt - slot_begin_dt < smallest_end_dt - smallest_begin_dt:
+            smallest_duration_slot = time_slot
+    return smallest_duration_slot
+
+
+def get_fixed_time_slot_price(time_slot_prices, begin, end, product, default_price):
+    '''Returns correct time slot's price or default price based on given time slots and product'''
+    from payments.models import CustomerGroupTimeSlotPrice, ProductCustomerGroup
+
+    # fetch only time slots between given begin and end
+    slots_between_begin_and_end = time_slot_prices.filter(begin__lte=begin, end__gte=end)
+    time_slot_prices = slots_between_begin_and_end
+
+    # try to find valid time slots by cg first
+    cg_data_exists_for_product = (ProductCustomerGroup.objects.filter(
+        product=product, customer_group_id=product._in_memory_cg).exists()
+        or hasattr(product, '_orderline_has_stored_pcg_price_for_non_null_cg'))
+    if product._in_memory_cg:
+        time_slots_with_cg = slots_between_begin_and_end.filter(
+                customer_group_time_slot_prices__customer_group=product._in_memory_cg)
+        if len(time_slots_with_cg) > 0:
+            # found time slots with cg -> use them
+            time_slot_prices = time_slots_with_cg
+        elif cg_data_exists_for_product:
+            # no time slots with cg, but product does have the cg -> return default
+            return Decimal(default_price)
+
+    time_slot_price = None
+    if len(time_slot_prices) == 1:
+        # only one time slot found -> use it
+        time_slot_price = time_slot_prices.first()
+    elif len(time_slot_prices) > 1:
+        # multiple time slots found, find the must accurate/smallest duration
+        time_slot_price = find_time_slot_with_smallest_duration(time_slot_prices)
+    if time_slot_price:
+        # select correct price to use for this time slot
+        slot_price = time_slot_price.price
+        cg_time_slot_price = CustomerGroupTimeSlotPrice.objects.filter(
+            time_slot_price=time_slot_price, customer_group_id=product._in_memory_cg).first()
+        if cg_time_slot_price:
+            # if time slot has the correct customer group, use its price
+            slot_price = cg_time_slot_price.price
+
+        return Decimal(slot_price)
+
+    # no valid time slots found, return default price
+    return Decimal(default_price)

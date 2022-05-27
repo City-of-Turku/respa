@@ -13,34 +13,37 @@ def auto_use_django_db(db):
 
 
 @pytest.fixture
-def order_line_price(two_hour_reservation):
+def order_line_price(two_hour_reservation, resource_in_unit):
     return OrderLineFactory(
         quantity=1,
         product__price=Decimal('12.40'),
         product__tax_percentage=Decimal('24.00'),
         product__price_type=Product.PRICE_PER_PERIOD,
         product__price_period=timedelta(hours=1),
+        product__resources=[resource_in_unit],
         order__reservation=two_hour_reservation
     )
 
 @pytest.fixture
-def order_line_tax_price_period(three_hour_thirty_minute_reservation):
+def order_line_tax_price_period(three_hour_thirty_minute_reservation, resource_in_unit):
     return OrderLineFactory(
         quantity=1,
         product__price=Decimal('15.00'),
         product__tax_percentage=Decimal('24.00'),
         product__price_type=Product.PRICE_PER_PERIOD,
         product__price_period=timedelta(minutes=30),
+        product__resources=[resource_in_unit],
         order__reservation=three_hour_thirty_minute_reservation
     )
 
 @pytest.fixture
-def order_line_tax_price_fixed(three_hour_thirty_minute_reservation):
+def order_line_tax_price_fixed(three_hour_thirty_minute_reservation, resource_in_unit):
     return OrderLineFactory(
         quantity=1,
         product__price=Decimal('60.00'),
         product__tax_percentage=Decimal('14.00'),
         product__price_type=Product.PRICE_FIXED,
+        product__resources=[resource_in_unit],
         order__reservation=three_hour_thirty_minute_reservation
     )
 

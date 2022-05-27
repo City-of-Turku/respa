@@ -20,8 +20,8 @@ from modeltranslation.translator import NotRegistered, translator
 
 from .exceptions import OrderStateTransitionError
 from .utils import (
-    convert_aftertax_to_pretax, get_price_period_display, is_datetime_range_between_times,
-    rounded, handle_customer_group_pricing
+    convert_aftertax_to_pretax, get_fixed_time_slot_price, get_price_period_display,
+    is_datetime_range_between_times, rounded, handle_customer_group_pricing
 )
 
 # The best way for representing non existing archived_at would be using None for it,
@@ -87,6 +87,10 @@ class TimeSlotPrice(AutoIdentifiedModel):
     def time_slot_overlaps(self):
         if self.is_archived:
             return False
+        if self.product.price_type == Product.PRICE_FIXED:
+            return TimeSlotPrice.objects.filter(
+                product=self.product, begin=self.begin, end=self.end).exclude(
+                    is_archived=True).exclude(id=self.id).exists()
         return TimeSlotPrice.objects.filter(
             product=self.product, begin__lt=self.end, end__gt=self.begin).exclude(
                 is_archived=True).exclude(id=self.id).exists()
@@ -108,7 +112,7 @@ class TimeSlotPrice(AutoIdentifiedModel):
     class Meta:
         verbose_name = _('Time slot price')
         verbose_name_plural = _('Time slot prices')
-        ordering = ('product', 'begin')
+        ordering = ('product', 'begin', 'end')
 
 
 class OrderCustomerGroupDataQuerySet(models.QuerySet):
@@ -332,15 +336,16 @@ class Product(models.Model):
         assert begin < end
 
         price = self.price if not product_cg else product_cg.price
-
+        time_slot_prices = TimeSlotPrice.objects.filter(product=self)
+        tz = self.resources.first().unit.get_tz()
+        local_tz_begin = begin.astimezone(tz)
+        local_tz_end = end.astimezone(tz)
         if self.price_type == Product.PRICE_FIXED:
+            if time_slot_prices:
+                return get_fixed_time_slot_price(time_slot_prices, local_tz_begin, local_tz_end, self, price)
             return price
         elif self.price_type == Product.PRICE_PER_PERIOD:
-            time_slot_prices = TimeSlotPrice.objects.filter(product=self)
             if time_slot_prices:
-                tz = self.resources.first().unit.get_tz()
-                local_tz_begin = begin.astimezone(tz)
-                local_tz_end = end.astimezone(tz)
                 slot_begin = local_tz_begin
                 check_interval = timedelta(minutes=5)
                 price_sum = 0
