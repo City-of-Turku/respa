@@ -16,7 +16,7 @@ from rest_framework.decorators import action
 
 from resources.api.reservation import UserFilterBackend
 from resources.models import Unit, UnitAuthorization, Resource
-from resources.auth import is_authenticated_user, is_general_admin, is_unit_admin
+from resources.auth import is_any_admin, is_authenticated_user, is_general_admin, is_unit_admin
 from respa_admin.views.base import ExtraContextMixin
 
 
@@ -89,7 +89,7 @@ class RAOutlookView(ExtraContextMixin, TemplateView):
     def get_context_data(self, **kwargs):
         user = self.request.user
         context = super().get_context_data(**kwargs)
-        if not user.has_outlook_link():
+        if not user.has_outlook_link() and not is_any_admin(user):
             self.outlook_filter = 'no_link'
 
         context['selected_outlook_filter'] = self.outlook_filter or ''
