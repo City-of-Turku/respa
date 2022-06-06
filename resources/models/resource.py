@@ -889,6 +889,9 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
 
     def has_products(self):
         return self.products.current().exists()
+
+    def has_outlook_link(self):
+        return getattr(self, 'outlookcalendarlink', False)
 class ResourceImage(ModifiableModel):
     TYPES = (
         ('main', _('Main photo')),

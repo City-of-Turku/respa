@@ -43,8 +43,8 @@ function bindAddLinkButton() {
           $.ajax({
             'type': 'GET',
             'url': `${apiUrl}?resource_id=${resource_id}&return_to=${window.location.href}`,
-            'beforeSend': (xhr) => {
-              xhr.setRequestHeader("X-CSRFToken", $(form).serialize().split('=')[1]);
+            'data': {
+              'csrfmiddlewaretoken': $(form).serialize().split('=')[1]
             },
             'success': (response) => {
               window.location.href = response.redirect_link;

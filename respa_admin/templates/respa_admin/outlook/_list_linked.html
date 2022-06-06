@@ -81,6 +81,8 @@
                     {% endwith %}
                     {% endwith %}
                 {% else %}
+                {% with resource.outlookcalendarlink as outlook_link %}
+                {% if not outlook_link %}
                 <form class="card-item" id="{{ resource.id }}" action="add">
                     {% csrf_token %}
                     <img
@@ -99,6 +101,8 @@
                         </h6>
                     </div>
                 </form>
+                {% endif %}
+                {% endwith %}
                 {% endif %}
                 {% endfor %}
                 </li>
