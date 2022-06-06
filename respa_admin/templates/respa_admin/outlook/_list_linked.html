@@ -30,7 +30,7 @@
                                 {% if selected_outlook_filter == "has_link" or not selected_outlook_filter %}
                                     selected="selected"
                                 {% endif %}
-                                {% if not user_has_link %}
+                                {% if not user_has_link and not user_is_any_admin %}
                                 disabled="disabled"
                                 {% endif %}>
                                 Linked
