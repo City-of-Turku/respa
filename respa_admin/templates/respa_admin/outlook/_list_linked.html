@@ -51,32 +51,16 @@
             {% for unit in units %}
             <span class="sub-header margin-top-5">{{ unit.name }}</span>
                 <li class="list-group-item card-item-list">
-                {% for resource in unit.resources.all %}
+                {% for resource in unit.resources.all|dictsort:"created_at" %}
                 {% if selected_outlook_filter != "no_link" %}
                     {% with resource.outlookcalendarlink as outlook_link %}
                     {% with outlook_link.user as user %}
                     {% if outlook_link %}
-                    <form class="card-item" id="{{ outlook_link.id }}" action="remove">
-                        {% csrf_token %}
-                        <img
-                        class="card-img-center"
-                        alt=""
-                        src={% if resource.main_image %}
-                            "{% thumbnail resource.main_image 100x100 crop %}"
-                        {% else %}
-                            ""
-                        {% endif %}>
-                        <div class="card-body text-center">
-                            <h5>{{ resource.name }}</h5>
-                            <div class="card-text">
-                                <span>{{ user.first_name }} {{ user.last_name }}</span>
-                                <span>{{ user.email }}</span>
-                            </div>
-                            <h6>
-                                <button type="button" class="resources-button">{% trans 'Remove link' %}</button>
-                            </h6>
-                        </div>
-                    </form>
+                    {% if user_is_any_admin and selected_self_link and request.user == user %}
+                    {% include "respa_admin/forms/_form_card.html" with resource=resource user=user outlook_link=outlook_link %}            
+                    {% elif user_is_any_admin and not selected_self_link or request.user == user %}
+                    {% include "respa_admin/forms/_form_card.html" with resource=resource user=user outlook_link=outlook_link %}
+                    {% endif %}
                     {% endif %}
                     {% endwith %}
                     {% endwith %}

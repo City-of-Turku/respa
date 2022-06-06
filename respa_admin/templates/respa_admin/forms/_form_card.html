@@ -1,0 +1,26 @@
+{% load i18n %}
+{% load thumbnail %}
+{% load templatetags %}
+{% get_current_language as LANGUAGE_CODE %}
+
+<form class="card-item" id="{{ outlook_link.id }}" action="remove">
+    {% csrf_token %}
+    <img
+    class="card-img-center"
+    alt=""
+    src={% if resource.main_image %}
+        "{% thumbnail resource.main_image 100x100 crop %}"
+    {% else %}
+        ""
+    {% endif %}>
+    <div class="card-body text-center">
+        <h5>{{ resource.name }}</h5>
+        <div class="card-text">
+            <span>{{ user.first_name }} {{ user.last_name }}</span>
+            <span>{{ user.email }}</span>
+        </div>
+        <h6>
+            <button type="button" class="resources-button">{% trans 'Remove link' %}</button>
+        </h6>
+    </div>
+</form>
