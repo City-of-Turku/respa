@@ -1888,3 +1888,21 @@ msgstr "huoltoviestit"
 
 msgid "General"
 msgstr "Yleinen"
+
+msgid "Add link"
+msgstr "Lisää liitos"
+
+msgid "Remove link"
+msgstr "Poista liitos"
+
+msgid "My links only"
+msgstr "Vain omat liitokset"
+
+msgid "My Outlook links"
+msgstr "Minun Outlook liitokset"
+
+msgid "All Outlook links"
+msgstr "Kaikki Outlook liitokset"
+
+msgid "Outlook links"
+msgstr "Outlook liitokset"

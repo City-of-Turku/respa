@@ -17,19 +17,28 @@ def is_general_admin(user):
 def is_staff(user):
     return is_authenticated_user(user) and user.is_staff
 
-
-def is_any_admin(user):
+def has_auth_level(user, level):
     if not is_authenticated_user(user):
         return False
 
     group_authorizations = user.unit_group_authorizations.all()
     authorizations = user.unit_authorizations.all()
 
-    is_unit_group_admin = any(group_auth.level == UnitGroupAuthorizationLevel.admin for group_auth in group_authorizations)
-    is_unit_admin = any(auth.level == UnitAuthorizationLevel.admin for auth in authorizations)
+    group_level = any(group_auth.level == level for group_auth in group_authorizations)
+    unit_level = any(auth.level == level for auth in authorizations)
 
-    return is_general_admin(user) or is_unit_group_admin or is_unit_admin
-    
+    return group_level or unit_level
+
+def is_any_admin(user):
+    if not is_authenticated_user(user):
+        return False
+    return is_general_admin(user) or has_auth_level(user, UnitAuthorizationLevel.admin)
+
+def is_any_manager(user):
+    if not is_authenticated_user(user):
+        return False
+    return has_auth_level(user, UnitAuthorizationLevel.manager)
+
 def is_underage(user, age):
     try:
         if isinstance(user, AnonymousUser):

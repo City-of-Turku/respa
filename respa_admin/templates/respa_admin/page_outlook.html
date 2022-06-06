@@ -1,0 +1,39 @@
+{% extends "respa_admin/_base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block koro_shape %}
+    <section class="hero-section bg-light {{ KORO_STYLE }}">
+        <div class="container">
+            <div class="headline">
+                <div class="listing-report row">
+                   <h1 class="col-sm-6">{% trans 'Outlook links' %}</h1>
+                </div>
+                {% if user_is_any_admin %}
+                <form action="." method="get">
+                    <div class="form-group listing-search center-block">
+                        <div class="input-group">
+                            <span class="input-group-addon">{% trans 'Search for users' %}</span>
+                            <input autofocus type="text" class="form-control text-input" name="search_query" value="{{ request.GET.search_query }}">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="submit">
+                                    <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                                </button>
+                            </span>
+                        </div>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+{% endblock koro_shape %}
+
+{% block body %}
+    {% include "respa_admin/outlook/_list_linked.html" %}
+{% endblock body %}
+
+
+{% block js_extra %}
+    <script type="text/javascript" src="{% static 'respa_admin/outlookForm-bundle.js' %}"></script>
+{% endblock js_extra %}

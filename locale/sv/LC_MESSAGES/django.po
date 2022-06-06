@@ -1823,3 +1823,21 @@ msgstr "underhåll meddelanden"
 
 msgid "General"
 msgstr "Allmän"
+
+msgid "Add link"
+msgstr "Lägg till koppling"
+
+msgid "Remove link"
+msgstr "Ta bort koppling"
+
+msgid "My links only"
+msgstr "Bara mina kopplingar"
+
+msgid "My Outlook links"
+msgstr "Mina Outlook kopplingar"
+
+msgid "All Outlook links"
+msgstr "Alla Outlook kopplingar"
+
+msgid "Outlook links"
+msgstr "Outlook kopplingar"

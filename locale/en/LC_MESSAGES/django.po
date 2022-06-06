@@ -2511,3 +2511,21 @@ msgstr ""
 
 msgid "General"
 msgstr ""
+
+msgid "Add link"
+msgstr ""
+
+msgid "Remove link"
+msgstr ""
+
+msgid "My links only"
+msgstr ""
+
+msgid "My Outlook links"
+msgstr ""
+
+msgid "All Outlook links"
+msgstr ""
+
+msgid "Outlook links"
+msgstr ""

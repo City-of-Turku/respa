@@ -14,6 +14,7 @@ from .utils import create_datetime_days_from_now, get_translated, get_translated
 from .availability import get_opening_hours
 from .permissions import UNIT_PERMISSIONS
 from notifications.models import NotificationTemplate, NotificationTemplateGroup
+from respa_o365.models import OutlookCalendarLink
 
 from munigeo.models import Municipality
 
@@ -199,6 +200,9 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
     def is_editable(self):
         """ Whether unit is editable by normal admin users or not """
         return not (self.has_imported_data() or self.has_imported_hours())
+
+    def has_outlook_links(self):
+        return OutlookCalendarLink.objects.filter(resource__pk__in=self.resources.values_list('pk', flat=True)).exists()
 
 
 class UnitAuthorizationQuerySet(models.QuerySet):

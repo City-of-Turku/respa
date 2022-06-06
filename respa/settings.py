@@ -373,7 +373,7 @@ REST_FRAMEWORK = {
          env('AUTHENTICATION_CLASSES')
         + ([
         "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.BasicAuthentication",
+        "rest_framework.authentication.BasicAuthentication"
     ] if DEBUG else []),
     'DEFAULT_PAGINATION_CLASS': 'resources.pagination.DefaultPagination',
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',

@@ -181,3 +181,9 @@
     color: $white;
   }
 }
+
+.list-col {
+  display: flex;
+  height: 100px !important;
+  align-items: center;
+}

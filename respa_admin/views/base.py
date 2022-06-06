@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core import exceptions
 from django.contrib.staticfiles.storage import staticfiles_storage
-from resources.auth import is_any_admin
+from resources.auth import is_any_admin, is_any_manager
 from resources.models import Day, Period
 from respa_admin.forms import get_period_formset
 
@@ -9,12 +9,14 @@ from respa_admin.forms import get_period_formset
 class ExtraContextMixin():
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
         context['INSTRUCTIONS_URL'] = settings.RESPA_ADMIN_INSTRUCTIONS_URL
         context['SUPPORT_EMAIL'] = settings.RESPA_ADMIN_SUPPORT_EMAIL
         if settings.RESPA_ADMIN_LOGO:
             context['logo_url'] = staticfiles_storage.url('respa_admin/img/{0}'.format(settings.RESPA_ADMIN_LOGO))
         context['KORO_STYLE'] = settings.RESPA_ADMIN_KORO_STYLE
-        context['user_is_any_admin'] = is_any_admin(self.request.user)
+        context['user_is_any_admin'] = is_any_admin(user)
+        context['user_is_any_manager'] = is_any_manager(user)
         return context
 
 

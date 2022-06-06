@@ -71,3 +71,6 @@ class User(AbstractUser):
 
     def get_user_age(self):
         return int((datetime.date.today() - datetime.datetime.strptime(str(self.birthdate), '%Y-%m-%d').date()).days / 365.25)
+
+    def has_outlook_link(self):
+        return getattr(self, 'outlookcalendarlink', False)

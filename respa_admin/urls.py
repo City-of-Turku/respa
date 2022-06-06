@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.conf.urls import url as unauthorized_url
 from django.urls import include
 
@@ -9,6 +10,8 @@ from .views.resources import (
 )
 from .views.units import UnitEditView, UnitListView
 from .views.reports import ReportView
+
+
 
 app_name = 'respa_admin'
 urlpatterns = [
@@ -28,3 +31,8 @@ urlpatterns = [
     url(r'^user_management/(?P<user_id>\w+)/$', ManageUserPermissionsView.as_view(), name='edit-user'),
     url(r'^reports/', ReportView.as_view(), name='ra-reports'),
 ]
+
+
+if settings.O365_CLIENT_ID:
+    from respa_o365.views import RAOutlookView
+    urlpatterns.append(url(r'^outlook/', RAOutlookView.as_view(), name='ra-outlook'))
