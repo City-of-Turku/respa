@@ -43,11 +43,8 @@ class LoginStartView(APIView):
         else:
             user = request.user
 
-        msgraph = OAuth2Session(settings.O365_CLIENT_ID,
-            scope=['offline_access', 'User.Read', 'Calendars.ReadWrite'],
-            redirect_uri=settings.O365_CALLBACK_URL)
 
-        authorization_url, state = msgraph.authorization_url(settings.O365_AUTH_URL)
+        authorization_url, state = LoginStartView.generate_msgraph_auth()
         o = OutlookTokenRequestData.objects.create(
             state=state,
             return_to=return_to,
@@ -59,6 +56,14 @@ class LoginStartView(APIView):
                 'redirect_link': authorization_url,
                 'state': state
             })
+
+    @staticmethod
+    def generate_msgraph_auth():
+        msgraph = OAuth2Session(settings.O365_CLIENT_ID,
+            scope=['offline_access', 'User.Read', 'Calendars.ReadWrite'],
+            redirect_uri=settings.O365_CALLBACK_URL)
+
+        return msgraph.authorization_url(settings.O365_AUTH_URL)
 
 class LoginCallBackView(APIView):
     def get(self, request):
