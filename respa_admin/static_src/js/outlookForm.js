@@ -21,6 +21,7 @@ function bindRemoveLinkButton() {
               },
               'success': (response) => {
                 alert(response.message);
+                location.reload();
               },
               'error': (response) => {
                 let error = $.parseJSON(response.responseText);
@@ -41,13 +42,16 @@ function bindAddLinkButton() {
           let resource_id = $(form).attr('id');
           $.ajax({
             'type': 'GET',
-            'url': `${apiUrl}?resource_id=${resource_id}&return_to=${window.location.href}/ra/outlook/`,
+            'url': `${apiUrl}?resource_id=${resource_id}&return_to=${window.location.href}`,
             'beforeSend': (xhr) => {
               xhr.setRequestHeader("X-CSRFToken", $(form).serialize().split('=')[1]);
             },
             'success': (response) => {
               window.location.href = response.redirect_link;
             },
+            'error': (response) => {
+              alert('Something went wrong');
+            }
           });
         })
       })
