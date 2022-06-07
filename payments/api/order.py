@@ -72,6 +72,7 @@ class OrderViewSet(viewsets.ViewSet):
         # store the OrderLine objects in the Order object so that we can use
         # those when calculating prices
         order._in_memory_order_lines = order_lines
+        order._in_memory_customer_group_id = request.data['customer_group'] if 'customer_group' in request.data else None
         # order line price calculations need a dummy reservation from which they
         # get begin and end times from
         reservation = Reservation(begin=begin, end=end)

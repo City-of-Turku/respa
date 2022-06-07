@@ -36,6 +36,10 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         customer_group = validated_data.pop('customer_group', None)
         return_url = validated_data.pop('return_url', '')
         order = super().create(validated_data)
+        try:
+            order.customer_group = CustomerGroup.objects.get(id=customer_group)
+        except:
+            order.customer_group = None
         reservation = validated_data['reservation']
 
         for order_line_data in order_lines_data:
@@ -46,6 +50,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
             product_cg_price=prod_cg.get_price_for(order_line.product))
             if prod_cg:
                 ocgd.copy_translated_fields(prod_cg.first().customer_group)
+                ocgd.price_is_based_on_product_cg = True
             ocgd.save()
 
         resource = reservation.resource
@@ -56,6 +61,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         if not has_staff_perms and not is_free(order.get_price()):
             if reservation.state == Reservation.CREATED and resource.need_manual_confirmation:
                 order.state = Order.WAITING
+                order.save()
                 return order
 
         payments = get_payment_provider(request=self.context['request'],

@@ -1,4 +1,4 @@
-from payments.models import ARCHIVED_AT_NONE, Product, CustomerGroup, ProductCustomerGroup
+from payments.models import ARCHIVED_AT_NONE, CustomerGroupTimeSlotPrice, Product, CustomerGroup, ProductCustomerGroup, TimeSlotPrice
 from rest_framework import serializers, viewsets
 from resources.api.base import TranslatedModelSerializer, register_view
 from rest_framework.permissions import DjangoModelPermissions
@@ -14,10 +14,26 @@ class ProductCustomerGroupSerializer(TranslatedModelSerializer):
         model = ProductCustomerGroup
         fields = ('id', 'price', 'customer_group')
 
+
+class CustomerGroupTimeSlotPriceSerializer(TranslatedModelSerializer):
+    customer_group = CustomerGroupSerializer()
+    class Meta:
+        model = CustomerGroupTimeSlotPrice
+        fields = ('id', 'price', 'customer_group')
+
+
+class TimeSlotPriceSerializer(TranslatedModelSerializer):
+    customer_group_time_slot_prices = CustomerGroupTimeSlotPriceSerializer(many=True, required=False)
+    class Meta:
+        model = TimeSlotPrice
+        fields = ('id', 'begin', 'end', 'price', 'customer_group_time_slot_prices')
+
+
 class ProductSerializer(TranslatedModelSerializer):
     name = serializers.DictField(required=False)
     description = serializers.DictField(required=False)
     product_customer_groups = serializers.SerializerMethodField()
+    time_slot_prices = TimeSlotPriceSerializer(many=True, required=False)
 
     class Meta:
         model = Product

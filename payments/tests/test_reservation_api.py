@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, create_autospec, patch
 from urllib.parse import urlencode
@@ -15,7 +16,7 @@ from resources.tests.conftest import resource_in_unit, user_api_client  # noqa
 from resources.tests.test_reservation_api import day_and_period  # noqa
 
 from ..factories import ProductFactory
-from ..models import Order, OrderCustomerGroupData, Product, ProductCustomerGroup
+from ..models import CustomerGroup, Order, OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup
 from ..providers.base import PaymentProvider
 from .test_order_api import ORDER_LINE_FIELDS, PRODUCT_FIELDS
 
@@ -127,6 +128,66 @@ def test_reservation_orders_field(user_api_client, order_with_products, endpoint
     else:
         # order should be just ID
         assert order_data == order_with_products.order_number
+
+
+@pytest.mark.parametrize('begin, end, customer_group_id, price_result', (
+    (datetime(2022, 3, 1, 10, 0), datetime(2022, 3, 1, 12, 0), None, '20.00'),
+    (datetime(2022, 3, 1, 10, 0), datetime(2022, 3, 1, 12, 0), 'cg-adults-1', '16.00'),
+    (datetime(2022, 3, 1, 10, 0), datetime(2022, 3, 1, 12, 0), 'cg-children-1', '22.00'),
+    (datetime(2022, 3, 1, 10, 0), datetime(2022, 3, 1, 12, 0), 'cg-elders-1', '12.00'),
+    (datetime(2022, 3, 1, 10, 0), datetime(2022, 3, 1, 12, 0), 'cg-companies-1', '20.00'),
+    (datetime(2022, 3, 1, 14, 0), datetime(2022, 3, 1, 16, 0), None, '30.00'),
+    (datetime(2022, 3, 1, 14, 0), datetime(2022, 3, 1, 16, 0), 'cg-adults-1', '24.00'),
+    (datetime(2022, 3, 1, 14, 0), datetime(2022, 3, 1, 16, 0), 'cg-children-1', '22.00'),
+    (datetime(2022, 3, 1, 14, 0), datetime(2022, 3, 1, 16, 0), 'cg-elders-1', '30.00'),
+    (datetime(2022, 3, 1, 14, 0), datetime(2022, 3, 1, 16, 0), 'cg-companies-1', '30.00'),
+    (datetime(2022, 3, 1, 11, 30), datetime(2022, 3, 1, 12, 30), None, '12.50'),
+    (datetime(2022, 3, 1, 11, 30), datetime(2022, 3, 1, 12, 30), 'cg-adults-1', '10.00'),
+    (datetime(2022, 3, 1, 11, 30), datetime(2022, 3, 1, 12, 30), 'cg-children-1', '11.00'),
+    (datetime(2022, 3, 1, 11, 30), datetime(2022, 3, 1, 12, 30), 'cg-elders-1', '10.50'),
+    (datetime(2022, 3, 1, 11, 30), datetime(2022, 3, 1, 12, 30), 'cg-companies-1', '12.50'),
+))
+def test_reservation_order_with_time_slot_product_has_correct_price(begin, end, customer_group_id,
+    price_result, user_api_client, order_with_selected_cg_and_product_with_pcgs_and_time_slots,
+    customer_group_companies):
+    '''
+    Test that price is calculated correctly for created orders containing a product with
+    time slots and customer groups
+    '''
+    reservation = Reservation.objects.get(id=order_with_selected_cg_and_product_with_pcgs_and_time_slots.reservation.id)
+    reservation.state = Reservation.WAITING_FOR_PAYMENT
+    reservation.begin = begin.astimezone()
+    reservation.end = end.astimezone()
+    reservation.save()
+
+    customer_group = None
+    if customer_group_id:
+        customer_group = CustomerGroup.objects.get(id=customer_group_id)
+    order = Order.objects.get(id=order_with_selected_cg_and_product_with_pcgs_and_time_slots.id)
+    order.reservation = reservation
+    order.customer_group = customer_group
+    order.save()
+
+    order_line = OrderLine.objects.get(order=order)
+    prod_cg = ProductCustomerGroup.objects.filter(customer_group=customer_group)
+    ocgd = OrderCustomerGroupData.objects.get(order_line=order_line)
+    ocgd.product_cg_price=prod_cg.get_price_for(order_line.product)
+    if prod_cg:
+        ocgd.copy_translated_fields(prod_cg.first().customer_group)
+        ocgd.price_is_based_on_product_cg = True
+    else:
+        ocgd.price_is_based_on_product_cg = False
+    ocgd.save()
+
+    url = get_detail_url(order.reservation)
+    url += '?include=order_detail'
+
+    response = user_api_client.get(url)
+    assert response.status_code == 200
+
+    reservation_data = response.data
+    order_data = reservation_data['order']
+    assert order_data['price'] == price_result
 
 
 @pytest.mark.parametrize('endpoint', ('list', 'detail'))

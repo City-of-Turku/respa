@@ -722,10 +722,12 @@ class ReservationExcelRenderer(renderers.BaseRenderer):
     def render(self, data, media_type=None, renderer_context=None):
         if not renderer_context or renderer_context['response'].status_code == 404:
             return bytes()
+
+        request = renderer_context['request']
         if renderer_context['view'].action == 'retrieve':
-            return generate_reservation_xlsx([data])
+            return generate_reservation_xlsx([data], request=request)
         elif renderer_context['view'].action == 'list':
-            return generate_reservation_xlsx(data['results'])
+            return generate_reservation_xlsx(data['results'], request=request)
         else:
             return NotAcceptable()
 
