@@ -81,7 +81,12 @@
                         <h5 class="card-title">{{ resource.name }}</h5>
                         <div class="card-text"></div>
                         <h6>
-                            <button type="button" class="resources-button">{% trans 'Add link' %}</button>
+                            <button
+                                type="button"
+                                class="resources-button"
+                                {% if user_has_link %} disabled="disabled" {% endif %}
+                            >{% trans 'Add link' %}
+                            </button>
                         </h6>
                     </div>
                 </form>

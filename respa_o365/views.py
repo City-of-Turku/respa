@@ -118,6 +118,9 @@ class RAOutlookLinkCreateView(View):
         resource = Resource.objects.get(pk=resource_id)
         if not resource.is_manager(user) and not resource.is_admin(user):
             return JsonResponse({'message': _('You are not authorized to create links')}, status=403)
+        
+        if user.has_outlook_link():
+            return JsonResponse({'message': _('You already have an existing outlook link')}, status=403)
 
         OutlookTokenRequestData.objects.create(
             state=state,
