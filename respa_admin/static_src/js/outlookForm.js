@@ -9,10 +9,10 @@ function bindRemoveLinkButton() {
       $(form).find('.card-body button').each((i, button) => {
           $(button).on('click', (e) => {
             e.preventDefault();
-            let apiUrl = `${window.location.origin}/ra/outlook/`;
+            let apiUrl = `${window.location.origin}/ra/outlook`;
             $.ajax({
               'type': 'DELETE',
-              'url': apiUrl,
+              'url': `${apiUrl}/delete/`,
               'beforeSend': (xhr) => {
                 xhr.setRequestHeader("X-CSRFToken", $(form).serialize().split('=')[1]);
               },
@@ -38,11 +38,11 @@ function bindAddLinkButton() {
     $(form).find('.card-body button').each((i, button) => {
         $(button).on('click', (e) => {
           e.preventDefault();
-          let apiUrl = `${window.location.origin}/ra/outlook/`;
+          let apiUrl = `${window.location.origin}/ra/outlook`;
           let resource_id = $(form).attr('id');
           $.ajax({
             'type': 'POST',
-            'url': apiUrl,
+            'url': `${apiUrl}/create/`,
             'beforeSend': (xhr) => {
               xhr.setRequestHeader("X-CSRFToken", $(form).serialize().split('=')[1]);
             },

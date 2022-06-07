@@ -34,5 +34,11 @@ urlpatterns = [
 
 
 if settings.O365_CLIENT_ID:
-    from respa_o365.views import RAOutlookView
-    urlpatterns.append(url(r'^outlook/', RAOutlookView.as_view(), name='ra-outlook'))
+    from respa_o365.views import (
+        RAOutlookLinkListView,
+        RAOutlookLinkCreateView,
+        RAOutlookLinkDeleteView
+    )
+    urlpatterns.append(url(r'^outlook/$', RAOutlookLinkListView.as_view(), name='ra-outlook'))
+    urlpatterns.append(url(r'^outlook/create/$', RAOutlookLinkCreateView.as_view(), name='ra-outlook-create'))
+    urlpatterns.append(url(r'^outlook/delete/$', RAOutlookLinkDeleteView.as_view(), name='ra-outlook-delete'))

@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, QueryDict
 from django.utils import timezone
 from django.utils.translation import ugettext as _
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, View
 from rest_framework.response import Response
 
 from respa_o365.o365_calendar import MicrosoftApi, O365Calendar
@@ -73,7 +73,7 @@ class OutlookCalendarLinkViewSet(viewsets.ModelViewSet):
         }
 
         return Response(data)
-class RAOutlookView(ExtraContextMixin, TemplateView):
+class RAOutlookLinkListView(ExtraContextMixin, TemplateView):
     context_object_name = 'ra_outlook'
     template_name = 'respa_admin/page_outlook.html'
 
@@ -103,7 +103,8 @@ class RAOutlookView(ExtraContextMixin, TemplateView):
         self.self_link = request.GET.get('self_link')
         return super().get(request, *args, **kwargs)
 
-    
+
+class RAOutlookLinkCreateView(View):
     def post(self, request, *args, **kwargs):
         user = request.user
         if not is_authenticated_user(user):
@@ -130,7 +131,7 @@ class RAOutlookView(ExtraContextMixin, TemplateView):
                 'state': state
             })
 
-        
+class RAOutlookLinkDeleteView(View):
     def delete(self, request, *args, **kwargs):
         user = request.user
         request_body = QueryDict(request.body)
@@ -151,3 +152,5 @@ class RAOutlookView(ExtraContextMixin, TemplateView):
         except:
             return JsonResponse({'message': _('Error deleting link')}, status=500)
         return JsonResponse({'message': _('Link removed.')}, status=200)
+
+
