@@ -57,9 +57,9 @@
                     {% with outlook_link.user as user %}
                     {% if outlook_link %}
                     {% if user_is_any_admin and selected_self_link and request.user == user %}
-                    {% include "respa_admin/forms/_form_card.html" with resource=resource user=user outlook_link=outlook_link %}            
+                    {% include "respa_admin/forms/_form_card.html" with resource=resource user=user outlook_link=outlook_link form_action="remove" %}            
                     {% elif user_is_any_admin and not selected_self_link or request.user == user %}
-                    {% include "respa_admin/forms/_form_card.html" with resource=resource user=user outlook_link=outlook_link %}
+                    {% include "respa_admin/forms/_form_card.html" with resource=resource user=user outlook_link=outlook_link form_action="remove" %}
                     {% endif %}
                     {% endif %}
                     {% endwith %}
@@ -67,29 +67,7 @@
                 {% else %}
                 {% with resource.outlookcalendarlink as outlook_link %}
                 {% if not outlook_link %}
-                <form class="card-item" id="{{ resource.id }}" action="add">
-                    {% csrf_token %}
-                    <img
-                    class="card-img-center"
-                    alt=""
-                    src={% if resource.main_image %}
-                        "{% thumbnail resource.main_image 100x100 crop %}"
-                    {% else %}
-                        ""
-                    {% endif %}>
-                    <div class="card-body text-center">
-                        <h5 class="card-title">{{ resource.name }}</h5>
-                        <div class="card-text"></div>
-                        <h6>
-                            <button
-                                type="button"
-                                class="resources-button"
-                                {% if user_has_link %} disabled="disabled" {% endif %}
-                            >{% trans 'Add link' %}
-                            </button>
-                        </h6>
-                    </div>
-                </form>
+                {% include "respa_admin/forms/_form_card.html" with resource=resource form_action="add" %}
                 {% endif %}
                 {% endwith %}
                 {% endif %}

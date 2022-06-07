@@ -9,7 +9,7 @@
         max-width: 300px;
         width: 200px;
         margin: 15px;
-        justify-content: center;
+        justify-content: flex-start;
         align-content: center;
         box-shadow: 0 1px 3px rgba(0,0,0,0.15);
         
@@ -24,17 +24,24 @@
         &>.card-body {
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
             margin: 10px;
-
-            &>.card-text {
-                display: grid;
-                font-size: 14px;
+            height: 100%;
+            
+            &>.card-header {
+                display: flex;
+                justify-content: flex-start;
+                flex-direction: column;
+                &>.card-text {
+                    display: grid;
+                    font-size: 14px;
+                }
+    
+                h5.card-title {
+                    font-size: 16px;
+                }
             }
-
-            h5.card-title {
-                font-size: 16px;
-            }
-
+            
             h6 {
                 margin-top: 5px;
             }

@@ -3,7 +3,8 @@
 {% load templatetags %}
 {% get_current_language as LANGUAGE_CODE %}
 
-<form class="card-item" id="{{ outlook_link.id }}" action="remove">
+{% if form_action == "remove" %}
+<form class="card-item" id="{{ outlook_link.id }}" action="{{ form_action }}">
     {% csrf_token %}
     <img
     class="card-img-center"
@@ -14,13 +15,38 @@
         ""
     {% endif %}>
     <div class="card-body text-center">
-        <h5>{{ resource.name }}</h5>
-        <div class="card-text">
-            <span>{{ user.first_name }} {{ user.last_name }}</span>
-            <span>{{ user.email }}</span>
+        <div class="card-header">
+            <h5>{{ resource.name }}</h5>
+            <div class="card-text">
+                <span>{{ user.first_name }} {{ user.last_name }}</span>
+                <span>{{ user.email }}</span>
+            </div>
         </div>
-        <h6>
-            <button type="button" class="resources-button">{% trans 'Remove link' %}</button>
-        </h6>
+        <button type="button" class="resources-button">{% trans 'Remove link' %}</button>
     </div>
 </form>
+{% else %}
+<form class="card-item" id="{{ resource.id }}" action="{{ form_action }}">
+    {% csrf_token %}
+    <img
+    class="card-img-center"
+    alt=""
+    src={% if resource.main_image %}
+        "{% thumbnail resource.main_image 100x100 crop %}"
+    {% else %}
+        ""
+    {% endif %}>
+    <div class="card-body text-center">
+        <div class="card-header">
+            <h5 class="card-title">{{ resource.name }}</h5>
+            <div class="card-text"></div>
+        </div>
+        <button
+            type="button"
+            class="resources-button"
+            {% if user_has_link %} disabled="disabled" {% endif %}
+        >{% trans 'Add link' %}
+        </button>
+    </div>
+</form>
+{% endif %}
