@@ -2571,3 +2571,6 @@ msgstr ""
 
 msgid "Outlook links"
 msgstr ""
+
+msgid "Something went wrong"
+msgstr ""

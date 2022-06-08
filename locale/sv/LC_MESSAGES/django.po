@@ -1883,3 +1883,6 @@ msgstr "Alla Outlook kopplingar"
 
 msgid "Outlook links"
 msgstr "Outlook kopplingar"
+
+msgid "Something went wrong"
+msgstr "Något gick fel"

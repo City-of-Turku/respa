@@ -187,3 +187,33 @@
   height: 100px !important;
   align-items: center;
 }
+
+
+
+.popup-notification {
+  min-width: 300px;
+  max-width: 300px;
+  min-height: 100px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  position: absolute;
+  right: 0; 
+  top: 0; 
+  margin-right: 20px;
+  margin-top: 65px;
+  background-color: $white;
+  border-radius: 5px;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  &.success {
+    background-color: $theme-success-light;
+  }
+  &.error {
+    background-color: $theme-danger;
+  }
+  span {
+    font-size: $font-size-h5;
+    font-weight: 500;
+    color: $white;
+  }
+}

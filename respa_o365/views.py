@@ -121,7 +121,7 @@ class RAOutlookLinkCreateView(View):
         
         if user.has_outlook_link():
             return JsonResponse({'message': _('You already have an existing outlook link')}, status=403)
-
+        
         OutlookTokenRequestData.objects.create(
             state=state,
             return_to=return_to,
@@ -142,7 +142,7 @@ class RAOutlookLinkDeleteView(View):
         try:
             outlook_link = OutlookCalendarLink.objects.get(id=outlook_id)
         except OutlookCalendarLink.DoesNotExist:
-            return JsonResponse({'message': _('Invalid Link id')}, status=400)
+            return JsonResponse({'message': _('Invalid link ID')}, status=400)
 
         unit = outlook_link.resource.unit
 
@@ -153,7 +153,7 @@ class RAOutlookLinkDeleteView(View):
         try:
             outlook_link.delete()
         except:
-            return JsonResponse({'message': _('Error deleting link')}, status=500)
+            return JsonResponse({'message': _('Something went wrong')}, status=500)
         return JsonResponse({'message': _('Link removed.')}, status=200)
 
 

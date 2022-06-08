@@ -1,6 +1,15 @@
+import { alertPopup } from './utils';
+
+
 export function initializeEventHandlers() {
     bindRemoveLinkButton();
     bindAddLinkButton();
+}
+
+
+function getErrorMessage(response) {
+  let error = $.parseJSON(response.responseText);
+  return error.message;
 }
 
 
@@ -20,12 +29,11 @@ function bindRemoveLinkButton() {
                 'outlook_id': $(form).attr('id')
               },
               'success': (response) => {
-                alert(response.message);
                 location.reload();
+                alertPopup('Outlook link removed');
               },
               'error': (response) => {
-                let error = $.parseJSON(response.responseText);
-                alert(error.message);
+                alertPopup(getErrorMessage(response), 'error');
               },
             });
           })
@@ -54,7 +62,7 @@ function bindAddLinkButton() {
               window.location.href = response.redirect_link;
             },
             'error': (response) => {
-              alert('Something went wrong');
+              alertPopup(getErrorMessage(response), 'error');
             }
           });
         })
