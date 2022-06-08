@@ -7,11 +7,6 @@
 <section class='outlook'>
     <div class='container'>
         <div class='filter-bar container-fluid'>
-            {% if user_is_any_admin and not selected_self_link %}
-            <h2 class="pull-left">{% trans 'All Outlook links' %}</h2>
-            {% else %}
-            <h2 class="pull-left">{% trans 'My Outlook links' %}</h2>
-            {% endif %}
             <div class='filter pull-right'>
                 <span class="dropdowns-label">{% trans 'Filter' %}:</span>
                 <form name="filter-dropdowns" method="get">
