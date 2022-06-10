@@ -26,7 +26,6 @@ class OutlookCalendarLinkViewSet(viewsets.ModelViewSet):
     queryset = OutlookCalendarLink.objects.none()
     serializer_class = OutlookCalendarLinkSerializer
     filter_backends = [UserFilterBackend]
-    authentication_classes = []
 
     def get_queryset(self):
         if self.request.user.is_anonymous:

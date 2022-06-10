@@ -2,12 +2,16 @@
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
+    justify-content: center;
+    min-height: 582px;
+
 
     &>.card-item {
         display: flex;
         flex-direction: column;
-        max-width: 300px;
-        width: 200px;
+        max-width: 250px;
+        width: 250px;
+        height: 250px;
         margin: 15px;
         justify-content: flex-start;
         align-content: center;
@@ -48,6 +52,15 @@
                 margin-top: 5px;
             }
         }
+    }
+}
+
+.card-footer {
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    * {
+        margin: 10px;
     }
 }
 
