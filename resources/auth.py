@@ -32,7 +32,9 @@ def has_auth_level(user, level):
 def is_any_admin(user):
     if not is_authenticated_user(user):
         return False
-    return is_general_admin(user) or has_auth_level(user, UnitAuthorizationLevel.admin)
+    return is_general_admin(user) \
+        or has_auth_level(user, UnitAuthorizationLevel.admin) \
+        or has_auth_level(user, UnitGroupAuthorizationLevel.admin)
 
 def is_any_manager(user):
     if not is_authenticated_user(user):
