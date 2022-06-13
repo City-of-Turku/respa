@@ -1895,3 +1895,6 @@ msgstr "Inte länkad"
 
 msgid "Outlook link removed"
 msgstr "Outlook kopplingen har ta bort"
+
+msgid "No results"
+msgstr "Inga resultat"

@@ -71,6 +71,10 @@
                 <div class="card-footer" id="pagination-container-{{ unit.id }}">
                     <span></span>
                 </div>
+            {% empty %}
+            <div class="list-group-item card-item-list align-center">
+                <h1 class="text-center">{% trans 'No results' %}</h1>
+            </div>
             {% endfor %}
             {% include "respa_admin/common/_pagination.html" %}
         </div>

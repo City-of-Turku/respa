@@ -2583,3 +2583,6 @@ msgstr ""
 
 msgid "Outlook link removed"
 msgstr ""
+
+msgid "No results"
+msgstr ""

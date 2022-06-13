@@ -5,6 +5,9 @@
     justify-content: center;
     min-height: 582px;
 
+    &.align-center {
+        align-items: center;
+    }
 
     &>.card-item {
         display: flex;

@@ -1960,3 +1960,6 @@ msgstr "Ei liitetyt"
 
 msgid "Outlook link removed"
 msgstr "Outlook-liitos poistettu"
+
+msgid "No results"
+msgstr "Ei tuloksia"
