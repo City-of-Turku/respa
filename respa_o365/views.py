@@ -153,6 +153,6 @@ class RAOutlookLinkDeleteView(View):
             outlook_link.delete()
         except:
             return JsonResponse({'message': _('Something went wrong')}, status=500)
-        return JsonResponse({'message': _('Link removed.')}, status=200)
+        return JsonResponse({'message': _('Outlook link removed')}, status=200)
 
 

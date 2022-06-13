@@ -1951,3 +1951,12 @@ msgstr "Outlook liitokset"
 
 msgid "Something went wrong"
 msgstr "Jotain meni pieleen"
+
+msgid "Linked"
+msgstr "Liitetyt"
+
+msgid "Not linked"
+msgstr "Ei liitetyt"
+
+msgid "Outlook link removed"
+msgstr "Outlook liitos poistettu"

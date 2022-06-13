@@ -2574,3 +2574,12 @@ msgstr ""
 
 msgid "Something went wrong"
 msgstr ""
+
+msgid "Linked"
+msgstr ""
+
+msgid "Not linked"
+msgstr ""
+
+msgid "Outlook link removed"
+msgstr ""

@@ -39,7 +39,7 @@ function bindRemoveLinkButton() {
               'outlook_id': $(form).attr('id')
             },
             'success': (response) => {
-              alertPopup('Outlook link removed');
+              alertPopup(response.message);
               setTimeout(() => { location.reload(); }, 1000);
             },
             'error': (response) => {

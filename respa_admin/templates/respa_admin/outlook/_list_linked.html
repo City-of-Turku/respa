@@ -28,13 +28,13 @@
                                 {% if not user_has_link and not user_is_any_admin %}
                                 disabled="disabled"
                                 {% endif %}>
-                                Linked
+                                {% trans 'Linked' %}
                             </option>
                             <option value="no_link"
                                 {% if selected_outlook_filter == "no_link" %}
                                     selected="selected"
                                 {% endif %}>
-                                Not linked
+                                {% trans 'Not linked' %}
                             </option>
                         </select>
                         <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>

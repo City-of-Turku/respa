@@ -1886,3 +1886,12 @@ msgstr "Outlook kopplingar"
 
 msgid "Something went wrong"
 msgstr "Något gick fel"
+
+msgid "Linked"
+msgstr "Länkad"
+
+msgid "Not linked"
+msgstr "Inte länkad"
+
+msgid "Outlook link removed"
+msgstr "Outlook kopplingen har ta bort"

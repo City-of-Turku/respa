@@ -54,7 +54,7 @@ export class Paginate {
                 });
             }
         }
-        if (this.page == this.totalPages || !this.hasNextPage()) $(this.paginationContainer).find(`a[id=next_page_${this.id}]`).remove();
+        if (!this.hasNextPage()) $(this.paginationContainer).find(`a[id=next_page_${this.id}]`).remove();
         if (this.page > 0) {
             if ($(this.paginationContainer).find(`a[id=prev_page_${this.id}]`).length === 0) {
                 $(`<a href=\"#\" id=\"prev_page_${this.id}\">\<\<</a>`)
@@ -67,11 +67,13 @@ export class Paginate {
             }
         } else $(this.paginationContainer).find(`a[id=prev_page_${this.id}]`).remove();
 
-        $(this.paginationContainer).find('span').text(`Page: ${this.page + 1}`);
+        $(this.paginationContainer).find('span').text(`${
+            {'fi': 'Sivu', 'en': 'Page', 'sv': 'Page'}[$('html').attr('lang')]
+        }: ${this.page + 1}`);
     }
 
     hasNextPage() {
-        return this.array[this.page + 1] !== undefined;
+        return this.array[this.page + 1] !== undefined && this.array[this.page + 1].length > 0;
     }
 
     next() {
