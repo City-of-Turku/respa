@@ -32,9 +32,9 @@
         <div class='container-fluid'>
             {% for unit in units %}
             <span class="sub-header">{{ unit.name }}</span>
-
-                <div paginate="{{ unit.id }}" per-page="6" style="min-height: 690px;">
-                {% for authorization in unit.authorizations.highest_per_user %}
+                {% with unit.authorizations.highest_per_user as unit_auths %}
+                <div paginate="{{ unit.id }}" per-page="6" {% if unit_auths|length > 6 %}style="min-height: 690px;"{% endif %}>
+                {% for authorization in unit_auths %}
                 {% with authorization.authorized as unit_user %}
                 {% user_has_permission unit_user 'can_approve_reservation' unit as user_can_approve %}
 
@@ -93,6 +93,7 @@
                 </div>
                 {% endwith %}
                 {% endfor %}
+                {% endwith %}
                 </div>
                 <div class="card-footer" id="pagination-container-{{ unit.id }}">
                     <span></span>
