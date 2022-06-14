@@ -17,6 +17,7 @@ class ExtraContextMixin():
         context['KORO_STYLE'] = settings.RESPA_ADMIN_KORO_STYLE
         context['user_is_any_admin'] = is_any_admin(user)
         context['user_is_any_manager'] = is_any_manager(user)
+        context['OUTLOOK_IS_ENABLED'] = bool(settings.O365_CLIENT_ID)
         return context
 
 
