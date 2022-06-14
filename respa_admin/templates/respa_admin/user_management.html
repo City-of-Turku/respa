@@ -30,3 +30,7 @@
 {% block body %}
     {% include user_list_template_name %}
 {% endblock body %}
+
+{% block js_extra %}
+    <script type="text/javascript" src="{% static 'respa_admin/userManagementList-bundle.js' %}"></script>
+{% endblock js_extra %}

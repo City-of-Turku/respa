@@ -17,6 +17,7 @@ module.exports = {
     unitForm: './static_src/js/unitFormIndex.js',
     outlookForm: './static_src/js/outlookFormIndex.js',
     reportForm: './static_src/js/reportFormIndex.js',
+    userManagementList: './static_src/js/userManagementListIndex.js',
     base: './static_src/js/baseIndex.js',
   },
   output: {

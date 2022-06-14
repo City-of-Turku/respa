@@ -33,11 +33,12 @@
             {% for unit in units %}
             <span class="sub-header">{{ unit.name }}</span>
 
+                <div paginate="{{ unit.id }}" per-page="6" style="min-height: 690px;">
                 {% for authorization in unit.authorizations.highest_per_user %}
                 {% with authorization.authorized as unit_user %}
                 {% user_has_permission unit_user 'can_approve_reservation' unit as user_can_approve %}
 
-                <div class="row panel management-list list-item">
+                <div class="row panel management-list list-item" array-item="true">
                     <div class="col-md-2">
                         <span>{{ unit_user.first_name }} {{ unit_user.last_name }}</span>
                     </div>
@@ -90,9 +91,12 @@
                     </div>
                     {% endif %}
                 </div>
-
                 {% endwith %}
                 {% endfor %}
+                </div>
+                <div class="card-footer" id="pagination-container-{{ unit.id }}">
+                    <span></span>
+                </div>
             {% endfor %}
 
             <div class="page-navigation">
