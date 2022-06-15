@@ -242,8 +242,14 @@ class Product(models.Model):
 
     type = models.CharField(max_length=32, verbose_name=_('type'), choices=TYPE_CHOICES, default=RENT)
     sku = models.CharField(max_length=255, verbose_name=_('SKU'))
+
     sap_code = models.CharField(max_length=255, verbose_name=_('sap code'), blank=True)
-    sap_unit = models.CharField(max_length=255, verbose_name=_('sap unit'), blank=True, help_text=_('sap profit center'))
+    sap_unit = models.CharField(
+        max_length=255, verbose_name=_('sap unit'), blank=True, help_text=_('Equals to sap profit center')
+    )
+    sap_function_area = models.CharField(max_length=16, verbose_name=_('sap function area'), blank=True)
+    sap_office_code = models.CharField(max_length=4, verbose_name=_('sap office code'), blank=True)
+
     name = models.CharField(max_length=100, verbose_name=_('name'), blank=True)
     description = models.TextField(verbose_name=_('description'), blank=True)
 

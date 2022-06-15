@@ -139,7 +139,7 @@ class ProductAdmin(TranslationAdmin):
     )
 
     list_display = (
-        'product_id', 'sku', 'sap_code', 'sap_unit', 'name', 'type', 'price', 'price_type', 'get_price_period', 'tax_percentage',
+        'product_id', 'sku', 'name', 'type', 'price', 'price_type', 'get_price_period', 'tax_percentage',
         'max_quantity', 'get_resources', 'get_created_at', 'get_modified_at'
     )
     readonly_fields = ('product_id',)
@@ -148,7 +148,7 @@ class ProductAdmin(TranslationAdmin):
             'fields': ('sku', 'type', 'name', 'description', 'max_quantity')
         }),
         ('SAP', {
-            'fields': ('sap_code', 'sap_unit'),
+            'fields': ('sap_code', 'sap_unit', 'sap_function_area', 'sap_office_code'),
         }),
         (_('price').capitalize(), {
             'fields': ('price', 'price_type', 'price_period', 'tax_percentage', ),

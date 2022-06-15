@@ -38,6 +38,25 @@ In addition to the general configuration keys mentioned in the basic payments co
 - `RESPA_PAYMENTS_TURKU_API_KEY`: The authentication key given to Respa by MaksuPalvelu for REST API calls.
 - `RESPA_PAYMENTS_TURKU_API_APP_NAME`: The application name given to Respa by MaksuPalvelu for REST API calls.
 
+### Turku MaksuPalvelu V3 configuration
+
+The Turku Verkkomaksupalvelu REST API version the provider implementation targets is `v3`. The key differences between `v1` and `v3` are that `v3` supports and requires a few more SAP codes. There are also some internal logic changes but these changes don't affect how payments are handled.
+
+Product SAP codes used by `v3`:
+- `sap_code` 18 characters
+- `sap_unit` 10 characters (optional) (equals to SAP profit center)
+- `sap_function_area` 16 characters (optional)
+- `sap_office_code` 4 characters
+
+In addition to the general configuration keys mentioned in the basic payments configuration section, enabling Turku MaksuPalvelu `v3` requires the following additional configurations:
+
+- `RESPA_PAYMENTS_TURKU_API_URL`: The URL where Turku MaksuPalvelu requests are sent.
+- `RESPA_PAYMENTS_TURKU_API_KEY`: The authentication key given to Respa by MaksuPalvelu for REST API calls.
+- `RESPA_PAYMENTS_TURKU_API_APP_NAME`: The application name given to Respa by MaksuPalvelu for REST API calls.
+- `RESPA_PAYMENTS_TURKU_SAP_SALES_ORGANIZATION`: SAP sales organization which is 4 characters long.
+- `RESPA_PAYMENTS_TURKU_SAP_DISTRIBUTION_CHANNEL`: SAP distribution channel which is 2 characters long.
+- `RESPA_PAYMENTS_TURKU_SAP_SECTOR`: SAP sector which is 2 characters long.
+
 ## Basics
 
 Model `Product` represents everything that can be ordered and paid alongside a reservation. Products are linked to one or multiple resources.

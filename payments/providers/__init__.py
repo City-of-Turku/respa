@@ -6,6 +6,7 @@ from django.utils.module_loading import import_string
 from .bambora_payform import BamboraPayformProvider  # noqa
 # imported here so that we can refer to it like 'payments.providers.BamboraPayformProvider'
 from .turku_payment_provider import TurkuPaymentProvider  # noqa
+from .turku_payment_provider_v3 import TurkuPaymentProviderV3  # noqa
 from .base import PaymentProvider
 
 _provider_class = None
