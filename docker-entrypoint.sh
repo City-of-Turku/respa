@@ -9,10 +9,10 @@ function _log(){
 if [ -n "$DATABASE_HOST" ]; then
   until nc -z -v -w30 "$DATABASE_HOST" 5432
   do
-    echo "Waiting for postgres database connection..."
+    _log "Waiting for postgres database connection..."
     sleep 1
   done
-  echo "Database is up!"
+  _log "Database is up!"
 fi
 
 _log "Running Respa entrypoint..."

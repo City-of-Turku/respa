@@ -15,7 +15,7 @@ services:
       context: .
       dockerfile: ./docker/postgres/Dockerfile
     volumes:
-      - db_respa_data:/var/lib/postgresql
+      - db_respa_data:/var/lib/postgresql/data
       - respa_media:/var/www/media
     ports:
       - "5432:5432"
