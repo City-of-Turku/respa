@@ -324,7 +324,7 @@ class ResourceForm(forms.ModelForm):
                 choices=(thirty_minute_increment_choices)
             ),
             'cooldown': forms.Select(
-                choices=(hour_increment_choices)
+                choices=(thirty_minute_increment_choices)
             ),
             'need_manual_confirmation': RespaRadioSelect(
                 choices=((True, _('Yes')), (False, _('No')))
