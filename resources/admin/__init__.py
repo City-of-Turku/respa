@@ -149,6 +149,8 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
                 'need_manual_confirmation',
                 'reservation_metadata_set',
                 'reservation_home_municipality_set',
+                'reservable_min_days_in_advance',
+                'reservable_max_days_in_advance',
                 'cooldown', 'slot_size',
                 'min_period', 'max_period',
                 'max_reservations_per_user',
