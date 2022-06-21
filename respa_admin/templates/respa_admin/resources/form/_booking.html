@@ -26,6 +26,9 @@
     <div class="input-row">
         {% include "respa_admin/forms/_input.html" with field=form.max_reservations_per_user %}
     </div>
+    <div class="input-row">
+        {% include "respa_admin/forms/_input.html" with field=form.reservation_feedback_url %}
+    </div>
     <div class="form-group booking-info">
         <div class="textarea-wrapper">
             <h4>{% trans "Booking information" %}</h4>

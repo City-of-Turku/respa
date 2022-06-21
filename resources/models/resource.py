@@ -310,6 +310,11 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         'resources.ReservationHomeMunicipalitySet', verbose_name=_('Reservation home municipality set'),
         null=True, blank=True, on_delete=models.SET_NULL, related_name='home_municipality_included_set'
     )
+    reservation_feedback_url = models.URLField(
+        verbose_name=_('Reservation feedback URL'),
+        help_text=_('A link to an external feedback system'),
+        blank=True
+    )
     external_reservation_url = models.URLField(
         verbose_name=_('External reservation URL'),
         help_text=_('A link to an external reservation system if this resource is managed elsewhere'),

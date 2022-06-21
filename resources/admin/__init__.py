@@ -152,6 +152,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
                 'cooldown', 'slot_size',
                 'min_period', 'max_period',
                 'max_reservations_per_user',
+                'reservation_feedback_url',
                 'resource_staff_emails',
                 'reservation_info',
                 'reservation_additional_information',

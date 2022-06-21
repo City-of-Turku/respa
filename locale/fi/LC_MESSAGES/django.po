@@ -1963,3 +1963,9 @@ msgstr "Outlook-liitos poistettu"
 
 msgid "No results"
 msgstr "Ei tuloksia"
+
+msgid "Reservation feedback URL"
+msgstr "Varauksen palautteen URL"
+
+msgid "A link to an external feedback system"
+msgstr "Ulkoisen palautejärjestelmän osoite"

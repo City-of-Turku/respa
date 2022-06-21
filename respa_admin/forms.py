@@ -296,6 +296,7 @@ class ResourceForm(forms.ModelForm):
             'reservable_max_days_in_advance',
             'reservable_min_days_in_advance',
             'max_reservations_per_user',
+            'reservation_feedback_url',
             'reservable',
             'need_manual_confirmation',
             'authentication',

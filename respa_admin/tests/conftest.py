@@ -143,6 +143,7 @@ def valid_resource_form_data(
         'access_code_type': 'pin6',
         'authentication': 'weak',
         'equipment': equipment.pk,
+        'reservation_feedback_url': 'https://some-feedback-site.fi',
         'external_reservation_url': 'http://calendar.example.tld',
         'generic_terms': generic_terms.pk,
         'payment_terms': payment_terms.pk,

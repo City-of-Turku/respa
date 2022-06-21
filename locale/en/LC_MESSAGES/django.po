@@ -2586,3 +2586,9 @@ msgstr ""
 
 msgid "No results"
 msgstr ""
+
+msgid "Reservation feedback URL"
+msgstr ""
+
+msgid "A link to an external feedback system"
+msgstr ""

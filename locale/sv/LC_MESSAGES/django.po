@@ -1898,3 +1898,9 @@ msgstr "Outlook kopplingen har ta bort"
 
 msgid "No results"
 msgstr "Inga resultat"
+
+msgid "Reservation feedback URL"
+msgstr "Webbadress för bokningsfeedback"
+
+msgid "A link to an external feedback system"
+msgstr "En länk till ett externt återkopplingssystem"
