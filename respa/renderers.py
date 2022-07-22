@@ -6,5 +6,5 @@ class ResourcesBrowsableAPIRenderer(BrowsableAPIRenderer):
     ''' Override DRF's BrowsableAPIRenderer to append data to context '''
     def get_context(self, data, accepted_media_type, renderer_context):
         context = super().get_context(data, accepted_media_type, renderer_context)
-        context['RESPA_VERSION'] = f'v{VERSION}'
+        context['RESPA_VERSION'] = f'{VERSION}'
         return context
