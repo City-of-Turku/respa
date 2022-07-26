@@ -1969,3 +1969,9 @@ msgstr "Varauksen palautteen URL"
 
 msgid "A link to an external feedback system"
 msgstr "Ulkoisen palautejärjestelmän osoite"
+
+msgid "Takes place virtually"
+msgstr "Tapahtuu virtuaalisesti"
+
+msgid "Virtual address"
+msgstr "Virtuaalinen osoite"

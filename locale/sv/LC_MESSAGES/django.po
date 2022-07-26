@@ -1904,3 +1904,9 @@ msgstr "Webbadress för bokningsfeedback"
 
 msgid "A link to an external feedback system"
 msgstr "En länk till ett externt återkopplingssystem"
+
+msgid "Takes place virtually"
+msgstr "Utspelar sig virtuellt"
+
+msgid "Virtual address"
+msgstr "Virtuell adress"

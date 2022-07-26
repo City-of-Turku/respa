@@ -162,9 +162,10 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
     class Meta:
         model = Reservation
         fields = [
-            'url', 'id', 'resource', 'user', 'begin', 'end', 'comments', 'is_own', 'state', 'need_manual_confirmation',
-            'require_assistance', 'require_workstation', 'staff_event', 'access_code', 'user_permissions', 'preferred_language', 'type',
-            'has_arrived'
+            'url', 'id', 'resource', 'user', 'begin', 'end', 'comments', 'is_own', 'state',
+            'need_manual_confirmation', 'require_assistance', 'require_workstation', 'staff_event',
+            'access_code', 'user_permissions', 'preferred_language', 'type',
+            'has_arrived', 'takes_place_virtually', 'virtual_address'
         ] + list(RESERVATION_EXTRA_FIELDS)
         read_only_fields = list(RESERVATION_EXTRA_FIELDS)
 
@@ -357,6 +358,20 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             if not resource.can_comment_reservations(request_user):
                 raise ValidationError(dict(comments=_('Only allowed to be set by staff members')))
 
+        if 'takes_place_virtually' in data:
+            if not resource.can_create_staff_event(request_user):
+                # allow only staff to change virtual data
+                if reservation.takes_place_virtually != data['takes_place_virtually']:
+                    raise ValidationError(dict(takes_place_virtually=_(
+                        'Only allowed to be set and changed by staff members')))
+
+        if 'virtual_address' in data:
+            if not resource.can_create_staff_event(request_user):
+                # allow only staff to change virtual data
+                if reservation.virtual_address != data['virtual_address']:
+                    raise ValidationError(dict(
+                        virtual_address=_('Only allowed to be set by staff members')))
+
         if 'access_code' in data:
             if data['access_code'] is None:
                 data['access_code'] = ''
@@ -464,6 +479,12 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             supported_fields = set(resource.get_supported_reservation_extra_field_names(cache=cache))
         else:
             supported_fields = set()
+
+        if not resource.can_access_reservation_comments(user) and instance.user != user:
+            # restrict reservation virtual data visibility to only those who can access comments
+            # and to the reserver
+            del data['takes_place_virtually']
+            del data['virtual_address']
 
         for field_name in RESERVATION_EXTRA_FIELDS:
             if field_name not in supported_fields:

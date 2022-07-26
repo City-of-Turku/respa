@@ -2592,3 +2592,9 @@ msgstr ""
 
 msgid "A link to an external feedback system"
 msgstr ""
+
+msgid "Takes place virtually"
+msgstr ""
+
+msgid "Virtual address"
+msgstr ""

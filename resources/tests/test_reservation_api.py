@@ -416,6 +416,143 @@ def test_comments_are_only_for_admins(
 
 
 @pytest.mark.django_db
+def test_anon_and_other_users_cannot_see_virtual_event_data(api_client, reservation, user2):
+    """
+    Tests that anon and regular users besides the reserver cannot see virtual event data
+    """
+    reservation.takes_place_virtually = True
+    reservation.virtual_address = 'some virtual address'
+    reservation.save()
+
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+
+    # anon should not be able to see virtual data
+    response = api_client.get(detail_url)
+    assert 'takes_place_virtually' not in response.data
+    assert 'virtual_address' not in response.data
+
+    # other regular users besides the reserver should not be able to see virtual data
+    api_client.force_authenticate(user=user2)
+    response = api_client.get(detail_url)
+    assert 'takes_place_virtually' not in response.data
+    assert 'virtual_address' not in response.data
+
+
+@pytest.mark.django_db
+def test_reserver_can_see_virtual_event_data(api_client, reservation, user):
+    """
+    Tests that regular reserver can see virtual event data
+    """
+    reservation.takes_place_virtually = True
+    reservation.virtual_address = 'some virtual address'
+    reservation.save()
+
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+    api_client.force_authenticate(user=user)
+    response = api_client.get(detail_url)
+    assert 'takes_place_virtually' in response.data
+    assert response.data['takes_place_virtually'] == True
+    assert 'virtual_address' in response.data
+    assert response.data['virtual_address'] == 'some virtual address'
+
+
+@pytest.mark.django_db
+def test_unit_managers_and_admins_can_see_virtual_event_data(
+        api_client, reservation, staff_user, resource_in_unit):
+    """
+    Tests that unit managers and admins can see virtual event data
+    """
+    reservation.takes_place_virtually = True
+    reservation.virtual_address = 'some virtual address'
+    reservation.save()
+
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+    # unit manager
+    UnitAuthorization.objects.create(
+        subject=resource_in_unit.unit, level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    api_client.force_authenticate(user=staff_user)
+    response = api_client.get(detail_url)
+    assert 'takes_place_virtually' in response.data
+    assert response.data['takes_place_virtually'] == True
+    assert 'virtual_address' in response.data
+    assert response.data['virtual_address'] == 'some virtual address'
+
+    # unit admin
+    UnitAuthorization.objects.create(
+        subject=resource_in_unit.unit, level=UnitAuthorizationLevel.admin, authorized=staff_user)
+    api_client.force_authenticate(user=staff_user)
+    response = api_client.get(detail_url)
+    assert 'takes_place_virtually' in response.data
+    assert response.data['takes_place_virtually'] == True
+    assert 'virtual_address' in response.data
+    assert response.data['virtual_address'] == 'some virtual address'
+
+
+@pytest.mark.django_db
+def test_anon_and_regular_users_cannot_set_virtual_data(
+        api_client, reservation, reservation_data, user, user2):
+    """
+    Tests that anon and regular users cannot set virtual event data
+    """
+    reservation_data['takes_place_virtually'] = True
+    reservation_data['virtual_address'] = 'some virtual address'
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+    # anon
+    response = api_client.put(detail_url, reservation_data)
+    assert response.status_code == 401
+    # other regular user
+    api_client.force_authenticate(user=user2)
+    response = api_client.put(detail_url, reservation_data)
+    assert response.status_code == 403
+    # regular reserver
+    api_client.force_authenticate(user=user)
+    response = api_client.put(detail_url, reservation_data)
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_managers_and_admin_users_can_set_virtual_data(
+        api_client, reservation, reservation_data, resource_in_unit, staff_user):
+    """
+    Tests that unit manager and admin users can set virtual event data
+    """
+    reservation_data['takes_place_virtually'] = True
+    reservation_data['virtual_address'] = 'some virtual address'
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+
+    # unit manager
+    UnitAuthorization.objects.create(
+        subject=resource_in_unit.unit, level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    api_client.force_authenticate(user=staff_user)
+    response = api_client.put(detail_url, reservation_data)
+    assert response.status_code == 200
+    # unit admin
+    UnitAuthorization.objects.create(
+        subject=resource_in_unit.unit, level=UnitAuthorizationLevel.admin, authorized=staff_user)
+    api_client.force_authenticate(user=staff_user)
+    response = api_client.put(detail_url, reservation_data)
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_reserver_can_update_reservation_that_has_virtual_data(
+        api_client, reservation, reservation_data, user):
+    """
+    Tests that regular reserver can update their reservation that has virtual event data
+    without changing the virtual event data
+    """
+    reservation.takes_place_virtually = True
+    reservation.virtual_address = 'some virtual address'
+    reservation.save()
+
+    reservation_data['number_of_participants'] = 3
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+    api_client.force_authenticate(user=user)
+    response = api_client.put(detail_url, reservation_data)
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
 def test_user_data_correct_and_only_for_admins(
         api_client, reservation, user, general_admin):
     """

@@ -143,6 +143,8 @@ class Reservation(ModifiableModel):
         blank=False, verbose_name=_('Type'), max_length=32, choices=TYPE_CHOICES, default=TYPE_NORMAL)
 
     has_arrived = models.BooleanField(verbose_name=_('Has arrived'), default=False)
+    takes_place_virtually = models.BooleanField(verbose_name=_('Takes place virtually'), default=False)
+    virtual_address = models.TextField(verbose_name=_('Virtual address'), blank=True)
 
     # access-related fields
     access_code = models.CharField(verbose_name=_('Access code'), max_length=32, null=True, blank=True)
