@@ -29,7 +29,8 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
     customer_group = serializers.CharField(write_only=True, required=False)
 
     class Meta(OrderSerializerBase.Meta):
-        fields = OrderSerializerBase.Meta.fields + ('id', 'return_url', 'payment_url', 'customer_group', 'is_requested_order')
+        fields = OrderSerializerBase.Meta.fields + ('id', 'return_url',
+            'payment_url', 'customer_group', 'is_requested_order', 'payment_method')
 
     def create(self, validated_data):
         order_lines_data = validated_data.pop('order_lines', [])
@@ -61,6 +62,16 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         if not has_staff_perms and not is_free(order.get_price()):
             if reservation.state == Reservation.CREATED and resource.need_manual_confirmation:
                 order.state = Order.WAITING
+                order.save()
+                return order
+
+        # staff cash payments
+        if has_staff_perms and order.payment_method == Order.CASH and resource.cash_payments_allowed:
+            if reservation.state == Reservation.CREATED and resource.need_manual_confirmation:
+                if is_free(order.get_price()):
+                    order.state = Order.CONFIRMED
+                else:
+                    order.state = Order.WAITING
                 order.save()
                 return order
 
@@ -150,6 +161,11 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         for product in resource.get_products():
             if product.has_customer_group() and not customer_group:
                 raise serializers.ValidationError(_('Order must have customer group id in it.'))
+
+        payment_method = attrs.get('payment_method', None)
+        if payment_method and payment_method == Order.CASH and not resource.cash_payments_allowed:
+            raise serializers.ValidationError(
+                {'payment_method': _('Cash payments are not allowed for this resource')})
         return attrs
 
     def to_internal_value(self, data):

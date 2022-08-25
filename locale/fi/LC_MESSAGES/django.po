@@ -1975,3 +1975,30 @@ msgstr "Tapahtuu virtuaalisesti"
 
 msgid "Virtual address"
 msgstr "Virtuaalinen osoite"
+
+msgid "online payment"
+msgstr "Verkkomaksu"
+
+msgid "cash payment"
+msgstr "Käteismaksu"
+
+msgid "payment method"
+msgstr "Maksutapa"
+
+msgid "Cash payments are not allowed for this resource"
+msgstr "Käteismaksut eivät ole sallittuja tälle resurssille"
+
+msgid "Cash payments are not allowed"
+msgstr "Käteismaksut eivät ole sallittuja"
+
+msgid "waiting for cash payment"
+msgstr "Odottaa käteismaksua"
+
+msgid "Cash payments allowed"
+msgstr "Käteismaksut sallittu"
+
+msgid "Allows cash payment option for paid reservations. Can only be set when resource needs manual confirmation."
+msgstr "Sallii käteismaksuvaihtoehdon maksullisille varauksille. Voidaan asettaa vain, kun resurssi käyttää vahvistettavia varauksia."
+
+msgid "Cash payments are only allowed when reservations need manual confirmation"
+msgstr "Käteismaksuvaihtoehtoa voidaan käyttää vain vahvistettavien varausten resurssissa"

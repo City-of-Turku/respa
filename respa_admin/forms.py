@@ -246,8 +246,8 @@ class ResourceForm(forms.ModelForm):
             if df_set:
                 for field in set(df_set) - set(['groups', 'periods', 'images', 'free_of_charge']):
                     self.fields[field].disabled = True
-                
-                    
+
+
 
     class Meta:
         model = Resource
@@ -311,7 +311,8 @@ class ResourceForm(forms.ModelForm):
             'reservation_metadata_set',
             'reservation_home_municipality_set',
             'resource_tags',
-            'payment_requested_waiting_time'
+            'payment_requested_waiting_time',
+            'cash_payments_allowed'
         ] + translated_fields
 
         widgets = {
@@ -337,6 +338,9 @@ class ResourceForm(forms.ModelForm):
             ),
             'reservable': forms.Select(
                 choices=((False, _('Can not be reserved')), (True, _('Bookable')))
+            ),
+            'cash_payments_allowed': RespaRadioSelect(
+                choices=((True, _('Yes')), (False, _('No')))
             ),
         }
 
@@ -491,7 +495,7 @@ def get_period_formset(request=None, extra=1, instance=None, parent_class=Resour
             field.disabled = 'periods' in df_set
             if field.disabled:
                 field.required = False
-    else: # fields are getting cached? 
+    else: # fields are getting cached?
         for _, field in period_formset_with_days.form.base_fields.items():
             field.disabled = False
 
@@ -518,7 +522,7 @@ def get_resource_image_formset(request=None, extra=1, instance=None):
             field.disabled = 'images' in df_set
             if field.disabled:
                 field.required = False
-    else: # fields are getting cached? 
+    else: # fields are getting cached?
         for _, field in resource_image_formset.form.base_fields.items():
             field.disabled = False
 

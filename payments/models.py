@@ -493,12 +493,23 @@ class Order(models.Model):
         (CANCELLED, _('cancelled')),
     )
 
+    CASH = 'cash'
+    ONLINE = 'online'
+    PAYMENT_METHOD_CHOICES = (
+        ((ONLINE), _('online payment')),
+        ((CASH), _('cash payment')),
+    )
+
     state = models.CharField(max_length=32, verbose_name=_('state'), choices=STATE_CHOICES, default=WAITING)
     order_number = models.CharField(max_length=64, verbose_name=_('order number'), unique=True, default=generate_id)
     reservation = models.OneToOneField(
         Reservation, verbose_name=_('reservation'), related_name='order', on_delete=models.PROTECT
     )
     payment_url = models.TextField(verbose_name=_('payment url'), blank=True, default='')
+    payment_method = models.CharField(
+        max_length=200, verbose_name=_('payment method'),
+        choices=PAYMENT_METHOD_CHOICES, default=ONLINE
+    )
     is_requested_order = models.BooleanField(verbose_name=_('is requested order'), default=False)
     confirmed_by_staff_at = models.DateTimeField(verbose_name=_('confirmed by staff at'), blank=True, null=True)
     customer_group = models.ForeignKey(CustomerGroup,

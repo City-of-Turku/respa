@@ -48,5 +48,11 @@
                 {% include "respa_admin/forms/_input.html" with field=form.payment_requested_waiting_time %}
             </div>
         </div>
+        <div class="price-confirm">
+            <span class="control-label input-label">{{ form.cash_payments_allowed.label }}</span>
+            {{ form.cash_payments_allowed }}
+            <p class="help-text">{{ form.cash_payments_allowed.help_text }}</p>
+            {% include "respa_admin/forms/_errors.html" with field=form.cash_payments_allowed %}
+        </div>
     </div>
 </div>

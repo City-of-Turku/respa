@@ -1910,3 +1910,30 @@ msgstr "Utspelar sig virtuellt"
 
 msgid "Virtual address"
 msgstr "Virtuell adress"
+
+msgid "online payment"
+msgstr "Online betalning"
+
+msgid "cash payment"
+msgstr "Kontant betalning"
+
+msgid "payment method"
+msgstr "Betalningsmetod"
+
+msgid "Cash payments are not allowed for this resource"
+msgstr "Kontantbetalningar är inte tillåtna för denna resurs"
+
+msgid "Cash payments are not allowed"
+msgstr "Kontantbetalningar är inte tillåtna"
+
+msgid "waiting for cash payment"
+msgstr "Väntar på kontant betalning"
+
+msgid "Cash payments allowed"
+msgstr "Kontantbetalning tillåten"
+
+msgid "Allows cash payment option for paid reservations. Can only be set when resource needs manual confirmation."
+msgstr "Tillåter kontantbetalningsalternativ för betalda bokningar. Kan endast ställas in när resursen behöver manuell bekräftelse."
+
+msgid "Cash payments are only allowed when reservations need manual confirmation"
+msgstr "Kontantbetalningar är endast tillåtna när bokningar kräver manuell bekräftelse"

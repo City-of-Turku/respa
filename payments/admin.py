@@ -266,7 +266,8 @@ class OrderCustomerGroupDataInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('order_number', 'user', 'created_at', 'state', 'reservation', 'price', 'customer_group')
 
-    fields = ('order_number', 'created_at', 'state', 'reservation', 'user', 'price', 'customer_group')
+    fields = ('order_number', 'created_at', 'state', 'reservation', 'user', 'price',
+        'payment_method', 'customer_group')
 
     raw_id_fields = ('reservation',)
     inlines = (OrderLineInline, OrderLogEntryInline, )

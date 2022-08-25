@@ -2598,3 +2598,30 @@ msgstr ""
 
 msgid "Virtual address"
 msgstr ""
+
+msgid "online payment"
+msgstr "Online payment"
+
+msgid "cash payment"
+msgstr "Cash payment"
+
+msgid "payment method"
+msgstr "Payment method"
+
+msgid "Cash payments are not allowed for this resource"
+msgstr ""
+
+msgid "Cash payments are not allowed"
+msgstr ""
+
+msgid "waiting for cash payment"
+msgstr "Waiting for cash payment"
+
+msgid "Cash payments allowed"
+msgstr ""
+
+msgid "Allows cash payment option for paid reservations. Can only be set when resource needs manual confirmation."
+msgstr ""
+
+msgid "Cash payments are only allowed when reservations need manual confirmation"
+msgstr ""

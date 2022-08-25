@@ -105,6 +105,7 @@ class Reservation(ModifiableModel):
     REQUESTED = 'requested'
     WAITING_FOR_PAYMENT = 'waiting_for_payment'
     READY_FOR_PAYMENT = 'ready_for_payment'
+    WAITING_FOR_CASH_PAYMENT = 'waiting_for_cash_payment'
     STATE_CHOICES = (
         (CREATED, _('created')),
         (CANCELLED, _('cancelled')),
@@ -113,6 +114,7 @@ class Reservation(ModifiableModel):
         (REQUESTED, _('requested')),
         (WAITING_FOR_PAYMENT, _('waiting for payment')),
         (READY_FOR_PAYMENT, _('ready for payment')),
+        (WAITING_FOR_CASH_PAYMENT, _('waiting for cash payment')),
     )
 
     TYPE_NORMAL = 'normal'
@@ -270,7 +272,7 @@ class Reservation(ModifiableModel):
         assert new_state in (
             Reservation.REQUESTED, Reservation.CONFIRMED, Reservation.DENIED,
             Reservation.CANCELLED, Reservation.WAITING_FOR_PAYMENT,
-            Reservation.READY_FOR_PAYMENT
+            Reservation.READY_FOR_PAYMENT, Reservation.WAITING_FOR_CASH_PAYMENT
         )
         if new_state == self.state and self.state in (Reservation.CONFIRMED, Reservation.REQUESTED):
             reservation_modified.send(sender=self.__class__, instance=self, user=user)
@@ -296,7 +298,7 @@ class Reservation(ModifiableModel):
             self.send_reservation_requested_mail(action_by_official=action_by_official)
             if not action_by_official:
                 self.notify_staff_about_reservation(NotificationType.RESERVATION_REQUESTED_OFFICIAL)
-        elif state == Reservation.CONFIRMED:
+        elif state == Reservation.CONFIRMED or state == Reservation.WAITING_FOR_CASH_PAYMENT:
             if self.need_manual_confirmation():
                 self.send_reservation_confirmed_mail()
             elif self.access_code:
@@ -552,7 +554,7 @@ class Reservation(ModifiableModel):
                     context['resource_ground_plan_image_url'] = ground_plan_image_url
 
             order = getattr(self, 'order', None)
-            if order:  
+            if order:
                 '''
                 'RESERVATION_WAITING_FOR_PAYMENT' notifications required payment due date so it's calculated and added to context.
                 e.g. datetime when order was confirmed + RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME = payment due date.

@@ -224,7 +224,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             # states where reservation updates can be made
             if state in (
                 Reservation.CONFIRMED, Reservation.CANCELLED, Reservation.DENIED,
-                Reservation.REQUESTED, Reservation.READY_FOR_PAYMENT):
+                Reservation.REQUESTED, Reservation.READY_FOR_PAYMENT, Reservation.WAITING_FOR_CASH_PAYMENT):
                 has_staff_perms = resource.is_manager(request.user) or resource.is_admin(request.user)
                 user_can_modify = self.instance.can_modify(request.user)
                 # staff members never pay after reservation creation and their order can be removed safely here
@@ -260,7 +260,8 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
 
         if instance.resource.can_approve_reservations(request_user):
             allowed_states = (Reservation.REQUESTED, Reservation.CONFIRMED,
-                              Reservation.DENIED, Reservation.WAITING_FOR_PAYMENT)
+                              Reservation.DENIED, Reservation.WAITING_FOR_PAYMENT,
+                              Reservation.WAITING_FOR_CASH_PAYMENT)
             if instance.state in allowed_states and value in allowed_states:
                 return value
         if value == Reservation.WAITING_FOR_PAYMENT:
@@ -394,6 +395,12 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         # even if it exceeds the limit. (one that was created via admin ui for example).
         if reservation is None and not isinstance(request_user, AnonymousUser):
             resource.validate_max_reservations_per_user(request_user)
+
+        request = self.context.get('request')
+        if request.method == 'POST':
+            if 'order' in data:
+                if data.order.payment_method == Order.CASH and not resource.cash_payments_allowed:
+                    raise ValidationError(dict(cash_payments_allowed=_('Cash payments are not allowed')))
 
         # Run model clean
         instance = Reservation(**data)
@@ -1013,7 +1020,9 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
 
         # normal users can see only their own reservations and reservations that are confirmed, requested or
         # waiting for payment
-        filters = Q(state__in=(Reservation.CONFIRMED, Reservation.REQUESTED, Reservation.WAITING_FOR_PAYMENT, Reservation.READY_FOR_PAYMENT))
+        filters = Q(state__in=(Reservation.CONFIRMED, Reservation.REQUESTED,
+            Reservation.WAITING_FOR_PAYMENT, Reservation.READY_FOR_PAYMENT,
+            Reservation.WAITING_FOR_CASH_PAYMENT))
         if user.is_authenticated:
             filters |= Q(user=user)
         queryset = queryset.filter(filters)
@@ -1040,6 +1049,9 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         else:
             if order and order.state != Order.CONFIRMED and not resource.can_bypass_manual_confirmation(user):
                 new_state = Reservation.WAITING_FOR_PAYMENT
+            elif order and order.state == Order.WAITING and order.payment_method == Order.CASH \
+                and resource.cash_payments_allowed and resource.can_bypass_manual_confirmation(user):
+                new_state = Reservation.WAITING_FOR_CASH_PAYMENT
             else:
                 new_state = Reservation.CONFIRMED
 
@@ -1060,12 +1072,21 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         if new_state == Reservation.READY_FOR_PAYMENT and \
             order and order.state == Order.WAITING and not can_edit_paid:
             new_state = Reservation.WAITING_FOR_PAYMENT
-        elif new_state == Reservation.CONFIRMED and \
-            order and order.state == Order.WAITING:
-            new_state = Reservation.READY_FOR_PAYMENT
+
+        if new_state == Reservation.CONFIRMED and order and order.state == Order.WAITING:
+            if old_instance.state == Reservation.REQUESTED:
+                if order.payment_method == Order.CASH:
+                    new_state = Reservation.WAITING_FOR_CASH_PAYMENT
+                else:
+                    new_state = Reservation.READY_FOR_PAYMENT
 
         new_instance = serializer.save(modified_by=self.request.user)
         new_instance.set_state(new_state, self.request.user)
+
+        if old_instance.state == Reservation.WAITING_FOR_CASH_PAYMENT and \
+            new_state == Reservation.CONFIRMED:
+            new_instance.get_order().set_state(Order.CONFIRMED, 'Cash payment confirmed.')
+
         if new_state == old_instance.state and new_state not in ['denied'] and self.request.method != 'PATCH': # Reservation was modified, don't send modified upon patch.
             self.send_modified_mail(new_instance, is_staff=self.request.user.is_staff)
 

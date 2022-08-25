@@ -22,7 +22,7 @@ from .test_order_api import ORDER_LINE_FIELDS, PRODUCT_FIELDS
 
 LIST_URL = reverse('reservation-list')
 
-ORDER_FIELDS = {'id', 'state', 'price', 'order_lines', 'is_requested_order'}
+ORDER_FIELDS = {'id', 'state', 'price', 'order_lines', 'is_requested_order', 'payment_method'}
 
 
 def get_detail_url(reservation):
@@ -265,6 +265,175 @@ def test_order_post(user_api_client, resource_in_unit, product, product_2, mock_
     assert order_lines[0].quantity == 1
     assert order_lines[1].product == product_2
     assert order_lines[1].quantity == 5
+
+
+@pytest.mark.parametrize('payment_method, expected_status', (
+    (None, 201),
+    (Order.CASH, 201),
+    (Order.ONLINE, 201),
+))
+def test_order_payment_methods_for_resources_allowing_cash_post(payment_method, expected_status,
+    user_api_client, resource_in_unit, product):
+    '''
+    Tests that adding different payment methods to order work correctly with
+    a resource allowing cash payments
+    '''
+    resource_in_unit.need_manual_confirmation = True
+    resource_in_unit.cash_payments_allowed = True
+    resource_in_unit.save()
+
+    reservation_data = build_reservation_data(resource_in_unit)
+    order = build_order_data(product=product)
+    if payment_method:
+        order['payment_method'] = payment_method
+    reservation_data['order'] = order
+
+    response = user_api_client.post(LIST_URL, reservation_data)
+    order_data = response.data['order']
+
+    assert response.status_code == expected_status, response.data
+    if payment_method:
+        assert order_data['payment_method'] == payment_method
+    else:
+        assert order_data['payment_method'] == Order.ONLINE
+
+
+@pytest.mark.parametrize('payment_method, expected_status', (
+    (None, 201),
+    (Order.CASH, 400),
+    (Order.ONLINE, 201),
+))
+def test_order_payment_methods_for_resources_not_allowing_cash_post(payment_method, expected_status,
+    user_api_client, resource_in_unit, product):
+    '''
+    Tests that adding different payment methods to order work correctly with
+    a resource not allowing cash payments
+    '''
+    resource_in_unit.cash_payments_allowed = False
+    resource_in_unit.save()
+
+    reservation_data = build_reservation_data(resource_in_unit)
+    order = build_order_data(product=product)
+    if payment_method:
+        order['payment_method'] = payment_method
+    reservation_data['order'] = order
+
+    response = user_api_client.post(LIST_URL, reservation_data)
+    assert response.status_code == expected_status, response.data
+
+
+def test_cash_paid_reservation_process_flow_works_correctly(
+    user_api_client, resource_in_unit, product, api_client, unit_manager_user):
+    '''
+    Tests that cash paid reservation process flow gets correct state changes
+    and allows intended operations
+    '''
+    resource_in_unit.need_manual_confirmation = True
+    resource_in_unit.cash_payments_allowed = True
+    resource_in_unit.save()
+
+    reservation_data = build_reservation_data(resource_in_unit)
+    order = build_order_data(product=product)
+    order['payment_method'] = Order.CASH
+    reservation_data['order'] = order
+
+    # user creates their reservation
+    response = user_api_client.post(LIST_URL, reservation_data)
+    assert response.status_code == 201, response.data
+    new_order = Order.objects.last()
+    new_reservation = Reservation.objects.last()
+    assert new_order.reservation == new_reservation
+    assert response.data['state'] == Reservation.REQUESTED
+    assert response.data['order']['state'] == Order.WAITING
+
+    # user updates their reservation
+    reservation_data.update({'reserver_name': 'Test Tester'})
+    response = user_api_client.put(get_detail_url(new_reservation), reservation_data)
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.REQUESTED
+    assert response.data['order']['state'] == Order.WAITING
+
+    # staff confirms reservation to set its state to be waiting for cash payment
+    api_client.force_authenticate(user=unit_manager_user)
+    reservation_data.update({'state': Reservation.CONFIRMED})
+    response = api_client.put(get_detail_url(new_reservation), reservation_data)
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.WAITING_FOR_CASH_PAYMENT
+    assert response.data['order']['state'] == Order.WAITING
+
+    # user tries to update after confirmation
+    reservation_data.update({'reserver_name': 'Test Tester 2'})
+    response = user_api_client.put(get_detail_url(new_reservation), reservation_data)
+    assert response.status_code == 403
+
+    # staff confirms reservation and its cash payment
+    reservation_data.update({'state': Reservation.CONFIRMED})
+    response = api_client.put(get_detail_url(new_reservation), reservation_data)
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.CONFIRMED
+    assert response.data['order']['state'] == Order.CONFIRMED
+
+    # user tries to update after confirmation
+    reservation_data.update({'reserver_name': 'Test Tester 3'})
+    response = user_api_client.put(get_detail_url(new_reservation), reservation_data)
+    assert response.status_code == 403
+
+
+def test_existing_cash_paid_reservations_work_after_resource_disallows_cash(
+    user_api_client, resource_in_unit, product, api_client, unit_manager_user):
+    '''
+    Tests that reservations already created with cash payment work after resource
+    disallows cash payment option
+    '''
+    resource_in_unit.need_manual_confirmation = True
+    resource_in_unit.cash_payments_allowed = True
+    resource_in_unit.save()
+
+    reservation_data = build_reservation_data(resource_in_unit)
+    order = build_order_data(product=product)
+    order['payment_method'] = Order.CASH
+    reservation_data['order'] = order
+
+    response = user_api_client.post(LIST_URL, reservation_data)
+    assert response.status_code == 201, response.data
+    new_order = Order.objects.last()
+    new_reservation = Reservation.objects.last()
+    assert new_order.reservation == new_reservation
+
+    # resource disallows cash payments
+    resource_in_unit.cash_payments_allowed = False
+    resource_in_unit.save()
+
+    # user updates their reservation
+    reservation_data.update({'reserver_name': 'Test Tester'})
+    response = user_api_client.put(get_detail_url(new_reservation), reservation_data)
+    assert response.status_code == 200
+
+    # staff confirms reservation to set its state to be waiting for cash payment
+    api_client.force_authenticate(user=unit_manager_user)
+    reservation_data.update({'state': Reservation.CONFIRMED})
+    response = api_client.put(get_detail_url(new_reservation), reservation_data)
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.WAITING_FOR_CASH_PAYMENT
+    assert response.data['order']['state'] == Order.WAITING
+
+    # user tries to update after confirmation
+    reservation_data.update({'reserver_name': 'Test Tester 2'})
+    response = user_api_client.put(get_detail_url(new_reservation), reservation_data)
+    assert response.status_code == 403
+
+    # staff confirms reservation and its cash payment
+    reservation_data.update({'state': Reservation.CONFIRMED})
+    response = api_client.put(get_detail_url(new_reservation), reservation_data)
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.CONFIRMED
+    assert response.data['order']['state'] == Order.CONFIRMED
+
+    # user tries to update after confirmation
+    reservation_data.update({'reserver_name': 'Test Tester 3'})
+    response = user_api_client.put(get_detail_url(new_reservation), reservation_data)
+    assert response.status_code == 403
+
 
 def test_order_with_product_cg_post(user_api_client, resource_in_unit, product_with_product_cg, mock_provider):
     product_cg = ProductCustomerGroup.objects.get(product=product_with_product_cg)

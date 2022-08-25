@@ -166,7 +166,8 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
         (_('Price Information'), {
             'fields': (
                 'min_price', 'max_price',
-                'price_type', 'payment_requested_waiting_time'
+                'price_type', 'payment_requested_waiting_time',
+                'cash_payments_allowed'
             ),
         }),
         (_('Extra Information'), {
