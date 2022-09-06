@@ -1147,8 +1147,10 @@ class ResourceCreateProductView(generics.CreateAPIView):
     permission_classes = (permissions.DjangoModelPermissions, )
 
     def get_serializer_context(self):
+        self.srs = getattr(self, 'srs', munigeo_api.srid_to_srs(None))
         context = super().get_serializer_context()
-        context['pk'] = self.kwargs['pk']
+        if not getattr(context['view'], 'swagger_fake_view', False):
+            context['pk'] = self.kwargs['pk']
         return context
 
 class ResourceTagSerializer(serializers.ModelSerializer):
@@ -1763,11 +1765,12 @@ class ResourceListViewSet(munigeo_api.GeoModelAPIView, mixins.ListModelMixin,
         else:
             return ResourceSerializer
 
-    def get_serializer(self, page, *args, **kwargs):
-        self._page = page
-        return super().get_serializer(page, *args, **kwargs)
+    def get_serializer(self, *args, **kwargs):
+        setattr(self, '_page', args[0] if args else [])
+        return super().get_serializer(*args, **kwargs)
 
     def get_serializer_context(self):
+        self.srs = getattr(self, 'srs', munigeo_api.srid_to_srs(None))
         context = super().get_serializer_context()
         context.update(self._get_cache_context())
 
@@ -1799,11 +1802,12 @@ class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.RetrieveModelMixin,
         else:
             return ResourceDetailsSerializer
 
-    def get_serializer(self, page, *args, **kwargs):
-        self._page = [page]
-        return super().get_serializer(page, *args, **kwargs)
+    def get_serializer(self, *args, **kwargs):
+        setattr(self, '_page', args[0] if args else [])
+        return super().get_serializer(*args, **kwargs)
 
     def get_serializer_context(self):
+        self.srs = getattr(self, 'srs', munigeo_api.srid_to_srs(None))
         context = super().get_serializer_context()
         context.update(self._get_cache_context())
 

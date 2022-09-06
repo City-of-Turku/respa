@@ -977,6 +977,10 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         [TokenAuthentication, SessionAuthentication])
     ordering_fields = ('begin',)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.srs = getattr(self, 'srs', munigeo_api.srid_to_srs(None))
+
     def get_serializer_class(self):
         if settings.RESPA_PAYMENTS_ENABLED:
             from payments.api.reservation import PaymentsReservationSerializer  # noqa

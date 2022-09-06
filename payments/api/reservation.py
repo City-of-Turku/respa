@@ -191,6 +191,7 @@ class PaymentsReservationSerializer(ReservationSerializer):
         request = self.context.get('request')
         resource = self.context.get('resource')
         action = self.context['view'].action
+        swagger_fake_view = getattr(self.context['view'], 'swagger_fake_view', False)
 
         if resource and request:
             order_required = resource.has_rent() and not resource.can_bypass_payment(request.user)
@@ -202,7 +203,8 @@ class PaymentsReservationSerializer(ReservationSerializer):
         if action == 'create':
             self.fields['order'] = ReservationEndpointOrderSerializer(required=order_required, context=self.context)
         elif action == 'update':
-            order_required = not self.instance.can_modify(request.user)
+            if not swagger_fake_view:
+                order_required = not self.instance.can_modify(request.user)
             self.fields['order'] = ReservationEndpointOrderSerializer(required=order_required, context=self.context, instance=self.instance)
         elif 'order_detail' in self.context['includes']:
             self.fields['order'] = ReservationEndpointOrderSerializer(read_only=True, context=self.context)

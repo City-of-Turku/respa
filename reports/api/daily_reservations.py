@@ -104,8 +104,9 @@ class DailyReservationsReport(BaseReport):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context['start'] = self.start
-        context['end'] = self.end
+        if not getattr(context['view'], 'swagger_fake_view', False):
+            context['start'] = self.start
+            context['end'] = self.end
         self.action = self.request.method
         return context
 
