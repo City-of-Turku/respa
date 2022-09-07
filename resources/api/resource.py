@@ -1803,7 +1803,7 @@ class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.RetrieveModelMixin,
             return ResourceDetailsSerializer
 
     def get_serializer(self, *args, **kwargs):
-        setattr(self, '_page', args[0] if args else [])
+        setattr(self, '_page', [args[0]] if args else [])
         return super().get_serializer(*args, **kwargs)
 
     def get_serializer_context(self):
