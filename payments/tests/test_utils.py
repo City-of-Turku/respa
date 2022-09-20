@@ -1,12 +1,13 @@
 from datetime import datetime, time
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 import pytest
 from payments.factories import TimeSlotPriceFactory
 from payments.models import CustomerGroup, TimeSlotPrice
 
 from payments.utils import (find_time_slot_with_smallest_duration, get_fixed_time_slot_price,
-    is_datetime_between_times, is_datetime_range_between_times, price_as_sub_units, round_price)
+    is_datetime_between_times, is_datetime_range_between_times, price_as_sub_units, round_price,
+    get_fixed_time_slot_prices) 
 
 
 @pytest.fixture
@@ -116,3 +117,42 @@ def test_get_fixed_time_slot_price(begin, end, customer_group, default_price,
         prod._in_memory_cg = None
     time_slot_qs = TimeSlotPrice.objects.filter(product=prod)
     assert get_fixed_time_slot_price(time_slot_qs, begin, end, prod, default_price) == Decimal(result)
+
+@pytest.mark.parametrize('begin, end, customer_group, default_price, result', (
+    (time(7, 0), time(8, 0), None, Decimal('50.25'), [Decimal('50.25')]), # default product price 
+    (time(7, 0), time(11, 0), None, Decimal('50.25'), [Decimal('50.25')]), # default product price
+    (time(10, 0), time(11, 0), None, Decimal('50.25'), [Decimal('10.00')]), # slot price
+    (time(10, 0), time(12, 0), None, Decimal('50.25'), [Decimal('10.00')]), # slot price
+    (time(12, 0), time(13, 0), None, Decimal('50.25'), [Decimal('12.00')]), # slot price 
+    (time(12, 0), time(15, 30), None, Decimal('50.25'), [Decimal('11.50')]), # slot price 
+    (time(14, 0), time(16, 0), None, Decimal('50.25'), [Decimal('14.00')]), # slot price 
+    (time(10, 0), time(16, 0), 'cg-adults-1', Decimal('50.25'), [Decimal('50.25')]), # default product price
+    (time(14, 0), time(15, 0), 'cg-adults-1', Decimal('50.25'), [Decimal('8.00')]), # slot cg price
+    (time(14, 0), time(16, 0), 'cg-adults-1', Decimal('50.25'), [Decimal('8.00')]), # slot cg price
+    (time(15, 0), time(16, 0), 'cg-adults-1', Decimal('50.25'), [Decimal('7.00')]), # slot cg price
+    (time(7, 0), time(8, 0), 'cg-children-1', Decimal('6.50'), [Decimal('6.50')]), # default (pcg) price
+    (time(14, 0), time(16, 0), 'cg-children-1', Decimal('6.50'), [Decimal('6.50')]), # default (pcg) price
+    (time(7, 0), time(8, 0), 'cg-elders-1', Decimal('50.25'), [Decimal('50.25')]), # default product price
+    (time(10, 0), time(11, 0), 'cg-elders-1', Decimal('50.25'), [Decimal('10.00')]), # slot price
+    (time(14, 0), time(16, 0), 'cg-elders-1', Decimal('50.25'), [Decimal('14.00')]), # slot price
+    (time(15, 0), time(16, 0), 'cg-elders-1', Decimal('50.25'), [Decimal('6.00')]), # slot cg price
+))
+@pytest.mark.django_db
+def test_get_fixed_time_slot_prices(begin, end, customer_group, 
+default_price, result, product_with_fixed_price_type_and_time_slots_tax):
+    """Tests that the correct price and tax free price is returned for given situation."""
+    prod = product_with_fixed_price_type_and_time_slots_tax
+    if customer_group:
+        prod._in_memory_cg = CustomerGroup.objects.get(id=customer_group)
+    else:
+        prod._in_memory_cg = None
+    time_slot_qs = TimeSlotPrice.objects.filter(product=prod)
+    if customer_group == 'cg-children-1':
+        # pcg price usually overrides the products price but not in these tests.
+        expected_taxfree = Decimal(100*default_price/(100+prod.tax_percentage)).quantize(Decimal('0.01'),rounding=ROUND_HALF_UP)
+        expected_prices = [result[0], expected_taxfree]
+        assert get_fixed_time_slot_prices(time_slot_qs, begin, end, prod, default_price, expected_taxfree) == expected_prices
+    else:
+        expected_taxfree = Decimal(100 * result[0] / (100+prod.tax_percentage)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        expected_prices = [result[0], expected_taxfree]
+        assert get_fixed_time_slot_prices(time_slot_qs, begin, end, prod, prod.price, prod.price_tax_free) == expected_prices

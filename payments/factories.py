@@ -1,5 +1,6 @@
 from datetime import time, timedelta
 from random import randint
+from decimal import Decimal, ROUND_HALF_UP
 
 import factory
 import factory.fuzzy
@@ -32,6 +33,11 @@ class ProductFactory(factory.django.DjangoModelFactory):
             else None
     )
     tax_percentage = factory.fuzzy.FuzzyChoice(TAX_PERCENTAGES)
+    # value is calculated from the generated price & tax_percentage values.
+    price_tax_free = factory.lazy_attribute(
+        lambda obj:
+        Decimal((100 * obj.price /(100+obj.tax_percentage))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    )
     # created_at, defaults to now()
     archived_at = ARCHIVED_AT_NONE
 
@@ -124,6 +130,11 @@ class ProductCustomerGroupFactory(factory.django.DjangoModelFactory):
     customer_group = factory.SubFactory(CustomerGroupFactory)
     price = factory.fuzzy.FuzzyDecimal(5.00, 100.00)
     product = factory.SubFactory(ProductFactory)
+    # value is calculated from the generated price & product tax_percentage value.
+    price_tax_free = factory.lazy_attribute(
+        lambda obj:
+        Decimal((100 * obj.price /(100+obj.product.tax_percentage))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    )
     class Meta:
         model = ProductCustomerGroup
 
@@ -142,6 +153,11 @@ class TimeSlotPriceFactory(factory.django.DjangoModelFactory):
     begin = time(8, 0)
     end = time(12, 0)
     price = factory.fuzzy.FuzzyDecimal(5.00, 100.00)
+    # value is calculated from the generated price & product tax_percentage value.
+    price_tax_free = factory.lazy_attribute(
+        lambda obj:
+        Decimal((100 * obj.price /(100+obj.product.tax_percentage))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    )
     product = factory.SubFactory(ProductFactory)
     is_archived = False
     class Meta:
@@ -153,5 +169,10 @@ class CustomerGroupTimeSlotPriceFactory(factory.django.DjangoModelFactory):
     price = factory.fuzzy.FuzzyDecimal(5.00, 100.00)
     customer_group = factory.SubFactory(CustomerGroupFactory)
     time_slot_price = factory.SubFactory(TimeSlotPriceFactory)
+    # value is calculated from the generated price & time_slot_price product tax_percentage value.
+    price_tax_free = factory.lazy_attribute(
+        lambda obj:
+        Decimal((100 * obj.price /(100+obj.time_slot_price.product.tax_percentage))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    )
     class Meta:
         model = CustomerGroupTimeSlotPrice

@@ -8,7 +8,7 @@ from django.utils.timezone import localtime
 from django.utils.translation import ugettext_lazy as _
 from modeltranslation.admin import TranslationAdmin
 
-from payments.utils import get_price_period_display
+from payments.utils import get_price_period_display, round_price
 from resources.models import Resource
 
 from .models import (
@@ -25,17 +25,20 @@ def get_datetime_display(dt):
 
 class CustomerGroupTimeSlotPriceInline(admin.TabularInline):
     model = CustomerGroupTimeSlotPrice
-    fields = ('price', 'customer_group')
+    fields = ('price', 'customer_group','price_tax_free')
     extra = 0
     can_delete = True
 
 
 class TimeSlotPriceAdmin(admin.ModelAdmin):
     inlines = (CustomerGroupTimeSlotPriceInline, )
-    readonly_fields = ('is_archived', )
+    change_form_template = 'payments/templates/admin/time_slot_prices/change_form.html'
+    readonly_fields = ('is_archived', 'product_tax_percentage')
+    
     class Meta:
         model = TimeSlotPrice
-        fields = '__all__'
+        fields = ['begin','end','price','price_tax_free','product','is_archived','tax_percentage']
+
 
     def save_model(self, request, obj, form, change) -> None:
         time_slots_to_update = TimeSlotPrice.objects.filter(product=obj.product, is_archived=False)
@@ -50,6 +53,9 @@ class TimeSlotPriceAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).current()
+
+    def tax_percentage(self, obj):
+        return obj.product_tax_percentage()
 
     def get_form(self, request, obj=None, **kwargs):
         form = super(TimeSlotPriceAdmin, self).get_form(request, obj, **kwargs)
@@ -71,7 +77,7 @@ class TimeSlotPriceInlineFormSet(BaseInlineFormSet):
 
 class TimeSlotPriceInline(admin.TabularInline):
     model = TimeSlotPrice
-    fields = ('begin', 'end', 'price', 'customer_group_time_slot_prices')
+    fields = ('begin', 'end', 'price', 'customer_group_time_slot_prices','price_tax_free')
     readonly_fields = ('customer_group_time_slot_prices', )
     extra = 0
     can_delete = True
@@ -95,6 +101,13 @@ class CustomerGroupAdmin(TranslationAdmin):
 
 
 class ProductCustomerGroupAdmin(admin.ModelAdmin):
+    change_form_template = 'payments/templates/admin/productcustomergroup/change_form.html'
+    readonly_fields = ('product_tax_percentage',)
+
+    class Meta:
+        model = ProductCustomerGroup
+        fields = ['id','customer_group','price','price_tax_free','product','product_tax_percentage']
+
     def render_change_form(self, request, context, *args, **kwargs):
         context['adminform'].form.fields['product'].queryset = Product.objects.current()
         return super().render_change_form(request, context, *args, **kwargs)
@@ -125,7 +138,7 @@ class ProductCGInlineFormSet(BaseInlineFormSet):
 
 class ProductCustomerGroupInline(admin.TabularInline):
     model = ProductCustomerGroup
-    fields = ('id', 'customer_group', 'price', )
+    fields = ('id', 'customer_group', 'price', 'price_tax_free')
     extra = 0
     can_delete = True
     show_change_link = True
@@ -133,6 +146,7 @@ class ProductCustomerGroupInline(admin.TabularInline):
 
 
 class ProductAdmin(TranslationAdmin):
+    change_form_template = 'payments/templates/admin/products/change_form.html'
     inlines = (
         TimeSlotPriceInline,
         ProductCustomerGroupInline,
@@ -140,7 +154,7 @@ class ProductAdmin(TranslationAdmin):
 
     list_display = (
         'product_id', 'sku', 'name', 'type', 'price', 'price_type', 'get_price_period', 'tax_percentage',
-        'max_quantity', 'get_resources', 'get_created_at', 'get_modified_at'
+        'max_quantity', 'get_resources', 'get_created_at', 'get_modified_at', 'price_tax_free'
     )
     readonly_fields = ('product_id',)
     fieldsets = (
@@ -151,7 +165,7 @@ class ProductAdmin(TranslationAdmin):
             'fields': ('sap_code', 'sap_unit', 'sap_function_area', 'sap_office_code'),
         }),
         (_('price').capitalize(), {
-            'fields': ('price', 'price_type', 'price_period', 'tax_percentage', ),
+            'fields': ('price', 'price_type', 'price_period', 'tax_percentage', 'price_tax_free'),
         }),
         (_('resources').capitalize(), {
             'fields': ('resources',)
@@ -207,7 +221,7 @@ class OrderLineInline(admin.TabularInline):
     product_type.short_description = _('product type')
 
     def price(self, obj):
-        return obj.get_price()
+        return round_price(obj.get_price())
 
     price.short_description = _('price including VAT')
 
@@ -245,7 +259,7 @@ class OrderLogEntryInline(admin.TabularInline):
 class OrderCustomerGroupDataInline(admin.TabularInline):
     model = OrderCustomerGroupData
     extra = 1
-    fields = ('customer_group_name', 'product_cg_price', )
+    fields = ('customer_group_name', 'product_cg_price', 'product_cg_price_tax_free')
     readonly_fields = fields
     can_delete = False
     verbose_name = "Selected customer group"

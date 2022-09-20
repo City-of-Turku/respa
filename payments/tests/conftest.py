@@ -386,3 +386,53 @@ def product_with_all_named_customer_groups(customer_group_adults,
         product=product, price=Decimal('175.00')
     )
     return product
+
+@pytest.fixture
+def product_with_fixed_price_type_and_time_slots_tax(resource_in_unit, customer_group_adults,
+    customer_group_children, customer_group_elders):
+    product = ProductFactory.create(
+        price_type=Product.PRICE_FIXED,
+        price=Decimal('50.25'),
+        resources=[resource_in_unit],
+    )
+    ProductCustomerGroupFactory.create(
+        customer_group=customer_group_children,
+        product=product, price=Decimal('6.50')
+    )
+    TimeSlotPriceFactory.create(
+        begin=datetime.time(10, 0), end=datetime.time(12, 0),
+        price=Decimal('10.00'), product=product
+    )
+    TimeSlotPriceFactory.create(
+        begin=datetime.time(12, 0), end=datetime.time(14, 0),
+        price=Decimal('12.00'), product=product
+    )
+    TimeSlotPriceFactory.create(
+        begin=datetime.time(14, 0), end=datetime.time(15, 0),
+        price=Decimal('14.50'), product=product
+    )
+    time_slot_14_to_16 = TimeSlotPriceFactory.create(
+        begin=datetime.time(14, 0), end=datetime.time(16, 0),
+        price=Decimal('14.00'), product=product
+    )
+    time_slot_15_to_16 = TimeSlotPriceFactory.create(
+        begin=datetime.time(15, 0), end=datetime.time(16, 0),
+        price=Decimal('15.60'), product=product
+    )
+    TimeSlotPriceFactory.create(
+        begin=datetime.time(12, 0), end=datetime.time(16, 0),
+        price=Decimal('11.50'), product=product
+    )
+    CustomerGroupTimeSlotPriceFactory.create(
+        customer_group=customer_group_adults, price=Decimal('8.00'),
+        time_slot_price=time_slot_14_to_16
+    )
+    CustomerGroupTimeSlotPriceFactory.create(
+        customer_group=customer_group_adults, price=Decimal('7.00'),
+        time_slot_price=time_slot_15_to_16
+    )
+    CustomerGroupTimeSlotPriceFactory.create(
+        customer_group=customer_group_elders, price=Decimal('6.00'),
+        time_slot_price=time_slot_15_to_16
+    )
+    return product

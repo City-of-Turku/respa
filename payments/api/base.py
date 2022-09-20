@@ -20,7 +20,7 @@ class ProductSerializer(TranslatedModelSerializer):
         model = Product
         fields = (
             'id', 'type', 'name', 'description', 'price', 'max_quantity',
-            'product_customer_groups', 'time_slot_prices'
+            'product_customer_groups', 'time_slot_prices', 'price_tax_free'
         )
 
     def get_price(self, obj):
@@ -45,12 +45,18 @@ class ProductSerializer(TranslatedModelSerializer):
 
 class OrderLineSerializer(serializers.ModelSerializer):
     product = serializers.SlugRelatedField(queryset=Product.objects.current(), slug_field='product_id')
-    price = serializers.CharField(source='get_price', read_only=True)
+    price = serializers.SerializerMethodField(read_only=True)
     unit_price = serializers.CharField(source='get_unit_price', read_only=True)
 
     class Meta:
         model = OrderLine
         fields = ('product', 'quantity', 'unit_price', 'price')
+
+    def get_taxfree_price(self, obj):
+        return obj.get_detailed_price()
+
+    def get_price(self, obj):
+        return obj.get_price(rounded=False)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

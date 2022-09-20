@@ -1,6 +1,6 @@
 import base64
 import datetime
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 import struct
 import time
 import io
@@ -533,3 +533,81 @@ def get_payment_requested_waiting_time(reservation):
     rounded_value = exact_value.replace(microsecond=0, second=0, minute=0)
 
     return rounded_value.astimezone(reservation.resource.unit.get_tz()).strftime('%d.%m.%Y %H:%M')
+
+def calculate_final_product_sums(product: dict, quantity: int = 1):
+    '''
+    Calculate and return the following product values:
+    product_taxfree_total - sum of all pricings taxfree value
+    product_tax_total - sum of all pricings tax value
+    '''
+    tax_raw = 0
+    taxfree_price = 0
+    for x in product['detailed_price'].values():
+        tax_raw += x['tax_total']
+        taxfree_price += x['taxfree_price_total']
+
+    tax_total = quantity * tax_raw
+    
+    return {
+        'product_tax_total': tax_total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+        'product_taxfree_total': taxfree_price * quantity
+    }
+
+def calculate_final_order_sums(all_products):
+    '''
+    Used to calculate and return the following values:
+    final_order_totals - dict containing the following:
+
+    order_total     -   the final price of this order
+    order_tax_total -   dict containing keys for each VAT % and total tax for each VAT%, eg.
+        example order with 3 products that have VAT 24, 14 and 10
+        {'24.00':Decimal('3.48'), '14.00':Decimal('0.61'), '10.00':Decimal('1.36')}
+
+    order_taxfree_total -   the final tax free price of this order.
+    '''
+    # contains order totals using the new taxfree values
+    order_totals = {'order_taxfree_total': Decimal('0.0'), 'order_tax_total': {}, 'order_total': Decimal('0.0')}
+    # iterate through each unique tax % found 
+    for perc in list(set(x['tax_percentage'] for x in all_products)):
+        # list containing products with tax_percentage == perc
+        perc_products = filter(lambda seq: product_has_given_tax_percentage(seq, perc), all_products)
+        # total tax free price for products of this specific VAT %.
+        perc_taxfree_total = Decimal('0.0')
+        for prod in list(perc_products):
+            '''
+            iterate through all products that have tax_percentage == perc.
+            perc_taxfree_total - sum of the tax free total for each product.
+            '''
+            perc_taxfree_total += prod['product_taxfree_total']
+
+        # add total taxfree price for this VAT% to the orders taxfree total
+        order_totals['order_taxfree_total'] += perc_taxfree_total
+
+        # add total taxfree price for this VAT to the orders total
+        order_totals['order_total'] += perc_taxfree_total
+
+        # calculate exact vat value for total taxfree price, 36.30 * 24 / 100
+        # this contains all of the decimals.
+        exact_vat_amount_value = (perc_taxfree_total * Decimal(perc.replace(',','.'))) / 100
+
+        # rounded version of the VAT total
+        rounded_vat_amount_value = exact_vat_amount_value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        # add the total rounded VAT value to the orders tax_total 
+        order_totals['order_tax_total'][perc] = rounded_vat_amount_value
+
+        # add total rounded VAT value for this VAT to the orders total.
+        order_totals['order_total'] += rounded_vat_amount_value
+
+    return {
+        'final_order_totals': order_totals
+    }
+
+def product_has_given_tax_percentage(product, percentage):
+    '''
+    Return True if product['tax_percentage'] is percentage.
+    '''
+    if product['tax_percentage'] == percentage:
+        return True
+    
+    return False

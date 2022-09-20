@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -21,7 +21,8 @@ from modeltranslation.translator import NotRegistered, translator
 from .exceptions import OrderStateTransitionError
 from .utils import (
     convert_aftertax_to_pretax, get_fixed_time_slot_price, get_price_period_display,
-    is_datetime_range_between_times, rounded, handle_customer_group_pricing
+    is_datetime_range_between_times, rounded, handle_customer_group_pricing, get_price_dict,
+    finalize_price_data, get_fixed_time_slot_prices
 )
 
 # The best way for representing non existing archived_at would be using None for it,
@@ -43,6 +44,12 @@ class CustomerGroupTimeSlotPrice(AutoIdentifiedModel):
         verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
         validators=[MinValueValidator(Decimal('0.00'))],
         help_text=_('This will override product price when applicable.')
+    )
+    price_tax_free = models.DecimalField(
+        verbose_name=_('price without VAT'), max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))],
+        help_text=_('This will override product tax free price when applicable.'),
+        default=Decimal('0.00')
     )
     customer_group = models.ForeignKey('payments.CustomerGroup',
         verbose_name=_('Customer group'), related_name='customer_group_time_slot_prices',
@@ -72,6 +79,12 @@ class TimeSlotPrice(AutoIdentifiedModel):
         validators=[MinValueValidator(Decimal('0.00'))],
         help_text=_('This will override product price when applicable.')
     )
+    price_tax_free = models.DecimalField(
+        verbose_name=_('price without VAT'), max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))],
+        help_text=_('This will override product tax free price when applicable'),
+        default=Decimal('0.00')
+    )
     product = models.ForeignKey('payments.Product',
         verbose_name=_('Product'), related_name='time_slot_prices',
         on_delete=models.CASCADE
@@ -83,6 +96,9 @@ class TimeSlotPrice(AutoIdentifiedModel):
     def __str__(self) -> str:
         archived_text = f' ({_("Is archived")})' if self.is_archived else ""
         return f'({self.id}) {self.product.name}: {self.begin}-{self.end}{archived_text}'
+
+    def product_tax_percentage(self):
+        return self.product.tax_percentage
 
     def time_slot_overlaps(self):
         if self.is_archived:
@@ -119,12 +135,21 @@ class OrderCustomerGroupDataQuerySet(models.QuerySet):
     def get_price(self):
         return sum([i.product_cg_price for i in self])
 
+    def get_price_tax_free(self):
+        return sum([i.product_cg_price_tax_free for i in self])
+
 class OrderCustomerGroupData(models.Model):
     customer_group_name = models.CharField(max_length=255)
     product_cg_price = models.DecimalField(
         verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
         validators=[MinValueValidator(Decimal('0.00'))],
         help_text=_('Price of the product at that given time.')
+    )
+    product_cg_price_tax_free = models.DecimalField(
+        verbose_name=_('price without VAT'), max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))],
+        help_text=_('Tax free price of the product at that given time.'),
+        default=Decimal('0.00')
     )
     price_is_based_on_product_cg = models.BooleanField(
         default=False,
@@ -135,7 +160,7 @@ class OrderCustomerGroupData(models.Model):
 
 
     def __str__(self) -> str:
-        return 'Order: {0} <{1}> ({2})'.format(self.order_line.order.order_number, self.product_cg_price, self.customer_group_name)
+        return 'Order: {0} <{1}> ({2}) [{3}]'.format(self.order_line.order.order_number, self.product_cg_price, self.customer_group_name, self.product_cg_price_tax_free)
 
 
     class Meta:
@@ -177,6 +202,10 @@ class ProductCustomerGroupQuerySet(models.QuerySet):
         product_cg = self.filter(product=product).first()
         return product_cg.price if product_cg else product.price
 
+    def get_tax_free_price_for(self, product):    
+        product_cg = self.filter(product=product).first()
+        return product_cg.price_tax_free if product_cg else product.price_tax_free
+
     def get_customer_group_name(self, product):
         product_cg = self.filter(product=product).first()
         return product_cg.customer_group.name if product_cg else None
@@ -194,6 +223,13 @@ class ProductCustomerGroup(AutoIdentifiedModel):
         help_text=_('This will override product price field.')
     )
 
+    price_tax_free = models.DecimalField(
+        verbose_name=_('price without VAT'), max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))],
+        help_text=_('This will override product tax free price field.'),
+        default=Decimal('0.00')
+    )
+
     product = models.ForeignKey('payments.Product',
         verbose_name=_('Product'), related_name='product_customer_groups',
         blank=True, null=True, on_delete=models.PROTECT
@@ -202,7 +238,11 @@ class ProductCustomerGroup(AutoIdentifiedModel):
     objects = ProductCustomerGroupQuerySet.as_manager()
 
     def __str__(self) -> str:
-        return '{0} <{1}> ({2})'.format(self.product.name, self.price, self.customer_group.name)
+        return '{0} <{1}> ({2}) [{3}]'.format(
+            self.product.name, self.price, self.customer_group.name, self.price_tax_free)
+    @property
+    def product_tax_percentage(self):
+        return self.product.tax_percentage
 
 
 class ProductQuerySet(models.QuerySet):
@@ -256,6 +296,10 @@ class Product(models.Model):
     price = models.DecimalField(
         verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
         validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    price_tax_free = models.DecimalField(
+        verbose_name=_('price without VAT'), max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))], blank=True, default=Decimal('0.0')
     )
     tax_percentage = models.DecimalField(
         verbose_name=_('tax percentage'), max_digits=5, decimal_places=2, default=DEFAULT_TAX_PERCENTAGE,
@@ -332,6 +376,10 @@ class Product(models.Model):
     @rounded
     def get_pretax_price(self) -> Decimal:
         return convert_aftertax_to_pretax(self.price, self.tax_percentage)
+    
+    @rounded
+    def get_pretax_price_context(self, price) -> Decimal:
+        return convert_aftertax_to_pretax(price, self.tax_percentage)
 
     @rounded
     def get_pretax_price_for_time_range(self, begin: datetime, end: datetime) -> Decimal:
@@ -390,11 +438,145 @@ class Product(models.Model):
         else:
             raise NotImplementedError('Cannot calculate price, unknown price type "{}".'.format(self.price_type))
 
+    def get_detailed_price_for_time_range(self, begin: datetime, end: datetime, product_cg = None, quantity = 0):
+        '''
+        Returns dict containing detailed price data for time range.
+        '''
+        assert begin < end
+        price = self.price if not product_cg else product_cg.price
+        price_tax_free = self.price_tax_free if not product_cg else product_cg.price_tax_free
+        time_slot_prices = TimeSlotPrice.objects.filter(product=self)
+        tz = self.resources.first().unit.get_tz()
+        local_tz_begin = begin.astimezone(tz)
+        local_tz_end = end.astimezone(tz)
+        # dict with keys for each unique price.
+        detailed_pricing = {}
+        if self.price_type == Product.PRICE_FIXED:
+            # fixed price product
+            fixed_slot_price = self.price
+            fixed_taxfree = self.price_tax_free
+            key = 'default_fixed'
+            if time_slot_prices:
+                # fixed price product with added time slot pricing
+                # price with VAT, price without VAT
+                fixed_slot_price, fixed_taxfree = get_fixed_time_slot_prices(
+                    time_slot_prices=time_slot_prices, 
+                    begin=local_tz_begin,
+                    end=local_tz_end,
+                    product=self,
+                    default_price=price, 
+                    default_price_taxfree=price_tax_free
+                    )
+                key = 'custom_fixed'
+
+            detailed_pricing[key] = get_price_dict(
+                count=quantity,
+                price=fixed_slot_price,
+                pretax=self.get_pretax_price_context(fixed_slot_price, rounded=False),
+                fixed=True,
+                taxfree_price=fixed_taxfree
+            )
+
+            # return detailed pricing for this fixed price product.
+            return detailed_pricing
+        elif self.price_type == Product.PRICE_PER_PERIOD:
+            # per period product
+            if time_slot_prices:
+                # per period product with added time slot pricing
+                slot_begin = local_tz_begin
+                check_interval = timedelta(minutes=5)
+
+                # calculate price for each time chunk
+                while slot_begin + check_interval <= local_tz_end:
+                    price_was_added = False
+                    for time_slot_price in time_slot_prices:
+                        if is_datetime_range_between_times(begin_x=slot_begin, end_x=slot_begin + check_interval,
+                            begin_y=time_slot_price.begin, end_y=time_slot_price.end):
+                                cg_time_slot_price = CustomerGroupTimeSlotPrice.objects.filter(
+                                    time_slot_price=time_slot_price, customer_group_id=self._in_memory_cg).first()
+                                slot_price = time_slot_price.price
+                                tax_free_price = time_slot_price.price_tax_free
+                                if cg_time_slot_price:
+                                    # cg time slot pricing exists -> use its prices.
+                                    slot_price = cg_time_slot_price.price
+                                    tax_free_price = cg_time_slot_price.price_tax_free
+                                elif (ProductCustomerGroup.objects.filter(
+                                    product=self, customer_group_id=self._in_memory_cg).exists()
+                                    or hasattr(self, '_orderline_has_stored_pcg_price_for_non_null_cg')):
+                                    # customer group data exists for product but not for time slot ->
+                                    # use default pricing
+                                    break
+
+                                if time_slot_price.id in detailed_pricing:
+                                    detailed_pricing[time_slot_price.id]['count'] += 1
+                                if time_slot_price.id not in detailed_pricing:
+                                    detailed_pricing[time_slot_price.id] = get_price_dict(
+                                        count=1,
+                                        price=slot_price,
+                                        pretax=self.get_pretax_price_context(slot_price,rounded=False),
+                                        begin=time_slot_price.begin.isoformat('minutes'),
+                                        end=time_slot_price.end.isoformat('minutes'),
+                                        taxfree_price=tax_free_price
+                                    )
+                                    if quantity > 1:
+                                        # quantity is > 1 if there are multiples of the same product
+                                        detailed_pricing[time_slot_price.id]['quantity'] = quantity
+
+                                price_was_added = True
+                                break
+
+                    if not price_was_added:
+                        # time chunk was not in any priced slot -> use default pricing
+                        # default already exists? +1 to count
+                        if 'default' in detailed_pricing:
+                            detailed_pricing['default']['count'] += 1
+                        if 'default' not in detailed_pricing:
+                            # first occurrence of default? -> add default to inner_price
+                            detailed_pricing['default'] = get_price_dict(
+                                count=1,
+                                price=price,
+                                pretax=self.get_pretax_price_context(price, rounded=False),
+                                taxfree_price=price_tax_free
+                            )
+                            if quantity > 1:
+                                # quantity is only defined/>1 if there are multiples of the same product
+                                detailed_pricing['default']['quantity'] = quantity
+
+                    slot_begin += check_interval
+                # finalize the detailed_pricing so that it contains totals.
+                detailed_pricing = finalize_price_data(detailed_pricing, self.price_type, self.price_period)
+                # return detailed pricing for this per period product that contains time slot specific pricing.
+                return detailed_pricing
+
+            # per period product with no time slot prices -> use default.
+            slot_begin = local_tz_begin
+            check_interval = timedelta(minutes=5)
+            while slot_begin + check_interval <= local_tz_end:
+                if 'default' in detailed_pricing:
+                    detailed_pricing['default']['count'] += 1
+                else:
+                    detailed_pricing['default'] = get_price_dict(
+                        count=1,
+                        price=price,
+                        pretax=self.get_pretax_price_context(price, rounded=False),
+                        taxfree_price=self.price_tax_free
+                    )
+                slot_begin += check_interval
+
+            detailed_pricing = finalize_price_data(detailed_pricing, self.price_type, self.price_period)
+            # return detailed_pricing for this per period product that has no time slot specific pricing.
+            return detailed_pricing
+        else:
+            raise NotImplementedError('Cannot calculate detailed pricing, unknown price type "{}".'.format(self.price_type))
+
     def get_pretax_price_for_reservation(self, reservation: Reservation, rounded: bool = True) -> Decimal:
         return self.get_pretax_price_for_time_range(reservation.begin, reservation.end, rounded=rounded)
 
     def get_price_for_reservation(self, reservation: Reservation, rounded: bool = True) -> Decimal:
         return self.get_price_for_time_range(reservation.begin, reservation.end, rounded=rounded)
+    
+    def get_detailed_price_structure(self, reservation: Reservation, quantity):
+        return self.get_detailed_price_for_time_range(begin=reservation.begin, end=reservation.end, quantity=quantity)
 
     def get_tax_price(self) -> Decimal:
         return self.price - self.get_pretax_price()
@@ -549,7 +731,9 @@ class Order(models.Model):
         return self._in_memory_order_lines if hasattr(self, '_in_memory_order_lines') else self.order_lines.all()
 
     def get_price(self) -> Decimal:
-        return sum(order_line.get_price() for order_line in self.get_order_lines())
+        total_sum = sum(order_line.get_price() for order_line in self.get_order_lines())
+        # The final total is rounded, NO ROUNDING BEFORE THIS.
+        return total_sum.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     def set_state(
             self, new_state: str, log_message: str = None,
@@ -635,8 +819,12 @@ class OrderLine(models.Model):
         return self.product.get_price_for_reservation(self.order.reservation)
 
     @handle_customer_group_pricing
-    def get_price(self) -> Decimal:
-        return self.product.get_price_for_reservation(self.order.reservation) * self.quantity
+    def get_price(self, rounded: bool = False) -> Decimal:
+        return self.product.get_price_for_reservation(self.order.reservation, rounded=rounded) * self.quantity
+
+    @handle_customer_group_pricing
+    def get_detailed_price(self):
+        return self.product.get_detailed_price_structure(self.order.reservation, self.quantity)
 
     @handle_customer_group_pricing
     def get_pretax_price_for_reservation(self):
@@ -653,6 +841,15 @@ class OrderLine(models.Model):
         order_cg = OrderCustomerGroupData.objects.filter(order_line=self)
         if order_cg.exists():
             return order_cg.first().product_cg_price
+
+    @property
+    def product_cg_price_tax_free(self):
+        if hasattr(self.order, '_in_memory_order_customer_group_data'):
+            order_cg = next(iter([order_cg for order_cg in self.order._in_memory_order_customer_group_data if order_cg.order_line == self]))
+            return order_cg.product_cg_price_tax_free
+        order_cg = OrderCustomerGroupData.objects.filter(order_line=self)
+        if order_cg.exists():
+            return order_cg.first().product_cg_price_tax_free
 
     @handle_customer_group_pricing
     def handle_customer_group_pricing(self):
@@ -713,10 +910,11 @@ class NotificationOrderLineSerializer(serializers.ModelSerializer):
     unit_price = LocalizedSerializerField(source='get_unit_price')
     reservation_pretax_price = serializers.ReadOnlyField(source='get_pretax_price_for_reservation')
     reservation_tax_price = serializers.ReadOnlyField(source='get_tax_price_for_reservation')
+    detailed_price = LocalizedSerializerField(source='get_detailed_price')
 
     class Meta:
         model = OrderLine
-        fields = ('product', 'quantity', 'price', 'unit_price', 'reservation_pretax_price','reservation_tax_price')
+        fields = ('product', 'quantity', 'price', 'unit_price', 'reservation_pretax_price','reservation_tax_price', 'detailed_price')
 
 
 class NotificationOrderSerializer(serializers.ModelSerializer):
@@ -724,7 +922,8 @@ class NotificationOrderSerializer(serializers.ModelSerializer):
     created_at = LocalizedSerializerField()
     order_lines = NotificationOrderLineSerializer(many=True)
     price = LocalizedSerializerField(source='get_price')
+    payment_method = LocalizedSerializerField()
 
     class Meta:
         model = Order
-        fields = ('id', 'order_lines', 'price', 'created_at')
+        fields = ('id', 'order_lines', 'price', 'created_at', 'payment_method')

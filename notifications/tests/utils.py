@@ -7,7 +7,7 @@ def _mail_exists(subject, to, strings, html_body):
             continue
         if set(mail_instance.to) != set([to]):
             continue
-        mail_message = str(mail_instance.message())
+        mail_message = mail_instance.body
         if all(string in mail_message for string in strings):
             if html_body:
                 assert html_body in (a[0] for a in mail_instance.alternatives if a[1] == 'text/html')

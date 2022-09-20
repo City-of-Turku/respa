@@ -2,7 +2,7 @@ from rest_framework import serializers
 from datetime import date, datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
-
+from typing import List
 from django.utils.translation import ugettext_lazy as _
 from django.utils.dateparse import parse_datetime
 
@@ -73,7 +73,12 @@ def handle_customer_group_pricing(func):
                 and order_cg.price_is_based_on_product_cg):
                 self.product._orderline_has_stored_pcg_price_for_non_null_cg = True
             self.product.price = order_cg.product_cg_price
+            self.product.price_tax_free = order_cg.product_cg_price_tax_free
             return func(self)
+
+        self.product.price_tax_free = self.product_cg_price_tax_free \
+            if prod_cg.exists() and (self.product_cg_price_tax_free or is_free(self.product_cg_price)) \
+            else original.price_tax_free
 
         self.product.price = self.product_cg_price \
             if prod_cg.exists() and (self.product_cg_price or is_free(self.product_cg_price)) \
@@ -187,3 +192,128 @@ def get_fixed_time_slot_price(time_slot_prices, begin, end, product, default_pri
 
     # no valid time slots found, return default price
     return Decimal(default_price)
+
+def get_fixed_time_slot_prices(time_slot_prices, begin, end, product, default_price, default_price_taxfree) -> List[Decimal]:
+    '''
+    Returns list containing the correct time slot's price and taxfree-price based on given time slots and product.
+    eg. Product with 24% VAT 
+    time slot price - 30.00
+    time slot price_taxfree - 24.19
+    [30.00, 24.19]
+    '''
+    from payments.models import CustomerGroupTimeSlotPrice, ProductCustomerGroup
+
+    # fetch only time slots between given begin and end
+    slots_between_begin_and_end = time_slot_prices.filter(begin__lte=begin, end__gte=end)
+    time_slot_prices = slots_between_begin_and_end
+
+    # default results
+    results = [Decimal(default_price), Decimal(default_price_taxfree)]
+    
+    # try to find valid time slots by cg first
+    cg_data_exists_for_product = (ProductCustomerGroup.objects.filter(
+        product=product, customer_group_id=product._in_memory_cg).exists()
+        or hasattr(product, '_orderline_has_stored_pcg_price_for_non_null_cg'))
+    if product._in_memory_cg:
+        time_slots_with_cg = slots_between_begin_and_end.filter(
+                customer_group_time_slot_prices__customer_group=product._in_memory_cg)
+        if len(time_slots_with_cg) > 0:
+            # found time slots with cg -> use them
+            time_slot_prices = time_slots_with_cg
+        elif cg_data_exists_for_product:
+            # no time slots with cg, but product does have the cg -> return default
+            return results
+    
+    time_slot_price = None
+    if len(time_slot_prices) == 1:
+        # only one time slot found -> use it
+        time_slot_price = time_slot_prices.first()
+    elif len(time_slot_prices) > 1:
+        # multiple time slots found, find the must accurate/smallest duration
+        time_slot_price = find_time_slot_with_smallest_duration(time_slot_prices)
+    if time_slot_price:
+        # select correct price values to use for this time slot
+        slot_price = getattr(time_slot_price, 'price')
+        slot_price_taxfree = getattr(time_slot_price, 'price_tax_free')
+            
+        cg_time_slot_price = CustomerGroupTimeSlotPrice.objects.filter(
+            time_slot_price=time_slot_price, customer_group_id=product._in_memory_cg).first()
+        if cg_time_slot_price:
+            # if time slot has the correct customer group, use its prices
+            slot_price = getattr(cg_time_slot_price, 'price')
+            slot_price_taxfree = getattr(cg_time_slot_price, 'price_tax_free')            
+
+        # set found prices to results
+        results = [Decimal(slot_price), Decimal(slot_price_taxfree)]
+        return results
+
+    # no valid time slots found, return default price
+    return results
+
+def get_price_dict(count: int, price: Decimal, pretax: Decimal, taxfree_price: Decimal, fixed: bool = False, begin: str = '', end: str = ''):
+    '''
+    return dict containing initial price data based on params.
+    '''
+    price_dict = {
+        'count': float(count),
+        'price': price,
+        'pretax': pretax,
+        'tax': round_price(price - pretax), # not sure if this should be rounded
+        'taxfree_price': taxfree_price
+    }
+    # fixed pricing -> set the final values because fixed products don't go through the finalize_price_data function.
+    if fixed:
+        price_dict['total'] = price
+        price_dict['taxfree_total'] = round_price(count * pretax)
+        price_dict['tax_total'] = round_price(count * (price - pretax))
+        price_dict['taxfree_price'] = taxfree_price
+        price_dict['taxfree_price_total'] = count * taxfree_price
+
+    # per_period pricing
+    if not fixed and begin:
+        price_dict['time'] = {'begin':begin,'end':end}
+    
+
+    return price_dict
+
+def finalize_price_data(price_dict: dict, price_type = None, price_period = None):
+    '''
+    Iterate through price_dict items and finalize the following values:
+    count
+    total
+    taxfree_total
+    tax_total
+    taxfree_price_total
+    '''
+    divider = 12
+    if price_type == 'per_period':
+        aika = timedelta(hours=1)
+        '''
+        eg if price_period is 0:30:00
+        12/(1:00:00/0:30:00) = 6.0
+        '''
+        divider = divider/(aika/price_period)
+
+    for k, v in price_dict.items():
+        item = price_dict[k]
+        '''
+        count is the amount of 5 min time chunks that have this pricing,
+        divide count by divider(default 12, 12x5minute time chunks is 1h) to get the amount of hours.
+        eg.
+        count = 6 (6*5minute chunks = 30min)
+        count = count / 6
+        count == 1
+        '''
+        
+        updated_count = item['count'] / divider
+        updated_values = {
+            'count': updated_count,
+            'total': Decimal(updated_count) * item['price'],
+            'taxfree_total': round_price(Decimal(str(updated_count)) * item['pretax']),
+            'tax_total': round_price(Decimal(str(updated_count)) * item['tax']),
+            'taxfree_price_total': Decimal(updated_count) * item['taxfree_price']
+        }
+        
+        item.update(updated_values)
+
+    return price_dict

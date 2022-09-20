@@ -1,0 +1,72 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+{% block admin_change_form_document_ready %}
+{{ block.super }}
+{% endblock %}
+{% block after_related_objects %}
+<script type="text/javascript">
+    (function ($) {
+        function changeProductTaxfree(edit = false) {
+            // current price_tax_free value
+            const taxfreeValue = parseInt($("#id_price_tax_free").val());
+            if (taxfreeValue === 0 || edit) {
+                // value of the id_price input
+                const priceValue = $("#id_price").val();
+                // int value of the id_tax_percentage input 
+                const percValue = parseInt($("#id_tax_percentage").val());
+                // unrounded taxfree price value.
+                // example with 15e and 24%, 100 * 15 / (100+24) = 12.096774193548388
+                const sum = 100 * priceValue / (100 + percValue);
+                // set price_tax_free input value to a rounded version of sum
+                // Math.round(12.096774193548388 * 100) / 100 = 12.1
+                $("#id_price_tax_free").val(Math.round(sum * 100) / 100);
+            }
+        };
+
+        function changeInlineTaxfree(price = 0, root = '', id = '') {
+            // for some reason one of the inputs is in a hidden div, immediately return if this is it.
+            if (id.includes('prefix') || !root || !id) { return; }
+            // parse the number from the id, eg. id_time_slot_prices-2-price_tax_free -> 2.
+            const taxfreeIndex = parseInt(id.match(/\d+/g)[0]);
+            // return if taxfreeIndex is falsy and is not 0, because 0 is a valid index.
+            if (!taxfreeIndex && taxfreeIndex !== 0) { return; }
+            // find correct taxfree input that corresponds to this input.
+            const vatFreeInput = $(root).find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price_tax_free").find("input")[taxfreeIndex];
+            // int value of the id_tax_percentage input 
+            const percValue = parseInt($("#id_tax_percentage").val());
+            // unrounded taxfree price value.
+            const sum = 100 * price / (100 + percValue);
+            // set rounded taxfree price to the correct input.
+            $(vatFreeInput).val(Math.round(sum * 100) / 100);
+        };
+        $(document).ready(function () {
+            changeProductTaxfree();
+            // time slot prices price elements.
+            const timeslotPriceElements = $("#time_slot_prices-group").find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price").find("input");
+            // product customer groups price elements.
+            const pcgTimeslotPriceElements = $("#product_customer_groups-group").find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price").find("input");
+
+            $("#id_price").change(function () {
+                // triggers when id_price input value changes.
+                changeProductTaxfree(true);
+            });
+            $("#id_tax_percentage").change(function () {
+                // triggers when id_tax_percentage select value changes.
+                // all prices/taxfree prices will be updated according to the new tax %
+                changeProductTaxfree(true);
+                const currentTimeslotElements = $("#time_slot_prices-group").find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price").find("input");
+                const currentPcgTimeslotElements = $("#product_customer_groups-group").find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price").find("input");
+                $(currentTimeslotElements).trigger("change");
+                $(currentPcgTimeslotElements).trigger("change");
+            });
+            $(timeslotPriceElements).on("change", function (event) {
+                changeInlineTaxfree($(this).val(), "#time_slot_prices-group", event.target.id);
+            });
+            $(pcgTimeslotPriceElements).on("change", function (event) {
+                changeInlineTaxfree($(this).val(), "#product_customer_groups-group", event.target.id);
+            });
+        });
+    })(grp.jQuery);
+</script>
+{{ block.super }}
+{% endblock%}

@@ -82,7 +82,8 @@ class OrderViewSet(viewsets.ViewSet):
         if product_cgs:
             order._in_memory_order_customer_group_data = [OrderCustomerGroupData(order_line=order_line,
                 product_cg_price=product_cgs.get_price_for(order_line.product),
-                customer_group_name=product_cgs.get_customer_group_name(order_line.product))
+                customer_group_name=product_cgs.get_customer_group_name(order_line.product),
+                product_cg_price_tax_free=product_cgs.get_tax_free_price_for(order_line.product))
                 for order_line in order.get_order_lines()
             ]
 

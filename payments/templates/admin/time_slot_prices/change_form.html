@@ -1,0 +1,54 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+{% block after_related_objects %}
+<p>näkyyykö</p>
+<script type="text/javascript">
+    (function ($) {
+        function changeTaxfreeValue(edit = false) {
+            // value of the read-only field that contains tax % when editing a pcg.
+            const percValue = parseInt($(".product_tax_percentage").find("div[class='grp-readonly']").text());
+            // stop if perc doesn't exist because this only works when editing a pcg.
+            if (!percValue) { return; }
+
+            // current price_tax_free value
+            const taxfreeValue = parseInt($("#id_price_tax_free").val());
+            if (taxfreeValue == 0 || edit) {
+                // value of the id_price input
+                const priceValue = $("#id_price").val();
+                // unrounded taxfree price value.
+                const sum = 100 * priceValue / (100 + percValue);
+                // set price_tax_free input value to a rounded version of sum
+                $("#id_price_tax_free").val(Math.round(sum * 100) / 100);
+            }
+        };
+        $(document).ready(function () {
+            changeTaxfreeValue();
+            $("#id_price").change(function () {
+                // triggers when id_price input value changes.
+                changeTaxfreeValue(true);
+            });
+
+            const cgTimeslotPriceElements = $("#customer_group_time_slot_prices-group").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price").find("input");
+            // add event listener to all customergroup timeslot price input elements.
+            $(cgTimeslotPriceElements).on("change", function (event) {
+                // current tax %
+                const percValue = parseInt($(".product_tax_percentage").find("div[class='grp-readonly']").text());
+                if (!percValue) { return; }
+                // cg time slot price value
+                const priceValue = $(this).val();
+                // id of current price input -> id contains number that is also the index.
+                const id = event.target.id;
+                // index of current input, so we can find the correct taxfree input to change.
+                const cgIndex = parseInt(id.match(/\d+/g)[0]);
+                // the taxfree input that corresponds to this input.
+                const vatFreeInput = $("#customer_group_time_slot_prices-group").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price_tax_free").find("input")[cgIndex];
+                // calculate new unrounded taxfree price value.
+                const sum = 100 * priceValue / (100 + percValue);
+                // set rounded tax free value to the correct taxfree input.
+                $(vatFreeInput).val(Math.round(sum * 100) / 100);
+            });
+        });
+    })(grp.jQuery);
+</script>
+{{ block.super }}
+{% endblock %}

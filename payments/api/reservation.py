@@ -47,8 +47,11 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
             product = order_line_data['product']
             order_line = OrderLine.objects.create(order=order, **order_line_data)
             prod_cg = ProductCustomerGroup.objects.filter(product=product, customer_group__id=customer_group)
-            ocgd = OrderCustomerGroupData.objects.create(order_line=order_line,
-            product_cg_price=prod_cg.get_price_for(order_line.product))
+            ocgd = OrderCustomerGroupData.objects.create(
+                order_line=order_line,
+                product_cg_price=prod_cg.get_price_for(order_line.product),
+                product_cg_price_tax_free=prod_cg.get_tax_free_price_for(order_line.product)
+                )
             if prod_cg:
                 ocgd.copy_translated_fields(prod_cg.first().customer_group)
                 ocgd.price_is_based_on_product_cg = True

@@ -24,7 +24,8 @@ from .resource import Resource
 from .utils import (
     get_dt, save_dt, is_valid_time_slot, humanize_duration, send_respa_mail,
     DEFAULT_LANG, localize_datetime, format_dt_range, build_reservations_ical_file,
-    get_order_quantity, get_order_tax_price, get_order_pretax_price, get_payment_requested_waiting_time
+    get_order_quantity, get_order_tax_price, get_order_pretax_price, get_payment_requested_waiting_time,
+    calculate_final_product_sums, calculate_final_order_sums
 )
 
 from random import sample
@@ -576,7 +577,7 @@ class Reservation(ModifiableModel):
                         'unit_price', 'unit_price_num', 'tax_percentage',
                         'price_type', 'price_period', 'order_number',
                         'decimal_hours', 'pretax_price', 'pretax_price_num',
-                        'tax_price', 'tax_price_num'
+                        'tax_price', 'tax_price_num', 'detailed_price'
                     )
                     '''
                     product_values
@@ -599,6 +600,7 @@ class Reservation(ModifiableModel):
                     pretax_price_num    -   price amount without tax, float e.g. 6.05. See function comments for further explanation.
                     tax_price           -   tax amount, string e.g. 1,45 if total price is 7,5 with 24% vat
                     tax_price_num       -   tax amount, float e.g. 1.45. See function comments for further explanation.
+                    detailed price      -   contains detailed price info, timeslot specific prices used etc
                     '''
                     product_values = {
                         'id': item["product"]["id"],
@@ -616,7 +618,8 @@ class Reservation(ModifiableModel):
                         'pretax_price': item["product"]["pretax_price"],
                         'pretax_price_num': get_order_pretax_price(item),
                         'tax_price': item["product"]["tax_price"],
-                        'tax_price_num': get_order_tax_price(item)
+                        'tax_price_num': get_order_tax_price(item),
+                        'detailed_price': item["detailed_price"],
                     }
 
                     for field in product_fields:
@@ -631,13 +634,34 @@ class Reservation(ModifiableModel):
                             else:
                                 # price_type is 'fixed'
                                 product[field] = 1
+                        elif field == 'detailed_price':
+                            product[field] = product_values[field]
+                            conditional_quantity = 1
+                            if item['product']['price_type'] == 'per_period':
+                                product_quantity = list(set([x['quantity'] for x in item['detailed_price'].values() if 'quantity' in x]))
+                                # product_quantity is only truthy if there are 2 or more of the product.
+                                if len(product_quantity) > 0:
+                                    product['product_quantity'] = float(product_quantity[0])
+                                    conditional_quantity = product_quantity[0]
+                                else:
+                                    # only 1 of the product
+                                    product['product_quantity'] = float(1)
+                                
+                            values = calculate_final_product_sums(product=item, quantity=conditional_quantity)
+                            product['product_taxfree_total'] = values['product_taxfree_total']
+                            product['product_tax_total'] = values['product_tax_total']
+
                         else:
                             product[field] = product_values[field]
 
                     all_products.append(product)
 
+                order_sums = calculate_final_order_sums(all_products)
 
                 context['order_details'] = all_products
+                context['order_taxfree_total'] = order_sums['final_order_totals']['order_taxfree_total']
+                context['order_total'] = order_sums['final_order_totals']['order_total']
+                context['detailed_tax_sums'] = order_sums['final_order_totals']['order_tax_total']
 
         if extra_context:
             context.update({
