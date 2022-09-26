@@ -8,10 +8,10 @@
     (function ($) {
         function changeProductTaxfree(edit = false) {
             // current price_tax_free value
-            const taxfreeValue = parseInt($("#id_price_tax_free").val());
-            if (taxfreeValue === 0 || edit) {
+            const taxFreeValue = parseInt($("#id_price_tax_free").val());
+            if (taxFreeValue === 0 || edit) {
                 // value of the id_price input
-                const priceValue = $("#id_price").val();
+                const priceValue = parseFloat($("#id_price").val());
                 // int value of the id_tax_percentage input 
                 const percValue = parseInt($("#id_tax_percentage").val());
                 // unrounded taxfree price value.
@@ -22,7 +22,21 @@
                 $("#id_price_tax_free").val(Math.round(sum * 100) / 100);
             }
         };
-
+        function changeProductPrice(edit = false) {
+            // current price_tax_free value
+            const taxFreeValue = parseInt($("#id_price_tax_free").val());
+            if (taxFreeValue || edit) {
+                // value of the id_price_tax_free input
+                const taxFreeValue = parseFloat($("#id_price_tax_free").val());
+                // int value of the id_tax_percentage input 
+                const percValue = parseInt($("#id_tax_percentage").val());
+                // unrounded price value.
+                // example with VAT-free price 15e and 24%, (15*24 / 100) + 15 = 18.6
+                const sum = (taxFreeValue * percValue / 100) + taxFreeValue;
+                // set price input value to a rounded version of sum
+                $("#id_price").val(Math.round(sum * 100) / 100);
+            }
+        };
         function changeInlineTaxfree(price = 0, root = '', id = '') {
             // for some reason one of the inputs is in a hidden div, immediately return if this is it.
             if (id.includes('prefix') || !root || !id) { return; }
@@ -39,16 +53,40 @@
             // set rounded taxfree price to the correct input.
             $(vatFreeInput).val(Math.round(sum * 100) / 100);
         };
+        function changeInlinePrice(taxFreePrice = 0, root = '', id = '') {
+            // for some reason one of the inputs is in a hidden div, immediately return if this is it.
+            if (id.includes('prefix') || !root || !id) { return; }
+            // parse the number from the id, eg. id_time_slot_prices-2-price_tax_free -> 2.
+            const priceIndex = parseInt(id.match(/\d+/g)[0]);
+            // return if priceIndex is falsy and is not 0, because 0 is a valid index.
+            if (!priceIndex && priceIndex !== 0) { return; }
+            // find correct price input that corresponds to this input.
+            const priceInput = $(root).find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price").find("input")[priceIndex];
+            // int value of the id_tax_percentage input 
+            const percValue = parseInt($("#id_tax_percentage").val());
+            // unrounded price value.
+            const sum = (taxFreePrice * percValue / 100) + taxFreePrice;
+            // set rounded price to the correct input.
+            $(priceInput).val(Math.round(sum * 100) / 100);
+        };
         $(document).ready(function () {
             changeProductTaxfree();
             // time slot prices price elements.
             const timeslotPriceElements = $("#time_slot_prices-group").find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price").find("input");
+            // time slot prices VAT-free price elements.
+            const timeslotVATfreeElements = $("#time_slot_prices-group").find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price_tax_free").find("input");
             // product customer groups price elements.
             const pcgTimeslotPriceElements = $("#product_customer_groups-group").find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price").find("input");
+            // product customer groups VAT-free price elements.
+            const pcgTimeslotVATfreeElements = $("#product_customer_groups-group").find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price_tax_free").find("input");
 
             $("#id_price").change(function () {
                 // triggers when id_price input value changes.
                 changeProductTaxfree(true);
+            });
+            $("#id_price_tax_free").change(function () {
+                // triggers when id_price_tax_free input value changes.
+                changeProductPrice(true);
             });
             $("#id_tax_percentage").change(function () {
                 // triggers when id_tax_percentage select value changes.
@@ -60,10 +98,16 @@
                 $(currentPcgTimeslotElements).trigger("change");
             });
             $(timeslotPriceElements).on("change", function (event) {
-                changeInlineTaxfree($(this).val(), "#time_slot_prices-group", event.target.id);
+                changeInlineTaxfree(parseFloat($(this).val()), "#time_slot_prices-group", event.target.id);
             });
             $(pcgTimeslotPriceElements).on("change", function (event) {
-                changeInlineTaxfree($(this).val(), "#product_customer_groups-group", event.target.id);
+                changeInlineTaxfree(parseFloat($(this).val()), "#product_customer_groups-group", event.target.id);
+            });
+            $(timeslotVATfreeElements).on("change", function (event) {
+                changeInlinePrice(parseFloat($(this).val()), "#time_slot_prices-group", event.target.id);
+            });
+            $(pcgTimeslotVATfreeElements).on("change", function (event) {
+                changeInlinePrice(parseFloat($(this).val()), "#product_customer_groups-group", event.target.id);
             });
         });
     })(grp.jQuery);

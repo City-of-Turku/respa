@@ -12,11 +12,27 @@
             const taxfreeValue = parseInt($("#id_price_tax_free").val());
             if (taxfreeValue == 0 || edit) {
                 // value of the id_price input
-                const priceValue = $("#id_price").val();
+                const priceValue = parseFloat($("#id_price").val());
                 // unrounded taxfree price value.
                 const sum = 100 * priceValue / (100 + percValue);
                 // set price_tax_free input value to a rounded version of sum
                 $("#id_price_tax_free").val(Math.round(sum * 100) / 100);
+            }
+        };
+        function changePriceValue(edit = false) {
+            // value of the read-only field that contains tax % when editing a pcg.
+            const percValue = parseInt($("div[class='grp-readonly']").text());
+            // stop if percValue doesn't exist because this only works when editing a pcg.
+            if (!percValue) { return; }
+            // current price_tax_free value
+            const priceValue = parseInt($("#id_price_tax_free").val());
+            if (priceValue == 0 || edit) {
+                // value of the id_price input
+                const taxValue = parseFloat($("#id_price_tax_free").val());
+                // unrounded taxfree price value.
+                const sum = (taxValue * percValue / 100) + taxValue;
+                // set price_tax_free input value to a rounded version of sum
+                $("#id_price").val(Math.round(sum * 100) / 100);
             }
         };
         $(document).ready(function () {
@@ -24,6 +40,10 @@
             $("#id_price").change(function () {
                 // triggers when id_price input value changes.
                 changeTaxfreeValue(true);
+            });
+            $("#id_price_tax_free").change(function () {
+                // triggers when id_price input value changes.
+                changePriceValue(true);
             });
         });
     })(grp.jQuery);
