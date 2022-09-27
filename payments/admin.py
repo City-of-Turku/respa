@@ -122,6 +122,20 @@ class ProductForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['resources'] = forms.ModelMultipleChoiceField(queryset=Resource.objects.order_by('name'))
 
+    def clean(self):
+        super().clean()
+        price_type = self.cleaned_data.get('price_type')
+        price_period = self.cleaned_data.get('price_period')
+        resources = self.cleaned_data.get('resources', None)
+        if price_type == Product.PRICE_PER_PERIOD and not None in [resources, price_period]:
+            '''Check that none of the selected resources slot_size is smaller than the products price_period.'''
+            for resource in resources:
+                # time_div is less than 1 if the resource slot_size is smaller than the product's price_period
+                # e.g. 00:30:00 / 01:00:00 = 0.5
+                time_div = resource.slot_size / price_period
+                if time_div < 1:
+                    self.add_error('resources', f'Selected resource slot size is smaller than the products price period: {resource}')
+        return self.cleaned_data
 
 
 class ProductCGInlineFormSet(BaseInlineFormSet):
