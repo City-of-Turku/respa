@@ -150,6 +150,21 @@ If a reservation's order total price is 0.00 EUR, the reservation is treated lik
 
 Staff members follow the normal payment flow when making reservations to resources requiring manual confirmation i.e. they make the payment at the initial reservation creation.
 
+## Payment methods
+
+The payment system currently supports `online` and `cash` payment methods for an order. Payment method for the order must be selected at order/reservation creation.
+
+`Online` payment method is used by default and goes through a third party payment provider like Turku Maksupalvelu.
+
+`Cash` payment method has some key differences between it and `online` payment method:
+- `Cash` payment method can only be used with resources using manually confirmed reservations.
+- `Cash` payment method does not go through a third party payment provider.
+- Resources can toggle whether they want to enable `cash` payments on or off with `cash_payments_allowed` which is off by default.
+- Reservation flow and states with `cash` payments is:
+  1. Customer creates a reservation with a cash order. Reservation state is `requested`.
+  2. Staff approves the reservation and its state changes to `waiting for cash payment`.
+  3. Staff approves that the reservation cash payment is made. Reservation state changes to `confirmed`.
+
 ## Administration
 
 Currently Django Admin needs to be used for all administrative tasks, ie. adding / modifying / deleting products, and viewing / cancelling orders.
