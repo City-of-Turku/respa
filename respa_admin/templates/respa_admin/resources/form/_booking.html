@@ -5,7 +5,7 @@
         <h2>{% trans "Booking information" %}</h2>
         <span class="pull-right">{% trans "*Mandatory fields" %}</span>
     </div>
-     <div class="input-row">
+    <div class="input-row">
         {% include "respa_admin/forms/_input.html" with field=form.min_age %}
         {% include "respa_admin/forms/_input.html" with field=form.max_age %}
     </div>
@@ -17,6 +17,7 @@
         {% include "respa_admin/forms/_select.html" with field=form.min_period inline=True %}
         {% include "respa_admin/forms/_select.html" with field=form.max_period inline=True %}
         {% include "respa_admin/forms/_select.html" with field=form.slot_size inline=True %}
+        <p>{{ form.slot_size.help_text }}</p>
         {% include "respa_admin/forms/_select.html" with field=form.cooldown inline=True %}
     </div>
     <div class="input-row">

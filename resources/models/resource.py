@@ -253,7 +253,8 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
     cooldown = models.DurationField(verbose_name=_('Reservation cooldown'), null=True, blank=True, default=datetime.timedelta(minutes=0))
 
     slot_size = models.DurationField(verbose_name=_('Slot size for reservation time'), null=True, blank=True,
-                                     default=datetime.timedelta(minutes=30))
+                                     default=datetime.timedelta(minutes=30), help_text=_('Note! If there are any products with per_period pricing that are attached to this resource'
+                                     ', make sure that slot_size value is the same size as the products price_period value.'))
 
     equipment = EquipmentField(Equipment, through='ResourceEquipment', verbose_name=_('Equipment'))
     max_reservations_per_user = models.PositiveIntegerField(verbose_name=_('Maximum number of active reservations per user'),

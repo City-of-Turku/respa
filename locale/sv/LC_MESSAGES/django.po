@@ -1937,3 +1937,6 @@ msgstr "Tillåter kontantbetalningsalternativ för betalda bokningar. Kan endast
 
 msgid "Cash payments are only allowed when reservations need manual confirmation"
 msgstr "Kontantbetalningar är endast tillåtna när bokningar kräver manuell bekräftelse"
+
+msgid "Note! If there are any products with per_period pricing that are attached to this resource, make sure that slot_size value is the same size as the products price_period value."
+msgstr "Obs! Om det finns produkter med per period priser för denna resurs, så kolla att spårstorlek värdet är lika stort som produktens prisperiod värde."
