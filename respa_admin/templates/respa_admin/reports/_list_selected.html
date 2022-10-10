@@ -5,7 +5,7 @@
 {% if resources %}
 <section class='resources'>
     <div class='container reports'>
-        <div class="col-wrap-container row-wrap fluid space-between">
+        <div class="col-wrap-container row-wrap reverse-order fluid space-between">
             <div class="col-wrap-container">
                 <button type="button" class="btn btn-default" id="select-all-btn">{% trans 'Select all' %}</button>
             </div>
@@ -15,14 +15,6 @@
                     <input type="text" class="form-control text-input" id="resource-filter">
                 </div>
             </div>
-        </div>
-        <div id="per-page-menu-container" class="col-wrap-container">
-            <div id="per-page-menu" class="col-wrap-container row-wrap align-items-center border-bottom">
-                <a class="btn" href="javascript://" data-value="10">10</a>
-                <a class="btn btn-selected" href="javascript://" data-value="20">20</a>
-                <a class="btn" href="javascript://" data-value="50">50</a>
-            </div>
-            <label for="per-page-menu" class="margin-sm-left text-align-center no-select input-label">{% trans 'Results per page' %}</label>
         </div>
         <div 
             class="col-wrap-container fluid row-wrap border-thick"
@@ -55,10 +47,20 @@
                 </div>
             {% endfor %}
         </div>
-        <div 
-            id="paginator-page-container"
-            class="col-wrap-container row-wrap fluid justify-center"
-            data-paginator-id="{{ random_id_str }}">
+        <div class="col-wrap-container row-wrap space-between">
+            <div
+                id="paginator-page-container"
+                class="col-wrap-container row-wrap fluid justify-center"
+                data-paginator-id="{{ random_id_str }}">
+            </div>
+            <div id="per-page-menu-container" class="col-wrap-container flex-end">
+                <div id="per-page-menu" class="col-wrap-container row-wrap align-items-center border-bottom">
+                    <a class="btn" href="javascript://" data-value="10">10</a>
+                    <a class="btn btn-selected" href="javascript://" data-value="20">20</a>
+                    <a class="btn" href="javascript://" data-value="50">50</a>
+                </div>
+                <label for="per-page-menu" class="margin-sm-left text-align-center no-select input-label">{% trans 'Results per page' %}</label>
+            </div>
         </div>
         <div class="col-wrap-container row-wrap fluid space-between">
             <div class="col-wrap-container">
