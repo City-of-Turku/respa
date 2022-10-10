@@ -47,13 +47,18 @@
                 </div>
             {% endfor %}
         </div>
-        <div class="col-wrap-container row-wrap space-between">
+        <div class="col-wrap-container row-wrap fluid space-between">
+            <div style="width: 390px"></div>
             <div
                 id="paginator-page-container"
                 class="col-wrap-container row-wrap fluid justify-center"
+                style="width: 390px"
                 data-paginator-id="{{ random_id_str }}">
             </div>
-            <div id="per-page-menu-container" class="col-wrap-container flex-end">
+            <div 
+                id="per-page-menu-container"
+                class="col-wrap-container flex-end "
+                style="width: 390px">
                 <div id="per-page-menu" class="col-wrap-container row-wrap align-items-center border-bottom">
                     <a class="btn" href="javascript://" data-value="10">10</a>
                     <a class="btn btn-selected" href="javascript://" data-value="20">20</a>
@@ -62,7 +67,7 @@
                 <label for="per-page-menu" class="margin-sm-left text-align-center no-select input-label">{% trans 'Results per page' %}</label>
             </div>
         </div>
-        <div class="col-wrap-container row-wrap fluid space-between">
+        <div class="col-wrap-container row-wrap space-between">
             <div class="col-wrap-container">
                 <div class="col-wrap-container">
                     <input type="date" class="margin-sm-left border-thick align-center" name="begin-date" id="begin-date" />
