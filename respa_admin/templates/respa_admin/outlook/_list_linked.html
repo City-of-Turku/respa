@@ -45,7 +45,11 @@
         <div class='container-fluid'>
             {% for unit in units %}
             <span class="sub-header margin-top-5">{{ unit.name }}</span>
-                <div class="list-group-item card-item-list" paginate="{{ unit.id }}" per-page="6">
+                <div
+                    class="list-group-item card-item-list"
+                    data-paginate="true"
+                    data-paginator-id="{{ unit.id }}"
+                    data-paginator-per-page="6">
                 {% for resource in unit.resources.all|dictsort:"created_at" %}
                 {% if selected_outlook_filter != "no_link" %}
                     {% with resource.outlookcalendarlink as outlook_link %}
@@ -68,8 +72,10 @@
                 {% endif %}
                 {% endfor %}
                 </div>
-                <div class="card-footer" id="pagination-container-{{ unit.id }}">
-                    <span></span>
+                <div 
+                    id="paginator-page-container"
+                    class="card-footer" 
+                    data-paginator-id="{{ unit.id }}">
                 </div>
             {% empty %}
             <div class="list-group-item card-item-list align-center">

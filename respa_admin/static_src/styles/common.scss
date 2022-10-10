@@ -52,6 +52,10 @@
     color: $white !important;
     cursor: not-allowed;
   }
+
+  &.fluid {
+    width: calc(100% + 20px);
+  }
 }
 
 .accordion-item {
@@ -216,4 +220,59 @@
     font-weight: 500;
     color: $white;
   }
+}
+
+
+@keyframes spinner {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+.ld-spinner {
+  display: inline-flex;
+	width: 60px;
+	height: 60px;
+	&:after {
+		content: " ";
+		display: flex;
+    align-self: center;
+    justify-content: center;
+		width: 34px;
+		height: 34px;
+		margin: 8px;
+		border-radius: 50%;
+		border: 6px solid rgb(0, 0, 0);
+		border-color: rgb(0, 0, 0) transparent rgb(0, 0, 0) transparent;
+		animation: spinner 1.2s linear infinite;
+	}
+}
+
+
+.no-border {
+  border: none;
+}
+
+.btn-selected {
+  background: $theme-primary-dark;
+  color: $white;
+}
+
+.border-thick {
+  border: 2px solid black !important;
+}
+
+.border-top-bottom {
+  border-top: 2px solid black !important;
+  border-bottom: 2px solid black !important;
+}
+
+.border-top {
+  border-top: 2px solid black !important;
+}
+
+.border-bottom {
+  border-bottom: 2px solid black !important;
 }

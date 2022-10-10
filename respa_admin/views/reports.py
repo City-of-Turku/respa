@@ -4,6 +4,7 @@ from django.utils.translation import ugettext as _
 from django.views.generic.base import TemplateView
 from resources.models import Unit, UnitAuthorization, Resource
 from resources.auth import is_general_admin
+from resources.models.utils import generate_id
 from respa_admin.views.base import ExtraContextMixin
 
 
@@ -30,6 +31,7 @@ class ReportView(ExtraContextMixin, TemplateView):
             for unit in context['units']:
                 if unit.id in self.query_params:
                     setattr(unit, 'checked', True)
+        context['random_id_str'] = generate_id()
         return context
 
 

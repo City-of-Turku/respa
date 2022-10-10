@@ -5,10 +5,32 @@
 {% if resources %}
 <section class='resources'>
     <div class='container reports'>
-        <button type="button" class="resources-button button-border no-wrap text-align-center" id="select-all-btn" lang="{{ LANGUAGE_CODE }}">{% trans 'Select all' %}</button>
-        <div class="col-wrap-container fluid row-wrap border-thick">
+        <div class="col-wrap-container row-wrap fluid space-between">
+            <div class="col-wrap-container">
+                <button type="button" class="btn btn-default" id="select-all-btn">{% trans 'Select all' %}</button>
+            </div>
+            <div class="form-group listing-search col-wrap-container fluid align-items-center">
+                <div class="input-group">
+                    <span class="input-group-addon">{% trans 'Filter' %}</span>
+                    <input type="text" class="form-control text-input" id="resource-filter">
+                </div>
+            </div>
+        </div>
+        <div id="per-page-menu-container" class="col-wrap-container">
+            <div id="per-page-menu" class="col-wrap-container row-wrap align-items-center border-bottom">
+                <a class="btn" href="javascript://" data-value="10">10</a>
+                <a class="btn btn-selected" href="javascript://" data-value="20">20</a>
+                <a class="btn" href="javascript://" data-value="50">50</a>
+            </div>
+            <label for="per-page-menu" class="margin-sm-left text-align-center no-select input-label">{% trans 'Results per page' %}</label>
+        </div>
+        <div 
+            class="col-wrap-container fluid row-wrap border-thick"
+            data-paginate="true"
+            data-paginator-id="{{ random_id_str }}"
+            data-paginator-per-page="20">
             {% for resource in resources %}
-                <div class="resource-card">
+                <div class="resource-card" data-paginator-item="true">
                     <div class="card">
                         <img
                             class="img-rounded pull-left"
@@ -19,7 +41,11 @@
                                 ""
                             {% endif %}
                         >
-                        <label for="{{ resource.id }}" class="margin-sm-left text-align-center">{{ resource.name }}</label>
+                        <label 
+                            for="{{ resource.id }}"
+                            class="margin-sm-left text-align-center no-select">
+                            {{ resource.name }}
+                        </label>
                     </div>
                     {% if resource.checked %}
                         <input type="checkbox" id="{{ resource.id }}" name="resource" class="bg-input" value="{{ resource.id }}" checked />
@@ -28,6 +54,11 @@
                     {% endif %}
                 </div>
             {% endfor %}
+        </div>
+        <div 
+            id="paginator-page-container"
+            class="col-wrap-container row-wrap fluid justify-center"
+            data-paginator-id="{{ random_id_str }}">
         </div>
         <div class="col-wrap-container row-wrap fluid space-between">
             <div class="col-wrap-container">
@@ -41,7 +72,9 @@
                 </div>
             </div>
             <div class="button-container row-reverse align-center">
-                <button type="button" class="resources-button button-border" id="generate-btn" disabled>{% trans 'Download' %}</button>
+                <button type="button" class="resources-button button-border" id="generate-btn" disabled>
+                    {% trans 'Download' %}
+                </button>
             </div>
         </div>
     </div>

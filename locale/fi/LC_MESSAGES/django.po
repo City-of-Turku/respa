@@ -2003,5 +2003,12 @@ msgstr "Sallii käteismaksuvaihtoehdon maksullisille varauksille. Voidaan asetta
 msgid "Cash payments are only allowed when reservations need manual confirmation"
 msgstr "Käteismaksuvaihtoehtoa voidaan käyttää vain vahvistettavien varausten resurssissa"
 
-msgid "Note! If there are any products with per_period pricing that are attached to this resource, make sure that slot_size value is the same size as the products price_period value."
-msgstr "Huom! Jos resurssiin on liitetty tuotteita, joilla on ajanjaksokohtainen hinnoittelu, niin varmista että varausajan välin koko on yhtä suuri kuin tuotteen hinnan ajanjakson arvo."
+msgid ""
+    "Note! If there are any products with per_period pricing that are attached to this resource, "
+    "make sure that slot_size value is the same size as the products price_period value."
+msgstr ""
+    "Huom! Jos resurssiin on liitetty tuotteita, joilla on ajanjaksokohtainen hinnoittelu, "
+    "niin varmista että varausajan välin koko on yhtä suuri kuin tuotteen hinnan ajanjakson arvo."
+
+msgid "Results per page"
+msgstr "Tulosta per sivu"

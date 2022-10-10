@@ -4,7 +4,7 @@
 {% get_current_language as LANGUAGE_CODE %}
 
 {% if form_action == "remove" %}
-<form class="card-item" id="{{ outlook_link.id }}" action="{{ form_action }}">
+<form class="card-item" id="{{ outlook_link.id }}" action="{{ form_action }}" data-paginator-item="true">
     {% csrf_token %}
     <img
     class="card-img-center"
@@ -26,7 +26,7 @@
     </div>
 </form>
 {% else %}
-<form class="card-item" id="{{ resource.id }}" action="{{ form_action }}">
+<form class="card-item" id="{{ resource.id }}" action="{{ form_action }}" data-paginator-item="true">
     {% csrf_token %}
     <img
     class="card-img-center"
