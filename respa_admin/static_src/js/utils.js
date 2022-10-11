@@ -59,8 +59,10 @@ export class Paginate {
         .find(`a[id^=${this.id}_page_]`)
         .remove();
         for(let i=0;i<this.totalPages;i++) {
-            $(`<a href="javascript://" id="${this.id}_page_${i+1}" class="btn ${i === 0 ? "btn-selected" : ""} input-label" data-page="${i}">${i+1}</a>`)
-            .css({ 'flex': '1 0 10%', 'width': '54px', 'max-width': '54px' })
+            $(`<a href="javascript://" id="${this.id}_page_${i+1}"`+ 
+                ` class="btn ${i === 0 ? "btn-selected" : ""} page-btn input-label"` +
+                ` data-page="${i}">${i+1}`+
+            `</a>`)
             .appendTo(this._pageContainer)
             .on('click', (e) => {
                 e.preventDefault();
@@ -83,7 +85,7 @@ export class Paginate {
             if (page === this.page) $(val).addClass('btn-selected');
         });
     }
-    setPageText(text) { $(this.pageTrackSpan).text(text); }
+    setPageText(text) { $(this._pageContainer).text(text); }
 
     hasNextPage() {
         return this.paginatedItems[this.page + 1] !== undefined && this.paginatedItems[this.page + 1].length > 0;
@@ -100,11 +102,6 @@ export class Paginate {
     }
 
     current() {
-        if (!this.paginatedItems[this.page]) {
-            if (this.page >= this.totalPages) {
-                this.page = this.totalPages - 1;
-            } else this.page = 0;
-        }
         this.update();
         return this.paginatedItems[this.page];
     }
@@ -113,7 +110,7 @@ export class Paginate {
     hide(items = []) { $(items).hide(); }
 
     getPaginatedItems(items = []) {
-        return (items.length > 0 ? items : this.items).reduce((arr, val, i) => {
+        return items.reduce((arr, val, i) => {
             let idx = Math.floor(i / this.perPage);
             let page = arr[idx] || (arr[idx] = []);
             page.push(val);
@@ -123,10 +120,10 @@ export class Paginate {
 
     reset(page = 0) {
         page = page < 0 ? 0 : page;
-        this.paginatedItems = this.getPaginatedItems();
+        this.paginatedItems = this.getPaginatedItems(this.items);
         this.hide(this.items);
         this.totalPages = this.paginatedItems.length;
-        this.page = page > this.totalPages ? this.totalPages - 1 : page;
+        this.page = page;
 
         this.show(this.current());
     }
@@ -134,14 +131,16 @@ export class Paginate {
     filter(string, page = 0) {
         this.paginatedItems = this.getPaginatedItems(
             this.items.filter((val) => {
-                let labelString = $(val).find('label').text().toLowerCase();
-                if (labelString.indexOf(string.toLowerCase()) > -1) 
+                let labelString = $(val).find('label')
+                    .text().trim().toLowerCase();
+                if (labelString.indexOf(string.toLowerCase()) > -1) {
                     return val;
+                }
             })
         );
         this.hide(this.items);
         this.totalPages = this.paginatedItems.length;
-        this.page = page > this.totalPages ? this.totalPages - 1 : page;
+        this.page = page;
         this.show(this.current());
     }
 }
