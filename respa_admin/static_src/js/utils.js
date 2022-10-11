@@ -61,7 +61,7 @@ export class Paginate {
         .find(`a[id^=${this.id}_page_]`)
         .remove();
         for(let i=0;i<this.totalPages;i++) {
-            $(`<a href="javascript://" id="${this.id}_page_${i+1}"`+ 
+            $(`<a href="#" id="${this.id}_page_${i+1}"`+ 
                 ` class="btn ${i === 0 ? "btn-selected" : ""} page-btn input-label"` +
                 ` data-page="${i}">${i+1}`+
             `</a>`)
