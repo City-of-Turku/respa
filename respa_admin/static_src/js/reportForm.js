@@ -80,8 +80,8 @@ function updateSelectAllButton() {
     let selectBtn = $("#select-all-btn");
     $(selectBtn).text(`${{
         'fi': 'Valitse kaikki',
-        'en': 'Välj alla',
-        'sv': 'Select all'
+        'en': 'Select all',
+        'sv': 'Välj alla'
     }[SELECTED_LANGUAGE]}`);
 
     let resources = $(paginator.items).find('input:checked');
