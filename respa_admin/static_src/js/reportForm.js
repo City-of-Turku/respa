@@ -4,9 +4,10 @@ import { alertPopup, Paginate } from './utils';
 
 let paginator;
 const SELECTED_LANGUAGE = $('html').attr('lang');
+const main = $("div[data-paginate=true]");
 
 export function initializeEventHandlers() {
-    paginator = new Paginate($("div[data-paginate=true]"));
+    paginator = new Paginate(main);
     setDefaultDate();
 
     bindSelectAllButton();
@@ -21,9 +22,9 @@ function bindResultsPerPageButtons() {
     let resourceFilter = $("#resource-filter");
     let menu = $('div[id=per-page-menu]');
     let options = $(menu).find('label');
-    $(options).on('click', (e) => {
+    $(options).find('input').on('click', (e) => {
         $(options).removeClass('btn-selected');
-        let option = e.target;
+        let option = $(e.target)
         $(option).parent('label').addClass('btn-selected');
         let perPage = $(option).data('value');
         paginator.perPage = perPage;
@@ -37,16 +38,13 @@ function bindResourceFilter() {
     $(resourceFilter).on('input', () => {
         let search = $(resourceFilter).val();
         search ? paginator.filter(search) : paginator.reset();
-        let visibleCount = $(paginator.items).find(':visible').length;
-        if (visibleCount === 0) {
-            if ($(paginator.main).hasClass('border-thick'))
-                $(paginator.main).removeClass('border-thick').addClass('justify-center');
-            paginator.setPageText(`${
-                {'fi': 'Ei tuloksia', 'en': 'No results', 'sv': 'Inga resultat'}[SELECTED_LANGUAGE]
-            }`);
-        } else { 
-            if (!$(paginator.main).hasClass('border-thick'))
-                $(paginator.main).addClass('border-thick').removeClass('justify-center');
+
+        if (!paginator.current()) {
+            $(main).addClass('justify-center');
+            $(main).removeClass('border-thick');
+        } else {
+            $(main).removeClass('justify-center');
+            $(main).addClass('border-thick');
         }
     });
 }

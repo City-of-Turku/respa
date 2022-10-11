@@ -51,6 +51,8 @@ export class Paginate {
             .find(`div[id=paginator-page-container]`)
             .filter((_, e) => $(e).data('paginator-id') === this.id);
 
+
+        this.spanText = $(`<span id="paginator-span-text"></span>`)
         this.reset();
     }
 
@@ -85,7 +87,6 @@ export class Paginate {
             if (page === this.page) $(val).addClass('btn-selected');
         });
     }
-    setPageText(text) { $(this._pageContainer).text(text); }
 
     hasNextPage() {
         return this.paginatedItems[this.page + 1] !== undefined && this.paginatedItems[this.page + 1].length > 0;
@@ -123,12 +124,13 @@ export class Paginate {
         this.paginatedItems = this.getPaginatedItems(this.items);
         this.hide(this.items);
         this.totalPages = this.paginatedItems.length;
-        this.page = page;
-
+        this.page = page > this.totalPages ? this.totalPages - 1 : page;
+        this.spanText.remove();
         this.show(this.current());
     }
 
     filter(string, page = 0) {
+        page = page < 0 ? 0 : page;
         this.paginatedItems = this.getPaginatedItems(
             this.items.filter((val) => {
                 let labelString = $(val).find('label')
@@ -138,9 +140,21 @@ export class Paginate {
                 }
             })
         );
+
         this.hide(this.items);
         this.totalPages = this.paginatedItems.length;
-        this.page = page;
-        this.show(this.current());
+        this.page = page > this.totalPages ? this.totalPages - 1 : page;
+
+
+        if (!this.current()) {
+            this.spanText.text({
+                'fi': 'Ei tuloksia',
+                'en': 'No results',
+                'sv': 'Inga resultat'
+            }[$('html').attr('lang')]).appendTo(this.main);
+        } else {
+            this.spanText.remove();
+            this.show(this.current());
+        }
     }
 }
