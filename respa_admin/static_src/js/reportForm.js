@@ -9,7 +9,6 @@ export function initializeEventHandlers() {
     paginator = new Paginate($("div[data-paginate=true]"));
     setDefaultDate();
 
-    bindPageButtons();
     bindSelectAllButton();
     bindGenerateButton();
     bindResourceFilter();
@@ -21,19 +20,16 @@ export function initializeEventHandlers() {
 function bindResultsPerPageButtons() {
     let resourceFilter = $("#resource-filter");
     let menu = $('div[id=per-page-menu]');
-    let options = $(menu).find('a');
+    let options = $(menu).find('label');
     $(options).on('click', (e) => {
         $(options).removeClass('btn-selected');
         let option = e.target;
-        $(option).addClass('btn-selected');
+        $(option).parent('label').addClass('btn-selected');
         let perPage = $(option).data('value');
         paginator.perPage = perPage;
-
         let filter = $(resourceFilter).val();
-
         filter ? paginator.filter(filter, paginator.page) : paginator.reset(paginator.page);
     });
-
 }
 
 function bindResourceFilter() {
@@ -123,12 +119,6 @@ function bindSelectAllButton() {
     });
 }
 
-function bindPageButtons() {
-    if (paginator && paginator.totalPages > 1) {
-        $(paginator.nextPageButton).on('click', updateSelectAllButton);
-        $(paginator.prevPageButton).on('click', updateSelectAllButton);
-    }
-}
 
 
 function bindSelectPaginatorItems() {

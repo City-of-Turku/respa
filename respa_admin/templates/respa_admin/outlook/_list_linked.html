@@ -49,7 +49,7 @@
                     class="list-group-item card-item-list"
                     data-paginate="true"
                     data-paginator-id="{{ unit.id }}"
-                    data-paginator-per-page="6">
+                    data-paginator-per-page="9">
                 {% for resource in unit.resources.all|dictsort:"created_at" %}
                 {% if selected_outlook_filter != "no_link" %}
                     {% with resource.outlookcalendarlink as outlook_link %}

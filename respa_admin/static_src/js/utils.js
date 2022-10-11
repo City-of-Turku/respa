@@ -51,47 +51,38 @@ export class Paginate {
             .find(`div[id=paginator-page-container]`)
             .filter((_, e) => $(e).data('paginator-id') === this.id);
 
-        this.prevPageButton = $(`
-            <a href="javascript://" id=\"prev_page_${this.id}\" class="btn"><span class="glyphicon glyphicon-chevron-left"></span></a>
-            `).appendTo(this._pageContainer)
-            .on('click', (e) => {
-                e.preventDefault();
-                $(this.current()).hide();
-                $(this.previous()).show();
-            });
-
-        this.pageTrackSpan = $(`
-            <span id="paginator-page" class="no-select align-center btn"></span>
-            `).appendTo(this._pageContainer);
-
-        this.nextPageButton = $(`
-            <a href="javascript://" id=\"next_page_${this.id}\" class="btn"><span class="glyphicon glyphicon-chevron-right"></span></a>
-            `).appendTo(this._pageContainer)
-            .on('click', (e) => {
-                e.preventDefault();
-                $(this.current()).hide();
-                $(this.next()).show();
-            });
-        
-        this.prevPageButton.hide();
-        this.nextPageButton.hide();
-
-
         this.reset();
     }
 
-    update() {
-        if (this.totalPages > 1) $(this.nextPageButton).show();
-        if (!this.hasNextPage()) $(this.nextPageButton).hide();
-        if (this.page > 0) {
-            $(this.prevPageButton).show();
-        } else $(this.prevPageButton).hide();
-
-        this.setPageText(`${
-            {'fi': 'Sivu', 'en': 'Page', 'sv': 'Page'}[$('html').attr('lang')]
-        }: ${this.page + 1}`);
+    updatePageSelections() {
+        $(this._pageContainer)
+        .find(`a[id^=${this.id}_page_]`)
+        .remove();
+        for(let i=0;i<this.totalPages;i++) {
+            $(`<a href="javascript://" id="${this.id}_page_${i+1}" class="btn ${i === 0 ? "btn-selected" : ""} input-label" data-page="${i}">${i+1}</a>`)
+            .css({ 'flex': '1 0 10%', 'width': '54px', 'max-width': '54px' })
+            .appendTo(this._pageContainer)
+            .on('click', (e) => {
+                e.preventDefault();
+                let page = $(e.target).data('page');
+                this.page = page;
+                this.hide(this.items);
+                this.show(this.current());
+            })
+        }
     }
 
+
+    update() {
+        this.updatePageSelections();
+        $(this._pageContainer)
+        .find(`a[id^=${this.id}_page_]`)
+        .removeClass('btn-selected')
+        .each((_, val) => {
+            let page = $(val).data('page');
+            if (page === this.page) $(val).addClass('btn-selected');
+        });
+    }
     setPageText(text) { $(this.pageTrackSpan).text(text); }
 
     hasNextPage() {

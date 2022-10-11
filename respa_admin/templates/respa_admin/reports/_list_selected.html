@@ -48,23 +48,21 @@
             {% endfor %}
         </div>
         <div class="col-wrap-container row-wrap fluid space-between">
-            <div style="width: 390px"></div>
             <div
                 id="paginator-page-container"
                 class="col-wrap-container row-wrap fluid justify-center"
-                style="width: 390px"
                 data-paginator-id="{{ random_id_str }}">
             </div>
-            <div 
-                id="per-page-menu-container"
-                class="col-wrap-container flex-end "
-                style="width: 390px">
-                <div id="per-page-menu" class="col-wrap-container row-wrap align-items-center border-bottom">
-                    <a class="btn" href="javascript://" data-value="10">10</a>
-                    <a class="btn btn-selected" href="javascript://" data-value="20">20</a>
-                    <a class="btn" href="javascript://" data-value="50">50</a>
-                </div>
-                <label for="per-page-menu" class="margin-sm-left text-align-center no-select input-label">{% trans 'Results per page' %}</label>
+            <div id="per-page-menu" class="col-wrap-container row-wrap align-items-center border-bottom">
+                <label class="btn">10
+                    <input type="radio" name="per-page" data-value="10" id="first" style="display: none;"/>
+                </label>
+                <label class="btn btn-selected">20
+                    <input type="radio" name="per-page" data-value="20" id="second" style="display: none;"/>
+                </label>
+                <label class="btn">50
+                    <input type="radio" name="per-page" data-value="50" id="third" style="display: none;"/>
+                </label>
             </div>
         </div>
         <div class="col-wrap-container row-wrap space-between">
