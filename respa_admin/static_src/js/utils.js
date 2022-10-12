@@ -103,7 +103,11 @@ export class Paginate {
     }
 
     current() {
-        this.update();
+        if (!this.paginatedItems[this.page] && this.page === this.totalPages) {
+            this.page = this.totalPages - 1;
+        }
+
+        this.update();        
         return this.paginatedItems[this.page];
     }
 
