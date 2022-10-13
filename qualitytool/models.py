@@ -13,7 +13,7 @@ def get_form_defaults():
 class ResourceQualityTool(models.Model):
     name = models.CharField(verbose_name=_('Name'), max_length=255)
     target_id = models.UUIDField(verbose_name=_('Target ID'), unique=True, primary_key=True)
-    resources = models.ManyToManyField('resources.Resource', verbose_name=_('Resources'))
+    resources = models.ManyToManyField('resources.Resource', verbose_name=_('Resources'), related_name='qualitytool')
     objects = qt_manager.as_manager()
 
     class Meta:

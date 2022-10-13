@@ -1,6 +1,6 @@
 from rest_framework import views, permissions, response
 from qualitytool import QualityToolManager as qt_manager
-from qualitytool.api.serializers import QualityToolFeedbackSerializer
+from qualitytool.api.serializers import QualityToolFeedbackSerializer, QualityToolCheckSerializer
 from qualitytool.api.permissions import QualitytoolPermission
 
 class QualityToolFormView(views.APIView):
@@ -33,3 +33,16 @@ class QualityToolFeedbackView(views.APIView):
                 'text': data['text']
             })
         )
+
+
+
+class QualityToolCheckResourceView(views.APIView):
+    permission_classes = (permissions.AllowAny, )
+    def post(self, request, **kwargs):
+        serializer = QualityToolCheckSerializer(data=request.data)
+        serializer.is_valid(True)
+        resource = serializer.validated_data['resource']
+        return response.Response({ 'has_qualitytool': resource.qualitytool.exists() })
+
+
+
