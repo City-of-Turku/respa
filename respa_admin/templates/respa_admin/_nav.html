@@ -88,6 +88,11 @@
                 </li>
                 {% endif %}
                 {% if user_is_any_admin %}
+                {% if QUALITYTOOL_IS_ENABLED %}
+                <li>
+                    <a href="{% url 'respa_admin:ra-qualitytool' %}">{% trans "Qualitytool" %}</a>
+                </li>
+                {% endif %}
                 <li>
                     <a href="{% url 'respa_admin:user-management' %}">{% trans "User management" %}</a>
                 </li>

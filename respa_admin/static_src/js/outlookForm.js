@@ -1,4 +1,4 @@
-import { alertPopup, Paginate } from './utils';
+import { alertPopup, Paginate, getErrorMessage } from './utils';
 
 
 let paginators = [];
@@ -13,11 +13,6 @@ function handlePagination() {
   $("div[data-paginate=true]").each((_, div) => {
     paginators.push(new Paginate(div));
   });
-}
-
-function getErrorMessage(response) {
-  let error = JSON.parse(response.responseText);
-  return error.message;
 }
 
 

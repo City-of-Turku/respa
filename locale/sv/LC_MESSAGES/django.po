@@ -1947,3 +1947,12 @@ msgstr ""
 
 msgid "Results per page"
 msgstr "Resultat per sida"
+
+msgid "Qualitytool"
+msgstr "Kvalitetsverktyg"
+
+msgid "resource quality tool"
+msgstr "resurs kvalitetsverktyg"
+
+msgid "resource quality tools"
+msgstr "resurs kvalitetsverktyg"

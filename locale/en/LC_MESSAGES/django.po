@@ -2635,3 +2635,12 @@ msgstr ""
 
 msgid "Results per page"
 msgstr ""
+
+msgid "Qualitytool"
+msgstr ""
+
+msgid "resource quality tool"
+msgstr ""
+
+msgid "resource quality tools"
+msgstr ""

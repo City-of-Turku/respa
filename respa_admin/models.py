@@ -1,4 +1,3 @@
-
 from django import forms
 from django.db.models import Q
 from django.contrib.postgres.fields import ArrayField
@@ -10,13 +9,30 @@ from resources.models.base import AutoIdentifiedModel
 
 
 class ChoiceArrayField(ArrayField):
+    def __init__(self, *args, **kwargs):
+        self.override_choices = kwargs.pop('override_choices', None)
+        super(ChoiceArrayField, self).__init__(*args, **kwargs)
+
+
     def formfield(self, **kwargs):
+        override_choices = self.override_choices() if self.override_choices else self.base_field.choices or self.base_field.choices
         return super(ArrayField, self).formfield(**{
             'form_class': forms.MultipleChoiceField,
-            'choices': self.base_field.choices,
+            'choices': override_choices,
             **kwargs
         })
 
+    def validate(self, value, model_instance):
+        if hasattr(self, 'override_choices'):
+            return self.validate_override_choices(value, model_instance)
+        return super().validate(value, model_instance)
+    
+    def validate_override_choices(self, values, model_instance):
+        allowed_choices = [lang for lang, __ in self.override_choices()]
+        for value in values:
+            if value in allowed_choices:
+                continue
+            return super().validate(values, model_instance)
 
 class DisabledFieldsSet(AutoIdentifiedModel):
     name = models.CharField(verbose_name=_('Name'), max_length=255, null=False, blank=False)

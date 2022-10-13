@@ -35,7 +35,41 @@
 </section>
 {% endblock koro_shape %}
 {% block body %}
-    {% include "respa_admin/reports/_list_selected.html" with resources=resources %}
+<section class='resources'>
+    <div class='container reports'>
+        {% if resources %}
+        <div class="col-wrap-container row-wrap fluid space-between">
+            <div class="col-wrap-container">
+                <button type="button" class="btn btn-default" id="select-all-btn">{% trans 'Select all' %}</button>
+            </div>
+            <div class="form-group listing-search col-wrap-container fluid align-items-center">
+                <div class="input-group">
+                    <span class="input-group-addon">{% trans 'Filter' %}</span>
+                    <input type="text" class="form-control text-input" id="resource-filter">
+                </div>
+            </div>
+        </div>
+        {% include "respa_admin/common/_paginated_resource_list.html" with resources=resources per_page=20 paginator_id=random_id_str %}
+        <div class="col-wrap-container row-wrap space-between">
+            <div class="col-wrap-container">
+                <div class="col-wrap-container">
+                    <input type="date" class="margin-sm-left border-thick align-center" name="begin-date" id="begin-date" />
+                    <label for="begin-date" class="control-label input-label align-center">{% trans "Start date" %}</label>
+                </div>
+                <div class="col-wrap-container">
+                    <input type="date" class="margin-sm-left border-thick align-center" name="end-date" id="end-date" />
+                    <label for="end-date" class="control-label input-label align-center">{% trans "End date" %}</label>
+                </div>
+            </div>
+            <div class="button-container row-reverse align-center">
+                <button type="button" class="resources-button button-border" id="generate-btn" disabled>
+                    {% trans 'Download' %}
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
 {% endblock body %}
 
 

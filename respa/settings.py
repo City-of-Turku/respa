@@ -101,6 +101,10 @@ env = environ.Env(
     TIMMI_PASSWORD=(str, ''), #base64 encoded password
     STRONG_AUTH_CLAIMS=(tuple, ()),
     DEFAULT_DISABLED_FIELDS_SET_ID=(int, 0),
+    QUALITYTOOL_USERNAME=(str, ''),
+    QUALITYTOOL_PASSWORD=(str, ''),
+    QUALITYTOOL_API_BASE=(str, ''),
+    QUALITYTOOL_ENABLED=(bool, False),
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -161,6 +165,11 @@ TIMMI_USERNAME = env('TIMMI_USERNAME')
 TIMMI_PASSWORD = env('TIMMI_PASSWORD')
 TIMMI_TIMEOUT = env('TIMMI_TIMEOUT')
 
+QUALITYTOOL_USERNAME = env('QUALITYTOOL_USERNAME')
+QUALITYTOOL_PASSWORD = env('QUALITYTOOL_PASSWORD')
+QUALITYTOOL_API_BASE = env('QUALITYTOOL_API_BASE')
+QUALITYTOOL_ENABLED = env('QUALITYTOOL_ENABLED')
+
 # Application definition
 INSTALLED_APPS = [
     'helusers',
@@ -187,6 +196,7 @@ INSTALLED_APPS = [
     'guardian',
     'django_jinja',
     'anymail',
+    'solo',
     'reversion',
     'django_admin_json_editor',
     'multi_email_field',
@@ -206,6 +216,7 @@ INSTALLED_APPS = [
     'notifications.apps.NotificationsConfig',
     'kulkunen',
     'payments',
+    'qualitytool',
     'respa_exchange',
     'respa_outlook',
     'respa_o365',

@@ -18,6 +18,8 @@ class ExtraContextMixin():
         context['user_is_any_admin'] = is_any_admin(user)
         context['user_is_any_manager'] = is_any_manager(user)
         context['OUTLOOK_IS_ENABLED'] = bool(settings.O365_CLIENT_ID)
+        context['QUALITYTOOL_IS_ENABLED'] = settings.QUALITYTOOL_ENABLED
+        context['AVAILABLE_LANGUAGE_CODES'] = [code for code, _ in settings.LANGUAGES]
         return context
 
 

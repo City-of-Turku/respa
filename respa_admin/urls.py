@@ -42,3 +42,12 @@ if settings.O365_CLIENT_ID:
     urlpatterns.append(url(r'^outlook/$', RAOutlookLinkListView.as_view(), name='ra-outlook'))
     urlpatterns.append(url(r'^outlook/create/$', RAOutlookLinkCreateView.as_view(), name='ra-outlook-create'))
     urlpatterns.append(url(r'^outlook/delete/$', RAOutlookLinkDeleteView.as_view(), name='ra-outlook-delete'))
+
+
+if settings.QUALITYTOOL_ENABLED:
+    from qualitytool.views import (
+        QualityToolManagementView,
+        QualityToolCreateLinkView
+    )
+    urlpatterns.append(url(r'^qualitytool/$', QualityToolManagementView.as_view(), name='ra-qualitytool'))
+    urlpatterns.append(url(r'^qualitytool/create/$', QualityToolCreateLinkView.as_view(), name='ra-qualitytool-create'))

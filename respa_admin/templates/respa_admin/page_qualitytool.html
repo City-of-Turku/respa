@@ -1,0 +1,104 @@
+{% extends "respa_admin/_base.html" %}
+{% load static %}
+{% load i18n %}
+{% load templatetags %}
+
+
+{% block koro_shape %}
+<div id="popup-notification" class="popup-notification success">
+    <span id="popup-message" class="text-center"></span>
+</div>
+<section class="hero-section bg-light {{ KORO_STYLE }}">
+    <div class="container">
+        <div class="headline">
+            <div class="listing-report row">
+                <h1 class="col-sm-6">{% trans 'Qualitytool Management' %}</h1>
+            </div>
+            <form action="." method="get">
+                <div class="form-group listing-search center-block">
+                    <div class="input-group">
+                        <span class="input-group-addon">{% trans 'Search' %}</span>
+                        <input autofocus type="text" class="form-control text-input" name="search_target" value="{{ request.GET.search_target }}">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="submit">
+                                <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                            </button>
+                        </span>
+                    </div>
+                </div>
+                <div class="col-wrap-container flex-end">
+                    <div class="select-dropdown btn btn-primary">
+                        <select id="ext-dropdown" name="resource_link" onchange="this.form.submit();">
+                            <option value="has_link"
+                                {% if selected_filter == "has_link" or not selected_filter %}
+                                    selected="selected"
+                                {% endif %}
+                                {% if not user_has_link and not user_is_any_admin %}
+                                disabled="disabled"
+                                {% endif %}>
+                                {% trans 'Linked' %}
+                            </option>
+                            <option value="no_link"
+                                {% if selected_filter == "no_link" %}
+                                    selected="selected"
+                                {% endif %}>
+                                {% trans 'Not linked' %}
+                            </option>
+                        </select>
+                        <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+                    </div>
+                </div>
+            </form>
+            {% if qualitytool_targets %}
+                <div class="col-wrap-container border-thick fluid row-wrap">
+                {% for target in qualitytool_targets %}
+                    <div class="checkbox-container" data-qualitytool-target="true">
+                        <input 
+                            type="radio" 
+                            id="{{ target.id }}" 
+                            name="target" 
+                            class="bg-input" 
+                            data-value="{{ target.targetId }}"
+                            {% for LANGUAGE in AVAILABLE_LANGUAGE_CODES %}
+                                data-target-name-{{ LANGUAGE }}="{{ target.name|get_value_from_dict:LANGUAGE }}"
+                            {% endfor %}
+                        />
+                        <label for="{{ target.id }}" class="margin-sm-left text-align-center">{{ target.name|get_value_from_dict:LANGUAGE_CODE }}</label>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+            <div class="col-wrap-container align-items-center">
+                <span class="text-align-center">Etsi laatutyökalukohteita</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock koro_shape %}
+{% block body %}
+<section class="qualitytool">
+    <div class='container reports'>
+        {% if qualitytool_targets %}
+        {% include "respa_admin/common/_paginated_resource_list.html" with resources=resources per_page=20 paginator_id=random_id_str %}
+        <div class="col-wrap-container flex-end">
+            {% csrf_token %}
+            {% if selected_filter == "no_link" or not selected_filter %}
+            <button type="button" class="resources-button button-border" id="link-resource-btn" disabled>
+                {% trans 'Link' %}
+            </button>
+            {% else %}
+            <button type="button" class="resources-button button-border" id="unlink-resource-btn" disabled>
+                {% trans 'Unlink' %}
+            </button>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock body %}
+
+
+{% block js_extra %}
+    <script type="text/javascript" src="{% static 'respa_admin/qualityToolForm-bundle.js' %}"></script>
+{% endblock js_extra %}

@@ -43,6 +43,7 @@ django-parler
 django-parler-rest
 django-reversion
 django-sanitized-dump>=0.2.0
+django-solo
 djangorestframework
 djangorestframework-jwt==1.11.0
 drf-oidc-auth==0.10.0
@@ -80,6 +81,7 @@ psycopg2
 py
 pyasn1
 pycodestyle
+pycountry
 pycparser
 pycryptodomex
 pyflakes

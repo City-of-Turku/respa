@@ -1,3 +1,9 @@
+export function getErrorMessage(response) {
+    let error = JSON.parse(response.responseText);
+    return error.message;
+}
+
+
 export function alertPopup(message, type = 'success', timeout = 5000) {
     let popup = $("div[id=popup-notification]");
     let popupSpan = $(popup).find('span[id=popup-message]');

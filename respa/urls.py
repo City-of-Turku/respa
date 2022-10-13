@@ -52,6 +52,12 @@ if settings.RESPA_PAYMENTS_ENABLED:
         path('payments/', include(payment_urls))
     ])
 
+if settings.QUALITYTOOL_ENABLED:
+    from qualitytool import urls as qualitytool_urls # noqa
+    urlpatterns.extend([
+        path('v1/', include(qualitytool_urls))
+    ])
+
 if settings.USE_SWAGGER_OPENAPI_VIEW:
     from rest_framework import permissions
     from drf_yasg.views import get_schema_view

@@ -2012,3 +2012,12 @@ msgstr ""
 
 msgid "Results per page"
 msgstr "Tulosta per sivu"
+
+msgid "Qualitytool"
+msgstr "Laatutyökalu"
+
+msgid "resource quality tool"
+msgstr "resurssi laatutyökalu"
+
+msgid "resource quality tools"
+msgstr "resurssi laatutyökalut"
