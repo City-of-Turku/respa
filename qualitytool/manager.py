@@ -54,6 +54,7 @@ class QualityToolManager(models.QuerySet):
             'FEEDBACK_INSERT': f'{settings.QUALITYTOOL_API_BASE}/external/v1/feedback/insert',
             'FEEDBACK_FORM': f'{settings.QUALITYTOOL_API_BASE}/external/v1/feedback/form-resources',
             'TARGET_LIST': f'{settings.QUALITYTOOL_API_BASE}/external/v1/target/list',
+            'UTILIZATION_UPSERT': f'{settings.QUALITYTOOL_API_BASE}/external/v1/utilization/upsert'
         }
 
     @ensure_token
@@ -88,8 +89,17 @@ class QualityToolManager(models.QuerySet):
         return []
     
     @ensure_token
-    def post_rating(self, data):
-        response = self.session.post(self.config['FEEDBACK_INSERT'], json=[data])
+    def post_rating(self, data : dict):
+        if not isinstance(data, dict):
+            raise ValueError('Data must be dict')
+        response = self.session.post(self.config['FEEDBACK_INSERT'], json=data)
+        return response.json()
+
+    @ensure_token
+    def post_utilization(self, data : list):
+        if not isinstance(data, list):
+            raise ValueError('Data must be list')
+        response = self.session.post(self.config['UTILIZATION_UPSERT'], json=data)
         return response.json()
 
 
