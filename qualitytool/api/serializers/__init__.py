@@ -9,12 +9,18 @@ class QualityToolFeedbackSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         from qualitytool import models
+        from resources.models import Reservation
         
         attrs = super().validate(attrs)
         try:
-            rqt = models.ResourceQualityTool.objects.get(resources__reservation__pk=attrs['reservation_id'])
+            reservation = Reservation.objects.get(pk=attrs['reservation_id'])
+        except Reservation.DoesNotExist:
+            raise serializers.ValidationError({'reservation': _('Invalid pk')})
+
+        try:
+            rqt = models.ResourceQualityTool.objects.get(resources__id=reservation.resource.id)
         except models.ResourceQualityTool.DoesNotExist:
-            raise serializers.ValidationError({'resource': _('Invalid pk')})
+            raise serializers.ValidationError({'resource': _('Invalid pk') })
         except models.ResourceQualityTool.MultipleObjectsReturned:
             raise serializers.ValidationError({'resource': 'Something went wrong'})
 
