@@ -26,13 +26,16 @@ class QualityToolFeedbackView(views.APIView):
         data = serializer.validated_data
         resource_quality_tool = data['resource_quality_tool']
 
-        return response.Response(
-            qt_manager.post_rating({
-                'targetId': resource_quality_tool.target_id,
-                'rating': data['rating'],
-                'text': data['text']
-            })
-        )
+        payload = {
+            'targetId': resource_quality_tool.target_id,
+            'rating': data['rating']
+        }
+
+        if data.get('text', None):
+            payload['text'] = data['text']
+
+
+        return response.Response(qt_manager.post_rating(payload))
 
 
 

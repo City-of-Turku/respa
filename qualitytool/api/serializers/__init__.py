@@ -3,8 +3,8 @@ from django.utils.translation import ugettext_lazy as _
 
 class QualityToolFeedbackSerializer(serializers.Serializer):
     reservation_id = serializers.IntegerField()
-    rating = serializers.IntegerField()
-    text = serializers.CharField()
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+    text = serializers.CharField(required=False, min_length=1, max_length=2048, allow_null=True)
 
 
     def validate(self, attrs):
