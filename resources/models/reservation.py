@@ -782,7 +782,7 @@ class Reservation(ModifiableModel):
             if len(notify_users) > 100:
                 raise Exception("Refusing to notify more than 100 users (%s)" % self)
             for user in notify_users:
-                self.send_reservation_mail(notification, user=user)
+                self.send_reservation_mail(notification, user=user, staff_email=user.email)
 
     def send_reservation_requested_mail(self, action_by_official=False):
         notification = NotificationType.RESERVATION_REQUESTED_BY_OFFICIAL if action_by_official else NotificationType.RESERVATION_REQUESTED
