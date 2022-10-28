@@ -10,10 +10,17 @@ from respa_admin.models import ChoiceArrayField
 def get_form_defaults():
     return [lang for lang, _ in settings.LANGUAGES]
 
+class ResourceQualityToolQuerySet(models.QuerySet):
+    def filter(self, *args, **kwargs):
+        return super(ResourceQualityToolQuerySet, self).filter(*args, **kwargs).distinct()
+    def all(self):
+        return super(ResourceQualityToolQuerySet, self).all().distinct()
+
 class ResourceQualityTool(models.Model):
     name = models.CharField(verbose_name=_('Name'), max_length=255)
     target_id = models.UUIDField(verbose_name=_('Target ID'), unique=True, primary_key=True)
     resources = models.ManyToManyField('resources.Resource', verbose_name=_('Resources'), related_name='qualitytool')
+    objects = ResourceQualityToolQuerySet.as_manager()
 
     class Meta:
         verbose_name = _('resource quality tool')

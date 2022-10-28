@@ -30,12 +30,13 @@
         <div class="container" style="margin-top: 25px;">
             <form action="." method="get">
                 <div class="form-group listing-search center-block">
-                    <div class="input-group">
                     {% if not is_edit %}
-                        <span class="input-group-addon">{% trans 'Search for Target' %}</span>
-                        <input autofocus type="text" class="form-control text-input" name="search" value="{{ request.GET.search }}">
-                    {% endif %}
+                    <div class="input-group">
+                        <span class="input-group-addon">{% trans 'Search for target' %}</span>
+                        <input autofocus id="target-search" type="text" class="form-control text-input" name="search" value="{{ request.GET.search }}">
                     </div>
+                        <label for="target-search" class="help-text small-text">{% trans 'Search qualitytool targets from Suomi.fi' %}</label>
+                    {% endif %}
                 </div>
             </form>
         </div>

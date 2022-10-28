@@ -42,8 +42,9 @@ class QualityToolBase(ExtraContextMixin):
         self.is_edit = self.object is not None
 
     def process_request(self, request, *args, **kwargs):
+        self.user = request.user
+        self.query_params = request.GET
         self.session_context = request.session.pop('session_context', None)
-        self.search = request.GET.get('search', '')
         if not hasattr(self, 'pk_url_kwarg'):
             return self._process_list_view(request, *args, **kwargs)
         return self._process_detail_view(request, *args, **kwargs)
@@ -69,11 +70,10 @@ class QualityToolRemoveLinkView(QualityToolBaseView):
 
     def post(self, request, *args, **kwargs):
         self.process_request(request, *args, **kwargs)
-        user = request.user
         instance = self.get_object()
         unit = instance.get_unit()
 
-        if not unit.is_admin(user):
+        if not unit.is_admin(self.user):
             self.set_session_context(request, redirect_message={
                 'message':_('You must be unit admin to delete qualitytool target.'),
                 'type':'error'
@@ -90,15 +90,24 @@ class QualityToolManagementView(QualityToolBaseView, TemplateView):
     template_name = 'respa_admin/page_qualitytool.html'
     
 
+    def get_queryset(self):
+        queryset = self.model.objects.all()
+        search = self.query_params.get('search' '')
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+        return queryset
+
+        
+
     def get_context_data(self, **kwargs):
-        user = self.request.user
         context = super().get_context_data(**kwargs)
-        if is_general_admin(user):
-            qualitytools = self.model.objects.all()
-        else:
-            resources = [resource.pk for resource in self.get_user_resources(user)]
-            qualitytools = self.model.objects.filter(resources__pk__in=resources).distinct()
-        context['qualitytools'] = qualitytools
+        queryset = self.get_queryset()
+
+        if not is_general_admin(self.user):
+            resources = [resource.pk for resource in self.get_user_resources(self.user)]
+            queryset = queryset.filter(resources__pk__in=resources)
+        
+        context['qualitytools'] = queryset
         context['random_id_str'] = generate_id()
         if self.session_context:
             context['qualitytool_redirect_context'] = self.session_context['redirect_message']
@@ -154,22 +163,21 @@ class QualityToolLinkView(QualityToolBaseView, TemplateView):
 
 
     def get_context_data(self, instance, **kwargs):
-        user = self.request.user
         context = super(QualityToolLinkView, self).get_context_data(**kwargs)
-        context['resources'] = self.process_resources(self.get_user_resources(user))
+        context['resources'] = self.process_resources(self.get_user_resources(self.user))
         context['is_edit'] = self.is_edit
         context['page_title'] = self._page_title
 
         if self.session_context:
             context['qualitytool_redirect_context'] = self.session_context['redirect_message']
-
+        search = self.query_params.get('search', '')
         if instance:
             context['qualitytool_target_options'] = [qt_manager._instance_to_dict(instance, id=generate_id(), checked=True)]
-        elif self.search:
+        elif search:
             targets = []
             target_list = qt_manager.get_targets()
             for target in target_list:
-                if any(name.lower().find(self.search.lower()) > -1 for _, name in target['name'].items()):
+                if any(name.lower().find(search) > -1 for _, name in target['name'].items()):
                     target['id'] = generate_id()
                     if ResourceQualityTool.objects.filter(target_id=target['targetId']).exists():
                         continue
@@ -187,8 +195,7 @@ class QualityToolLinkView(QualityToolBaseView, TemplateView):
 
     def post(self, request, *args, **kwargs):
         self.process_request(request, *args, **kwargs)
-        user = request.user
-        if not is_authenticated_user(user):
+        if not is_authenticated_user(self.user):
             return JsonResponse({'message': _('You are not authorized to create links')}, status=403)        
         payload = json.loads(request.body)
 
