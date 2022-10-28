@@ -38,13 +38,10 @@ def ensure_token(func):
         return func(self, *args, **kwargs)
     return wrapped
 
-class QualityToolManager(models.QuerySet):
+class QualityToolManager():
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = self.get_config()
-
-    def __call__(self, *args, **kwargs):
-        return super().__init__(*args, **kwargs)
 
     @staticmethod
     def get_config():
@@ -60,11 +57,18 @@ class QualityToolManager(models.QuerySet):
     @ensure_token
     @clear_cache(seconds=600)
     @lru_cache
-    def get_target_list(self):
+    def get_targets(self):
         response = self.session.get(self.config['TARGET_LIST'])
         serializer = QualityToolTargetListSerializer(data=response.json(), many=True)
         serializer.is_valid(True)
         return serializer.data
+
+    def _instance_to_dict(self, instance, **extra):
+        obj = dict(targetId=instance.target_id, name={})
+        for lang, _ in settings.LANGUAGES:
+            obj['name'][lang] = getattr(instance, 'name_%s' % lang)
+        obj.update(**extra)
+        return obj
 
     @ensure_token
     @clear_cache(seconds=43200) # Clear lru_cache after 12 hours.

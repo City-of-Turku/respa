@@ -1,70 +1,118 @@
-import itertools
-import json
-from subprocess import call
-from django.forms import ValidationError
-from django.http import JsonResponse
+from itertools import chain
 from django.utils.translation import ugettext as _
-from django.views import View
-from django.views.generic.base import TemplateView
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.forms import ValidationError
+from django.http import JsonResponse, HttpResponseRedirect
+from django.views.generic.base import TemplateView, View
 from django.db.models import Q
 from qualitytool.models import ResourceQualityTool
-from qualitytool.utils import Struct
 from resources.auth import is_authenticated_user, is_general_admin
 from resources.models import Unit, UnitAuthorization
 from resources.models.resource import Resource
 from resources.models.utils import generate_id
 from respa_admin.views.base import ExtraContextMixin
-from qualitytool.manager import QualityToolManager as qt_manager
+from qualitytool.manager import qt_manager
 
+from copy import copy
 
-class QualityToolManagementView(ExtraContextMixin, TemplateView):
+from uuid import uuid4
+
+import json
+
+class QualityToolBase(ExtraContextMixin):
+    def get_user_resources(self, user):
+        units = Unit.objects.filter(
+                id__in=UnitAuthorization.objects.for_user(user).values_list(
+                'subject', flat=True).distinct())
+        return list(chain.from_iterable(unit.resources.all() for unit in units))
+
+    def _process_list_view(self, request, *args, **kwargs):
+        self.object = None
+        self._page_title = ''
+        self.is_edit = False
+    
+    def _process_detail_view(self, request, *args, **kwargs):
+        if self.pk_url_kwarg in kwargs:
+            self.object = self.get_object()
+            self._page_title = _('Edit qualitytool')
+        else:
+            self._page_title = _('Create qualitytool')
+            self.object = None
+        self.is_edit = self.object is not None
+
+    def process_request(self, request, *args, **kwargs):
+        self.session_context = request.session.pop('session_context', None)
+        self.search = request.GET.get('search', '')
+        if not hasattr(self, 'pk_url_kwarg'):
+            return self._process_list_view(request, *args, **kwargs)
+        return self._process_detail_view(request, *args, **kwargs)
+
+    def get_object(self):
+        self.pk = self.kwargs.get(self.pk_url_kwarg)
+        return self.model.objects.get(pk=self.pk)
+
+    def set_session_context(self, request, **kwargs):
+        request.session['session_context'] = kwargs
+
+class QualityToolBaseView(QualityToolBase, View):
     context_object_name = 'qualitytool'
-    template_name = 'respa_admin/page_qualitytool.html'
+    model = ResourceQualityTool
 
+
+
+
+class QualityToolRemoveLinkView(QualityToolBaseView):
+    context_object_name = 'qualitytool'
+    model = ResourceQualityTool
+    pk_url_kwarg = 'qualitytool_id'
+
+    def post(self, request, *args, **kwargs):
+        self.process_request(request, *args, **kwargs)
+        user = request.user
+        instance = self.get_object()
+        unit = instance.get_unit()
+
+        if not unit.is_admin(user):
+            self.set_session_context(request, redirect_message={
+                'message':_('You must be unit admin to delete qualitytool target.'),
+                'type':'error'
+            })
+        else:
+            instance.delete()
+            self.set_session_context(request, redirect_message={
+                'message': _('Qualitytool target removed.'),
+                'type':'success'
+            })
+        return redirect('respa_admin:ra-qualitytool')
+
+class QualityToolManagementView(QualityToolBaseView, TemplateView):
+    template_name = 'respa_admin/page_qualitytool.html'
+    
 
     def get_context_data(self, **kwargs):
         user = self.request.user
         context = super().get_context_data(**kwargs)
         if is_general_admin(user):
-            units = Unit.objects.all()
+            qualitytools = self.model.objects.all()
         else:
-            units = Unit.objects.filter(
-                id__in=UnitAuthorization.objects.for_user(user).values_list(
-                'subject', flat=True).distinct())
-
-        if not self.resource_link or self.resource_link == 'no_link':
-            query = ~Q(pk__in=[ResourceQualityTool.objects.all().values_list('resources__pk', flat=True)])
-        else:
-            query = Q(pk__in=[ResourceQualityTool.objects.all().values_list('resources__pk', flat=True)])
-        context['resources'] = itertools.chain.from_iterable(
-            unit.resources.filter(query) \
-                for unit in units)
-
-        if self.search_target:
-            targets = []
-            target_list = qt_manager().get_target_list()
-            for target in target_list:
-                if any(name.lower().find(self.search_target.lower()) > -1 for _, name in target['name'].items()):
-                    target['id'] = generate_id()
-                    targets.append(target)
-            context['qualitytool_targets'] = targets
-
-
-        context['selected_filter'] = self.resource_link
-
+            resources = [resource.pk for resource in self.get_user_resources(user)]
+            qualitytools = self.model.objects.filter(resources__pk__in=resources).distinct()
+        context['qualitytools'] = qualitytools
         context['random_id_str'] = generate_id()
+        if self.session_context:
+            context['qualitytool_redirect_context'] = self.session_context['redirect_message']
         return context
 
-
     def get(self, request, *args, **kwargs):
-        self.query_params = request.GET.getlist('unit', [])
-        self.search_target = request.GET.get('search_target', '')
-        self.resource_link = request.GET.get('resource_link', '')
+        self.process_request(request, *args, **kwargs)
         return super().get(request, *args, **kwargs)
 
 
+class QualityToolLinkView(QualityToolBaseView, TemplateView):
+    template_name = 'respa_admin/qualitytool/_qualitytool_link.html'
+    pk_url_kwarg = 'qualitytool_id'
 
-class QualityToolCreateLinkView(View):
     class Meta:
         fields = ('resources', 'target_id', 'name')
 
@@ -83,13 +131,65 @@ class QualityToolCreateLinkView(View):
         
         if not isinstance(payload['resources'], list):
             raise ValidationError(_('Resources must be a list'), 400)
+
         
+        query = Q(resources__pk__in=payload['resources'])
+        if self.is_edit:
+            query &= ~Q(pk=self.object.pk)
+
+        if ResourceQualityTool.objects.filter(query).exists():
+            raise ValidationError(_('Some of these resources are already linked to another qualitytool target'), 400)
+
+
+    def process_resources(self, resources):
+        for resource in copy(resources):
+            if resource.qualitytool.exists():
+                if not self.is_edit or \
+                    (self.is_edit and not self.object.resources.filter(pk=resource.pk).exists()):
+                    resources.remove(resource)
+                    continue
+                setattr(resource, 'checked', True)
+        resources.sort(key=lambda val: not getattr(val, 'checked', False))
+        return resources
+
+
+    def get_context_data(self, instance, **kwargs):
+        user = self.request.user
+        context = super(QualityToolLinkView, self).get_context_data(**kwargs)
+        context['resources'] = self.process_resources(self.get_user_resources(user))
+        context['is_edit'] = self.is_edit
+        context['page_title'] = self._page_title
+
+        if self.session_context:
+            context['qualitytool_redirect_context'] = self.session_context['redirect_message']
+
+        if instance:
+            context['qualitytool_target_options'] = [qt_manager._instance_to_dict(instance, id=generate_id(), checked=True)]
+        elif self.search:
+            targets = []
+            target_list = qt_manager.get_targets()
+            for target in target_list:
+                if any(name.lower().find(self.search.lower()) > -1 for _, name in target['name'].items()):
+                    target['id'] = generate_id()
+                    if ResourceQualityTool.objects.filter(target_id=target['targetId']).exists():
+                        continue
+                    targets.append(target)
+            context['qualitytool_target_options'] = targets
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.process_request(request, *args, **kwargs)
+        return self.render_to_response(
+            self.get_context_data(
+                self.object
+            )
+        )
 
     def post(self, request, *args, **kwargs):
-        user = request.user 
+        self.process_request(request, *args, **kwargs)
+        user = request.user
         if not is_authenticated_user(user):
-            return JsonResponse({'message': _('You are not authorized to create links')}, status=403)
-
+            return JsonResponse({'message': _('You are not authorized to create links')}, status=403)        
         payload = json.loads(request.body)
 
         try:
@@ -97,30 +197,30 @@ class QualityToolCreateLinkView(View):
         except ValidationError as exc:
             return JsonResponse({'message': exc.message}, status=exc.code)
 
-        name = payload['name']
-        target_id = payload['target_id']
-        resources = payload['resources']
-
-
-        try:
-            rqt = ResourceQualityTool.objects.get(pk=target_id)
-        except ResourceQualityTool.DoesNotExist:
-            rqt = ResourceQualityTool(target_id=target_id)
-            for lang, text in name.items():
-                setattr(rqt, 'name_%s' % lang, text)
-            rqt.save()
-
-    
-
-        if rqt.resources.filter(pk__in=resources).exists():
-            return JsonResponse({'message': _('Some of these resources are already linked.')}, status=400)
+        resources = Resource.objects.filter(pk__in=payload['resources'])
         
-
-        for resource in Resource.objects.filter(pk__in=resources):
-            rqt.resources.add(resource)
-        rqt.save()
-
-
+        if not self.object:
+            target_id = payload['target_id']
+            name = payload['name']
+            self.object = ResourceQualityTool(target_id=target_id)
+            for lang, text in name.items():
+                setattr(self.object, 'name_%s' % lang, text)
+            self.object.save()
+            for resource in resources:
+                self.object.resources.add(resource)
+            self.object.save()
+        else:
+            for resource in set(self.object.resources.all()) - set(resources):
+                self.object.resources.remove(resource)
+            for resource in resources:
+                self.object.resources.add(resource)
+            self.object.save()
+        msg = _('Qualitytool created') if not self.is_edit else _('Qualitytool updated')
+        self.set_session_context(request, redirect_message={
+            'message': msg,
+            'type': 'success'
+        })
+        
         return JsonResponse({
-            'message': _('Resources linked with qualitytool target.')
+            'redirect_url': reverse('respa_admin:ra-qualitytool-edit', kwargs={'qualitytool_id': self.object.pk})
         })

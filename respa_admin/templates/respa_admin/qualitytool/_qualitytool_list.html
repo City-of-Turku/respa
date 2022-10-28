@@ -1,0 +1,52 @@
+{% load i18n %}
+{% load thumbnail %}
+{% load templatetags %}
+{% get_current_language as LANGUAGE_CODE %}
+<section class="qualitytool">
+    <div class="container">
+        <div class="filter-bar container-fluid">
+            <h2 class="pull-left">{% trans "All qualitytools" %}</h2>
+        </div>
+        <div class="qualitytool-list container-fluid">
+            <ul class="list-group">
+                <li class="list-group-item sort-bar">
+                </li>
+                {% for qualitytool in qualitytools %}
+                    <li class="list-group-item">
+                        <div class="panel panel-default">
+                            <div class="panel-body">
+                                <div class="col-2">
+                                    <a href="#">
+                                        <h4>{{ qualitytool.name }}</h4>
+                                    </a>
+                                </div>
+                                <div class="col-3">
+                                    <h6> <div class='shape-success'></div> {% trans 'Can be edited' %}</h6>
+                                </div>
+                                <div class="col-4">
+                                    <h6>
+                                        <span class='glyphicon glyphicon-pencil icon-left' aria-hidden="true"></span>
+                                        <a href="{% url 'respa_admin:ra-qualitytool-edit' qualitytool_id=qualitytool.pk %}">{% trans 'Edit' %}</a>
+                                    </h6>
+                                </div>
+                                <div class="col-4">
+                                    <form action="{% url 'respa_admin:ra-qualitytool-remove' qualitytool_id=qualitytool.pk %}" method="post">
+                                        {% csrf_token %}
+                                        <button class="btn btn-link btn-link-dark" name="qualitytool" value="{{ qualitytool.pk }}">
+                                            <span class='glyphicon glyphicon-remove icon-left' aria-hidden="true"></span>
+                                            <h6>
+                                                {% trans 'Remove' %}
+                                            </h6>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                {% empty %}
+                    <h1>No qualitytool targets!</h1>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</section>

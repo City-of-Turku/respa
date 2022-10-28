@@ -3,7 +3,7 @@ from django.conf import settings
 from django.utils.translation import ugettext as _
 from django.utils.functional import lazy
 from solo.models import SingletonModel
-from qualitytool import QualityToolManager as qt_manager
+from qualitytool.manager import qt_manager
 from respa_admin.models import ChoiceArrayField
 
 
@@ -14,7 +14,6 @@ class ResourceQualityTool(models.Model):
     name = models.CharField(verbose_name=_('Name'), max_length=255)
     target_id = models.UUIDField(verbose_name=_('Target ID'), unique=True, primary_key=True)
     resources = models.ManyToManyField('resources.Resource', verbose_name=_('Resources'), related_name='qualitytool')
-    objects = qt_manager.as_manager()
 
     class Meta:
         verbose_name = _('resource quality tool')
@@ -22,6 +21,9 @@ class ResourceQualityTool(models.Model):
 
     def __str__(self):
         return '(%s) %s - %s' % (self.resources.count(), self.name, self.target_id)
+
+    def get_unit(self):
+        return self.resources.first().unit
 
 
 class QualityToolFormLanguageOptions(SingletonModel):

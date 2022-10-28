@@ -34,8 +34,9 @@ def get_value_from_dict(dict_data, key):
     """
     Usage example {{ your_dict|get_value_from_dict:your_key }}.
     """
-    if key:
-        return dict_data.get(key)
+    if not isinstance(dict_data, dict):
+        return dict_data
+    return dict_data.get(key, None)
 
 
 @register.simple_tag

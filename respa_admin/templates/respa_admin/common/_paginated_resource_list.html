@@ -42,13 +42,13 @@
         data-paginator-id="{{ paginator_id }}">
     </div>
     <div id="per-page-menu" class="col-wrap-container row-wrap align-items-center border-bottom">
-        <label class="btn">10
+        <label class="btn {% if per_page == 10 %} btn-selected {% endif %}">10
             <input type="radio" name="per-page" data-value="10" id="first" style="display: none;"/>
         </label>
-        <label class="btn btn-selected">20
+        <label class="btn {% if per_page == 20 %} btn-selected {% endif %}">20
             <input type="radio" name="per-page" data-value="20" id="second" style="display: none;"/>
         </label>
-        <label class="btn">50
+        <label class="btn {% if per_page == 50 %} btn-selected {% endif %}">50
             <input type="radio" name="per-page" data-value="50" id="third" style="display: none;"/>
         </label>
     </div>

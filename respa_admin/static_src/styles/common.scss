@@ -276,3 +276,18 @@
 .border-bottom {
   border-bottom: 2px solid black !important;
 }
+
+.btn-link-dark {
+  display: inline-block;
+  color: black !important;
+  h6 {
+    display: inline-block;
+    border-bottom: 1px solid black;
+  }
+  h6:not(span):hover {
+    color: #0072c6 !important;
+  }
+  span {
+    margin: 0;
+  }
+}

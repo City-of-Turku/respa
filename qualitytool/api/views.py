@@ -1,5 +1,5 @@
 from rest_framework import views, permissions, response
-from qualitytool import QualityToolManager as qt_manager
+from qualitytool.manager import qt_manager
 from qualitytool.api.serializers import QualityToolFeedbackSerializer, QualityToolCheckSerializer
 from qualitytool.api.permissions import QualitytoolPermission
 

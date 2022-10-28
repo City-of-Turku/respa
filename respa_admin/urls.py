@@ -47,7 +47,10 @@ if settings.O365_CLIENT_ID:
 if settings.QUALITYTOOL_ENABLED:
     from qualitytool.views import (
         QualityToolManagementView,
-        QualityToolCreateLinkView
+        QualityToolLinkView,
+        QualityToolRemoveLinkView
     )
     urlpatterns.append(url(r'^qualitytool/$', QualityToolManagementView.as_view(), name='ra-qualitytool'))
-    urlpatterns.append(url(r'^qualitytool/create/$', QualityToolCreateLinkView.as_view(), name='ra-qualitytool-create'))
+    urlpatterns.append(url(r'^qualitytool/create/$', QualityToolLinkView.as_view(), name='ra-qualitytool-create'))
+    urlpatterns.append(url(r'^qualitytool/remove/(?P<qualitytool_id>[0-9A-Fa-f-]+)/$', QualityToolRemoveLinkView.as_view(), name='ra-qualitytool-remove'))
+    urlpatterns.append(url(r'^qualitytool/edit/(?P<qualitytool_id>[0-9A-Fa-f-]+)/$', QualityToolLinkView.as_view(), name='ra-qualitytool-edit'))

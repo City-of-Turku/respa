@@ -1,0 +1,87 @@
+{% extends "respa_admin/_base.html" %}
+{% load static %}
+{% load i18n %}
+{% load templatetags %}
+
+{% block form_nav %}
+<div id="popup-notification" class="popup-notification success">
+    <span id="popup-message" class="text-center"></span>
+</div>
+{% if qualitytool_redirect_context %}
+<div class="panel panel-default noti {{ qualitytool_redirect_context.type }} closable-notification">
+    <h4 class="center-block">{{ qualitytool_redirect_context.message }}</h4>
+    <button class="remove-click pull-right" type="button">
+        {% trans 'Close' %} <span class="glyphicon glyphicon-remove icon-right" aria-hidden="true"></span>
+    </button>
+</div>
+{% endif %}
+<div class="panel panel-default form-nav-wrapper">
+    <div class='container form-header-wrapper'>
+        <div class="container-fluid row form-header">
+            <div class='form-title col-sm-6'>
+                <h2>
+                    <span class="glyphicon glyphicon-plus-sign icon-left" aria-hidden="true"></span>
+                    {{ page_title }}
+                </h2>
+            </div>
+        </div>
+    </div>
+    <nav class="navbar navbar-default">
+        <div class="container" style="margin-top: 25px;">
+            <form action="." method="get">
+                <div class="form-group listing-search center-block">
+                    <div class="input-group">
+                    {% if not is_edit %}
+                        <span class="input-group-addon">{% trans 'Search for Target' %}</span>
+                        <input autofocus type="text" class="form-control text-input" name="search" value="{{ request.GET.search }}">
+                    {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </nav>
+</div>
+{% endblock %}
+{% block body %}
+    {% if qualitytool_target_options %}
+    <div class="container">
+        <div class="col-wrap-container fluid row-wrap">
+        {% for target in qualitytool_target_options %}
+            <div class="checkbox-container" data-qualitytool-target="true">
+                <input 
+                    type="radio" 
+                    id="{{ target.id }}" 
+                    name="target" 
+                    class="bg-input" 
+                    data-value="{{ target.targetId }}"
+                    {% for LANGUAGE in AVAILABLE_LANGUAGE_CODES %}
+                        data-target-name-{{ LANGUAGE }}="{{ target.name|get_value_from_dict:LANGUAGE }}"
+                    {% endfor %}
+                    {% if target.checked %}
+                    checked
+                    {% endif %}
+                />
+                <label for="{{ target.id }}" class="margin-sm-left text-align-center">{{ target.name|get_value_from_dict:LANGUAGE_CODE }}</label>
+            </div>
+        {% empty %}
+            <span>{% trans 'No qualitytool target options found' %}</span>
+        {% endfor %}
+        </div>
+        {% include "respa_admin/common/_paginated_resource_list.html" with resources=resources per_page=10 paginator_id=random_id_str %}
+        <div class="col-wrap-container row-wrap space-between">
+            {% csrf_token %}
+            {% if is_edit %}
+                <a id="qualitytool-link-btn" class="btn border-thick" href="#">{% trans 'Edit' %}</a>
+            {% else %}
+                <a id="qualitytool-link-btn" class="btn border-thick" href="#">{% trans 'Create' %}</a>
+            {% endif %}
+            </a>
+        </div>
+    </div>
+    {% endif %}
+{% endblock body %}
+
+
+{% block js_extra %}
+    <script type="text/javascript" src="{% static 'respa_admin/qualityToolForm-bundle.js' %}"></script>
+{% endblock js_extra %}
