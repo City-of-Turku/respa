@@ -2034,8 +2034,8 @@ msgstr "Kaikki laatutyökalut"
 msgid "Create quality tool target"
 msgstr "Luo laatutyökalu kohde"
 
-msgid "Edit quality tool target"
-msgstr "Muokkaa laatutyökalu kohdetta"
+msgid "Manage quality tool target"
+msgstr "Hallitse laatutyökalu kohdetta"
 
 msgid "Search for Suomi.fi quality tool targets"
 msgstr "Hae Suomi.fi laatutyökalu kohteita"

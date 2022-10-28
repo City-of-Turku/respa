@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from functools import wraps
 
@@ -7,6 +8,7 @@ from qualitytool.api.serializers.external import (
     QualityToolFormSerializer,
     QualityToolTargetListSerializer,
 )
+from resources.models import Reservation, Resource
 from .utils import clear_cache, has_expired, HEADERS, lru_cache
 
 import requests
@@ -106,5 +108,15 @@ class QualityToolManager():
         response = self.session.post(self.config['UTILIZATION_UPSERT'], json=data)
         return response.json()
 
+    def get_daily_utilization(self, qualitytool) -> dict:
+        created_at_after = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        created_at_before = timezone.now().replace(hour=23, minute=59, second=59, microsecond=0)
+        query = models.Q(reservations__created_at__gte=created_at_after, reservations__created_at__lte=created_at_before)
+        volume = qualitytool.resources.filter(query).values_list('reservations', flat=True)
+        return {
+            'targetId': qualitytool.target_id, 
+            'date': timezone.now().date(),
+            'volume': volume.count()
+        }
 
 qt_manager = QualityToolManager()

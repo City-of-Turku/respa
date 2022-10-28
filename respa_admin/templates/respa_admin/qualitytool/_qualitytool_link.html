@@ -20,8 +20,8 @@
         <div class="container-fluid row form-header">
             <div class='form-title col-sm-6'>
                 <h2>
-                    <span class="glyphicon glyphicon-plus-sign icon-left" aria-hidden="true"></span>
-                    {{ page_title }}
+                    <span class="glyphicon {% if is_edit %}glyphicon-wrench{% else %}glyphicon-plus-sign{% endif %} icon-left" aria-hidden="true"></span>
+                    <p style="margin-left: 15px;">{{ page_title }}</p>
                 </h2>
             </div>
         </div>

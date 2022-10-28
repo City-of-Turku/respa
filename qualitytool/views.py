@@ -3,7 +3,7 @@ from django.utils.translation import ugettext as _
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.forms import ValidationError
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse
 from django.views.generic.base import TemplateView, View
 from django.db.models import Q
 from qualitytool.models import ResourceQualityTool
@@ -15,8 +15,6 @@ from respa_admin.views.base import ExtraContextMixin
 from qualitytool.manager import qt_manager
 
 from copy import copy
-
-from uuid import uuid4
 
 import json
 
@@ -35,7 +33,7 @@ class QualityToolBase(ExtraContextMixin):
     def _process_detail_view(self, request, *args, **kwargs):
         if self.pk_url_kwarg in kwargs:
             self.object = self.get_object()
-            self._page_title = _('Edit quality tool target')
+            self._page_title = _('Manage quality tool target')
         else:
             self._page_title = _('Create quality tool target')
             self.object = None

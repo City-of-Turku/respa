@@ -2657,7 +2657,7 @@ msgstr ""
 msgid "Create quality tool target"
 msgstr ""
 
-msgid "Edit quality tool target"
+msgid "Manage quality tool target"
 msgstr ""
 
 msgid "Search for Suomi.fi quality tool targets"
