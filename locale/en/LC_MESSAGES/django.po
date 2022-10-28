@@ -2636,11 +2636,38 @@ msgstr ""
 msgid "Results per page"
 msgstr ""
 
-msgid "Qualitytool"
+msgid "Quality tool"
 msgstr ""
 
 msgid "resource quality tool"
 msgstr ""
 
 msgid "resource quality tools"
+msgstr ""
+
+msgid "All quality tools I manage"
+msgstr ""
+
+msgid "Add a new quality tool target"
+msgstr ""
+
+msgid "All quality tools"
+msgstr ""
+
+msgid "Create quality tool target"
+msgstr ""
+
+msgid "Edit quality tool target"
+msgstr ""
+
+msgid "Search for Suomi.fi quality tool targets"
+msgstr ""
+
+msgid "Quality tool target created"
+msgstr ""
+
+msgid "Quality tool target updated"
+msgstr ""
+
+msgid "No target options found"
 msgstr ""

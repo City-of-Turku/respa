@@ -47,7 +47,7 @@ class QualityToolFormLanguageOptions(SingletonModel):
 
 
     def __str__(self):
-        return _('Qualitytool form options configuration.')
+        return _('Quality tool form options configuration.')
 
     class Meta:
-        verbose_name = _('Qualitytool form configuration')
+        verbose_name = _('Quality tool form configuration')

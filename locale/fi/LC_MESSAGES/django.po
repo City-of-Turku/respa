@@ -2013,7 +2013,7 @@ msgstr ""
 msgid "Results per page"
 msgstr "Tulosta per sivu"
 
-msgid "Qualitytool"
+msgid "Quality tool"
 msgstr "Laatutyökalu"
 
 msgid "resource quality tool"
@@ -2021,3 +2021,30 @@ msgstr "resurssi laatutyökalu"
 
 msgid "resource quality tools"
 msgstr "resurssi laatutyökalut"
+
+msgid "All quality tools I manage"
+msgstr "Kaikki hallitsemani laatutyökalut"
+
+msgid "Add a new quality tool target"
+msgstr "Luo uusi laatutyökalu kohde"
+
+msgid "All quality tools"
+msgstr "Kaikki laatutyökalut"
+
+msgid "Create quality tool target"
+msgstr "Luo laatutyökalu kohde"
+
+msgid "Edit quality tool target"
+msgstr "Muokkaa laatutyökalu kohdetta"
+
+msgid "Search for Suomi.fi quality tool targets"
+msgstr "Hae Suomi.fi laatutyökalu kohteita"
+
+msgid "Quality tool target created"
+msgstr "Laatutyökalu kohde luotu"
+
+msgid "Quality tool target updated"
+msgstr "Laatutyökalu kohde päivitetty"
+
+msgid "No target options found"
+msgstr "Kohde valintoja ei löytynyt"

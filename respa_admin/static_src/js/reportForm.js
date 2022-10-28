@@ -119,12 +119,7 @@ function bindSelectAllButton() {
 
 
 
-function bindSelectPaginatorItems() {
-    $(paginator.items).on('click', () => {
-        let resources = $(paginator.items).find('input:checked');
-        updateSelectAllButton();
-    });
-}
+function bindSelectPaginatorItems() { $(paginator.items).on('click', updateSelectAllButton); }
 
 
 function addLoader(element, labelText) {

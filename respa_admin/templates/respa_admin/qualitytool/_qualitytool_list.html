@@ -5,7 +5,7 @@
 <section class="qualitytool">
     <div class="container">
         <div class="filter-bar container-fluid">
-            <h2 class="pull-left">{% trans "All qualitytools" %}</h2>
+            <h2 class="pull-left">{% trans "All quality tools" %}</h2>
         </div>
         <div class="qualitytool-list container-fluid">
             <ul class="list-group">
@@ -44,7 +44,9 @@
                         </div>
                     </li>
                 {% empty %}
-                    <h1>No qualitytool targets!</h1>
+                    <div class="col-wrap-container fluid row-wrap justify-center">
+                        <span class="help-text">{% trans 'No quality tools found' %}</span>
+                    </div>
                 {% endfor %}
             </ul>
         </div>

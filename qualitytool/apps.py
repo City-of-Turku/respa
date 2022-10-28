@@ -3,4 +3,4 @@ from django.utils.translation import ugettext_lazy as _
 
 class QualitytoolConfig(AppConfig):
     name = 'qualitytool'
-    verbose_name = _('Qualitytool')
+    verbose_name = _('Quality tool')

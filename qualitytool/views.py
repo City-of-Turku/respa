@@ -35,9 +35,9 @@ class QualityToolBase(ExtraContextMixin):
     def _process_detail_view(self, request, *args, **kwargs):
         if self.pk_url_kwarg in kwargs:
             self.object = self.get_object()
-            self._page_title = _('Edit qualitytool')
+            self._page_title = _('Edit quality tool target')
         else:
-            self._page_title = _('Create qualitytool')
+            self._page_title = _('Create quality tool target')
             self.object = None
         self.is_edit = self.object is not None
 
@@ -75,13 +75,13 @@ class QualityToolRemoveLinkView(QualityToolBaseView):
 
         if not unit.is_admin(self.user):
             self.set_session_context(request, redirect_message={
-                'message':_('You must be unit admin to delete qualitytool target.'),
+                'message':_('You must be unit admin to delete quality tool target.'),
                 'type':'error'
             })
         else:
             instance.delete()
             self.set_session_context(request, redirect_message={
-                'message': _('Qualitytool target removed.'),
+                'message': _('Quality tool target removed.'),
                 'type':'success'
             })
         return redirect('respa_admin:ra-qualitytool')
@@ -147,7 +147,7 @@ class QualityToolLinkView(QualityToolBaseView, TemplateView):
             query &= ~Q(pk=self.object.pk)
 
         if ResourceQualityTool.objects.filter(query).exists():
-            raise ValidationError(_('Some of these resources are already linked to another qualitytool target'), 400)
+            raise ValidationError(_('Some of these resources are already linked to another quality tool target'), 400)
 
 
     def process_resources(self, resources):
@@ -222,7 +222,7 @@ class QualityToolLinkView(QualityToolBaseView, TemplateView):
             for resource in resources:
                 self.object.resources.add(resource)
             self.object.save()
-        msg = _('Qualitytool created') if not self.is_edit else _('Qualitytool updated')
+        msg = _('Quality tool target created') if not self.is_edit else _('Quality tool target updated')
         self.set_session_context(request, redirect_message={
             'message': msg,
             'type': 'success'

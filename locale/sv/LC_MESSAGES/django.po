@@ -1948,7 +1948,7 @@ msgstr ""
 msgid "Results per page"
 msgstr "Resultat per sida"
 
-msgid "Qualitytool"
+msgid "Quality tool"
 msgstr "Kvalitetsverktyg"
 
 msgid "resource quality tool"
@@ -1956,3 +1956,30 @@ msgstr "resurs kvalitetsverktyg"
 
 msgid "resource quality tools"
 msgstr "resurs kvalitetsverktyg"
+
+msgid "All quality tools I manage"
+msgstr "Alla mina kvalitetsverktyg"
+
+msgid "Add a new quality tool target"
+msgstr "Skapa ny kvalitetsverktyg mål"
+
+msgid "All quality tools"
+msgstr "Alla kvalitetsverktyg"
+
+msgid "Create quality tool target"
+msgstr "Skapa kvalitetsverktyg mål"
+
+msgid "Edit quality tool target"
+msgstr "Modifiera kvalitetsverktyg mål"
+
+msgid "Search for Suomi.fi quality tool targets"
+msgstr "Sök efter Suomi.fi kvalitetsverktyg mål"
+
+msgid "Quality tool target created"
+msgstr "Kvalitetsverktyg mål skapad"
+
+msgid "Quality tool target updated"
+msgstr "Kvalitetsverktyg mål uppdaterad"
+
+msgid "No target options found"
+msgstr "Ingen mål optionare hittades"
