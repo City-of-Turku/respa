@@ -64,8 +64,6 @@
                 />
                 <label for="{{ target.id }}" class="margin-sm-left text-align-center">{{ target.name|get_value_from_dict:LANGUAGE_CODE }}</label>
             </div>
-        {% empty %}
-            <span>{% trans 'No target options found' %}</span>
         {% endfor %}
         </div>
         <div class="col-wrap-container row-wrap fluid space-between">
@@ -96,6 +94,12 @@
             </a>
         </div>
     </div>
+    {% else %}
+        {% if request.GET.search %}
+        <div class="col-wrap-container row-wrap justify-center">
+            <span>{% trans 'No target options found' %}</span>
+        </div>
+        {% endif %}
     {% endif %}
 {% endblock body %}
 
