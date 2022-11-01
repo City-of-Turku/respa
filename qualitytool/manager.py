@@ -58,7 +58,7 @@ class QualityToolManager():
 
     @ensure_token
     @clear_cache(seconds=600)
-    @lru_cache
+    @lru_cache(maxsize=None)
     def get_targets(self):
         response = self.session.get(self.config['TARGET_LIST'])
         serializer = QualityToolTargetListSerializer(data=response.json(), many=True)
@@ -74,7 +74,7 @@ class QualityToolManager():
 
     @ensure_token
     @clear_cache(seconds=43200) # Clear lru_cache after 12 hours.
-    @lru_cache
+    @lru_cache(maxsize=None)
     def get_form(self):
         response = self.session.get(self.config['FEEDBACK_FORM'])
         serializer = QualityToolFormSerializer(data=response.json())
@@ -83,7 +83,7 @@ class QualityToolManager():
 
     @ensure_token
     @clear_cache(seconds=86400)
-    @lru_cache
+    @lru_cache(maxsize=None)
     def get_form_languages(self):
         response = self.session.get(self.config['FEEDBACK_FORM'])
         if response.status_code == 200:
