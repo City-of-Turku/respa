@@ -110,17 +110,17 @@ class QualityToolManager():
 
     def get_daily_utilization(self, qualitytool, date) -> dict:
         """
-        Returns volume count of reservations that were created yesterday of given date
+        Returns volume count of reservations that were created the given date
         return: {
             'targetId': uuid,
             'date': (date - timedelta(days=1)).date(),
             'volume': int
         }
         """
-        begin = (date - timedelta(days=1)).replace(microsecond=0, hour=0, minute=0, second=0)
-        end = date.replace(microsecond=0, hour=0, minute=0, second=0)
+        begin = date.replace(microsecond=0, hour=0, minute=0, second=0)
+        end = date.replace(microsecond=23, hour=59, minute=59, second=59)
 
-        query = models.Q(reservations__created_at__gte=begin, reservations__created_at__lt=end)
+        query = models.Q(reservations__created_at__gte=begin, reservations__created_at__lte=end)
         volume = qualitytool.resources.filter(query).values_list('reservations', flat=True)
         return {
             'targetId': str(qualitytool.target_id), 
