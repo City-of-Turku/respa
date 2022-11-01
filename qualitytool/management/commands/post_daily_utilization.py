@@ -28,9 +28,6 @@ class Command(BaseCommand):
             for qualitytool in ResourceQualityTool.objects.all()
         ]
 
-        print(payload)
-        return
-
         if not payload:
             return
         return qt_manager.post_utilization(payload)

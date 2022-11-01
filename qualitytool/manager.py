@@ -120,8 +120,6 @@ class QualityToolManager():
         begin = (date - timedelta(days=1)).replace(microsecond=0, hour=0, minute=0, second=0)
         end = date.replace(microsecond=0, hour=0, minute=0, second=0)
 
-        print(begin, end)
-
         query = models.Q(reservations__created_at__gte=begin, reservations__created_at__lt=end)
         volume = qualitytool.resources.filter(query).values_list('reservations', flat=True)
         return {
