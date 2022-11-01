@@ -1982,4 +1982,4 @@ msgid "Quality tool target updated"
 msgstr "Kvalitetsverktyg mål uppdaterad"
 
 msgid "No target options found"
-msgstr "Ingen mål optionare hittades"
+msgstr "Inga mål hittades"

@@ -3,7 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from functools import wraps
-
+from datetime import datetime, timedelta
 from qualitytool.api.serializers.external import (
     QualityToolFormSerializer,
     QualityToolTargetListSerializer,
@@ -108,12 +108,25 @@ class QualityToolManager():
         response = self.session.post(self.config['UTILIZATION_UPSERT'], json=data)
         return response.json()
 
-    def get_daily_utilization(self, qualitytool, begin, end) -> dict:
-        query = models.Q(reservations__created_at__gte=begin, reservations__created_at__lte=end)
+    def get_daily_utilization(self, qualitytool, date) -> dict:
+        """
+        Returns volume count of reservations that were created yesterday of given date
+        return: {
+            'targetId': uuid,
+            'date': (date - timedelta(days=1)).date(),
+            'volume': int
+        }
+        """
+        begin = (date - timedelta(days=1)).replace(microsecond=0, hour=0, minute=0, second=0)
+        end = date.replace(microsecond=0, hour=0, minute=0, second=0)
+
+        print(begin, end)
+
+        query = models.Q(reservations__created_at__gte=begin, reservations__created_at__lt=end)
         volume = qualitytool.resources.filter(query).values_list('reservations', flat=True)
         return {
-            'targetId': qualitytool.target_id, 
-            'date': timezone.now().date(),
+            'targetId': str(qualitytool.target_id), 
+            'date': str(begin.date()),
             'volume': volume.count()
         }
 
