@@ -27,7 +27,7 @@ class QualityToolFeedbackView(views.APIView):
         resource_quality_tool = data['resource_quality_tool']
 
         payload = {
-            'targetId': resource_quality_tool.target_id,
+            'targetId': str(resource_quality_tool.target_id),
             'rating': data['rating']
         }
 
