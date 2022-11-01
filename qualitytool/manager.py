@@ -108,10 +108,8 @@ class QualityToolManager():
         response = self.session.post(self.config['UTILIZATION_UPSERT'], json=data)
         return response.json()
 
-    def get_daily_utilization(self, qualitytool) -> dict:
-        created_at_after = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        created_at_before = timezone.now().replace(hour=23, minute=59, second=59, microsecond=0)
-        query = models.Q(reservations__created_at__gte=created_at_after, reservations__created_at__lte=created_at_before)
+    def get_daily_utilization(self, qualitytool, begin, end) -> dict:
+        query = models.Q(reservations__created_at__gte=begin, reservations__created_at__lte=end)
         volume = qualitytool.resources.filter(query).values_list('reservations', flat=True)
         return {
             'targetId': qualitytool.target_id, 
