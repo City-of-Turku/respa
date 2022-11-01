@@ -2026,25 +2026,25 @@ msgid "All quality tools I manage"
 msgstr "Kaikki hallitsemani laatutyökalut"
 
 msgid "Add a new quality tool target"
-msgstr "Luo uusi laatutyökalu kohde"
+msgstr "Luo uusi laatutyökalukohde"
 
 msgid "All quality tools"
 msgstr "Kaikki laatutyökalut"
 
 msgid "Create quality tool target"
-msgstr "Luo laatutyökalu kohde"
+msgstr "Luo laatutyökalukohde"
 
 msgid "Manage quality tool target"
 msgstr "Hallitse laatutyökalu kohdetta"
 
 msgid "Search for Suomi.fi quality tool targets"
-msgstr "Hae Suomi.fi laatutyökalu kohteita"
+msgstr "Hae Suomi.fi-laatutyökalukohteita"
 
 msgid "Quality tool target created"
-msgstr "Laatutyökalu kohde luotu"
+msgstr "Laatutyökalukohde luotu"
 
 msgid "Quality tool target updated"
-msgstr "Laatutyökalu kohde päivitetty"
+msgstr "Laatutyökalukohde päivitetty"
 
 msgid "No target options found"
 msgstr "Kohde valintoja ei löytynyt"
