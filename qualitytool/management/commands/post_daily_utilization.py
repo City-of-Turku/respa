@@ -19,7 +19,7 @@ class Command(BaseCommand):
 
 
         if date:
-            date = datetime.strptime(date, '%Y-%m-%d')
+            date = timezone.make_aware(datetime.strptime(date, '%Y-%m-%d'))
         else:
             date = timezone.now()
     

@@ -117,14 +117,14 @@ class QualityToolManager():
             'volume': int
         }
         """
-        begin = date.replace(microsecond=0, hour=0, minute=0, second=0)
-        end = date.replace(microsecond=23, hour=59, minute=59, second=59)
-
+        begin = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = date.replace(hour=23, minute=59, second=59, microsecond=23)
+    
         query = models.Q(reservations__created_at__gte=begin, reservations__created_at__lte=end)
         volume = qualitytool.resources.filter(query).values_list('reservations', flat=True)
         return {
             'targetId': str(qualitytool.target_id), 
-            'date': str(begin.date()),
+            'date': str(date.date()),
             'volume': volume.count()
         }
 
