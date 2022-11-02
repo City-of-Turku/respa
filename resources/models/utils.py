@@ -163,6 +163,7 @@ def generate_reservation_xlsx(reservations, **kwargs):
         return string
 
     request = kwargs.get('request', None)
+    weekdays = kwargs.get('weekdays', None)
     output = io.BytesIO()
     workbook = xlsxwriter.Workbook(output)
     worksheet = workbook.add_worksheet()
@@ -213,6 +214,10 @@ def generate_reservation_xlsx(reservations, **kwargs):
                 opens, closes = time_slot.items()
                 if not opens[1] or not closes[1]:
                     continue
+
+                if weekdays and opens[1].weekday() not in weekdays:
+                    continue
+
                 if resource not in resource_usage_info:
                     resource_usage_info[resource] = {'total_opening_hours': 0, 'total_reservation_hours': 0}
                 resource_usage_info[resource]['total_opening_hours'] += (closes[1] - opens[1]).total_seconds() / 3600
@@ -265,16 +270,19 @@ def generate_reservation_xlsx(reservations, **kwargs):
 
 
     worksheet.write(row+2, 0, '', col_format)
-    worksheet.write(row+2, 1, '', col_format)
     if request:
-        worksheet.write(row+2, 2, ugettext('Resource utilization for period %(start)s - %(end)s') % ({
+        fmt_extra = f"({ugettext('Selected days: %(selected)s') % ({'selected': _build_weekday_string(weekdays)})})" if weekdays else ''
+        worksheet.write(row+2, 1, ugettext('Resource utilization for period %(start)s - %(end)s %(extra)s') % ({
             'start': query_start.date(),
-            'end': query_end.date()
+            'end': query_end.date(),
+            'extra': fmt_extra
         }), col_format)
     else:
-        worksheet.write(row+2, 2, ugettext('Resource utilization'), col_format)
+        worksheet.write(row+2, 1, ugettext('Resource utilization'), col_format)
+    worksheet.write(row+2, 2, '', col_format)
     worksheet.write(row+2, 3, '', col_format)
     worksheet.write(row+2, 4, '', col_format)
+    worksheet.write(row+2, 5, '', col_format)
 
 
     col_format = workbook.add_format({'color': 'black'})
@@ -304,6 +312,9 @@ def generate_reservation_xlsx(reservations, **kwargs):
     workbook.close()
     return output.getvalue()
 
+def _build_weekday_string(weekdays):
+    from resources.models import Day
+    return ', '.join(str(Day.DAYS_OF_WEEK[weekday][1]).capitalize() for weekday in weekdays)
 
 def get_object_or_none(cls, **kwargs):
     try:

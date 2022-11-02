@@ -21,17 +21,12 @@ from django.contrib.auth.models import AnonymousUser
 from notifications.models import NotificationType
 from rest_framework import viewsets, serializers, filters, exceptions, permissions
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
-from rest_framework.decorators import action
 from rest_framework.fields import BooleanField, IntegerField
 from rest_framework import renderers
 from rest_framework.exceptions import NotAcceptable, ValidationError
 from rest_framework.settings import api_settings as drf_settings
-from rest_framework.permissions import IsAdminUser
-from psycopg2.extras import DateTimeTZRange
 
 from munigeo import api as munigeo_api
-from datetime import datetime
-from time import strptime, mktime, sleep
 
 import phonenumbers
 from phonenumbers.phonenumberutil import (
@@ -41,8 +36,8 @@ from payments.models import Order
 
 
 from resources.models import (
-    Reservation, Resource, ReservationMetadataSet, ReservationHomeMunicipalityField,
-    ReservationHomeMunicipalitySet, ReservationBulk, ReservationQuerySet
+    Reservation, Resource, ReservationMetadataSet,
+    ReservationHomeMunicipalityField, ReservationBulk
 )
 from resources.models.reservation import RESERVATION_BILLING_FIELDS, RESERVATION_EXTRA_FIELDS
 from resources.models.utils import build_reservations_ical_file
@@ -55,12 +50,8 @@ from .base import (
     ExtraDataMixin
 )
 
-from random import uniform
-
 from ..models.utils import dateparser
-
 from respa.renderers import ResourcesBrowsableAPIRenderer
-
 from payments.utils import is_free, get_price
 
 User = get_user_model()
@@ -755,7 +746,14 @@ class ReservationExcelRenderer(renderers.BaseRenderer):
         if renderer_context['view'].action == 'retrieve':
             return generate_reservation_xlsx([data], request=request)
         elif renderer_context['view'].action == 'list':
-            return generate_reservation_xlsx(data['results'], request=request)
+            weekdays = request.GET.get('weekdays', '').split(',')
+            weekdays = [int(day) for day in weekdays if day]
+            reservations = data['results']
+            for reservation in reservations.copy():
+                begin = reservation['begin']
+                if weekdays and begin.weekday() not in weekdays:
+                    reservations.remove(reservation)
+            return generate_reservation_xlsx(reservations, request=request, weekdays=weekdays)
         else:
             return NotAcceptable()
 

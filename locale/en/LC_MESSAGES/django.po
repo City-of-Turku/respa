@@ -2545,7 +2545,7 @@ msgstr ""
 msgid "Overlapping time slot prices"
 msgstr ""
 
-msgid "Resource utilization for period %(start)s - %(end)s"
+msgid "Resource utilization for period %(start)s - %(end)s %(extra)s"
 msgstr ""
 
 msgid "Resource utilization"
@@ -2670,4 +2670,7 @@ msgid "Quality tool target updated"
 msgstr ""
 
 msgid "No target options found"
+msgstr ""
+
+msgid "Selected days: %(selected)s"
 msgstr ""

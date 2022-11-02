@@ -167,3 +167,54 @@
     width: 54px;
     max-width: 54px;
 }
+
+.reports-weekday-calendar {
+    position: relative;
+    width: 0;
+    height: 0;
+    display: none;
+    ul {
+        top: -60px;
+        display: flex;
+        flex-direction: row;
+        position: absolute;
+        min-width: 280px;
+        height: 50px;
+        border: 2px solid black;
+        padding: 0;
+        
+        .calendar-header {
+            width: calc(100% + 4px);
+            height: 25px;
+            position: absolute;
+            top: -25px;
+            right: -2px;
+            border-top: 2px solid black;
+            border-right: 2px solid black;
+            border-left: 2px solid black;
+            border-bottom: none;
+
+            display: flex;
+            justify-content: flex-end;
+
+            i {
+                margin-right: 5px;
+                margin-top: 2px;
+                cursor: pointer;
+            }
+        }
+
+        li {
+            list-style-type: none;
+            min-width: 40px;
+
+            label {
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                * { cursor: pointer; }
+            }
+        }
+    }
+}

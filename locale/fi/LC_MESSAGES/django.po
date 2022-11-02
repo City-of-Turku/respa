@@ -1922,8 +1922,8 @@ msgstr "Alkuajan tulee olla ennen loppuaikaa"
 msgid "Overlapping time slot prices"
 msgstr "Päällekkäisiä aikavälihintoja"
 
-msgid "Resource utilization for period %(start)s - %(end)s"
-msgstr "Resurssin käyttöasteet ajalta %(start)s - %(end)s"
+msgid "Resource utilization for period %(start)s - %(end)s %(extra)s"
+msgstr "Resurssin käyttöasteet ajalta %(start)s - %(end)s %(extra)s"
 
 msgid "Resource utilization"
 msgstr "Resurssin käyttöaste"
@@ -2048,3 +2048,6 @@ msgstr "Laatutyökalukohde päivitetty"
 
 msgid "No target options found"
 msgstr "Kohde valintoja ei löytynyt"
+
+msgid "Selected days: %(selected)s"
+msgstr "Valitut päivät: %(selected)s"

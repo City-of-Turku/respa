@@ -1857,8 +1857,8 @@ msgstr "Början måste vara före slutet"
 msgid "Overlapping time slot prices"
 msgstr "Överlappande tidsluckornas priser"
 
-msgid "Resource utilization for period %(start)s - %(end)s"
-msgstr "Resursens beläggningsgrad för tidsperioden %(start)s - %(end)s"
+msgid "Resource utilization for period %(start)s - %(end)s %(extra)s"
+msgstr "Resursens beläggningsgrad för tidsperioden %(start)s - %(end)s %(extra)s"
 
 msgid "Resource utilization"
 msgstr "Resursens beläggningsgrad"
@@ -1983,3 +1983,6 @@ msgstr "Kvalitetsverktyg mål uppdaterad"
 
 msgid "No target options found"
 msgstr "Inga mål hittades"
+
+msgid "Selected days: %(selected)s"
+msgstr "Utvalda dagar: %(selected)s"

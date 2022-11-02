@@ -51,14 +51,43 @@
         </div>
         {% include "respa_admin/common/_paginated_resource_list.html" with resources=resources per_page=20 paginator_id=random_id_str %}
         <div class="col-wrap-container row-wrap space-between">
-            <div class="col-wrap-container">
+            <div class="col-wrap-container fluid row-wrap space-between">
                 <div class="col-wrap-container">
                     <input type="date" class="margin-sm-left border-thick align-center" name="begin-date" id="begin-date" />
-                    <label for="begin-date" class="control-label input-label align-center">{% trans "Start date" %}</label>
+                    <label for="begin-date" class="control-label input-label align-center no-select">{% trans "Start date" %}</label>
                 </div>
                 <div class="col-wrap-container">
                     <input type="date" class="margin-sm-left border-thick align-center" name="end-date" id="end-date" />
-                    <label for="end-date" class="control-label input-label align-center">{% trans "End date" %}</label>
+                    <label for="end-date" class="control-label input-label align-center no-select">{% trans "End date" %}</label>
+                </div>
+                <div class="form-group col-wrap-container margin-sm-left">
+                    <div class="reports-weekday-calendar">
+                        <ul id="weekday-cal-popup">
+                            <div class="calendar-header">
+                                <i id="popup-close-btn" class="glyphicon glyphicon-remove small-text"></i>
+                            </div>
+                            {% for weekday in WEEKDAYS %}
+                            <li>
+                                <label class="control-label input-label align-center no-select">
+                                    <input 
+                                        id="{{ weekday.day }}"
+                                        class="margin-sm-left border-thick align-center"
+                                        type="checkbox" 
+                                        title="{{ weekday.day|title }}"
+                                        data-value="{{ weekday.value }}" 
+                                        checked />
+                                    <span>{% trans weekday.short|title %}</span>
+                                 </label>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="input-group">
+                        <a id="weekday-cal-btn" class="btn input-group-addon border-thick">
+                            <i class="glyphicon glyphicon-calendar"></i>
+                            {% trans 'Weekday'|title %}
+                        </a>
+                    </div>
                 </div>
             </div>
             <div class="button-container row-reverse align-center">
