@@ -61,7 +61,7 @@
                     <label for="end-date" class="control-label input-label align-center no-select">{% trans "End date" %}</label>
                 </div>
                 <div class="form-group col-wrap-container margin-sm-left">
-                    <div class="reports-weekday-calendar">
+                    <div class="reports-weekday-calendar" tabindex="-1">
                         <ul id="weekday-cal-popup">
                             <div class="calendar-header">
                                 <i id="popup-close-btn" class="glyphicon glyphicon-remove small-text"></i>
@@ -83,7 +83,7 @@
                         </ul>
                     </div>
                     <div class="input-group">
-                        <a id="weekday-cal-btn" class="btn input-group-addon border-thick">
+                        <a id="weekday-cal-btn" class="btn input-group-addon border-thick" tabindex="-1">
                             <i class="glyphicon glyphicon-calendar"></i>
                             {% trans 'Weekday'|title %}
                         </a>
