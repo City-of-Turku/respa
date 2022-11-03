@@ -2051,3 +2051,6 @@ msgstr "Kohde valintoja ei löytynyt"
 
 msgid "Selected days: %(selected)s"
 msgstr "Valitut päivät: %(selected)s"
+
+msgid "Weekdays"
+msgstr "Viikonpäivät"

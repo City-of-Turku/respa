@@ -2674,3 +2674,6 @@ msgstr ""
 
 msgid "Selected days: %(selected)s"
 msgstr ""
+
+msgid "Weekdays"
+msgstr ""

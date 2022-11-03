@@ -1986,3 +1986,6 @@ msgstr "Inga mål hittades"
 
 msgid "Selected days: %(selected)s"
 msgstr "Utvalda dagar: %(selected)s"
+
+msgid "Weekdays"
+msgstr "Veckodagar"
