@@ -186,15 +186,14 @@
         padding: 0;
         
         .calendar-header {
+            background-color: lightskyblue;
             width: calc(100% + 4px);
             height: 25px;
             position: absolute;
             top: -25px;
             right: -2px;
-            border-top: 2px solid black;
-            border-right: 2px solid black;
-            border-left: 2px solid black;
-            border-bottom: none;
+            border: 2px solid black;
+            border-bottom: 1px solid black;
 
             display: flex;
             justify-content: flex-end;
