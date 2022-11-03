@@ -217,7 +217,7 @@ function bindGenerateButton() {
 let btnState = false;
 function bindSelectDayPickButton() {
     let weekdayCalendar = $("ul[id=weekday-cal-popup]").parent();
-    let weekdayPopupBtn = $("a[id=weekday-cal-btn]");
+    let weekdayPopupBtn = $("button[id=weekday-cal-btn]");
     let weekdayPopupCloseBtn = $("i[id=popup-close-btn]")
     $(weekdayPopupBtn).on('click', (e) => {
         if (!$(weekdayCalendar).is(':visible') && !btnState) {
@@ -226,7 +226,10 @@ function bindSelectDayPickButton() {
         } else { btnState = false; }
     });
     $(weekdayCalendar).on('focusout', (e) => {
-        if (e.relatedTarget && $(e.relatedTarget).is(weekdayPopupBtn)) {
+        if ($(e.relatedTarget).is(weekdayCalendar) || 
+            $(e.relatedTarget).is($(weekdayCalendar).find('input'))) {
+            return;
+        } else if ($(e.relatedTarget).is(weekdayPopupBtn)) {
             $(weekdayCalendar).hide();
         } else {
             $(weekdayCalendar).hide();
@@ -235,5 +238,5 @@ function bindSelectDayPickButton() {
     });
     $(weekdayPopupCloseBtn).on('click', (e) => { 
         $(weekdayCalendar).trigger('focusout');
-    })
+    });
 }
