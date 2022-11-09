@@ -4,7 +4,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import models, transaction, DatabaseError
 from django.db.models import Case, DateTimeField, ExpressionWrapper, F, OuterRef, Q, Subquery, When
 from django.utils import translation
 from django.utils.formats import localize
@@ -24,6 +24,10 @@ from .utils import (
     is_datetime_range_between_times, rounded, handle_customer_group_pricing, get_price_dict,
     finalize_price_data, get_fixed_time_slot_prices
 )
+
+import logging
+
+logger = logging.getLogger()
 
 # The best way for representing non existing archived_at would be using None for it,
 # but that would not work with the unique_together constraint, which brings many
@@ -202,7 +206,7 @@ class ProductCustomerGroupQuerySet(models.QuerySet):
         product_cg = self.filter(product=product).first()
         return product_cg.price if product_cg else product.price
 
-    def get_tax_free_price_for(self, product):    
+    def get_tax_free_price_for(self, product):
         product_cg = self.filter(product=product).first()
         return product_cg.price_tax_free if product_cg else product.price_tax_free
 
@@ -376,7 +380,7 @@ class Product(models.Model):
     @rounded
     def get_pretax_price(self) -> Decimal:
         return convert_aftertax_to_pretax(self.price, self.tax_percentage)
-    
+
     @rounded
     def get_pretax_price_context(self, price) -> Decimal:
         return convert_aftertax_to_pretax(price, self.tax_percentage)
@@ -460,11 +464,11 @@ class Product(models.Model):
                 # fixed price product with added time slot pricing
                 # price with VAT, price without VAT
                 fixed_slot_price, fixed_taxfree = get_fixed_time_slot_prices(
-                    time_slot_prices=time_slot_prices, 
+                    time_slot_prices=time_slot_prices,
                     begin=local_tz_begin,
                     end=local_tz_end,
                     product=self,
-                    default_price=price, 
+                    default_price=price,
                     default_price_taxfree=price_tax_free
                     )
                 key = 'custom_fixed'
@@ -574,7 +578,7 @@ class Product(models.Model):
 
     def get_price_for_reservation(self, reservation: Reservation, rounded: bool = True) -> Decimal:
         return self.get_price_for_time_range(reservation.begin, reservation.end, rounded=rounded)
-    
+
     def get_detailed_price_structure(self, reservation: Reservation, quantity):
         return self.get_detailed_price_for_time_range(begin=reservation.begin, end=reservation.end, quantity=quantity)
 
@@ -743,34 +747,45 @@ class Order(models.Model):
 
         old_state = self.state
         if new_state == old_state:
+            logger.debug('Trying to set order state to same as before; skipping all other state change handling...')
             return
 
-        valid_state_changes = {
-            Order.WAITING: (Order.CONFIRMED, Order.REJECTED, Order.EXPIRED, Order.CANCELLED, ),
-            Order.CONFIRMED: (Order.CANCELLED,),
-        }
+        try:
+            with transaction.atomic():
+                order = Order.objects.filter(id=self.id).select_for_update(nowait=True).get()
 
-        valid_new_states = valid_state_changes.get(old_state, ())
+                if order.state == new_state:
+                    logger.debug('Trying to set order state to same as before; skipping this state change...')
 
-        if new_state not in valid_new_states:
-            raise OrderStateTransitionError(
-                'Cannot set order {} state to "{}", it is in an invalid state "{}".'.format(
-                    self.order_number, new_state, old_state
-                )
-            )
+                valid_state_changes = {
+                    Order.WAITING: (Order.CONFIRMED, Order.REJECTED, Order.EXPIRED, Order.CANCELLED, ),
+                    Order.CONFIRMED: (Order.CANCELLED,),
+                }
 
-        self.state = new_state
+                valid_new_states = valid_state_changes.get(old_state, ())
 
-        if update_reservation_state:
-            if new_state == Order.CONFIRMED:
-                self.reservation.set_state(Reservation.CONFIRMED, None)
-            elif new_state in (Order.REJECTED, Order.EXPIRED, Order.CANCELLED):
-                self.reservation.set_state(Reservation.CANCELLED, None)
+                if new_state not in valid_new_states:
+                    raise OrderStateTransitionError(
+                        'Cannot set order {} state to "{}", it is in an invalid state "{}".'.format(
+                            self.order_number, new_state, old_state
+                        )
+                    )
 
-        if save:
-            self.save()
+                self.state = new_state
 
-        self.create_log_entry(state_change=new_state, message=log_message)
+                if update_reservation_state:
+                    if new_state == Order.CONFIRMED:
+                        self.reservation.set_state(Reservation.CONFIRMED, None)
+                    elif new_state in (Order.REJECTED, Order.EXPIRED, Order.CANCELLED):
+                        self.reservation.set_state(Reservation.CANCELLED, None)
+
+                if save:
+                    self.save()
+
+                self.create_log_entry(state_change=new_state, message=log_message)
+        except DatabaseError:
+            logger.debug('Order set state db error occurred most likely due to a race condition; skip handling this state change...')
+            return
 
     def create_log_entry(self, message: str = None, state_change: str = None) -> None:
         OrderLogEntry.objects.create(order=self, state_change=state_change or '', message=message or '')
