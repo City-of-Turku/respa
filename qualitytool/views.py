@@ -3,17 +3,19 @@ from django.utils.translation import ugettext as _
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.forms import ValidationError
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.views.generic.base import TemplateView, View
 from django.db.models import Q
 from qualitytool.models import ResourceQualityTool
-from resources.auth import is_authenticated_user, is_general_admin
+from resources.auth import (
+    is_authenticated_user, 
+    is_general_admin, is_any_admin
+)
 from resources.models import Unit, UnitAuthorization
 from resources.models.resource import Resource
 from resources.models.utils import generate_id
 from respa_admin.views.base import ExtraContextMixin
 from qualitytool.manager import qt_manager
-
 from copy import copy
 
 import json
@@ -57,6 +59,11 @@ class QualityToolBase(ExtraContextMixin):
 class QualityToolBaseView(QualityToolBase, View):
     context_object_name = 'qualitytool'
     model = ResourceQualityTool
+
+    def dispatch(self, request, *args, **kwargs):
+        if not is_any_admin(request.user):
+            raise Http404
+        return super().dispatch(request, *args, **kwargs)
 
 
 
