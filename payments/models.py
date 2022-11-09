@@ -756,6 +756,7 @@ class Order(models.Model):
 
                 if order.state == new_state:
                     logger.debug('Trying to set order state to same as before; skipping this state change...')
+                    return
 
                 valid_state_changes = {
                     Order.WAITING: (Order.CONFIRMED, Order.REJECTED, Order.EXPIRED, Order.CANCELLED, ),
