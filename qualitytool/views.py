@@ -182,7 +182,7 @@ class QualityToolLinkView(QualityToolBaseView, TemplateView):
             targets = []
             target_list = qt_manager.get_targets()
             for target in target_list:
-                if any(name.lower().find(search) > -1 for _, name in target['name'].items()):
+                if any(name.lower().find(search.lower()) > -1 for _, name in target['name'].items()):
                     target['id'] = generate_id()
                     if ResourceQualityTool.objects.filter(target_id=target['targetId']).exists():
                         continue
