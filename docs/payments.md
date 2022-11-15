@@ -69,11 +69,14 @@ There are currently two types of products:
 
 Everytime a product is saved, a new copy of it is created in the db, so product modifying does not affect already existing orders.
 
-All prices are in euros. A product's price is stored in `price` field. However, there are different ways the value should be interpreted depending on `price_type` field's value:
+All prices are in euros.The price of a product can be found in two fields: `price` and `price_tax_free`. A product's price including VAT is stored in `price` field. However, there are different ways the value should be interpreted depending on `price_type` field's value:
 
 - `fixed`: The price stays always the same regardless of the reservation, so if `price` is `10.00` the final price is 10.00 EUR.
 
 - `per_period`: When price type is `per_period`, field `price_period` contains length of the period, for example if `price` is `10.00` and `price_period` is `00:30:00` it means the actual price is 10.00 EUR / 0.5h
+
+The `price_tax_free` field contains the VAT-free price of a product. The VAT-free price is and should be calculated using the following formula: `100 * (price incl. TAX) / (100 + tax_percentage) = VAT-free price` and the final value should be rounded half up to **two** decimal places. For example a product with `price: 15.00` and `tax_percentage: 24.00` should have a `price_tax_free` value of `12.10`, the `price_tax_free` is calculated using the aformentioned formula like this:  `100 * 15.00 / (100 + 24.00) ≈ 12.10`.
+
 
 Model `Order` represents orders of products. One and only one order is linked to exactly one reservation.
 
@@ -199,10 +202,12 @@ Example response (GET `/v1/resource/`):
             "fi": "Testivuokran kuvaus.",
             "en": "Test rent description."
         },
-        "tax_percentage": "24.00",
-        "price": "10.00",
-        "price_type": "per_period",
-        "price_period": "01:00:00",
+        "price": {
+            "type": "per_period",
+            "tax_percentage": "24.00",
+            "amount": "10.00",
+            "period": "01:00:00"
+        },
         "max_quantity": 1,
         "product_customer_groups": [
             {
@@ -237,7 +242,8 @@ Example response (GET `/v1/resource/`):
                     }
                 ]
             }
-        ]
+        ],
+        "price_tax_free": "8.06"
     }
 ],
 
@@ -280,7 +286,6 @@ Example response:
                 "description": {
                     "fi": "testituotteen kuvaus"
                 },
-                "tax_percentage": "24.00",
                 "price": {
                     "type": "per_period",
                     "tax_percentage": "24.00",
@@ -321,11 +326,13 @@ Example response:
                             }
                         ]
                     }
-                ]
+                ],
+                "price_tax_free": "8.06"
             },
             "quantity": 5,
             "unit_price": "20.00",
-            "price": "100.00"
+            "price": 100.0,
+            "rounded_price": "100.00"
         }
     ],
     "price": "100.00",
@@ -402,11 +409,13 @@ Example response:
                     },
                     "max_quantity": 1,
                     "product_customer_groups": [{...}, {...}],
-                    "time_slot_prices": [{...}, {...}]
+                    "time_slot_prices": [{...}, {...}],
+                    "price_tax_free": "8.06"
                 },
                 "quantity": 1,
                 "unit_price": "20.00",
-                "price": "20.00"
+                "price": 20.0,
+                "rounded_price": "20.00"
             }
         ],
         "price": "20.00",
@@ -466,7 +475,6 @@ Example response (GET `/v1/reservation/?include=order_detail`):
                         "fi": "Testivuokran kuvaus.",
                         "en": "Test rent description."
                     },
-                    "tax_percentage": "24.00",
                     "price": {
                         "type": "per_period",
                         "tax_percentage": "24.00",
@@ -475,11 +483,13 @@ Example response (GET `/v1/reservation/?include=order_detail`):
                     },
                     "max_quantity": 1,
                     "product_customer_groups": [{...}, {...}],
-                    "time_slot_prices": [{...}, {...}]
+                    "time_slot_prices": [{...}, {...}],
+                    "price_tax_free": "8.06"
                 },
                 "quantity": 1,
                 "unit_price": "20.00",
-                "price": "20.00"
+                "price": 20.0,
+                "rounded_price": "20.00"
             }
         ],
         "price": "20.00",
@@ -487,7 +497,9 @@ Example response (GET `/v1/reservation/?include=order_detail`):
             "fi": "Aikuiset",
             "en": "Adults"
         },
-        "state": "confirmed"
+        "state": "confirmed",
+        "is_requested_order": false,
+        "payment_method": "online"
     }
 
 ...

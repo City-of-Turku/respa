@@ -47,16 +47,33 @@ class OrderLineSerializer(serializers.ModelSerializer):
     product = serializers.SlugRelatedField(queryset=Product.objects.current(), slug_field='product_id')
     price = serializers.SerializerMethodField(read_only=True)
     unit_price = serializers.CharField(source='get_unit_price', read_only=True)
+    rounded_price = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = OrderLine
-        fields = ('product', 'quantity', 'unit_price', 'price')
+        fields = ('product', 'quantity', 'unit_price', 'price', 'rounded_price')
 
     def get_taxfree_price(self, obj):
         return obj.get_detailed_price()
 
     def get_price(self, obj):
+        """
+        Returns the unrounded Decimal price of this orderline.
+        e.g. 1.9999999999999999
+        """
         return obj.get_price(rounded=False)
+
+    def get_rounded_price(self, obj) -> str:
+        """
+        Returns the rounded price of this orderline with 2 decimal places.
+        e.g. '2.00'
+        """
+        detailed_prices = obj.get_detailed_price()
+        price = 0
+        for x in detailed_prices:
+            temp = detailed_prices[x]['tax_total'] + detailed_prices[x]['taxfree_price_total']
+            price += temp
+        return '{:.2f}'.format(price)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

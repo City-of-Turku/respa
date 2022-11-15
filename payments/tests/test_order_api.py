@@ -17,7 +17,7 @@ PRICE_ENDPOINT_ORDER_FIELDS = {
 }
 
 ORDER_LINE_FIELDS = {
-    'product', 'quantity', 'price', 'unit_price'
+    'product', 'quantity', 'price', 'unit_price', 'rounded_price'
 }
 
 PRODUCT_FIELDS = {
