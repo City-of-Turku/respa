@@ -106,71 +106,91 @@ def _perform_sync(link, func, respa_memento_field, o365_memento_field, outlook_m
     respa = respa_repo(resource_id=link.resource.id)
     sync = ReservationSync(respa, o365, id_mapper=mapper, respa_memento=respa_memento, remote_memento=o365_memento,
         respa_change_keys=respa_change_keys, remote_change_keys=exchange_change_keys, sync_actions=sync_actions)
+    
     # Perform synchronisation
     logger.debug("Perform synchronisation")
     func(sync)
+
     # Store data back to database
     logger.debug("Store data back to database")
+
     current_exchange_change_keys = sync.remote_change_keys()
     current_respa_change_keys = sync.respa_change_keys()
-    logger.debug("Update changed events")
-    for respa_id, exchange_id in mapper.changes():
-        ri = reservation_item_data[respa_id]
-        ri.exchange_id = exchange_id
-        ri.exchange_change_key = current_exchange_change_keys.pop(exchange_id, ri.exchange_change_key)
-        ri.respa_change_key = current_respa_change_keys.pop(respa_id, ri.respa_change_key)
-        ri.save()
-    logger.debug("Delete removed events")
-    for respa_id, exchange_id in mapper.removals():
-        reservation_item_data[respa_id].delete()
-    logger.debug("Add new events")
-    for respa_id, exchange_id in mapper.additions():
-        exchange_change_key = current_exchange_change_keys.pop(exchange_id, "")
-        respa_change_key = current_respa_change_keys.pop(respa_id, "")
-        
-        # Temporary debug code
-        if outlook_model == OutlookCalendarReservation:
-            logger.info("Saving new O365 reservation info...")
-            existing = outlook_model.objects.filter(exchange_id=exchange_id).first()
-            if existing:
-                logger.info("O365 reservation already exists with exchange_id={}. Existing link={}, resource={}, reservation_id={}, respa_change_key={}, exchange_change_key={}".format(exchange_id, existing.link, existing.link.resource_id, existing.reservation_id, existing.respa_change_key, existing.exchange_change_key))
-                logger.info("Overwriting with link={}, resource={}, reservation_id={}, respa_change_key={}, exchange_change_key={}".format(link, link.resource_id, respa_id, respa_change_key, exchange_change_key))
-                existing.delete()
-        kwargs = {
-            outlook_model_event_id_property: respa_id,
-        }
-        outlook_model.objects.create(
-            calendar_link=link,
-            exchange_id=exchange_id,
-            respa_change_key=respa_change_key,
-            exchange_change_key=exchange_change_key,
-            **kwargs)
-    logger.debug("Update changed O365 change keys")
-    for exchange_id, current_exchange_change_key in current_exchange_change_keys.items():
-        old_exchange_change_key = exchange_change_keys.get(exchange_id, "")
-        if current_exchange_change_key != old_exchange_change_key:
-            respa_id = mapper.reverse.get(exchange_id)
-            ri = reservation_item_data.get(respa_id, None)
-            if ri:
-                ri.exchange_change_key = current_exchange_change_key
-                ri.respa_change_key = current_respa_change_keys.pop(respa_id, ri.respa_change_key)
+
+    with transaction.atomic():
+        for respa_id, exchange_id in mapper.changes():
+            ri = reservation_item_data[respa_id]
+            ri.exchange_id = exchange_id
+            ri.exchange_change_key = current_exchange_change_keys.pop(exchange_id, ri.exchange_change_key)
+            ri.respa_change_key = current_respa_change_keys.pop(respa_id, ri.respa_change_key)
+
+            with transaction.atomic():
                 ri.save()
-    logger.debug("Update changed Respa change keys")
-    for respa_id, current_respa_change_key in current_respa_change_keys.items():
-        old_respa_change_key = respa_change_keys.get(respa_id, "")
-        if current_respa_change_key != old_respa_change_key:
-            exchange_id = mapper.get(respa_id)
-            ri = reservation_item_data.get(respa_id, None)
-            if ri:
-                ri.respa_change_key = current_respa_change_key
-                ri.exchange_change_key = current_exchange_change_keys.pop(exchange_id, ri.exchange_change_key)
-                ri.save()
-    setattr(link, o365_memento_field, sync.remote_memento())
-    setattr(link, respa_memento_field, sync.respa_memento())
-    link.token = api.current_token()
-    logger.debug("Saving link")
-    link.save()
-    logger.debug("Link %s sync done", str(link))
+
+        logger.debug("Delete removed events")
+        for respa_id, exchange_id in mapper.removals():
+            # inner transaction.
+            current_exchange_change_keys.pop(exchange_id, "")
+            current_respa_change_keys.pop(respa_id, "")
+            with transaction.atomic():
+                reservation_item_data[respa_id].delete()
+
+        logger.debug("Add new events")
+        for respa_id, exchange_id in mapper.additions():
+            exchange_change_key = current_exchange_change_keys.pop(exchange_id, "")
+            respa_change_key = current_respa_change_keys.pop(respa_id, "")
+
+            # Temporary debug code
+            with transaction.atomic():
+                if outlook_model == OutlookCalendarReservation:
+                    logger.info("Saving new O365 reservation info...")
+                    existing = outlook_model.objects.filter(exchange_id=exchange_id).first()
+                    if existing:
+                        logger.info("O365 reservation already exists with exchange_id={}. Existing link={}, resource={}, reservation_id={}, respa_change_key={}, exchange_change_key={}".format(
+                            exchange_id, existing.link, existing.link.resource_id, existing.reservation_id, existing.respa_change_key, existing.exchange_change_key))
+                        logger.info("Overwriting with link={}, resource={}, reservation_id={}, respa_change_key={}, exchange_change_key={}".format(
+                            link, link.resource_id, respa_id, respa_change_key, exchange_change_key))
+                        existing.delete()
+
+                    kwargs = {
+                        outlook_model_event_id_property: respa_id,
+                    }
+                    outlook_model.objects.create(
+                        calendar_link=link,
+                        exchange_id=exchange_id,
+                        respa_change_key=respa_change_key,
+                        exchange_change_key=exchange_change_key,
+                        **kwargs)
+
+        logger.debug("Update changed O365 change keys")
+        for exchange_id, current_exchange_change_key in current_exchange_change_keys.items():
+            old_exchange_change_key = exchange_change_keys.get(exchange_id, "")
+            if current_exchange_change_key != old_exchange_change_key:
+                respa_id = mapper.reverse.get(exchange_id)
+                ri = reservation_item_data.get(respa_id, None)
+                if ri:
+                    ri.exchange_change_key = current_exchange_change_key
+                    ri.respa_change_key = current_respa_change_keys.pop(respa_id, ri.respa_change_key)
+                    ri.save()
+    
+        logger.debug("Update changed Respa change keys")
+        for respa_id, current_respa_change_key in current_respa_change_keys.items():
+            old_respa_change_key = respa_change_keys.get(respa_id, "")
+            if current_respa_change_key != old_respa_change_key:
+                exchange_id = mapper.get(respa_id)
+                ri = reservation_item_data.get(respa_id, None)
+                if ri:
+                    ri.respa_change_key = current_respa_change_key
+                    ri.exchange_change_key = current_exchange_change_keys.pop(exchange_id, ri.exchange_change_key)
+                    ri.save()
+
+        setattr(link, o365_memento_field, sync.remote_memento())
+        setattr(link, respa_memento_field, sync.respa_memento())
+        link.token = api.current_token()
+        logger.debug("Saving link")
+        with transaction.atomic():
+            link.save()
+        logger.debug("Link %s sync done", str(link))
 
 def ensure_notification(link):
     url = getattr(settings, "O365_NOTIFICATION_URL", None)

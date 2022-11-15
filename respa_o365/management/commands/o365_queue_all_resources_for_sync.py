@@ -21,13 +21,12 @@ class Command(BaseCommand):
 
         resource_id = options['resource']
 
-        with transaction.atomic():
-            if resource_id is not None:
-                calendar_links = OutlookCalendarLink.objects.filter(resource_id=resource_id)
-            else:
-                calendar_links = OutlookCalendarLink.objects.all()
+        if resource_id is not None:
+            calendar_links = OutlookCalendarLink.objects.filter(resource_id=resource_id)
+        else:
+            calendar_links = OutlookCalendarLink.objects.all()
 
-            for link in calendar_links:
-                logger.info("Adding resource %s (%s) to sync queue.", link.resource.name, link.resource_id)
-                add_to_queue(link)
-                ensure_notification(link)
+        for link in calendar_links:
+            logger.info("Adding resource %s (%s) to sync queue.", link.resource.name, link.resource_id)
+            add_to_queue(link)
+            ensure_notification(link)
