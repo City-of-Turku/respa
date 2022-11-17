@@ -1,8 +1,12 @@
 from resources.models.utils import get_municipality_help_options
 from munigeo.models import Municipality
-from resources.auth import has_permission, is_general_admin, is_staff
+from resources.auth import (
+    has_permission, has_api_permission,
+    is_general_admin, is_staff
+)
 from rest_framework import serializers, viewsets
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import PermissionDenied
 import django_filters
 from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
 from resources.api.base import (
@@ -11,9 +15,12 @@ from resources.api.base import (
 )
 from resources.models import Unit
 from resources.models.resource import Resource
+from resources.enums import UNIT_AUTH_MAP
 from .accessibility import UnitAccessibilitySerializer
 from .base import ExtraDataMixin, LocationField, PeriodSerializer
 from resources.models.utils import log_entry
+
+from users.models import User
 
 
 class UnitFilterSet(django_filters.FilterSet):
@@ -28,6 +35,28 @@ class UnitFilterSet(django_filters.FilterSet):
         model = Unit
         fields = ('resource_group',)
 
+class UnitAuthorizationSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    role = serializers.ChoiceField(choices=list(UNIT_AUTH_MAP.keys()), required=True)
+
+    def validate(self, attrs):
+        request = self.context['request']
+        user = request.user
+        
+        if not has_api_permission(user, 'unit', 'can_add_unit_auth'):
+            raise PermissionDenied()
+
+
+        attrs = super().validate(attrs)
+        try:
+            email = attrs.pop('email')
+            staff_user = User.objects.get(email=email)
+            attrs['staff_user'] = staff_user
+        except User.DoesNotExist:
+            raise serializers.ValidationError({'email': 'Invalid email'})
+        except User.MultipleObjectsReturned:
+            raise serializers.ValidationError({'email': 'Multiple results'})
+        return attrs
 
 class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer):
     name = serializers.DictField(required=True)
@@ -53,6 +82,10 @@ class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer):
         required=False,
         queryset=Municipality.objects.all(),
         help_text=f'options: {get_municipality_help_options()}')
+    unit_authorizations = UnitAuthorizationSerializer(
+        required=False, write_only=True, many=True,
+        help_text='example: "unit_authorizations": [ { "email": "email@address.com", "role": "manager" } ]'
+    )
 
     # depracated, available for backwards compatibility
     reservable_days_in_advance      = serializers.ReadOnlyField(source='reservable_max_days_in_advance')
@@ -121,12 +154,24 @@ class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer):
         request = self.context['request']
         user = request.user
         periods_data = validated_data.pop('periods', [])
+        unit_authorizations = validated_data.pop('unit_authorizations', [])
         unit = Unit.objects.create(**validated_data)
+
 
         periods = PeriodSerializer(data=periods_data, many=True)
         if periods.is_valid(raise_exception=True):
             periods.save(unit=unit)
-        log_entry(unit, user, is_edit=False, message='Created through API')
+
+        if unit_authorizations:
+            for data in unit_authorizations:
+                role, staff_user = data.values()
+                unit.create_authorization(staff_user, role)
+                log_entry(staff_user, user, is_edit=False, message='(API) Unit \'%(unit)s\' authorization added: %(level)s' % ({
+                    'unit': unit.name,
+                    'level': role
+                }))
+
+        log_entry(unit, user, is_edit=False, message='(API) Created')
         return unit
 
 
@@ -140,14 +185,17 @@ class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer):
             if periods.is_valid(raise_exception=True):
                 periods.save(unit=instance)
         unit = super().update(instance, validated_data)
-        log_entry(unit, user, is_edit=True, message='Edited through API: %s' % ', '.join([k for k in validated_data]))
+        log_entry(unit, user, is_edit=True, message='(API) Edit: %s' % ', '.join([k for k in validated_data]))
         return unit
     
     class Meta:
         model = Unit
         fields = '__all__'
         required_translations = ('name_fi', 'name_en', 'name_sv', 'street_address_fi')
-        read_only_fields = ('created_at', 'modified_at', 'created_by', 'modified_by', 'time_zone', 'id')
+        read_only_fields = (
+            'created_at', 'modified_at', 'created_by',
+            'modified_by', 'time_zone', 'id', 'unit_authorizations'
+        )
 
 
 class UnitViewSet(viewsets.ModelViewSet):

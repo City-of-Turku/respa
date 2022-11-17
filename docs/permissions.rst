@@ -279,6 +279,19 @@ can_delete_unit_of_group
     Can delete an Unit of the Unit Group
 
 
+Respa API permissions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Respa API permissions for API actions
+  - Scopes: (Resource|Unit)
+
+====================================== ============ ====== ======= ====== ====== ======
+**Permission**                         **Scope**    **GA** **UGA** **UA** **UM** **UV**
+-------------------------------------- ------------ ------ ------- ------ ------ ------
+can_add_unit_auth                      Unit
+====================================== ============ ====== ======= ====== ====== ======
+
+
 Implementation of the Roles
 ---------------------------
 

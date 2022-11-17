@@ -87,3 +87,8 @@ def is_unit_viewer(unit_authorizations, unit):
 
 def has_permission(user, permission):
     return is_authenticated_user(user) and permission in user.get_all_permissions()
+
+def has_api_permission(user, scope, permission, **kwargs):
+    return is_authenticated_user(user) and \
+        has_permission(user, '{app}.{scope}:api:{permission}' \
+            .format(app=kwargs.get('app', 'resources'), scope=scope, permission=permission))

@@ -204,6 +204,14 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
     def has_outlook_links(self):
         return OutlookCalendarLink.objects.filter(resource__pk__in=self.resources.values_list('pk', flat=True)).exists()
 
+    def create_authorization(self, user, level):
+        if not user.is_staff:
+            user.is_staff = True
+            user.save()
+        unit_auth = self.authorizations.create(authorized=user, level=level)
+        unit_auth._ensure_lower_auth()
+        return unit_auth
+    
 
 class UnitAuthorizationQuerySet(models.QuerySet):
     def for_user(self, user):

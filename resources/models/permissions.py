@@ -3,6 +3,13 @@ from ..enums import UnitAuthorizationLevel, UnitGroupAuthorizationLevel
 
 # Always update permissions.rst documentation accordingly after modifying this file!
 
+API_PERMISSIONS = {
+    'RESOURCES': [],
+    'UNIT': (
+        ('can_add_unit_auth', _('Can add unit authorizations using API')),
+    )
+}
+
 RESOURCE_PERMISSIONS = (
     ('can_approve_reservation', _('Can approve reservation')),
     ('can_make_reservations', _('Can make reservations')),
@@ -125,9 +132,8 @@ UNIT_ROLE_PERMISSIONS = {
 }
 
 UNIT_PERMISSIONS = [
-    ('unit:' + name, description)
-    for (name, description) in RESOURCE_PERMISSIONS
-]
+    ('unit:' + name, description) for (name, description) in RESOURCE_PERMISSIONS
+] + [('unit:api:'+ name, description) for (name, description) in API_PERMISSIONS['UNIT']]
 
 RESOURCE_GROUP_PERMISSIONS = [
     ('group:' + name, description)
