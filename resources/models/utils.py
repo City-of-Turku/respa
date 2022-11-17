@@ -191,12 +191,15 @@ def generate_reservation_xlsx(reservations, **kwargs):
     resource_usage_info = {}
 
     if request:
-        query_start = datetime\
-            .datetime\
-            .strptime(request.query_params.get('start', '1970-01-01'), '%Y-%m-%d')
+        query_start = datetime \
+            .datetime \
+            .strptime(request.query_params.get('start', '1970-01-01'), '%Y-%m-%d') \
+            .replace(hour=0, minute=0, second=0)
         query_end = datetime\
             .datetime\
-            .strptime(request.query_params.get('end', '1970-01-01'), '%Y-%m-%d')
+            .strptime(request.query_params.get('end', '1970-01-01'), '%Y-%m-%d') \
+            .replace(hour=23, minute=59, second=59)
+
 
         try:
             resources = request.query_params.get('resource').split(',')
