@@ -161,9 +161,22 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
 
         customer_group = attrs.get('customer_group', None)
         resource = self.context.get('resource')
+
+        login_method = getattr(request.user, 'amr', None)
+        if login_method:
+            for order_line in attrs.get('order_lines', []):
+                product = order_line.get('product')
+                if (product.has_customer_group() and
+                    not product.is_allowed_login_method(login_method, customer_group)):
+                    raise serializers.ValidationError(
+                        _('Used login method is not allowed for selected products'), code='unallowed-login-method'
+                    )
+
         for product in resource.get_products():
-            if product.has_customer_group() and not customer_group:
-                raise serializers.ValidationError(_('Order must have customer group id in it.'))
+            # allow empty cg when user has no cgs to choose from
+            if not product.has_only_restricted_customer_groups_for_login_method(login_method):
+                if product.has_customer_group() and not customer_group:
+                    raise serializers.ValidationError(_('Order must have customer group id in it.'))
 
         payment_method = attrs.get('payment_method', None)
         if payment_method and payment_method == Order.CASH and not resource.cash_payments_allowed:

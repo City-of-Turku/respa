@@ -1,12 +1,21 @@
-from payments.models import ARCHIVED_AT_NONE, CustomerGroupTimeSlotPrice, Product, CustomerGroup, ProductCustomerGroup, TimeSlotPrice
+from payments.models import (
+    ARCHIVED_AT_NONE, CustomerGroupTimeSlotPrice, Product, CustomerGroup,
+    ProductCustomerGroup, TimeSlotPrice, CustomerGroupLoginMethod
+)
 from rest_framework import serializers, viewsets
 from resources.api.base import TranslatedModelSerializer, register_view
 from rest_framework.permissions import DjangoModelPermissions
 
+class CustomerGroupLoginMethodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerGroupLoginMethod
+        fields = ('login_method_id', )
+
 class CustomerGroupSerializer(TranslatedModelSerializer):
+    only_for_login_methods = CustomerGroupLoginMethodSerializer(many=True)
     class Meta:
         model = CustomerGroup
-        fields = ('id', 'name', )
+        fields = ('id', 'name', 'only_for_login_methods')
 
 class ProductCustomerGroupSerializer(TranslatedModelSerializer):
     customer_group = CustomerGroupSerializer()
@@ -78,6 +87,10 @@ class ProductViewSet(viewsets.ModelViewSet):
         and a new product with updated data will be created to replace the old one.
         """
         return super().partial_update(request, *args, **kwargs)
+
+    def get_serializer_context(self):
+        context = super(ProductViewSet, self).get_serializer_context()
+        return context
 
 
 register_view(ProductViewSet, 'product')

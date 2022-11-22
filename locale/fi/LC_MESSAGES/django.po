@@ -2054,3 +2054,24 @@ msgstr "Valitut päivät: %(selected)s"
 
 msgid "Weekdays"
 msgstr "Viikonpäivät"
+
+msgid "Customer group login method"
+msgstr "Asiakasryhmän kirjautumistapa"
+
+msgid "Customer group login methods"
+msgstr "Asiakasryhmän kirjautumistavat"
+
+msgid "Login method id"
+msgstr "Kirjautumistavan id"
+
+msgid "Login method id or amr given by authentication service such as Tunnistamo"
+msgstr "Kirjautumistavan id tai amr-arvo, joka on saatu tunnistuspalvelusta kuten Tunnistamo"
+
+msgid "Only for login methods"
+msgstr "Ainoastaan seuraaville kirjautumistavoille"
+
+msgid "Having none selected means that all login methods are allowed."
+msgstr "Jos mikään ei ole valittuna, niin kaikki kirjautumistavat ovat sallittuja."
+
+msgid "Used login method is not allowed for selected products"
+msgstr "Käytetty kirjautumistapa ei ole sallittu valituille tuotteille"

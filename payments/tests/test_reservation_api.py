@@ -62,7 +62,7 @@ def reservation_confirmed_notification():
             short_message='Reservation confirmed short message.',
             subject='Reservation confirmed subject.',
             body='Reservation confirmed body. \n' + get_body_with_all_template_vars()
-        )   
+        )
 
 
 
@@ -834,3 +834,101 @@ def test_regular_user_manual_confirmation_reservation_with_product(
         reservation.set_state(state, None)
         response = user_api_client.put(get_detail_url(reservation), data=reservation_data)
         assert response.status_code == 403, state
+
+
+def test_reservation_raises_validation_error_when_order_cg_is_not_allowed_for_a_product(
+    api_client, user, resource_in_unit, product, product_with_cg_login_restrictions,
+    customer_group_login_method_internals, customer_group_with_login_method_restrictions):
+    """
+    Tests that a validation error is raised when reservation order product has customer group
+    with login method restriction not allowing reserversion user login method and chosen order cg
+    is restricted
+    """
+    reservation_data = build_reservation_data(resource_in_unit)
+
+    order_data = build_order_data(
+        product, quantity=1, product_2=product_with_cg_login_restrictions, quantity_2=1,
+        customer_group=customer_group_with_login_method_restrictions.id
+    )
+    reservation_data.update({
+        'reserver_name': 'Test Tester',
+        'order': order_data
+    })
+    user.amr = 'test-wont-work'
+    user.save()
+    api_client.force_authenticate(user=user)
+    response = api_client.post(LIST_URL, data=reservation_data)
+    assert response.status_code == 400
+    assert response.data['order']['non_field_errors'][0].code == 'unallowed-login-method'
+
+
+def test_reservation_does_not_raise_validation_error_when_order_products_do_not_contain_login_method_restrictions(
+    api_client, user, resource_in_unit, product, product_with_cg_login_restrictions,
+    customer_group_login_method_internals, customer_group_with_login_method_restrictions):
+    """
+    Tests that validation errors are not raised when reservation order does not contain products with
+    login method restrictions
+    """
+    reservation_data = build_reservation_data(resource_in_unit)
+    # resource has restricted product but it is not included in the order
+    order_data = build_order_data(
+        product, quantity=1,
+        customer_group=customer_group_with_login_method_restrictions.id
+    )
+    reservation_data.update({
+        'reserver_name': 'Test Tester',
+        'order': order_data
+    })
+    user.amr = 'test-some-other-amr'
+    user.save()
+    api_client.force_authenticate(user=user)
+    response = api_client.post(LIST_URL, data=reservation_data)
+    print(f'RESPONSE: {response.data}')
+    assert response.status_code == 201
+
+
+def test_reservation_does_not_raise_validation_error_when_order_has_restricted_cgs_but_chosen_cg_is_allowed(
+    api_client, user, resource_in_unit, product, product_with_cg_login_restrictions,
+    customer_group_login_method_internals, customer_group_with_login_method_restrictions):
+    """
+    Tests that validation errors are not raised when reservation order contains products with
+    login method restrictions but reservation order cg is one of the allowed cgs
+    """
+    # add restricted prod to resource, but choose allowed cg
+    reservation_data = build_reservation_data(resource_in_unit)
+    order_data = build_order_data(
+        product, quantity=1, product_2=product_with_cg_login_restrictions, quantity_2=1,
+        customer_group=customer_group_with_login_method_restrictions.id
+    )
+    reservation_data.update({
+        'reserver_name': 'Test Tester',
+        'order': order_data
+    })
+    user.amr = customer_group_login_method_internals.login_method_id
+    user.save()
+    api_client.force_authenticate(user=user)
+    response = api_client.post(LIST_URL, data=reservation_data)
+    assert response.status_code == 201
+
+
+def test_reservation_does_not_raise_validation_error_when_prods_have_only_restricted_cgs(
+    api_client, user, resource_in_unit, product_with_cg_login_restrictions):
+    """
+    Tests that validation errors are not raised when reserved resource has only
+    restricted products for the user
+    """
+    # add only restricted prods to resource and don't choose any cg
+    reservation_data = build_reservation_data(resource_in_unit)
+    order_data = build_order_data(
+        product_with_cg_login_restrictions, quantity=1,
+        customer_group=''
+    )
+    reservation_data.update({
+        'reserver_name': 'Test Tester',
+        'order': order_data
+    })
+    user.amr = 'test-amr-123'
+    user.save()
+    api_client.force_authenticate(user=user)
+    response = api_client.post(LIST_URL, data=reservation_data)
+    assert response.status_code == 201

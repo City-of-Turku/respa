@@ -2677,3 +2677,24 @@ msgstr ""
 
 msgid "Weekdays"
 msgstr ""
+
+msgid "Customer group login method"
+msgstr ""
+
+msgid "Customer group login methods"
+msgstr ""
+
+msgid "Login method id"
+msgstr ""
+
+msgid "Login method id or amr given by authentication service such as Tunnistamo"
+msgstr ""
+
+msgid "Only for login methods"
+msgstr ""
+
+msgid "Having none selected means that all login methods are allowed."
+msgstr ""
+
+msgid "Used login method is not allowed for selected products"
+msgstr ""

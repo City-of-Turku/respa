@@ -100,6 +100,12 @@ Orders can be made with products which have differing cgs or no cgs at all. Pric
 
 Model `OrderProductCustomerGroupData` is used to store pcg price and cg name (if order's cg is defined in the product) per order line. Price data is stored so that later modifications to pcgs won't change the order line price after the payment has been made.
 
+### Customer group login method restrictions
+
+Customer groups can be restricted by users' login methods. For example cg `Employees` could be restricted to be selectable only by users who logged in with employee-only authentication. Users logging in with other than employee authentication would not be able to use `Employees` cg in their order. A cg can be restricted by one or more login methods.
+
+When a resource's products have only restricted cgs then a user with no cg options can use empty cg selection `""` in their order instead. This is an exception to the rule of having to choose any cg when resource has products with cgs.
+
 ## Time slot pricing
 
 Products can have differently priced time slots e.g., 10-12 with price of 10 EUR/h and 14-16 with price of 12 EUR/h. In the previous example if the product's default price is 6 EUR/h a reservation made between 11-12 would cost 10 EUR and a reservation made between 13-15 would cost 18 EUR.
@@ -552,6 +558,8 @@ After the status has been checked, the customer is redirected to the `ui_return_
 #### Customer Groups
 
 ![customer group models](customer_group_models.png "customer group models")
+
+![customer group restrictions](customer_group_restriction_examples.jpg "customer group restriction examples")
 
 #### Time slot prices
 

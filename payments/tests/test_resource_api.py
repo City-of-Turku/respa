@@ -4,7 +4,10 @@ from decimal import Decimal
 import pytest
 from rest_framework.reverse import reverse
 
-from ..factories import ProductFactory
+from ..factories import (
+    ProductFactory, CustomerGroupLoginMethodFactory, ProductCustomerGroupFactory,
+    CustomerGroupFactory
+)
 from ..models import Product
 from .test_order_api import PRODUCT_FIELDS
 
@@ -71,3 +74,50 @@ def test_get_resource_check_products(endpoint, price_type, user_api_client, reso
         assert price_data['period'] == '01:00:00'
         price_fields.add('period')
     assert set(price_data.keys()) == price_fields
+
+
+def test_get_resource_products_cg_allowed_login_methods_when_included(
+    user_api_client, resource_in_unit):
+    '''
+    Tests that product customer group "only for login methods" is shown correctly
+    when cg contains such login methods
+    '''
+    cg_login_method_1 = CustomerGroupLoginMethodFactory.create()
+    cg_login_method_2 = CustomerGroupLoginMethodFactory.create()
+
+    cg = CustomerGroupFactory.create()
+    cg.only_for_login_methods.set([cg_login_method_1, cg_login_method_2])
+    cg.save()
+    product = ProductFactory.create(
+        resources=[resource_in_unit]
+    )
+    pcg = ProductCustomerGroupFactory.create(customer_group=cg)
+    pcg.product = product
+    pcg.save()
+
+    url = get_detail_url(resource_in_unit)
+    response = user_api_client.get(url)
+    products_data = response.data['products']
+    assert len(products_data) == 1
+    product_data = products_data[0]
+    cg_data = product_data['product_customer_groups'][0]['customer_group']
+    assert len(cg_data['only_for_login_methods']) == 2
+    assert cg_data['only_for_login_methods'] == [
+        {'login_method_id': cg_login_method_1.login_method_id},
+        {'login_method_id': cg_login_method_2.login_method_id}
+    ]
+
+
+def test_get_resource_products_cg_allowed_login_methods_when_not_included(
+    user_api_client, resource_in_unit, product_with_product_cg):
+    '''
+    Tests that product customer group "only for login methods" is shown correctly
+    when cg does not contain any such login methods
+    '''
+    url = get_detail_url(resource_in_unit)
+    response = user_api_client.get(url)
+    products_data = response.data['products']
+    assert len(products_data) == 1
+    product_data = products_data[0]
+    cg_data = product_data['product_customer_groups'][0]['customer_group']
+    assert cg_data['only_for_login_methods'] == []

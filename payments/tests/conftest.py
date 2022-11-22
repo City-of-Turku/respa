@@ -8,7 +8,8 @@ from pytz import UTC
 
 from payments.factories import (
     CustomerGroupTimeSlotPriceFactory, OrderFactory, OrderLineFactory, CustomerGroupFactory,
-    ProductFactory, ProductCustomerGroupFactory, OrderCustomerGroupDataFactory, TimeSlotPriceFactory
+    ProductFactory, ProductCustomerGroupFactory, OrderCustomerGroupDataFactory, TimeSlotPriceFactory,
+    CustomerGroupLoginMethodFactory
 )
 from payments.models import Order, Product, ProductCustomerGroup
 from resources.models import Reservation
@@ -434,5 +435,37 @@ def product_with_fixed_price_type_and_time_slots_tax(resource_in_unit, customer_
     CustomerGroupTimeSlotPriceFactory.create(
         customer_group=customer_group_elders, price=Decimal('6.00'),
         time_slot_price=time_slot_15_to_16
+    )
+    return product
+
+
+@pytest.fixture
+def customer_group_login_method_internals():
+    return CustomerGroupLoginMethodFactory.create(name="Internals", login_method_id="internal_amr")
+
+
+@pytest.fixture
+def customer_group_login_method_suomifi():
+    return CustomerGroupLoginMethodFactory.create(name="Suomifi", login_method_id="suomifi_amr")
+
+
+@pytest.fixture
+def customer_group_with_login_method_restrictions(customer_group_login_method_internals, customer_group_login_method_suomifi):
+    cg = CustomerGroupFactory.create(name='Internal Employees', id='cg-internals-1')
+    cg.only_for_login_methods.set([customer_group_login_method_internals, customer_group_login_method_suomifi])
+    cg.save()
+    return cg
+
+
+@pytest.fixture
+def product_with_cg_login_restrictions(resource_in_unit, customer_group_with_login_method_restrictions):
+    product = ProductFactory.create(
+        price_type=Product.PRICE_FIXED,
+        price=Decimal('50.25'),
+        resources=[resource_in_unit],
+    )
+    ProductCustomerGroupFactory.create(
+        customer_group=customer_group_with_login_method_restrictions,
+        product=product, price=Decimal('6.50')
     )
     return product

@@ -12,7 +12,8 @@ from resources.models.utils import generate_id
 from .models import (
     ARCHIVED_AT_NONE, TAX_PERCENTAGES, CustomerGroup, CustomerGroupTimeSlotPrice,
     Order, OrderCustomerGroupData, OrderLine,
-    Product, ProductCustomerGroup, TimeSlotPrice
+    Product, ProductCustomerGroup, TimeSlotPrice,
+    CustomerGroupLoginMethod
 )
 
 class ProductFactory(factory.django.DjangoModelFactory):
@@ -176,3 +177,12 @@ class CustomerGroupTimeSlotPriceFactory(factory.django.DjangoModelFactory):
     )
     class Meta:
         model = CustomerGroupTimeSlotPrice
+
+
+class CustomerGroupLoginMethodFactory(factory.django.DjangoModelFactory):
+    """Mock CustomerGroupLoginMethod objects"""
+    name = factory.Faker('catch_phrase')
+    login_method_id = factory.Sequence(lambda n: 'test_amr_{}'.format(n))
+
+    class Meta:
+        model = CustomerGroupLoginMethod

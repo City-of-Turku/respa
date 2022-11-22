@@ -1989,3 +1989,24 @@ msgstr "Utvalda dagar: %(selected)s"
 
 msgid "Weekdays"
 msgstr "Veckodagar"
+
+msgid "Customer group login method"
+msgstr "Inloggningsmetod för kundgrupp"
+
+msgid "Customer group login methods"
+msgstr "Inloggningsmetoder för kundgrupp"
+
+msgid "Login method id"
+msgstr "Inloggningsmetod-id"
+
+msgid "Login method id or amr given by authentication service such as Tunnistamo"
+msgstr "Inloggningsmetod-id eller amr ges av autentiseringstjänst som Tunnistamo"
+
+msgid "Only for login methods"
+msgstr "Endast för inloggningsmetoder"
+
+msgid "Having none selected means that all login methods are allowed."
+msgstr "Om ingen har valts betyder det att alla inloggningsmetoder är tillåtna."
+
+msgid "Used login method is not allowed for selected products"
+msgstr "Använd inloggningsmetod är inte tillåten för valda produkter"

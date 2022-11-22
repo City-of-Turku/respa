@@ -185,12 +185,56 @@ class OrderCustomerGroupData(models.Model):
                 setattr(self, '%s_%s' % (field_name, lang), val)
         return self
 
+class CustomerGroupLoginMethod(AutoIdentifiedModel):
+    name = models.CharField(verbose_name=_('Name'), max_length=200)
+    login_method_id = models.CharField(
+        verbose_name=_('Login method id'),
+        help_text=_('Login method id or amr given by authentication service such as Tunnistamo'),
+        max_length=200,
+        unique=True
+    )
+
+    def __str__(self) -> str:
+        return f'{self.name} ({self.login_method_id})'
+
+    def is_same_login_method(self, login_method_id: str) -> bool:
+        '''Checks whether given login method is same as this login method'''
+        return login_method_id == self.login_method_id
+
+    class Meta:
+        verbose_name = _('Customer group login method')
+        verbose_name_plural = _('Customer group login methods')
+
+
 class CustomerGroup(AutoIdentifiedModel):
     id = models.CharField(primary_key=True, max_length=50)
     name = models.CharField(verbose_name=_('Name'), max_length=200, unique=True)
+    only_for_login_methods = models.ManyToManyField(
+        CustomerGroupLoginMethod,
+        verbose_name=_('Only for login methods'),
+        help_text=_('Having none selected means that all login methods are allowed.'),
+        related_name='customer_groups',
+        blank=True
+    )
 
     def __str__(self) -> str:
         return self.name
+
+    def has_login_restrictions(self):
+        '''Checks whether this cg has any login method restrictions'''
+        return self.only_for_login_methods.exists()
+
+    def is_allowed_cg_login_method(self, login_method_id: str) -> bool:
+        '''Checks whether given login method is allowed for this cg'''
+        if not self.only_for_login_methods.exists():
+            # if there are no only_for_login_methods, any login method is ok
+            return True
+        for login_method in self.only_for_login_methods.all():
+            if login_method.is_same_login_method(login_method_id):
+                return True
+
+        return False
+
 
 class ProductCustomerGroupQuerySet(models.QuerySet):
     """
@@ -587,6 +631,26 @@ class Product(models.Model):
 
     def has_customer_group(self):
         return ProductCustomerGroup.objects.filter(product=self).exists()
+
+    def is_allowed_login_method(self, login_method_id: str, customer_group_id: str) -> bool:
+        '''Checks whether given login method with selected cg is allowed for this product'''
+        pcgs = ProductCustomerGroup.objects.filter(product=self, customer_group__id=customer_group_id)
+        for pcg in pcgs:
+            if not pcg.customer_group.is_allowed_cg_login_method(login_method_id):
+                return False
+        return True
+
+    def has_only_restricted_customer_groups_for_login_method(self, login_method_id: str) -> bool:
+        '''
+        Checks whether given login method has no allowed cgs to choose from or at least
+        one cg is usable
+        '''
+        pcgs = ProductCustomerGroup.objects.filter(product=self)
+        for pcg in pcgs:
+            if pcg.customer_group.is_allowed_cg_login_method(login_method_id):
+                return False
+        return True
+
 
 class OrderQuerySet(models.QuerySet):
     def can_view(self, user):

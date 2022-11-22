@@ -13,7 +13,7 @@ from resources.models import Resource
 
 from .models import (
     ARCHIVED_AT_NONE, CustomerGroupTimeSlotPrice, Order, OrderCustomerGroupData, OrderLine, OrderLogEntry,
-    Product, CustomerGroup, ProductCustomerGroup, TimeSlotPrice
+    Product, CustomerGroup, ProductCustomerGroup, TimeSlotPrice, CustomerGroupLoginMethod
 )
 
 
@@ -34,7 +34,7 @@ class TimeSlotPriceAdmin(admin.ModelAdmin):
     inlines = (CustomerGroupTimeSlotPriceInline, )
     change_form_template = 'payments/templates/admin/time_slot_prices/change_form.html'
     readonly_fields = ('is_archived', 'product_tax_percentage')
-    
+
     class Meta:
         model = TimeSlotPrice
         fields = ['begin','end','price','price_tax_free','product','is_archived','tax_percentage']
@@ -96,8 +96,13 @@ class TimeSlotPriceInline(admin.TabularInline):
     customer_group_time_slot_prices.short_description = _('Customer group time slot prices')
 
 
+class CustomerGroupLoginMethodAdmin(admin.ModelAdmin):
+    fields = ('name', 'login_method_id', 'id')
+    readonly_fields = ('id',)
+
+
 class CustomerGroupAdmin(TranslationAdmin):
-    fields = ('name', )
+    fields = ('name', 'only_for_login_methods')
 
 
 class ProductCustomerGroupAdmin(admin.ModelAdmin):
@@ -346,6 +351,7 @@ class OrderAdmin(admin.ModelAdmin):
 if settings.RESPA_PAYMENTS_ENABLED:
     admin.site.register(Product, ProductAdmin)
     admin.site.register(Order, OrderAdmin)
+    admin.site.register(CustomerGroupLoginMethod, CustomerGroupLoginMethodAdmin)
     admin.site.register(CustomerGroup, CustomerGroupAdmin)
     admin.site.register(ProductCustomerGroup, ProductCustomerGroupAdmin)
     admin.site.register(TimeSlotPrice, TimeSlotPriceAdmin)
