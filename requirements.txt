@@ -25,8 +25,6 @@ babel==2.9.1
     # via
     #   -r requirements.in
     #   delorean
-backports-zoneinfo==0.2.1
-    # via exchangelib
 beautifulsoup4==4.9.3
     # via -r requirements.in
 cached-property==1.5.2
@@ -280,7 +278,7 @@ pbr==5.8.0
     # via tendo
 phonenumbers==8.12.22
     # via -r requirements.in
-pillow==9.0.1
+pillow==9.3.0
     # via
     #   -r requirements.in
     #   easy-thumbnails
@@ -428,9 +426,7 @@ ruamel-yaml==0.17.4
     #   -r requirements.in
     #   drf-yasg
 ruamel-yaml-clib==0.2.2
-    # via
-    #   -r requirements.in
-    #   ruamel-yaml
+    # via -r requirements.in
 sentry-sdk==1.0.0
     # via -r requirements.in
 six==1.15.0
