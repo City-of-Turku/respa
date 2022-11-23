@@ -883,7 +883,6 @@ def test_reservation_does_not_raise_validation_error_when_order_products_do_not_
     user.save()
     api_client.force_authenticate(user=user)
     response = api_client.post(LIST_URL, data=reservation_data)
-    print(f'RESPONSE: {response.data}')
     assert response.status_code == 201
 
 
