@@ -6,7 +6,7 @@ from . import views
 from .auth import admin_url as url
 from .views.resources import (
     ManageUserPermissionsListView, ManageUserPermissionsSearchView, ManageUserPermissionsView, ResourceListView,
-    SaveResourceView
+    SaveResourceView, SoftDeleteResourceView, SoftDeleteRestoreResourceView
 )
 from .views.units import UnitEditView, UnitListView
 from .views.reports import ReportView
@@ -23,6 +23,8 @@ urlpatterns = [
     url(r'^resources/$', ResourceListView.as_view(), name='resources'),
     url(r'^resource/new/$', SaveResourceView.as_view(), name='new-resource'),
     url(r'^resource/edit/(?P<resource_id>\w+)/$', SaveResourceView.as_view(), name='edit-resource'),
+    url(r'^resource/delete/(?P<resource_id>\w+)/$', SoftDeleteResourceView.as_view(), name='soft-delete-resource'),
+    url(r'^resource/restore/$', SoftDeleteRestoreResourceView.as_view(), name='restore-resources'),
     url(r'^units/$', UnitListView.as_view(), name='units'),
     url(r'^units/edit/(?P<unit_id>[\w\d:]+)/$', UnitEditView.as_view(), name='edit-unit'),
     url(r'^i18n/$', include('django.conf.urls.i18n'), name='language'),

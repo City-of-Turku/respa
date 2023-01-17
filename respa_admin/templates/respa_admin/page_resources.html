@@ -10,10 +10,18 @@
                     <h1 class="col-sm-6">{% trans 'All resources I manage' %}</h1>
                     <span class="col-sm-6 listing-count">{{ paginator.count }} kpl</span>
                 </div>
+                <div class="col-wrap-container">
                 <a class="btn resource-control" href="{% url 'respa_admin:new-resource' %}">
                     <span class="glyphicon glyphicon-plus-sign icon-left" aria-hidden="true"></span>
                     {% trans 'Add a new resource' %}<span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
                 </a>
+                {% if CAN_RESTORE_RESOURCES %}
+                <a class="btn resource-control small-text" href="{% url 'respa_admin:restore-resources' %}">
+                    <span class="glyphicon glyphicon-repeat icon-left" aria-hidden="true"></span>
+                    {% trans 'Restore resources' %}<span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+                </a>
+                {% endif %}
+                </div>
                 <form action="." method="get">
                     <div class="form-group listing-search center-block">
                         <div class="input-group">

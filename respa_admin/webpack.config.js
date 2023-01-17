@@ -19,6 +19,7 @@ module.exports = {
     reportForm: './static_src/js/reportFormIndex.js',
     userManagementList: './static_src/js/userManagementListIndex.js',
     qualityToolForm: './static_src/js/qualityToolFormIndex.js',
+    resourceRestore: './static_src/js/resourceRestoreIndex.js',
     base: './static_src/js/baseIndex.js',
   },
   output: {

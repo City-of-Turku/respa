@@ -194,3 +194,11 @@ def test_queryset_with_perm(resource_in_unit, user):
     assert resource_in_unit in resources
 
 
+@pytest.mark.django_db
+def test_soft_delete_and_restore_resource(resource_in_unit):
+    pk = resource_in_unit.pk
+    resource_in_unit.delete()
+    assert Resource.objects.filter(pk=pk).count() == 0
+    assert Resource.objects.with_soft_deleted.filter(pk=pk).count() == 1
+    resource_in_unit.restore()
+    assert Resource.objects.filter(pk=pk).count() == 1

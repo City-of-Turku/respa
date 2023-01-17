@@ -2010,3 +2010,9 @@ msgstr "Om ingen har valts betyder det att alla inloggningsmetoder är tillåtna
 
 msgid "Used login method is not allowed for selected products"
 msgstr "Använd inloggningsmetod är inte tillåten för valda produkter"
+
+msgid "Restore"
+msgstr "Återställ"
+
+msgid "Restore resources"
+msgstr "Återställ resurs"

@@ -1,0 +1,50 @@
+{% extends "respa_admin/_base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block koro_shape %}
+    <section class="hero-section bg-light {{ KORO_STYLE }}">
+        <div class="container">
+            <div class="headline">
+                <div class="listing-report row">
+                    <h1 class="col-sm-6">{% trans 'Restore resources' %}</h1>
+                    <span class="col-sm-6 listing-count">{{ resources|length }} kpl</span>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock koro_shape %}
+
+{% block body %}
+    {% if resources %}
+    <div class="container">
+        <div class="col-wrap-container row-wrap fluid space-between">
+            <div class="col-wrap-container">
+                <button type="button" class="btn btn-default" id="select-all-btn">{% trans 'Select all' %}</button>
+            </div>
+            <div class="form-group listing-search col-wrap-container fluid align-items-center">
+                <div class="input-group">
+                    <span class="input-group-addon">{% trans 'Filter' %}</span>
+                    <input type="text" class="form-control text-input" id="resource-filter">
+                </div>
+            </div>
+        </div>
+    {% include "respa_admin/common/_paginated_resource_list.html" with resources=resources per_page=10 paginator_id=random_id_str %}
+    </div>
+    {% else %}
+    <div class="col-wrap-container fluid row-wrap justify-center">
+        <span class="help-text">{% trans 'No resources found' %}</span>
+    </div>
+    {% endif %}
+    {% if resources %}
+    <div class="container">
+        {% csrf_token %}
+        <a id="restore-resources-btn" class="btn btn-mb-12 border-thick" href="#">{% trans 'Restore' %}</a>
+    </div>
+    {% endif %}
+{% endblock body %}
+
+
+{% block js_extra %}
+    <script type="text/javascript" src="{% static 'respa_admin/resourceRestore-bundle.js' %}"></script>
+{% endblock js_extra %}

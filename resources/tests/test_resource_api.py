@@ -1160,3 +1160,37 @@ def test_query_counts(user_api_client, staff_api_client, list_url, django_assert
 
     with django_assert_max_num_queries(MAX_QUERIES):
         staff_api_client.get(list_url)
+
+@pytest.mark.django_db
+def test_api_soft_delete_permission_denied(staff_api_client, resource_in_unit):
+    response = staff_api_client.delete('%sdelete/' % get_detail_url(resource_in_unit))
+    assert response.status_code == 403
+
+@pytest.mark.django_db
+def test_api_restore_resource_permission_denied(staff_api_client, resource_in_unit, list_url):
+    response = staff_api_client.post('%srestore/' % list_url, data={'id': resource_in_unit.pk})
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_api_soft_delete_and_restore_resource(
+    staff_user, staff_api_client,
+    resource_in_unit, list_url, group
+    ):
+    pk = resource_in_unit.pk
+    resource_in_unit.unit.create_authorization(staff_user, 'manager')
+
+    assign_perm('resources.unit:resource:api:can_delete_resource', staff_user)
+    assign_perm('resources.unit:resource:api:can_restore_resource', staff_user)
+
+    assert staff_user.has_perm('resources.unit:resource:api:can_delete_resource')
+    assert staff_user.has_perm('resources.unit:resource:api:can_restore_resource')
+
+    response = staff_api_client.delete('%sdelete/' % get_detail_url(resource_in_unit))
+    assert response.status_code == 204
+    assert Resource.objects.filter(pk=pk).count() == 0
+    assert Resource.objects.with_soft_deleted.filter(pk=pk).count() == 1
+
+    response = staff_api_client.post('%srestore/' % list_url, data={'id': pk})
+    assert response.status_code == 200
+    assert Resource.objects.filter(pk=pk).count() == 1

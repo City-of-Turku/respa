@@ -90,5 +90,6 @@ def has_permission(user, permission):
 
 def has_api_permission(user, scope, permission, **kwargs):
     return is_authenticated_user(user) and \
-        has_permission(user, '{app}.{scope}:api:{permission}' \
+        (has_permission(user, '{app}.{scope}:api:{permission}' \
             .format(app=kwargs.get('app', 'resources'), scope=scope, permission=permission))
+            or is_any_admin(user))

@@ -4,11 +4,14 @@ import {
   updateImagesTotalForms,
 } from "./resourceFormImages";
 
+import { alertPopup, getErrorMessage } from './utils';
+
 import { initializePeriods } from "./periods";
 
 import { toggleLanguage } from "./resourceFormLanguage";
 
 let emptyImageItem = null;
+const SELECTED_LANGUAGE = $('html').attr('lang');
 
 export function initializeResourceForm() {
   initializeEventHandlers();
@@ -25,6 +28,7 @@ export function initializeEventHandlers() {
   enableRemoveImage();
   resourceStaffEmailsHandler();
   resourceTagsHandler();
+  bindSoftDelete();
 }
 
 export function getEmptyImage() {
@@ -367,4 +371,36 @@ function resourceTagsHandler() {
 
   $(deleteBtn).attr('disabled', true);
   updateListItems(field, deleteBtn);
+}
+
+
+function bindSoftDelete() {
+  let softDeleteBtn = $('button[id=soft-delete-resource]');
+  let form = $(softDeleteBtn).parents('form').first();
+  $(softDeleteBtn).on('click', (e) => {
+    e.preventDefault();
+    if (!confirm({
+      'fi': 'Resurssin voi palauttaa myöhemmin, jatketaanko?',
+      'sv': 'Resursen kan återställas senare, fortsätt?',
+      'en': 'Resource can still be restored after, continue?'
+    }[SELECTED_LANGUAGE]))
+      return;
+    let csrf_token = $(form).find('input[name=csrfmiddlewaretoken]');
+    let resourcePk = $(softDeleteBtn).data('pk');
+
+    let softDeleteUrl = `${window.location.origin}/ra/resource/delete`;
+    $.ajax({
+      'type': 'POST',
+      'url': `${softDeleteUrl}/${resourcePk}/`,
+      'beforeSend': (xhr) => {
+        xhr.setRequestHeader("X-CSRFToken", csrf_token.val());
+      },
+      'success': (response) => {
+        window.location.href = `${window.location.origin}/ra/`;
+      },
+      'error': (response) => {
+        alertPopup(getErrorMessage(response), 'error');
+      },
+  });
+  })
 }

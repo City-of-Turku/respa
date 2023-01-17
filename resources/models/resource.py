@@ -48,6 +48,11 @@ from .availability import get_opening_hours
 from .permissions import RESOURCE_GROUP_PERMISSIONS, UNIT_ROLE_PERMISSIONS
 from ..enums import UnitAuthorizationLevel, UnitGroupAuthorizationLevel
 
+import logging
+
+
+logger = logging.getLogger()
+
 
 def generate_access_code(access_code_type):
     if access_code_type == Resource.ACCESS_CODE_TYPE_NONE:
@@ -189,9 +194,33 @@ class ResourceQuerySet(models.QuerySet):
     def external(self):
         return self.filter(is_external=True)
 
+    
+    def delete(self, *args, **kwargs):
+        self.update(
+            soft_deleted=True,
+            public=False,
+            reservable=False
+        )
+
+    def restore(self):
+        self.update(soft_deleted=False)
+
 
 class CleanResourceID(CommonGenericTaggedItemBase, TaggedItemBase):
     object_id = models.CharField(max_length=100, verbose_name=_('Object id'), db_index=True)
+
+
+class ResourceManager(models.Manager):
+    def get_queryset(self, **kwargs):
+        if getattr(self, '_include_soft_deleted', False):
+            setattr(self, '_include_soft_deleted', False)
+            return super().get_queryset()
+        return super().get_queryset().exclude(soft_deleted=True)
+    
+    @property
+    def with_soft_deleted(self):
+        setattr(self, '_include_soft_deleted', True)
+        return self
 
 
 class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
@@ -333,7 +362,9 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
 
     is_external = models.BooleanField(verbose_name=_('Externally managed resource'), default=False, blank=True)
 
-    objects = ResourceQuerySet.as_manager()
+    soft_deleted = models.BooleanField(verbose_name=_('Soft deleted resource'), default=False, blank=True)
+
+    objects = ResourceManager.from_queryset(ResourceQuerySet)()
 
     class Meta:
         verbose_name = _("resource")
@@ -907,6 +938,20 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
 
     def has_outlook_link(self):
         return getattr(self, 'outlookcalendarlink', False)
+
+    def delete(self, *args, **kwargs):
+        self.soft_deleted = True
+        self.public = False
+        self.reservable = False
+        return self.save()
+
+    def restore(self):
+        if not self.soft_deleted:
+            logger.debug(_('Resource isn\'t soft deleted, no action required'))
+            return
+        self.soft_deleted = False
+        return self.save()
+    
 class ResourceImage(ModifiableModel):
     TYPES = (
         ('main', _('Main photo')),

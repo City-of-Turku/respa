@@ -24,6 +24,23 @@
         {% if not all_fields_disabled %}
         <button class='resources-button' type="submit">{% trans "Save" %}</button>
         {% endif %}
+        {% if resource %}
+        {% if resource.soft_deleted %}
+        <button
+            id='restore-resource'
+            type='button'
+            class='resources-button btn-brand-red margin-sm-left'
+            data-pk="{{ resource.id }}">{% trans "Restore" %}
+        </button>
+        {% else %}
+        <button
+            id='soft-delete-resource'
+            type='button'
+            class='resources-button btn-brand-red margin-sm-left'
+            data-pk="{{ resource.id }}">{% trans "Delete" %}
+        </button>
+        {% endif %}
+        {% endif %}
         {% if resource and RESPA_ADMIN_VIEW_RESOURCE_URL %}
             <a href="{{ RESPA_ADMIN_VIEW_RESOURCE_URL }}" target="_blank" rel="noopener noreferrer">
                 <button class='btn toolbar-preview' type='button'>

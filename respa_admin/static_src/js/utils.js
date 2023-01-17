@@ -167,4 +167,30 @@ export class Paginate {
             this.show(this.current());
         }
     }
+
+    getSelectedItems(attr) {
+        let items = [];
+        $(this.items)
+            .find('input:checked')
+            .each((_, item) => items.push(attr ? $(item).attr(attr) : item));
+        return items;
+    }
+}
+
+
+export function ajaxRequest(type, url, data, csrfMiddlewareToken, onSuccess, onError) {
+    $.ajax({
+        type: type,
+        url: url,
+        dataType: 'json',
+        contentType: 'application/json',
+        beforeSend: (xhr) => { xhr.setRequestHeader('X-CSRFToken', csrfMiddlewareToken) },
+        data: JSON.stringify(data),
+        success: (response) => { 
+            if (typeof onSuccess === 'function') { onSuccess(response); }
+        },
+        error: (response) => { 
+            if (typeof onError === 'function') { onError(response); }
+        }
+    });
 }

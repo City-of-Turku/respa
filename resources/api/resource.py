@@ -21,7 +21,7 @@ from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.exceptions import ValidationError, ObjectDoesNotExist, PermissionDenied
 from django.utils.translation import ugettext_lazy as _
 from payments.api.reservation import PaymentsReservationSerializer
 from resources.timmi import TimmiManager
@@ -32,7 +32,8 @@ from resources.pagination import PurposePagination
 from rest_framework import (
     exceptions, filters, mixins, 
     serializers, viewsets, response, 
-    status, generics, permissions, fields
+    status, generics, permissions, fields,
+    views
 )
 from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
@@ -49,7 +50,7 @@ from resources.models.resource import determine_hours_time_range
 from payments.models import Product
 from respa_admin.models import DisabledFieldsSet
 
-from ..auth import has_permission, is_general_admin, is_staff
+from ..auth import has_permission, is_general_admin, is_staff, has_api_permission
 from .accessibility import ResourceAccessibilitySerializer
 from .base import (
     ExtraDataMixin, TranslatedModelSerializer, register_view,
@@ -62,7 +63,8 @@ from .equipment import EquipmentSerializer
 from rest_framework.settings import api_settings as drf_settings
 from resources.models.utils import log_entry
 
-from random import sample
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 
 logger = logging.getLogger(__name__)
@@ -693,7 +695,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
         model = Resource
         exclude = ('reservation_requested_notification_extra', 'reservation_confirmed_notification_extra',
                    'access_code_type', 'reservation_metadata_set', 'reservation_home_municipality_set', 
-                   'created_by', 'modified_by', 'configuration', 'resource_email')
+                   'created_by', 'modified_by', 'configuration', 'resource_email', 'soft_deleted')
 
 
 class ResourceDetailsSerializer(ResourceSerializer):
@@ -1675,7 +1677,6 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
         return serializer(**kwargs)
 
 
-
 class ResourceUpdateSerializer(ResourceCreateSerializer):
     id = serializers.CharField(read_only=True)
     terms_of_use = TermsOfUseSerializer(required=False, many=True)
@@ -1737,6 +1738,91 @@ class ResourceUpdateView(generics.UpdateAPIView):
         )
     serializer_class = ResourceUpdateSerializer
     permission_classes = (permissions.DjangoModelPermissions, )
+
+
+class ResourceRestorePermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        return super().has_permission(request, view) and has_api_permission(user, 'unit:resource', 'can_restore_resource')
+
+
+class ResourceRestoreView(views.APIView):
+    """
+    Restore soft deleted resources.
+    """
+
+    permission_classes = (ResourceRestorePermission, )
+    http_method_names = ('post', )
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            title='ResourceRestore',
+            type=openapi.TYPE_OBJECT,
+            required=['id'],
+            properties={ 'id': openapi.Schema(type=openapi.TYPE_STRING) },
+        ),
+        responses={200: ResourceSerializer},
+        tags=['v1']
+    )
+    def post(self, request, **kwargs):
+        data = request.data
+        if not isinstance(data, dict):
+            return Response(
+                {'message': 'Invalid data type: %s' % data.__class__.__name__},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not data.get('id', None):
+            return Response(
+                {'id': 'Missing id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not isinstance(data['id'], str):
+            return Response(
+                {'id': 'Invalid data type: %s' % data.__class__.__name__},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            resource = Resource.objects.with_soft_deleted.get(pk=data['id'])
+        except Resource.DoesNotExist:
+            return Response(
+                {'resource': '404 not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        resource.restore()
+
+        return Response(ResourceSerializer(resource, context={'request': request}).data)
+
+class ResourceDeletePermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        return super().has_permission(request, view) and has_api_permission(user, 'unit:resource', 'can_delete_resource')
+
+class ResourceDeleteView(views.APIView):
+    """
+    Soft delete resource.
+    """
+
+    permission_classes = (ResourceDeletePermission, )
+    http_method_names = ('delete', )
+
+
+    @swagger_auto_schema(
+        responses=None,
+        tags=['v1']
+    )
+    def delete(self, request, **kwargs):
+        pk = kwargs.get('pk', None)
+        if not pk:
+            raise ValidationError()
+        try:
+            resource = Resource.objects.get(pk=pk)
+        except Resource.DoesNotExist:
+            raise ValidationError({'resource': 'Resource does not exist.'})
+        resource.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ResourceListViewSet(munigeo_api.GeoModelAPIView, mixins.ListModelMixin,

@@ -4,13 +4,16 @@ from ..enums import UnitAuthorizationLevel, UnitGroupAuthorizationLevel
 # Always update permissions.rst documentation accordingly after modifying this file!
 
 API_PERMISSIONS = {
-    'RESOURCES': [],
+    'RESOURCES': (
+        ('can_delete_resource', _('Can delete resources using API')),
+        ('can_restore_resource', _('Can restore resources using API')),
+    ),
     'UNIT': (
         ('can_add_unit_auth', _('Can add unit authorizations using API')),
     )
 }
 
-RESOURCE_PERMISSIONS = (
+RESOURCE_PERMISSIONS = [
     ('can_approve_reservation', _('Can approve reservation')),
     ('can_make_reservations', _('Can make reservations')),
     ('can_modify_reservations', _('Can modify reservations')),
@@ -32,7 +35,7 @@ RESOURCE_PERMISSIONS = (
     ('can_create_overlapping_reservations', _('Can create overlapping reservations')),
     ('can_ignore_max_reservations_per_user', _('Can ignore resources max reservations per user rule')),
     ('can_ignore_max_period', _('Can ignore resources max period rule')),
-)
+] + [('resource:api:'+ name, description) for (name, description) in API_PERMISSIONS['RESOURCES']]
 
 UNIT_ROLE_PERMISSIONS = {
     'can_approve_reservation': [],

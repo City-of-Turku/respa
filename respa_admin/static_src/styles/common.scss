@@ -56,6 +56,10 @@
   &.fluid {
     width: calc(100% + 20px);
   }
+
+  &.btn-brand-red {
+    background-color: $brand-red;
+  }
 }
 
 .accordion-item {

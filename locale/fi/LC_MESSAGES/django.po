@@ -2075,3 +2075,9 @@ msgstr "Jos mikään ei ole valittuna, niin kaikki kirjautumistavat ovat sallitt
 
 msgid "Used login method is not allowed for selected products"
 msgstr "Käytetty kirjautumistapa ei ole sallittu valituille tuotteille"
+
+msgid "Restore"
+msgstr "Palauta"
+
+msgid "Restore resources"
+msgstr "Palauta resursseja"

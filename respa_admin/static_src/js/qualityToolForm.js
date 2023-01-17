@@ -1,4 +1,4 @@
-import { alertPopup, Paginate, getErrorMessage } from './utils';
+import { alertPopup, Paginate, getErrorMessage, ajaxRequest } from './utils';
 
 
 let paginator;
@@ -104,34 +104,6 @@ function bindSelectAllButton() {
     });
 }
 
-
-function ajaxRequest(type, url, data, csrfmiddlewaretoken) {
-    $.ajax({
-        type: type,
-        url: url,
-        dataType: 'json',
-        contentType: 'application/json',
-        beforeSend: (xhr) => {
-            xhr.setRequestHeader('X-CSRFToken', csrfmiddlewaretoken)
-        },
-        data: JSON.stringify(data),
-        success: (response) => {
-            window.location = response.redirect_url;
-        },
-        error: (response) => {
-            alertPopup(getErrorMessage(response), 'error');
-        }
-    })
-}
-
-function getSelectedResources() {
-    let resources = [];
-    $(paginator.items)
-        .find('input:checked')
-        .each((_, resource) => resources.push($(resource).attr('id')));
-    return resources;
-}
-
 function getTargetNames(target) {
     let name = {};
     $('[id=all-languages] data').each((_, lang) => {
@@ -152,11 +124,13 @@ function bindQualityToolLinkEditCreateButton() {
             'POST', 
             `${window.location}`.replace('#',''),
             {
-                'resources': getSelectedResources(),
+                'resources': paginator.getSelectedItems('id'),
                 'target_id': target.data('value'),
                 'name': name
             },
-            csrf_token.val()
+            csrf_token.val(),
+            (response) => { window.location = response.redirect_url; },
+            (response) => { alertPopup(getErrorMessage(response), 'error'); }
         )
     });
 

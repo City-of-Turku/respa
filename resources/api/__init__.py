@@ -2,7 +2,8 @@ from .base import all_views
 from users.api import all_views as users_views
 from .resource import (
     ResourceListViewSet, ResourceViewSet, PurposeViewSet, 
-    ResourceCreateView, ResourceUpdateView, ResourceCreateProductView
+    ResourceCreateView, ResourceUpdateView, ResourceCreateProductView,
+    ResourceDeleteView, ResourceRestoreView
 )
 from .reservation import ReservationViewSet
 from .unit import UnitViewSet

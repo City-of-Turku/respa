@@ -109,15 +109,20 @@ class ResourceTagInline(admin.TabularInline):
     verbose_name_plural = _('Keywords')
     extra = 0
 
+def restore_resource(modeladmin, request, queryset):
+    queryset.restore()
+restore_resource.short_description = _('Restore selected resources')
+
 class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin, HttpsFriendlyGeoAdmin):
     default_lon = 2478871  # Central Railway Station in EPSG:3857
     default_lat = 8501259
     default_zoom = 12
 
-    list_display = ('name', 'unit', 'public', 'reservable',)
-    list_filter = ('unit', 'public', 'reservable')
+    list_display = ('name', 'unit', 'public', 'reservable', 'soft_deleted')
+    list_filter = ('unit', 'public', 'reservable', 'soft_deleted')
     list_select_related = ('unit',)
     ordering = ('unit', 'name',)
+    actions = [restore_resource]
 
     fieldsets = (
         (None, {
@@ -204,6 +209,16 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
             ResourceGroupInline,
             ResourceTagInline
         ]
+
+    def has_change_permission(self, request, obj=None):
+        return super().has_change_permission(request, obj) and (obj and not obj.soft_deleted)
+
+    def get_queryset(self, request):
+        queryset = self.model._default_manager.with_soft_deleted.get_queryset()
+        ordering = self.get_ordering(request)
+        if ordering:
+            queryset = queryset.order_by(*ordering)
+        return queryset
 
 
 class UnitAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, FixedGuardedModelAdminMixin,

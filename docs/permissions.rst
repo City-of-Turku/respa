@@ -289,6 +289,8 @@ Respa API permissions for API actions
 **Permission**                         **Scope**    **GA** **UGA** **UA** **UM** **UV**
 -------------------------------------- ------------ ------ ------- ------ ------ ------
 can_add_unit_auth                      Unit
+can_delete_resource                    Unit, Resource
+can_restore_resource                   Unit, Resource
 ====================================== ============ ====== ======= ====== ====== ======
 
 

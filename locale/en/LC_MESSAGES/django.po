@@ -2698,3 +2698,9 @@ msgstr ""
 
 msgid "Used login method is not allowed for selected products"
 msgstr ""
+
+msgid "Restore"
+msgstr ""
+
+msgid "Restore resources"
+msgstr ""
