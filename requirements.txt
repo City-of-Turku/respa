@@ -59,7 +59,7 @@ coverage==5.5
     # via
     #   -r requirements.in
     #   pytest-cov
-cryptography==3.4.7
+cryptography==39.0.1
     # via
     #   -r requirements.in
     #   requests-ntlm
