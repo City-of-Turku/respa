@@ -2704,3 +2704,36 @@ msgstr ""
 
 msgid "Restore resources"
 msgstr ""
+
+msgid "Universal form field"
+msgstr ""
+
+msgid "New universal field"
+msgstr ""
+
+msgid "Universal form options"
+msgstr ""
+
+msgid "Add new form option"
+msgstr ""
+
+msgid "Heading"
+msgstr ""
+
+msgid "Universal value inherit %(label)s"
+msgstr "'%(label)s' is also set to other languages if they dont't have any value."
+
+msgid "Universal value inherit info"
+msgstr "The other languages inherit this value if they don't have a set value."
+
+msgid "Universal data url input"
+msgstr "URL to use in embedded data:"
+
+msgid "Universal data url img button"
+msgstr "Add as image source"
+
+msgid "Universal data url iframe button"
+msgstr "Add as en embedded iframe"
+
+msgid "Universal data preview label"
+msgstr "Embedded preview:"

@@ -44,7 +44,8 @@ from resources.models import (
     AccessibilityValue, AccessibilityViewpoint, Purpose, Reservation, Resource, ResourceAccessibility,
     ResourceImage, ResourceType, ResourceEquipment, TermsOfUse, Equipment, ReservationMetadataSet,
     ReservationMetadataField, ReservationHomeMunicipalityField,
-    ReservationHomeMunicipalitySet, ResourceDailyOpeningHours, UnitAccessibility, Unit, ResourceTag
+    ReservationHomeMunicipalitySet, ResourceDailyOpeningHours, UnitAccessibility, Unit, ResourceTag,
+    ResourceUniversalField, ResourceUniversalFormOption, UniversalFormFieldType
 )
 from resources.models.resource import determine_hours_time_range
 from payments.models import Product
@@ -60,7 +61,9 @@ from .base import (
 from .reservation import ReservationSerializer
 from .unit import UnitSerializer
 from .equipment import EquipmentSerializer
+from .resource_field import UniversalFormFieldTypeSerializer
 from rest_framework.settings import api_settings as drf_settings
+from rest_framework.relations import PrimaryKeyRelatedField
 from resources.models.utils import log_entry
 
 from drf_yasg import openapi
@@ -339,6 +342,133 @@ class NestedResourceImageSerializer(TranslatedModelSerializer):
     def get_filename(self, obj):
         return basename(obj.image.name)
 
+class UniversalOptionSimpleSerializer(TranslatedModelSerializer):
+    text = serializers.DictField(required=True)
+
+    class Meta:
+        model = ResourceUniversalFormOption
+        fields = ('id','text')
+        required_translations = ('text_fi', 'text_sv', 'text_en')
+        
+    def validate(self, attrs):
+        request = self.context['request']
+        if request.method == 'POST':
+            init_data = getattr(self, 'initial_data')
+            sort_order = init_data.get('sort_order', None)
+            if sort_order is not None and sort_order == 0:
+                # set new option to be last if sort_order is 0.
+                resource_id = init_data.get('resource')
+                field_id = init_data.get('resource_universal_field')
+                count = ResourceUniversalFormOption.objects.filter(resource=resource_id, resource_universal_field=field_id).count()
+                attrs['sort_order'] = count + 1
+        # add original values to 'missing' language vals when updating specific vals.
+        if request.method == 'PATCH':
+            expected_keys = {'fi','sv','en'}
+            texts = attrs.get('text')
+            if texts and texts.keys():
+                updated_keys = set(texts.keys())
+                missing_keys = list(expected_keys.difference(updated_keys))
+                for x in missing_keys:
+                    attrs['text'][x] = getattr(self.instance, f'text_{x}')
+        return super().validate(attrs)
+
+class UniversalOptionDetailedSerializer(UniversalOptionSimpleSerializer):
+    text = serializers.DictField(required=True)
+
+    class Meta:
+        model = ResourceUniversalFormOption
+        fields = ('id','text', 'resource_universal_field', 'name','sort_order', 'resource')
+        required_translations = ('text_fi', 'text_sv', 'text_en')
+
+class ResourceUniversalOptionViewSet(viewsets.ModelViewSet):
+    queryset = ResourceUniversalFormOption.objects.all().order_by('id')
+    filter_backends = (django_filters.rest_framework.DjangoFilterBackend,)
+    permission_classes = (DjangoModelPermissionsOrAnonReadOnly,)
+
+    def get_serializer_class(self):
+        method = self.request.method
+        retrieve_one = method == 'GET' and self.action == 'retrieve'
+
+        if retrieve_one is True or method in ('PUT', 'PATCH', 'POST'):
+            return UniversalOptionDetailedSerializer
+
+        return UniversalOptionSimpleSerializer
+    
+register_view(ResourceUniversalOptionViewSet, 'resource_universal_option')
+ 
+class ResourceUniversalFieldSerializer(TranslatedModelSerializer):
+    field_type = UniversalFormFieldTypeSerializer()
+    options = UniversalOptionSimpleSerializer(many=True, read_only=True)
+    description = serializers.DictField(required=True)
+    label = serializers.DictField(required=True)
+
+    class Meta:
+        model = ResourceUniversalField
+        fields = ('id','field_type','data', 'description', 'label', 'resource', 'options', 'name')
+        required_translations = (
+            'label_fi','label_sv','label_en',
+            'description_fi','description_sv','description_en'
+            )
+
+    def validate(self, attrs):
+        request = self.context['request']
+        if request.method == 'PATCH':
+            # add original values to 'missing' language vals when updating specific language vals.
+            if attrs.get('description'):
+                attrs = self.set_missing_values(attrs, attrs.get('description'), 'description')
+            if attrs.get('label'):
+                attrs = self.set_missing_values(attrs, attrs.get('label'), 'label')
+
+        return super().validate(attrs)
+
+    def set_missing_values(self, attrs, values, key):
+        # set missing language values to attr
+        expected_lang_keys = {'fi','sv','en'}
+        updated_lang_keys = values.keys()
+        missing_lang_keys = list(expected_lang_keys.difference(updated_lang_keys))
+        for x in missing_lang_keys:
+            attrs[key][x] = getattr(self.instance, f'{key}_{x}')
+        return attrs
+
+    def create(self, validated_data):
+        if 'field_type' in validated_data:
+            # make sure that given field_type.type actually exists.
+            try:
+                field_type_value = UniversalFormFieldType.objects.get(type=validated_data['field_type']['type'])
+                validated_data['field_type'] = field_type_value
+            except ObjectDoesNotExist:
+                raise serializers.ValidationError({
+                    'field_type': {
+                        'type': _('Invalid type provided')
+                    }
+                })
+        return super().create(validated_data) 
+
+class ResourceUniversalFieldCreateSerializer(ResourceUniversalFieldSerializer):
+    field_type = UniversalFormFieldTypeSerializer()
+    description = serializers.DictField(required=True)
+    label = serializers.DictField(required=True)
+
+    class Meta:
+        model = ResourceUniversalField
+        fields = ('field_type','data', 'description', 'label', 'resource', 'name')
+        required_translations = (
+            'label_fi','label_sv','label_en',
+            'description_fi','description_sv','description_en'
+            )
+
+class ResourceUniversalFieldViewSet(viewsets.ModelViewSet):
+    queryset = ResourceUniversalField.objects.all().order_by('id')
+    filter_backends = (django_filters.rest_framework.DjangoFilterBackend,)
+    permission_classes = (DjangoModelPermissionsOrAnonReadOnly,)
+
+    def get_serializer_class(self):
+        if self.request.method in ('POST'):
+            return ResourceUniversalFieldCreateSerializer
+        return ResourceUniversalFieldSerializer
+
+register_view(ResourceUniversalFieldViewSet, 'resource_universal_field')
+
 class ResourceEquipmentSerializer(TranslatedModelSerializer):
     equipment = EquipmentSerializer()
 
@@ -483,6 +613,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     max_price_per_hour = serializers.SerializerMethodField()
     min_price_per_hour = serializers.SerializerMethodField()
     resource_staff_emails = ResourceStaffEmailsField()
+    universal_field = ResourceUniversalFieldSerializer(many=True, read_only=True, source='resource_universal_field')
 
     def get_max_price_per_hour(self, obj):
         """Backwards compatibility for 'max_price_per_hour' field that is now deprecated"""

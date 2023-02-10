@@ -2016,3 +2016,39 @@ msgstr "Återställ"
 
 msgid "Restore resources"
 msgstr "Återställ resurs"
+
+msgid "Universal form field"
+msgstr "Universal bokningsformulär fält"
+
+msgid "New universal field"
+msgstr "Nytt universalfält"
+
+msgid "Universal form options"
+msgstr "Universal bokningsformulär svar"
+
+msgid "Add new form option"
+msgstr "Lägg till nytt svar"
+
+msgid "Heading"
+msgstr "Rubrik"
+
+msgid "Universal value inheritz"
+msgstr "Det här värdet används också för andra språk om de inte har något värde."
+
+msgid "Universal value inherit %(label)s"
+msgstr "'%(label)s' värdet används för alla andra språk om de inte har något värde."
+
+msgid "Universal value inherit info"
+msgstr "Andra språk får det här värdet om de inte har något givet värde."
+
+msgid "Universal data url input"
+msgstr "URL som används i inbäddningen:"
+
+msgid "Universal data url img button"
+msgstr "Lägg till som bild"
+
+msgid "Universal data url iframe button"
+msgstr "Lägg till som iframe inbäddning"
+
+msgid "Universal data preview label"
+msgstr "Förhandsvisning av inbäddningen:"

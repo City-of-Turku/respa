@@ -28,7 +28,7 @@ from ..models import (
     ReservationHomeMunicipalityField, ReservationHomeMunicipalitySet, Resource, ResourceTag, ResourceAccessibility,
     ResourceEquipment, ResourceGroup, ResourceImage, ResourceType, TermsOfUse,
     Unit, UnitAuthorization, UnitIdentifier, UnitGroup, UnitGroupAuthorization,
-    MaintenanceMessage
+    MaintenanceMessage, UniversalFormFieldType, ResourceUniversalField, ResourceUniversalFormOption,
 )
 from ..models.utils import generate_id
 from munigeo.models import Municipality
@@ -88,6 +88,15 @@ class ResourceEquipmentInline(PopulateCreatedAndModifiedMixin, CommonExcludeMixi
     fields = ('equipment', 'description', 'data')
     extra = 0
 
+
+class ResourceUniversalInline(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationStackedInline):
+    model = ResourceUniversalField
+    list_display = ('options', )
+    extra = 0
+
+class ResourceUniversalFormOptionInline(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationStackedInline):
+    model = ResourceUniversalFormOption
+    extra = 0
 
 class ResourceGroupInline(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, admin.TabularInline):
     model = ResourceGroup.resources.through
@@ -212,7 +221,9 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
             PeriodInline,
             ResourceEquipmentInline,
             ResourceGroupInline,
-            ResourceTagInline
+            ResourceTagInline,
+            ResourceUniversalInline,
+            ResourceUniversalFormOptionInline,
         ]
 
     def has_change_permission(self, request, obj=None):
@@ -354,6 +365,11 @@ class EquipmentCategoryAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin
 class PurposeAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin):
     pass
 
+class UniversalFieldAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, admin.ModelAdmin):
+    pass
+
+class ResourceUniversalFormOptionAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, admin.ModelAdmin):
+    pass
 
 class TermsOfUseAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin):
     list_display = ['name', 'terms_type']
@@ -558,3 +574,5 @@ if admin.site.is_registered(Token):
     admin.site.unregister(Token)
 admin_site.register(Token, RespaTokenAdmin)
 admin_site.register(MaintenanceMessage, MaintenanceMessageAdmin)
+admin_site.register(UniversalFormFieldType, UniversalFieldAdmin)
+admin_site.register(ResourceUniversalFormOption, ResourceUniversalFormOptionAdmin)

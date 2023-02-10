@@ -2081,3 +2081,36 @@ msgstr "Palauta"
 
 msgid "Restore resources"
 msgstr "Palauta resursseja"
+
+msgid "Universal form field"
+msgstr "Varauslomakkeen yleiskenttä"
+
+msgid "New universal field"
+msgstr "Uusi yleiskenttä"
+
+msgid "Universal form options"
+msgstr "Yleiskentän vastausvaihtoehdot"
+
+msgid "Add new form option"
+msgstr "Lisää uusi vastausvaihtoehto"
+
+msgid "Heading"
+msgstr "Otsikko"
+
+msgid "Universal value inherit %(label)s"
+msgstr "'%(label)s' arvo asetetaan muillekkin kielille jos niiltä puuttuu arvo."
+
+msgid "Universal value inherit info"
+msgstr "Muut kielet saavat tämän arvon jos niitä ei ole asetettu."
+
+msgid "Universal data url input"
+msgstr "Upotuksessa käytettävä URL:"
+
+msgid "Universal data url img button"
+msgstr "Lisää kuvan lähteeksi"
+
+msgid "Universal data url iframe button"
+msgstr "Lisää iframe upotuksena"
+
+msgid "Universal data preview label"
+msgstr "Upotuksen esikatselu:"

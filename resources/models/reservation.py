@@ -164,7 +164,7 @@ class Reservation(ModifiableModel):
     require_workstation = models.BooleanField(verbose_name=_('Require workstation'), default=False)
     home_municipality = models.ForeignKey('ReservationHomeMunicipalityField', verbose_name=_('Home municipality'),
                                             null=True, blank=True, on_delete=models.SET_NULL)
-
+    universal_data = pgfields.JSONField(verbose_name=_('Data'), null=True, blank=True)
     # extra detail fields for manually confirmed reservations
 
     reserver_name = models.CharField(verbose_name=_('Reserver name'), max_length=100, blank=True)
@@ -556,6 +556,18 @@ class Reservation(ModifiableModel):
                 ground_plan_image_url = ground_plan_image.get_full_url()
                 if ground_plan_image_url:
                     context['resource_ground_plan_image_url'] = ground_plan_image_url
+            
+            universal_data = getattr(self, 'universal_data', None)
+            if universal_data:
+                # reservation contains universal_data
+                selected_option = universal_data.get('selected_option')
+                universal_field =universal_data.get('field')
+                if selected_option and universal_field:
+                    selected_values = [x['text'] for x in universal_field.get('options') if x['id'] == int(selected_option)]
+                    context['universal_data'] = {
+                        'label': universal_field.get('label'),
+                        'selected_value': selected_values[0]
+                        }
 
             order = getattr(self, 'order', None)
             if order:
