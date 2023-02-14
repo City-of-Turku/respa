@@ -533,19 +533,7 @@ class UniversalFieldForm(forms.ModelForm):
                 elif 'description' in x and desc_val:
                     cleaned_data[x] = desc_val
                 else:
-                    raise ValidationError("Missing values for 'label_fi' and 'description_fi'.")
-                '''
-                if key_val:
-                    key = key_val
-                    cleaned_data[x] = key
-                elif des_val:
-                    key = des_val
-                    cleaned_data[x] = key
-                else:
-                    raise ValidationError("Missing values for 'label_fi' and 'description_fi'.")
-                '''
-                #key = 'label_fi' if 'label' in x else 'description_fi'
-                #cleaned_data[x] = cleaned_data[key]
+                    raise ValidationError("Missing values for 'label_fi' and 'description_fi'.")         
 
         return cleaned_data
 
@@ -561,13 +549,13 @@ def get_resource_universal_formset(request=None, extra=1, instance=None):
         can_delete=True,
         max_num=1,
     )
-    if instance:
-        for _, field in resource_universal_formset.form.base_fields.items():
-            if 'fi' in field.label:
-                # finnish description and label is set to required.
-                field.required = True
-            else:
-                field.required = False
+
+    for _, field in resource_universal_formset.form.base_fields.items():
+        if _ in ['name', 'description_fi', 'label_fi', 'field_type']:
+            # field_type,name, description_fi and label_fi set to required.
+            field.required = True
+        else:
+            field.required = False
 
     if not request:
         return resource_universal_formset(instance=instance)
@@ -590,15 +578,12 @@ class OptionsForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        name_data = cleaned_data.get('name')
         text_fi_value = cleaned_data.get('text_fi')
-        if name_data:
-            print(f'name on: {name_data}')
         if text_fi_value:
             # set missing language texts to same value as 'text_fi'
             for x in ['text_sv','text_en']:
                 if not cleaned_data[x]:
-                    cleaned_data[x] = cleaned_data['text_fi']
+                    cleaned_data[x] = text_fi_value
 
         return cleaned_data
    
@@ -614,7 +599,8 @@ def get_universal_options_formset(request=None, extra=1, instance=None):
         can_order=True,
         extra=extra,
     )
-    if instance:
+    # option forms is enabled if the resource has a saved universal field.
+    if instance and ResourceUniversalField.objects.filter(resource=instance).count():
         for _, field in universal_options_formset.form.base_fields.items():
             # the following fields are set as required fields.
             if _ in ['name', 'resource_universal_field', 'sort_order', 'text_fi']:
@@ -628,6 +614,10 @@ def get_universal_options_formset(request=None, extra=1, instance=None):
                     field.queryset = ResourceUniversalField.objects.filter(resource=instance)
             else:
                 field.required = False
+    else:
+        for _, field in universal_options_formset.form.base_fields.items():
+            field.disabled = True
+            field.required = False
 
     if not request:
         return universal_options_formset(instance=instance)

@@ -496,11 +496,11 @@ def universal_form_field_type():
         type='Select'
     )
 
-#@pytest.mark.django_db
+@pytest.mark.django_db
 @pytest.fixture
 def resource_universal_field_no_options(resource_in_unit, universal_form_field_type):
     return ResourceUniversalField.objects.create(
-        name='Food selection',
+        name='Selection field',
         resource=resource_in_unit,
         field_type=universal_form_field_type,
         label_fi='Suomenkielinen otsikko kentälle',
@@ -511,43 +511,24 @@ def resource_universal_field_no_options(resource_in_unit, universal_form_field_t
         description_sv='Svensk beskrivning för fältet',
     )
 
-#@pytest.mark.django_db
+@pytest.mark.django_db
 @pytest.fixture
 def resource_universal_field_with_options(resource_universal_field_no_options):
-    ResourceUniversalFormOption.objects.create(
-        name='First option',
+    options = [
+        {'en':'First', 'fi': 'Ensimmäinen', 'sv': 'Första'},
+        {'en':'Second', 'fi': 'Toinen', 'sv': 'Andra'},
+        {'en':'Third', 'fi': 'Kolmas', 'sv': 'Tredje'},
+        {'en':'Fourth', 'fi': 'Neljäs', 'sv': 'Fjärde'},
+    ]
+    for index, option in enumerate(options):
+        ResourceUniversalFormOption.objects.create(
+        name=f"{option['en']} option",
         resource_universal_field=resource_universal_field_no_options,
         resource=resource_universal_field_no_options.resource,
-        text_fi='Ensimmäinen',
-        text_en='First',
-        text_sv='Första',
-        sort_order = 1
-    )
-    ResourceUniversalFormOption.objects.create(
-        name='Second option',
-        resource_universal_field=resource_universal_field_no_options,
-        resource=resource_universal_field_no_options.resource,
-        text_fi='Toinen',
-        text_en='Second',
-        text_sv='Andra',
-        sort_order = 2
-    )
-    ResourceUniversalFormOption.objects.create(
-        name='Third option',
-        resource_universal_field=resource_universal_field_no_options,
-        resource=resource_universal_field_no_options.resource,
-        text_fi='Kolmas',
-        text_en='Third',
-        text_sv='Tredje',
-        sort_order = 3
-    )
-    ResourceUniversalFormOption.objects.create(
-        name='Fourth option',
-        resource_universal_field=resource_universal_field_no_options,
-        resource=resource_universal_field_no_options.resource,
-        text_fi='Neljäs',
-        text_en='Fourth',
-        text_sv='Fjärde',
-        sort_order = 4
-    )
+        text_fi=option['fi'],
+        text_en=option['en'],
+        text_sv=option['sv'],
+        sort_order = index + 1
+        )
+
     return resource_universal_field_no_options

@@ -19,6 +19,7 @@ from resources.tests.conftest import (
     resource_in_unit2,
     resource_universal_field_no_options,
     resource_universal_field_with_options,
+    universal_form_field_type,
     api_client,
     user
 )
@@ -96,12 +97,18 @@ EMPTY_RESOURCE_FORM_DATA = {
     'resource_universal_field-0-label_fi' : '',
     'resource_universal_field-0-description_fi' : '',
     'resource_universal_field-0-data' : '',
-    #'resource_universal_field-0-name' : '',
 
     'resource_universal_form_option-TOTAL_FORMS': ['1'],
     'resource_universal_form_option-INITIAL_FORMS': ['0'],
     'resource_universal_form_option-MIN_NUM_FORMS': ['0'],
     'resource_universal_form_option-MAX_NUM_FORMS': ['1000'],
+
+    'resource_universal_form_option-0-id' : '',
+    'resource_universal_form_option-0-resource' : '',
+    'resource_universal_form_option-0-resource_universal_field' : '',
+    'resource_universal_form_option-0-name' : '',
+    'resource_universal_form_option-0-sort_order' : '',
+    'resource_universal_form_option-0-text_fi' : '',
 }
 
 
@@ -187,11 +194,12 @@ def valid_resource_form_data(
     return data
 
 @pytest.fixture
-def resource_in_unit_form_data(resource_in_unit, empty_resource_form_data):
+def resource_in_unit_form_data(resource_in_unit, empty_resource_form_data, purpose):
     empty_resource_form_data.update({
         'type': resource_in_unit.type.pk,
         'authentication': 'none',
         'name': resource_in_unit.name,
+        'purposes': purpose.pk,
         'unit': resource_in_unit.unit.pk,
         'max_reservations_per_user': resource_in_unit.max_reservations_per_user,
         'max_period': resource_in_unit.max_period,

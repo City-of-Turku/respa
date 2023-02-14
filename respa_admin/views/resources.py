@@ -478,7 +478,7 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
             unit_field.disabled = True
         return form
 
-    def forms_valid(self, form, period_formset_with_days, resource_image_formset, reso, options_formset):
+    def forms_valid(self, form, period_formset_with_days, resource_image_formset, universal_formset, options_formset):
         user = self.request.user
         is_edit = self.object is not None
         self.object = form.save()
@@ -491,7 +491,7 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
         if not df_set or \
             (df_set and 'universal' not in df_set) or \
             (df_set and 'universal' in df_set and not is_edit):
-                self._save_resource_universal(reso)
+                self._save_resource_universal(universal_formset)
         if not df_set or \
             (df_set and 'options' not in df_set) or \
             (df_set and 'options' in df_set and not is_edit):
@@ -519,8 +519,6 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
         # the front-end uses the empty 'extra' forms for cloning.
         temp_image_formset = get_resource_image_formset()
         resource_image_formset.forms.append(temp_image_formset.forms[0])
-        #temp_foo_field = get_resource_universal_formset()
-        #resource_universal_formset.forms.append(temp_foo_field.forms[0])
         period_formset_with_days = self.add_empty_forms(period_formset_with_days)
         trans_fields = forms.get_translated_field_count(resource_image_formset)
         opt_fields = forms.get_translated_field_count(resource_options_formset)

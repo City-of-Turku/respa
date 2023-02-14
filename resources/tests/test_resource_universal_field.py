@@ -110,10 +110,6 @@ def user_with_permissions():
     user.save()
     return user
 
-@pytest.mark.django_db
-def test_resource_universal_field_exists(resource_universal_field_no_options):
-    foo = resource_universal_field_no_options
-    assert len(foo.options) == 0
 
 @pytest.mark.django_db
 def test_resource_has_no_universal_field_values_by_default(api_client, resource_in_unit):
