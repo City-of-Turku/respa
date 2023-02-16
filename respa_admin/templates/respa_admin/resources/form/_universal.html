@@ -183,7 +183,7 @@
             newValue = {"url": `${value}`}
         } else if (source === 'iframe') {
             // data is used to display an iframe.
-            newValue = {"iframe": `<iframe id='inlineFrameExample' title='Inline Frame Example' width='100%' height='400' src='${value}'></iframe>`};
+            newValue = {"iframe": `<iframe id='universal-iframe' title='Universal field iframe' width='100%' height='400' src='${value}'></iframe>`};
         }
         dataInput.value = JSON.stringify(newValue);
         refreshPreview();
@@ -197,13 +197,11 @@
         if (dataValue) {
             let parseData = JSON.parse(dataValue);
             if (parseData.url) {
-                console.log('REFRESH IMG');
                 const element = document.createElement('img');
                 element.setAttribute('src', parseData.url);
                 element.style.width = '50%';
                 document.querySelector('#data-preview-anchor').insertAdjacentElement('afterbegin', element);
             } else if (parseData.iframe) {
-                console.log('REFRESH IFRAME');
                 document.querySelector('#data-preview-anchor').insertAdjacentHTML('afterbegin', parseData.iframe);
             }
         }
