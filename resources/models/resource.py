@@ -1,6 +1,5 @@
 import datetime
 import os
-from pydoc import describe
 import re
 import pytz
 from collections import OrderedDict
