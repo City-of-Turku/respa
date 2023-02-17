@@ -196,7 +196,7 @@ flake8==3.9.1
     # via -r requirements.in
 freezegun==1.1.0
     # via -r requirements.in
-future==0.18.2
+future==0.18.3
     # via
     #   -r requirements.in
     #   pyjwkest
