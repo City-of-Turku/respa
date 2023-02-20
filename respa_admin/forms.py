@@ -23,7 +23,9 @@ from resources.models import (
     ResourceTag,
     Unit,
     UnitAuthorization,
-    TermsOfUse
+    TermsOfUse,
+    ResourceUniversalField,
+    ResourceUniversalFormOption,
 )
 
 from users.models import User
@@ -506,6 +508,124 @@ def get_period_formset(request=None, extra=1, instance=None, parent_class=Resour
         return period_formset_with_days(instance=instance)
     else:
         return period_formset_with_days(data=request.POST, instance=instance)
+
+
+class UniversalFieldForm(forms.ModelForm):
+    class Meta:
+        model = ResourceUniversalField
+        translated_fields = ['description_fi', 'description_en', 'description_sv', 'label_fi', 'label_en', 'label_sv']
+        fields = ['field_type', 'name', 'data'] + translated_fields
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['label_fi'].help_text = _('Universal value inherit info')
+        self.fields['description_fi'].help_text = _('Universal value inherit info')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        label_val = cleaned_data.get('label_fi')
+        desc_val = cleaned_data.get('description_fi')
+        # set missing language values to same value as the required finnish value.
+        for x in ['label_en','label_sv','description_en','description_sv']:
+            if not cleaned_data[x]:
+                if 'label' in x and label_val:
+                    cleaned_data[x] = label_val
+                elif 'description' in x and desc_val:
+                    cleaned_data[x] = desc_val
+                else:
+                    raise ValidationError("Missing values for 'label_fi' and 'description_fi'.")         
+
+        return cleaned_data
+
+
+def get_resource_universal_formset(request=None, extra=1, instance=None):
+    parent = Resource
+    resource_universal_formset = inlineformset_factory(
+        parent,
+        ResourceUniversalField,
+        fk_name=parent._meta.model_name,
+        form=UniversalFieldForm,
+        extra=extra,
+        can_delete=True,
+        max_num=1,
+    )
+
+    for _, field in resource_universal_formset.form.base_fields.items():
+        if _ in ['name', 'description_fi', 'label_fi', 'field_type']:
+            # field_type,name, description_fi and label_fi set to required.
+            field.required = True
+        else:
+            field.required = False
+
+    if not request:
+        return resource_universal_formset(instance=instance)
+    if request.method == 'GET':
+        return resource_universal_formset(instance=instance)
+    else:
+        return resource_universal_formset(data=request.POST,instance=instance)
+
+
+class OptionsForm(forms.ModelForm):
+    class Meta:
+        model = ResourceUniversalFormOption
+        translated_fields = ['text_fi','text_sv','text_en']
+        fields = ['resource_universal_field', 'name', 'sort_order'] + translated_fields
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['text_fi'].help_text = _('Universal value inherit info')
+        
+
+    def clean(self):
+        cleaned_data = super().clean()
+        text_fi_value = cleaned_data.get('text_fi')
+        if text_fi_value:
+            # set missing language texts to same value as 'text_fi'
+            for x in ['text_sv','text_en']:
+                if not cleaned_data[x]:
+                    cleaned_data[x] = text_fi_value
+
+        return cleaned_data
+   
+
+def get_universal_options_formset(request=None, extra=1, instance=None):
+    parent = Resource
+    universal_options_formset = inlineformset_factory(
+        parent,
+        ResourceUniversalFormOption,
+        fk_name=parent._meta.model_name,
+        form=OptionsForm,
+        can_delete=True,
+        can_order=True,
+        extra=extra,
+    )
+    # option forms is enabled if the resource has a saved universal field.
+    if instance and ResourceUniversalField.objects.filter(resource=instance).count():
+        for _, field in universal_options_formset.form.base_fields.items():
+            # the following fields are set as required fields.
+            if _ in ['name', 'resource_universal_field', 'sort_order', 'text_fi']:
+                field.required = True
+                if _ == 'sort_order':
+                    # set initial order to current options count + 1
+                    current_options_count = ResourceUniversalFormOption.objects.filter(resource=instance).count()
+                    field.initial = current_options_count + 1
+                if _ == 'resource_universal_field':
+                    # Select options should only include ResourceUniversalField objects that have this resource.
+                    field.queryset = ResourceUniversalField.objects.filter(resource=instance)
+            else:
+                field.required = False
+    else:
+        for _, field in universal_options_formset.form.base_fields.items():
+            field.disabled = True
+            field.required = False
+
+    if not request:
+        return universal_options_formset(instance=instance)
+
+    if request.method == 'GET':
+        return universal_options_formset(instance=instance)
+    else:
+        return universal_options_formset(data=request.POST,instance=instance)
 
 
 def get_resource_image_formset(request=None, extra=1, instance=None):

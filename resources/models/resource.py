@@ -23,7 +23,7 @@ from django.utils.six import BytesIO
 from django.utils.text import format_lazy
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import pgettext_lazy
-from django.contrib.postgres.fields import HStoreField, DateTimeRangeField
+from django.contrib.postgres.fields import HStoreField, DateTimeRangeField, JSONField
 from multi_email_field.fields import MultiEmailField
 from .gistindex import GistIndex
 from psycopg2.extras import DateTimeTZRange
@@ -43,6 +43,7 @@ from .accessibility import AccessibilityValue, AccessibilityViewpoint, ResourceA
 from .base import AutoIdentifiedModel, NameIdentifiedModel, ModifiableModel, ValidatedIdentifier
 from .utils import create_datetime_days_from_now, generate_id, get_translated, get_translated_name, humanize_duration
 from .equipment import Equipment
+from .resource_field import UniversalFormFieldType
 from .unit import Unit
 from .availability import get_opening_hours
 from .permissions import RESOURCE_GROUP_PERMISSIONS, UNIT_ROLE_PERMISSIONS
@@ -286,6 +287,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
                                      ', make sure that slot_size value is the same size as the products price_period value.'))
 
     equipment = EquipmentField(Equipment, through='ResourceEquipment', verbose_name=_('Equipment'))
+    universal_field = models.ManyToManyField(UniversalFormFieldType, through='ResourceUniversalField', verbose_name=_('Universal fields'))
     max_reservations_per_user = models.PositiveIntegerField(verbose_name=_('Maximum number of active reservations per user'),
                                                             null=True, blank=True)
     reservable = models.BooleanField(verbose_name=_('Reservable'), default=False)
@@ -1074,6 +1076,51 @@ class ResourceEquipment(ModifiableModel):
 
     def __str__(self):
         return "%s / %s" % (self.equipment, self.resource)
+
+
+class ResourceUniversalField(ModifiableModel):
+    name = models.CharField(verbose_name=_('Name'), max_length=100)
+    resource = models.ForeignKey(Resource, verbose_name=_('Resource'), related_name='resource_universal_field', on_delete=models.CASCADE)
+    field_type = models.ForeignKey(
+        UniversalFormFieldType, 
+        verbose_name=_('Type'), 
+        related_name='resource_universal_field', 
+        on_delete=models.CASCADE
+        )
+    data = JSONField(verbose_name=_('Data'), null=True, blank=True)
+    label = models.CharField(verbose_name=_('Heading'), max_length=100)
+    description = models.TextField(verbose_name=_('Description'), blank=True)
+
+    class Meta:
+        verbose_name = _('resource universal form field')
+        verbose_name_plural = _('resource universal form fields')
+
+    @property
+    def options(self):
+        return ResourceUniversalFormOption.objects.filter(resource_universal_field=self)
+    
+    def save(self, *args, **kwargs):
+        return super(ResourceUniversalField, self).save(*args, **kwargs)
+    
+    def __str__(self):
+        return "%s / %s / %s" % (self.name, self.field_type, self.resource)
+
+class ResourceUniversalFormOption(ModifiableModel):
+    name = models.CharField(verbose_name=_('Name'), max_length=100)
+    resource_universal_field = models.ForeignKey('ResourceUniversalField', verbose_name=_('Type'), on_delete=models.CASCADE)
+    resource = models.ForeignKey('Resource', related_name='resource_universal_form_option', on_delete=models.CASCADE)
+    text = models.TextField(verbose_name=_('Text'), blank=True)
+    sort_order = models.PositiveSmallIntegerField(verbose_name=_('Sort order'))
+
+    class Meta:
+        verbose_name = _('resource universal form option')
+        verbose_name_plural = _('resource universal form options')
+        ordering = ('sort_order', )
+
+    def __str__(self):
+        if hasattr(self, 'resource_universal_field'):
+            return "%s / %s" % (self.name, self.resource_universal_field)
+        return "%s / ?" % (self.name)
 
 
 class ResourceGroup(ModifiableModel):

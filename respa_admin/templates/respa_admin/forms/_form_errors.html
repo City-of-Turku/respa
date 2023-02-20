@@ -1,7 +1,7 @@
 {% load i18n %}
 {% load templatetags %}
 
-{% if form.errors or resource_image_formset.errors or period_formset_with_days.errors %}
+{% if form.errors or resource_image_formset.errors or period_formset_with_days.errors or resource_options_formset.errors or resource_universal_formset.errors %}
     <div class="alert alert-danger">
         <strong>{% trans "Tarkista seuraavat virheet" %}:</strong>
             {% if form.errors|is_truthy %}
@@ -33,5 +33,25 @@
                 {{ error }}
             {% endfor %}
             {% endif %}
+
+            {% if resource_universal_formset.errors|is_truthy %}
+            <div>
+                <strong>{% trans "Fields"|capfirst %}</strong>
+            </div>
+                {% for error in resource_universal_formset.errors|remove_empty %}
+                    {{ error }}
+                {% endfor %}
+            {% endif %}
+            
+            {% if resource_options_formset.errors|is_truthy %}
+            <div>
+                <strong>{% trans "Options"|capfirst %}</strong>
+            </div>
+                {% for error in resource_options_formset.errors|remove_empty %}
+                    {{ error }}
+                {% endfor %}
+            {% endif %}
+            
+            
     </div>
 {% endif %}

@@ -5,7 +5,8 @@ from .models import (
     Purpose, Resource, ResourceEquipment,
     ResourceImage, ResourceType, TermsOfUse, Unit,
     UnitGroup, Reservation, ReservationHomeMunicipalityField,
-    MaintenanceMessage
+    MaintenanceMessage, UniversalFormFieldType, ResourceUniversalField,
+    ResourceUniversalFormOption,
 )
 
 
@@ -77,4 +78,18 @@ class ReservationHomeMunicipalityFieldTranslationOptions(TranslationOptions):
 @register(MaintenanceMessage)
 class MaintenanceMessageTranslationOptions(TranslationOptions):
     fields = ('message', )
+    required_languages = ('fi', 'en', 'sv', )
+
+
+@register(UniversalFormFieldType)
+class UniversalFormFieldTranslationOptions(TranslationOptions):
+    pass
+
+@register(ResourceUniversalField)
+class ResourceUniversalFieldTranslationOptions(TranslationOptions):
+    fields = ('description', 'label')
+
+@register(ResourceUniversalFormOption)
+class ResourceUniversalFormOptionTranslationOptions(TranslationOptions):
+    fields = ('text', )
     required_languages = ('fi', 'en', 'sv', )

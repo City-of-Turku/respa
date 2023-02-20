@@ -1,0 +1,78 @@
+{% load i18n %}
+<style>
+    #resource-form-options > * {
+        margin-top: 20px;
+    }
+</style>
+<div id="equipment3">
+    <div class="form-section-header">
+        <h2>{% trans "Universal form options" %}</h2>
+        <span class="pull-right">{% trans "*Mandatory fields" %}</span>
+    </div>
+    <div id="resource-form-options">
+        {{ resource_options_formset.management_form }}
+        {% for uni_form in resource_options_formset %}
+        <div id="form-option-{{ forloop.counter0 }}" class="resource-universal-form-option" style="border-bottom:1px solid lightgray;">
+            {% with forloop.counter0 as id %}
+                {% for hidden in uni_form.hidden_fields %}
+                    {{ hidden }}
+                {% endfor %}
+            <div>
+                
+                <button id="option-toggle-{{ forloop.counter0 }}" class="btn" type="button" style="background: transparent; font-size: 24px; font-weight: 600; line-height: 1.1;">
+                    {% if uni_form.name.value %}
+                        {{ uni_form.name.value|capfirst }}
+                    {% else %}
+                        {% trans "Add new form option" %}
+                    {% endif %}    
+                </button>
+                <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+            </div>
+            <div class="input-row uni-row">
+                {% include "respa_admin/forms/_select.html" with field=uni_form.resource_universal_field %}
+                {% include "respa_admin/forms/_checkbox.html" with field=uni_form.DELETE %}
+            </div>
+            <div class="input-row uni-row">
+                {% include "respa_admin/forms/_input.html" with field=uni_form.name %}
+            </div>
+            <div class="input-row uni-row">
+                {% include "respa_admin/forms/_input.html" with field=uni_form.sort_order %}
+            </div>
+            <div class="input-row uni-row">
+                {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.text_fi %}
+                {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.text_en %}
+                {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.text_sv %}
+            </div>
+            {% endwith %}
+        </div>
+        {% endfor %}
+    </div>
+    
+</div>
+
+<script>
+    // Toggle option visibility based on e.target.id
+    function toggleOptionVisibility(e) {
+        const optionContainers = document.querySelectorAll("div.resource-universal-form-option");
+        const indexNum = Number.parseInt(e.target.id.replaceAll(/\D/g, ''))
+        const rows = optionContainers[indexNum].querySelectorAll('.uni-row');
+        rows.forEach(row => row.style.display ? row.style.display = "" : row.style.display = "none");
+        const spanElement = optionContainers[indexNum].querySelector('span.glyphicon');
+        if (spanElement.className.includes('down')) {
+            spanElement.className = 'glyphicon glyphicon-chevron-right';
+        } else {
+            spanElement.className = 'glyphicon glyphicon-chevron-down';
+        }     
+    }
+    const universalFieldOptions = document.querySelectorAll("div.resource-universal-form-option select");
+    // closes all options when initially loading page.
+    universalFieldOptions.forEach((element, index) => {
+        toggleOptionVisibility({target: {id: element.id, selectedIndex: element.selectedIndex}});
+    });
+    const toggleButtons = document.querySelectorAll("div.resource-universal-form-option button");
+    // event listener for toggling section visibility
+    toggleButtons.forEach((element) => {
+        element.addEventListener('click', toggleOptionVisibility);
+    });
+
+</script>

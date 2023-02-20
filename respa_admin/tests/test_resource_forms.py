@@ -153,18 +153,23 @@ def test_resource_creation_with_empty_hours_on_closed_day(admin_client, valid_re
 @pytest.mark.django_db
 def test_editing_resource_via_form_view(admin_client, valid_resource_form_data):
     assert Resource.objects.all().exists() is False
+    data = valid_resource_form_data.copy()
     # Create a resource via the form view
-    response = admin_client.post(NEW_RESOURCE_URL, data=valid_resource_form_data, follow=True)
+    data.update({
+        'name_sv': 'swedish name when created'
+    })
+    response = admin_client.post(NEW_RESOURCE_URL, data=data, follow=True)
     assert response.status_code == 200
     resource = Resource.objects.first()
 
     # Edit the resource
-    valid_resource_form_data.update({
+    data.update({
         'name_fi': 'Edited name',
+        'name_sv': 'Updated swedish name'
     })
     response = admin_client.post(
         reverse('respa_admin:edit-resource', kwargs={'resource_id': resource.id}),
-        data=valid_resource_form_data,
+        data=data,
         follow=True
     )
     assert response.status_code == 200
@@ -172,5 +177,41 @@ def test_editing_resource_via_form_view(admin_client, valid_resource_form_data):
 
     # Validate that the changes did happen
     edited_resource = Resource.objects.first()
+    assert edited_resource.name_sv == 'Updated swedish name'
+    assert resource.name_sv != edited_resource.name_sv
     assert edited_resource.name_fi == 'Edited name'
-    assert resource.name_fi != edited_resource.name
+    assert resource.name_fi != edited_resource.name_fi
+
+@pytest.mark.django_db
+def test_editing_existing_resource_via_form_view(admin_client, resource_in_unit_form_data, resource_in_unit):
+    url = reverse('respa_admin:edit-resource', kwargs={'resource_id': resource_in_unit.pk})
+    assert Resource.objects.count() == 1
+    form_data = resource_in_unit_form_data
+    # delete equipment key, for some reason it causes validations errors when empty.
+    del form_data['equipment']
+    # add missing resource data.
+    form_data.update({
+        'periods-0-name': 'Kesäkausi',
+        'periods-0-start': '2018-06-06',
+        'periods-0-end': '2032-08-01',
+        'days-periods-0-0-opens': '08:00',
+        'days-periods-0-0-closes': '12:00',
+        'days-periods-0-0-weekday': '1',
+        'min_period': '01:00:00',
+        'slot_size': '00:30:00',
+        'price_type': 'hourly',
+        'access_code_type': 'none',
+    })
+    # update name value
+    form_data.update({
+        'name_fi': 'updated name value',
+    })
+    response = admin_client.post(
+        url,
+        data=form_data,
+        follow=True
+    )
+    assert response.status_code == 200
+    assert Resource.objects.count() == 1  # Still only 1 resource in db
+    edited_resource = Resource.objects.get(pk=resource_in_unit.pk)
+    assert edited_resource.name_fi == 'updated name value'

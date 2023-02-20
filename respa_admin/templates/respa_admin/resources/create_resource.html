@@ -26,6 +26,8 @@
             {% include "respa_admin/resources/form/_images.html" with formset=resource_image_formset %}
             {% include "respa_admin/resources/form/_terms.html" %}
             {% include "respa_admin/resources/form/_equipment.html" %}
+            {% include "respa_admin/resources/form/_universal.html" with formset=resource_universal_formset %}
+            {% include "respa_admin/resources/form/_options.html" with formset=resource_options_formset %}
             {% include "respa_admin/resources/form/_periods.html" with formset=period_formset_with_days %}
             {% if accessibility_data_link %}
               {% include "respa_admin/resources/form/_accessibility.html" %}

@@ -17,6 +17,11 @@ from resources.tests.conftest import (
     general_admin,
     resource_in_unit,
     resource_in_unit2,
+    resource_universal_field_no_options,
+    resource_universal_field_with_options,
+    universal_form_field_type,
+    api_client,
+    user
 )
 
 
@@ -79,7 +84,31 @@ EMPTY_RESOURCE_FORM_DATA = {
     'days-periods-0-0-closes': '',
     'days-periods-0-0-closed': '',
     'days-periods-0-0-id': '',
-    'days-periods-0-0-period': ''
+    'days-periods-0-0-period': '',
+    'resource_universal_field-TOTAL_FORMS': ['1'],
+    'resource_universal_field-INITIAL_FORMS': ['0'],
+    'resource_universal_field-MIN_NUM_FORMS': ['0'],
+    'resource_universal_field-MAX_NUM_FORMS': ['1'],
+
+    'resource_universal_field-0-id' : '',
+    'resource_universal_field-0-resource' : '',
+    'resource_universal_field-0-field_type' : '',
+    'resource_universal_field-0-name' : '',
+    'resource_universal_field-0-label_fi' : '',
+    'resource_universal_field-0-description_fi' : '',
+    'resource_universal_field-0-data' : '',
+
+    'resource_universal_form_option-TOTAL_FORMS': ['1'],
+    'resource_universal_form_option-INITIAL_FORMS': ['0'],
+    'resource_universal_form_option-MIN_NUM_FORMS': ['0'],
+    'resource_universal_form_option-MAX_NUM_FORMS': ['1000'],
+
+    'resource_universal_form_option-0-id' : '',
+    'resource_universal_form_option-0-resource' : '',
+    'resource_universal_form_option-0-resource_universal_field' : '',
+    'resource_universal_form_option-0-name' : '',
+    'resource_universal_form_option-0-sort_order' : '',
+    'resource_universal_form_option-0-text_fi' : '',
 }
 
 
@@ -164,6 +193,24 @@ def valid_resource_form_data(
     })
     return data
 
+@pytest.fixture
+def resource_in_unit_form_data(resource_in_unit, empty_resource_form_data, purpose):
+    empty_resource_form_data.update({
+        'type': resource_in_unit.type.pk,
+        'authentication': 'none',
+        'name': resource_in_unit.name,
+        'purposes': purpose.pk,
+        'unit': resource_in_unit.unit.pk,
+        'max_reservations_per_user': resource_in_unit.max_reservations_per_user,
+        'max_period': resource_in_unit.max_period,
+        'reservable': resource_in_unit.reservable,
+        'generic_terms': resource_in_unit.generic_terms.pk,
+        'payment_terms': resource_in_unit.payment_terms.pk,
+        'specific_terms_fi': resource_in_unit.specific_terms_fi,
+        'specific_terms_en': resource_in_unit.specific_terms_en,
+        'reservation_confirmed_notification_extra_en': resource_in_unit.reservation_confirmed_notification_extra_en
+    })
+    return empty_resource_form_data
 
 @pytest.fixture
 def test_unit_form_data(test_unit, empty_unit_form_data, empty_period_form_data, municipality):

@@ -10,6 +10,7 @@ from resources.enums import UnitAuthorizationLevel
 from resources.models import Resource, ResourceType, Unit, Purpose, Day, Period
 from resources.models import Equipment, EquipmentAlias, ResourceEquipment, EquipmentCategory, TermsOfUse, ResourceGroup
 from resources.models import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility, UnitAccessibility, MaintenanceMessage
+from resources.models import ResourceUniversalFormOption, ResourceUniversalField, UniversalFormFieldType
 from munigeo.models import Municipality
 
 
@@ -487,3 +488,47 @@ def maintenance_message():
         message_en='This is a notice',
         message_sv='Detta är ett meddelande'
     )
+
+@pytest.mark.django_db
+@pytest.fixture
+def universal_form_field_type():
+    return UniversalFormFieldType.objects.create(
+        type='Select'
+    )
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_universal_field_no_options(resource_in_unit, universal_form_field_type):
+    return ResourceUniversalField.objects.create(
+        name='Selection field',
+        resource=resource_in_unit,
+        field_type=universal_form_field_type,
+        label_fi='Suomenkielinen otsikko kentälle',
+        label_en='English header for the field',
+        label_sv='Svensk rubrik för fältet',
+        description_fi='Suomenkielinen kuvaus kentälle',
+        description_en='English description for the field',
+        description_sv='Svensk beskrivning för fältet',
+    )
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_universal_field_with_options(resource_universal_field_no_options):
+    options = [
+        {'en':'First', 'fi': 'Ensimmäinen', 'sv': 'Första'},
+        {'en':'Second', 'fi': 'Toinen', 'sv': 'Andra'},
+        {'en':'Third', 'fi': 'Kolmas', 'sv': 'Tredje'},
+        {'en':'Fourth', 'fi': 'Neljäs', 'sv': 'Fjärde'},
+    ]
+    for index, option in enumerate(options):
+        ResourceUniversalFormOption.objects.create(
+        name=f"{option['en']} option",
+        resource_universal_field=resource_universal_field_no_options,
+        resource=resource_universal_field_no_options.resource,
+        text_fi=option['fi'],
+        text_en=option['en'],
+        text_sv=option['sv'],
+        sort_order = index + 1
+        )
+
+    return resource_universal_field_no_options
