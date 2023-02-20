@@ -2704,3 +2704,9 @@ msgstr ""
 
 msgid "Restore resources"
 msgstr ""
+
+msgid "Add e-mail"
+msgstr ""
+
+msgid "Filter reservations by reservation email"
+msgstr ""

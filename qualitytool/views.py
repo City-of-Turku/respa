@@ -128,7 +128,7 @@ class QualityToolLinkView(QualityToolBaseView, TemplateView):
     pk_url_kwarg = 'qualitytool_id'
 
     class Meta:
-        fields = ('resources', 'target_id', 'name')
+        fields = ('resources', 'target_id', 'name', 'emails')
 
     def validate(self, payload):
         for field in self.Meta.fields:
@@ -145,6 +145,9 @@ class QualityToolLinkView(QualityToolBaseView, TemplateView):
         
         if not isinstance(payload['resources'], list):
             raise ValidationError(_('Resources must be a list'), 400)
+        
+        if not isinstance(payload['emails'], list):
+            raise ValidationError(_('Emails must be a list'), 400)
 
         
         query = Q(resources__pk__in=payload['resources'])
@@ -178,6 +181,7 @@ class QualityToolLinkView(QualityToolBaseView, TemplateView):
         search = self.query_params.get('search', '')
         if instance:
             context['qualitytool_target_options'] = [qt_manager._instance_to_dict(instance, id=generate_id(), checked=True)]
+            context['qualitytool_emails'] = instance.emails
         elif search:
             targets = []
             target_list = qt_manager.get_targets()
@@ -210,11 +214,12 @@ class QualityToolLinkView(QualityToolBaseView, TemplateView):
             return JsonResponse({'message': exc.message}, status=exc.code)
 
         resources = Resource.objects.filter(pk__in=payload['resources'])
+        emails = payload['emails']
         
         if not self.object:
             target_id = payload['target_id']
             name = payload['name']
-            self.object = ResourceQualityTool(target_id=target_id)
+            self.object = ResourceQualityTool(target_id=target_id, emails=emails)
             for lang, text in name.items():
                 setattr(self.object, 'name_%s' % lang, text)
             self.object.save()
@@ -226,6 +231,8 @@ class QualityToolLinkView(QualityToolBaseView, TemplateView):
                 self.object.resources.remove(resource)
             for resource in resources:
                 self.object.resources.add(resource)
+
+            self.object.emails = emails
             self.object.save()
         msg = _('Quality tool target created') if not self.is_edit else _('Quality tool target updated')
         self.set_session_context(request, redirect_message={

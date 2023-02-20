@@ -2016,3 +2016,9 @@ msgstr "Återställ"
 
 msgid "Restore resources"
 msgstr "Återställ resurs"
+
+msgid "Add e-mail"
+msgstr "Skapa ny e-mail"
+
+msgid "Filter reservations by reservation email"
+msgstr "Filtrera bokningar enligt e-postadress"

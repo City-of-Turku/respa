@@ -2081,3 +2081,9 @@ msgstr "Palauta"
 
 msgid "Restore resources"
 msgstr "Palauta resursseja"
+
+msgid "Add e-mail"
+msgstr "Lisää e-mail"
+
+msgid "Filter reservations by reservation email"
+msgstr "Suodata varaukset varaajan sähköpostin mukaan"
