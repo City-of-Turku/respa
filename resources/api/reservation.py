@@ -19,13 +19,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.auth.models import AnonymousUser
 from notifications.models import NotificationType
-from rest_framework import viewsets, serializers, filters, exceptions, permissions
+from rest_framework import viewsets, serializers, filters, exceptions, permissions, status
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 from rest_framework.fields import BooleanField, IntegerField
 from rest_framework import renderers
 from rest_framework.exceptions import NotAcceptable, ValidationError
 from rest_framework.settings import api_settings as drf_settings
-
+from rest_framework.response import Response
 from munigeo import api as munigeo_api
 
 import phonenumbers
@@ -184,11 +184,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
 
             # reservations without an order don't require billing fields
             self.handle_reservation_modify_request(request, resource)
-            order = request.data.get('order')
-
-
-            begin, end = (request.data.get('begin', None), request.data.get('end', None))
-            if not order or isinstance(order, str) or (order and is_free(get_price(order, begin=begin, end=end))):
+            if not self.handle_order(request):
                 required = [field for field in required if field not in RESERVATION_BILLING_FIELDS]
 
             # staff events have less requirements
@@ -206,6 +202,17 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
                 self.fields[field_name].required = True
 
         self.context.update({'resource': resource})
+
+    def handle_order(self, request):
+        request_data = request.data.copy()
+        if not isinstance(request_data, list):
+            request_data = [request_data]
+        for data in request_data:
+            order = data.get('order')
+            begin, end = (data.get('begin', None), data.get('end', None))
+            if not order or isinstance(order, str) or (order and is_free(get_price(order, begin=begin, end=end))):
+                return False
+        return True
 
 
     def handle_reservation_modify_request(self, request, resource):
@@ -711,7 +718,10 @@ class ReservationFilterSet(django_filters.rest_framework.FilterSet):
 
 class ReservationPermission(permissions.BasePermission):
     def has_permission(self, request, view):
-        resource_id = request.data.get('resource')
+        request_data = request.data
+        if not isinstance(request_data, list):
+            request_data = [request_data]
+        resource_id = next(iter([data['resource'] for data in request_data] or []), None)
         try:
             resource = Resource.objects.get(pk=resource_id)
         except Resource.DoesNotExist:
@@ -1010,6 +1020,7 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
 
             context['prefetched_user'] = prefetched_user
 
+        context['resource'] = self.resource
         return context
 
     def get_queryset(self):
@@ -1031,6 +1042,42 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
 
         queryset = queryset.filter(resource__in=Resource.objects.visible_for(user))
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        self.preprocess_request(request, *args, **kwargs)
+        if isinstance(request.data, list):
+            return self.bulk_create(request, *args, **kwargs)
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        self.preprocess_request(request, *args, **kwargs)
+        if isinstance(request.data, list):
+            return self.bulk_update(request, *args, **kwargs)
+        return super().update(request, *args, **kwargs)
+
+    def _handle_serializer(self, data, action = lambda serializer: None):
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        action(serializer=serializer)
+        return serializer
+    
+    def bulk_create(self, request, *args, **kwargs):
+        serializers = [self._handle_serializer(data, self.perform_create) for data in request.data]
+        return Response([serializer.data for serializer in serializers], status=status.HTTP_201_CREATED)
+    
+    def bulk_update(self, request, *args, **kwargs):
+        serializers = [self._handle_serializer(data, self.perform_update) for data in request.data]
+        return Response([serializer.data for serializer in serializers], status=status.HTTP_201_CREATED)
+
+    def preprocess_request(self, request, *args, **kwargs):
+        if isinstance(request.data, list):
+            if not all(data['resource'] == request.data[0]['resource'] for data in request.data):
+                raise serializers.ValidationError({'error':'Resource ID mismatch'}, 400)
+            resource_id = next(iter([data['resource'] for data in request.data] or []), None)
+        else:
+            resource_id = request.data.get('resource')
+        setattr(self, 'resource', Resource.objects.get(pk=resource_id))
+        
 
     def perform_create(self, serializer):
         user = self.request.user

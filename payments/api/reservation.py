@@ -202,10 +202,11 @@ class PaymentsReservationSerializer(ReservationSerializer):
     order = serializers.SlugRelatedField('order_number', read_only=True)
 
     def __init__(self, *args, **kwargs):
+        _preserved_context = kwargs.get('context').copy()
         super().__init__(*args, **kwargs)
 
         request = self.context.get('request')
-        resource = self.context.get('resource')
+        resource = self.context.get('resource') or _preserved_context.get('resource')
         action = self.context['view'].action
         swagger_fake_view = getattr(self.context['view'], 'swagger_fake_view', False)
 
