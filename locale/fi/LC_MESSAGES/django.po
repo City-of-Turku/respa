@@ -2016,6 +2016,9 @@ msgstr "Tulosta per sivu"
 msgid "Quality tool"
 msgstr "Laatutyökalu"
 
+msgid "Quality tools"
+msgstr "Laatutyökalut"
+
 msgid "resource quality tool"
 msgstr "resurssi laatutyökalu"
 

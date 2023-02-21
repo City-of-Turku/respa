@@ -1951,6 +1951,9 @@ msgstr "Resultat per sida"
 msgid "Quality tool"
 msgstr "Kvalitetsverktyg"
 
+msgid "Quality tools"
+msgstr "Kvalitetsverktyg"
+
 msgid "resource quality tool"
 msgstr "resurs kvalitetsverktyg"
 

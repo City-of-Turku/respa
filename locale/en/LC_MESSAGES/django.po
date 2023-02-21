@@ -2639,6 +2639,9 @@ msgstr ""
 msgid "Quality tool"
 msgstr ""
 
+msgid "Quality tools"
+msgstr ""
+
 msgid "resource quality tool"
 msgstr ""
 
