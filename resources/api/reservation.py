@@ -721,7 +721,11 @@ class ReservationPermission(permissions.BasePermission):
         request_data = request.data
         if not isinstance(request_data, list):
             request_data = [request_data]
-        resource_id = next(iter([data['resource'] for data in request_data] or []), None)
+        resource_id = next(iter([data.get('resource') for data in request_data] or []), None)
+
+        if not resource_id:
+            return False
+
         try:
             resource = Resource.objects.get(pk=resource_id)
         except Resource.DoesNotExist:
@@ -1055,10 +1059,10 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
             return self.bulk_update(request, *args, **kwargs)
         return super().update(request, *args, **kwargs)
 
-    def _handle_perform(self, data, action = lambda serializer: None):
+    def _handle_perform(self, data, perform = lambda serializer: None):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        action(serializer=serializer)
+        perform(serializer=serializer)
         return serializer
     
     def bulk_create(self, request, *args, **kwargs):
