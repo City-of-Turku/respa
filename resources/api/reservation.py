@@ -1055,18 +1055,18 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
             return self.bulk_update(request, *args, **kwargs)
         return super().update(request, *args, **kwargs)
 
-    def _handle_serializer(self, data, action = lambda serializer: None):
+    def _handle_perform(self, data, action = lambda serializer: None):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         action(serializer=serializer)
         return serializer
     
     def bulk_create(self, request, *args, **kwargs):
-        serializers = [self._handle_serializer(data, self.perform_create) for data in request.data]
+        serializers = [self._handle_perform(data, self.perform_create) for data in request.data]
         return Response([serializer.data for serializer in serializers], status=status.HTTP_201_CREATED)
     
     def bulk_update(self, request, *args, **kwargs):
-        serializers = [self._handle_serializer(data, self.perform_update) for data in request.data]
+        serializers = [self._handle_perform(data, self.perform_update) for data in request.data]
         return Response([serializer.data for serializer in serializers], status=status.HTTP_201_CREATED)
 
     def preprocess_request(self, request, *args, **kwargs):
