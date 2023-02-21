@@ -444,13 +444,12 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         if end_time.hour == 0 and end_time.minute == 0 and end_time.second == 0:
             end = end - datetime.timedelta(seconds=1)
 
-        if begin.date() != end.date():
-            raise ValidationError(_("You cannot make a multi day reservation"))
+        is_multiday_reservation = begin.date() != end.date()
 
         if not self.can_ignore_opening_hours(user):
             opening_hours = self.get_opening_hours(begin.date(), end.date())
             days = opening_hours.get(begin.date(), None)
-            if days is None or not any(day['opens'] and begin >= day['opens'] and end <= day['closes'] for day in days):
+            if not is_multiday_reservation and (days is None or not any(day['opens'] and begin >= day['opens'] and end <= day['closes'] for day in days)):
                 raise ValidationError(_("You must start and end the reservation during opening hours"))
 
         if not self.can_ignore_max_period(user) and (self.max_period and (end - begin) > self.max_period):
