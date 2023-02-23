@@ -1,10 +1,9 @@
 from django.conf import settings
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied
-from django.db.models import FieldDoesNotExist
+from django.core.exceptions import PermissionDenied, FieldDoesNotExist
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse_lazy
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.views.generic import CreateView, ListView
 from django.contrib.admin.utils import construct_change_message
 from resources.enums import UnitAuthorizationLevel

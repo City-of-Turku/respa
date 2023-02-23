@@ -19,11 +19,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
-from django.utils.six import BytesIO
+from six import BytesIO
 from django.utils.text import format_lazy
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
-from django.contrib.postgres.fields import HStoreField, DateTimeRangeField, JSONField
+from django.contrib.postgres.fields import HStoreField, DateTimeRangeField
 from multi_email_field.fields import MultiEmailField
 from .gistindex import GistIndex
 from psycopg2.extras import DateTimeTZRange
@@ -1087,7 +1087,7 @@ class ResourceUniversalField(ModifiableModel):
         related_name='resource_universal_field', 
         on_delete=models.CASCADE
         )
-    data = JSONField(verbose_name=_('Data'), null=True, blank=True)
+    data = models.JSONField(verbose_name=_('Data'), null=True, blank=True)
     label = models.CharField(verbose_name=_('Heading'), max_length=100)
     description = models.TextField(verbose_name=_('Description'), blank=True)
 

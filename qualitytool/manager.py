@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from functools import wraps
 from datetime import datetime, timedelta
 from qualitytool.api.serializers.external import (
@@ -62,7 +62,7 @@ class QualityToolManager():
     def get_targets(self):
         response = self.session.get(self.config['TARGET_LIST'])
         serializer = QualityToolTargetListSerializer(data=response.json(), many=True)
-        serializer.is_valid(True)
+        serializer.is_valid(raise_exception=True)
         return serializer.data
 
     def _instance_to_dict(self, instance, **extra):
@@ -78,7 +78,7 @@ class QualityToolManager():
     def get_form(self):
         response = self.session.get(self.config['FEEDBACK_FORM'])
         serializer = QualityToolFormSerializer(data=response.json())
-        serializer.is_valid(True)
+        serializer.is_valid(raise_exception=True)
         return serializer.data
 
     @ensure_token

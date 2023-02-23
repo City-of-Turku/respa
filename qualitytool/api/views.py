@@ -22,7 +22,7 @@ class QualityToolFeedbackView(views.APIView):
     permission_classes = (permissions.IsAuthenticated, )
     def post(self, request, **kwargs):
         serializer = QualityToolFeedbackSerializer(data=request.data)
-        serializer.is_valid(True)
+        serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         resource_quality_tool = data['resource_quality_tool']
 
@@ -43,7 +43,7 @@ class QualityToolCheckResourceView(views.APIView):
     permission_classes = (permissions.AllowAny, )
     def post(self, request, **kwargs):
         serializer = QualityToolCheckSerializer(data=request.data)
-        serializer.is_valid(True)
+        serializer.is_valid(raise_exception=True)
         resource = serializer.validated_data['resource']
         return response.Response({ 'has_qualitytool': resource.qualitytool.exists() })
 

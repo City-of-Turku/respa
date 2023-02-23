@@ -1,6 +1,6 @@
 import io
 
-from django.utils.translation import get_language, pgettext_lazy, ugettext_lazy as _
+from django.utils.translation import get_language, pgettext_lazy, gettext_lazy as _
 from django.utils import formats
 from django.utils.timezone import localtime
 from rest_framework import exceptions, serializers

@@ -1,4 +1,4 @@
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from ..enums import UnitAuthorizationLevel, UnitGroupAuthorizationLevel
 
 # Always update permissions.rst documentation accordingly after modifying this file!

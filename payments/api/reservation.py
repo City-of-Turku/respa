@@ -1,4 +1,4 @@
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
 from rest_framework import exceptions, serializers, status
 from rest_framework.exceptions import PermissionDenied

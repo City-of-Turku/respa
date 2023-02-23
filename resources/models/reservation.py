@@ -9,7 +9,7 @@ from django.conf import settings
 from django.contrib.gis.db import models
 from django.utils import translation
 from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.models import Q
 from psycopg2.extras import DateTimeTZRange
@@ -164,7 +164,7 @@ class Reservation(ModifiableModel):
     require_workstation = models.BooleanField(verbose_name=_('Require workstation'), default=False)
     home_municipality = models.ForeignKey('ReservationHomeMunicipalityField', verbose_name=_('Home municipality'),
                                             null=True, blank=True, on_delete=models.SET_NULL)
-    universal_data = pgfields.JSONField(verbose_name=_('Data'), null=True, blank=True)
+    universal_data = models.JSONField(verbose_name=_('Data'), null=True, blank=True)
     # extra detail fields for manually confirmed reservations
 
     reserver_name = models.CharField(verbose_name=_('Reserver name'), max_length=100, blank=True)

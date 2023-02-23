@@ -22,7 +22,7 @@ from django.contrib.gis.geos import Point
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
 from django.core.exceptions import ValidationError, ObjectDoesNotExist, PermissionDenied
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from payments.api.reservation import PaymentsReservationSerializer
 from resources.timmi import TimmiManager
 from PIL import Image

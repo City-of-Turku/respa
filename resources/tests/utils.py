@@ -4,7 +4,7 @@ import datetime
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.test.testcases import SimpleTestCase
-from django.utils.six import BytesIO
+from six import BytesIO
 from django.utils.encoding import force_text
 from dateutil import parser
 from PIL import Image

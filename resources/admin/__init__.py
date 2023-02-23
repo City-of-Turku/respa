@@ -1,7 +1,7 @@
 import logging
 from io import StringIO
 from contextlib import redirect_stdout
-from django.conf.urls import url
+from django.conf.urls import re_path
 from django.contrib import admin
 from django.contrib.admin import site as admin_site
 from django.contrib.admin.utils import unquote
@@ -11,7 +11,7 @@ from django.contrib.gis.admin import OSMGeoAdmin
 from django.core.management import call_command
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django import forms
 from django.template.response import TemplateResponse
 from guardian import admin as guardian_admin
@@ -260,9 +260,9 @@ class UnitAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, FixedGuarde
     def get_urls(self):
         urls = super(UnitAdmin, self).get_urls()
         extra_urls = [
-            url(r'^tprek_import/$', self.admin_site.admin_view(self.tprek_import),
+            re_path(r'^tprek_import/$', self.admin_site.admin_view(self.tprek_import),
                 name='tprek_import'),
-            url(r'^libraries_import/$', self.admin_site.admin_view(self.libraries_import),
+            re_path(r'^libraries_import/$', self.admin_site.admin_view(self.libraries_import),
                 name='libraries_import'),
         ]
         return extra_urls + urls
@@ -426,9 +426,9 @@ class MunicipalityAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, adm
     def get_urls(self):
         urls = super(MunicipalityAdmin, self).get_urls()
         extra_urls = [
-            url(r'^municipalities_import/$', self.admin_site.admin_view(self.municipalities_import),
+            re_path(r'^municipalities_import/$', self.admin_site.admin_view(self.municipalities_import),
                 name='municipalities_import'),
-            url(r'^divisions_helsinki_import/$', self.admin_site.admin_view(self.divisions_helsinki_import),
+            re_path(r'^divisions_helsinki_import/$', self.admin_site.admin_view(self.divisions_helsinki_import),
                 name='divisions_helsinki_import'),
         ]
         return extra_urls + urls

@@ -5,7 +5,7 @@ from modeltranslation.translator import NotRegistered, translator
 from rest_framework import serializers, fields as drf
 from django.db.models import Q
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.contrib.gis.geos import Point
 from resources.models.availability import Period, Day
 from resources.models.resource import Resource

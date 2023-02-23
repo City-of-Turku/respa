@@ -6,7 +6,7 @@ import django.contrib.postgres.fields as pgfields
 from django.contrib.gis.db import models
 from django.core.exceptions import ValidationError
 from django.utils.dateformat import time_format
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from psycopg2.extras import DateRange, NumericRange
 
 
@@ -193,7 +193,7 @@ class Day(models.Model):
     length = pgfields.IntegerRangeField(verbose_name=_('Range between opens and closes'), null=True,
                                         blank=True, db_index=True)
     # NOTE: If this is true and the period is false, what then?
-    closed = models.NullBooleanField(verbose_name=_('Closed'), default=False)
+    closed = models.BooleanField(verbose_name=_('Closed'), default=False, null=True)
     description = models.CharField(max_length=200, verbose_name=_('description'), null=True, blank=True)
 
     class Meta:

@@ -1,4 +1,4 @@
-from helusers.adapter import SocialAccountAdapter as HelSocialAccountAdapter
+from helusers.adapter import DefaultSocialAccountAdapter
 from helusers.user_utils import update_user
 from helusers.utils import username_to_uuid
 
@@ -6,7 +6,7 @@ from users.models import User
 
 
 
-class SocialAccountAdapter(HelSocialAccountAdapter):
+class SocialAccountAdapter(DefaultSocialAccountAdapter):
     def pre_social_login(self, request, sociallogin):
         """Update user based on token information."""
         user = sociallogin.user

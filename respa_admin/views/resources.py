@@ -1,12 +1,13 @@
 import itertools
 from django.conf import settings
 from django.contrib import messages
-from django.db.models import FieldDoesNotExist, Q
+from django.db.models import Q
+from django.core.exceptions import FieldDoesNotExist
 from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.forms import ValidationError
 from django.template.response import TemplateResponse
 from django.urls import reverse_lazy
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.shortcuts import redirect
 from django.views.generic import CreateView, ListView, UpdateView, TemplateView
 from django.views.generic.base import View

@@ -5,10 +5,12 @@ import jwt
 import pytest
 
 import arrow
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.conf import settings
 from rest_framework.test import APIClient, APITestCase
-from rest_framework_jwt.settings import api_settings
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.tokens import AccessToken
 
 from resources.models import *
 
@@ -19,45 +21,17 @@ def generate_random_string(length):
 
 
 class JWTMixin(object):
-    jwt_token = {
-        "username": "testuser",
-        "email": "test@example.com",
-        "first_name": "Test",
-        "last_name": "User",
-        "department_name": "bestdep",
-        "display_name": "Test User",
-        "iss": "https://test.example.com/sso",
-        "sub": "7af6c103-62aa-47d4-89e2-4bdd45c6ab7b",  # random UUID
-        "aud": "TH11btLwVBZyTCVDMshRaWMIqctoNIyy3xQBvKDD",
-        "exp": 1446421460
-    }
-
-    def get_auth(self, **extra):
-        secret_key = generate_random_string(100)
-        api_settings.JWT_SECRET_KEY = secret_key
-        audience = generate_random_string(40)
-        api_settings.JWT_AUDIENCE = audience
-
-        jwt_token = self.jwt_token.copy()
-        if 'aud' in extra:
-            jwt_token['aud'] = extra['aud']
-        else:
-            jwt_token['aud'] = api_settings.JWT_AUDIENCE
+    @staticmethod
+    def get_auth(user, **extra):
+        token = AccessToken.for_user(user)
         if 'exp' in extra:
-            jwt_token['exp'] = extra['exp']
-        else:
-            jwt_token['exp'] = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+            token.set_exp(from_time=extra['exp'])
+        if 'token_type' in extra:
+            token.token_type = extra['token_type']
+        return 'JWT %s' % str(token)
 
-        if 'secret_key' in extra:
-            secret_key = extra['secret_key']
-
-        encoded_token = jwt.encode(jwt_token, secret_key, algorithm='HS256')
-        auth = 'JWT %s' % encoded_token.decode('utf8')
-
-        return auth
-
-    def authenticated_post(self, url, data, **extra):
-        auth = self.get_auth(**extra)
+    def authenticated_post(self, url, data, user, **extra):
+        auth = self.get_auth(user, **extra)
         response = self.client.post(url, data, HTTP_AUTHORIZATION=auth, **extra)
         return response
 
@@ -80,6 +54,14 @@ class ReservationApiTestCase(APITestCase, JWTMixin):
         #Day.objects.create(period=p1, weekday=0, opens='08:00', closes='22:00')
         Day.objects.create(period=p2, weekday=1, opens='08:00', closes='16:00')
         #Day.objects.create(period=p3, weekday=0, opens='08:00', closes='18:00')
+
+        self.user = get_user_model().objects.create(
+            username='reservation_maker_user',
+            first_name='Test',
+            last_name='User',
+            email='Test@User.com',
+            preferred_language='en'
+        )
 
     def test_api(self):
         response = self.client.get('/v1/unit/')
@@ -116,7 +98,7 @@ class ReservationApiTestCase(APITestCase, JWTMixin):
         res_end = res_start + datetime.timedelta(hours=2)
 
         data = {'resource': 'r1a', 'begin': res_start, 'end': res_end}
-        response = self.authenticated_post('/v1/reservation/', data)
+        response = self.authenticated_post('/v1/reservation/', data, self.user)
         self.assertContains(response, '"resource":"r1a"', status_code=201)
 
         # Check that available hours are reported correctly for a reserved resource
@@ -129,18 +111,14 @@ class ReservationApiTestCase(APITestCase, JWTMixin):
 
     def test_jwt_expired(self):
         exp = datetime.datetime.utcnow() - datetime.timedelta(minutes=15)
-        response = self.authenticated_post('/v1/reservation/', {}, exp=exp)
+        response = self.authenticated_post('/v1/reservation/', {}, self.user, exp=exp)
         self.assertEqual(response.status_code, 401)
 
-    def test_jwt_invalid_audience(self):
-        response = self.authenticated_post('/v1/reservation/', {},
-                                           aud=generate_random_string(40))
-        self.assertEqual(response.status_code, 401)
+    def test_jwt_invalid_token_type(self):
+        response = self.authenticated_post('/v1/reservation/', {}, self.user,
+                                           token_type=generate_random_string(6))
+        self.assertEqual(response.status_code, 400)
 
-    def test_jwt_invalid_secret_key(self):
-        response = self.authenticated_post('/v1/reservation/', {},
-                                           secret_key=generate_random_string(100))
-        self.assertEqual(response.status_code, 401)
 
 
 @pytest.mark.skip(reason="availability disabled for now")

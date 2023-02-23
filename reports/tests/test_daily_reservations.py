@@ -35,9 +35,9 @@ def reservation2(resource_in_unit2, user):
 
 
 def check_valid_response(response):
-    headers = response._headers
-    assert headers['content-type'][1] == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    assert headers['content-disposition'][1].endswith('.docx')
+    headers = response.headers
+    assert headers['Content-Type'] == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    assert headers['Content-Disposition'].endswith('.docx')
     assert len(response.content) > 0
 
 

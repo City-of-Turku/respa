@@ -1,7 +1,7 @@
 from datetime import datetime
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 import django_filters
 from rest_framework import exceptions, mixins, serializers, viewsets

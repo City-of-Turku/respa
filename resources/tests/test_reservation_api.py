@@ -863,7 +863,7 @@ def test_reservation_excels(staff_api_client, list_url, detail_url, reservation,
         HTTP_ACCEPT_LANGUAGE='en',
     )
     assert response.status_code == 200
-    assert response._headers['content-disposition'] == ('Content-Disposition', 'attachment; filename=reservations.xlsx')
+    assert response.headers['Content-Disposition'] == 'attachment; filename=reservations.xlsx'
     assert len(response.content) > 0
 
     response = staff_api_client.get(
@@ -872,8 +872,7 @@ def test_reservation_excels(staff_api_client, list_url, detail_url, reservation,
         HTTP_ACCEPT_LANGUAGE='en',
     )
     assert response.status_code == 200
-    assert response._headers['content-disposition'] == (
-        'Content-Disposition', 'attachment; filename=reservation-{}.xlsx'.format(reservation.pk))
+    assert response.headers['Content-Disposition'] == 'attachment; filename=reservation-{}.xlsx'.format(reservation.pk)
     assert len(response.content) > 0
 
 

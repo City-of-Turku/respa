@@ -8,7 +8,7 @@ import environ
 import raven
 import datetime
 from sys import platform
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -187,7 +187,7 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'django.contrib.postgres',
     'rest_framework',
-    'rest_framework_jwt',
+    'rest_framework_simplejwt',
     'rest_framework.authtoken',
     'django_filters',
     'corsheaders',
@@ -272,7 +272,7 @@ TEMPLATES = [
     },
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [root],
+        'DIRS': [root()],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -411,14 +411,14 @@ OIDC_AUTH = {
     'OIDC_LEEWAY': env('OIDC_LEEWAY')
 }
 
-JWT_AUTH = {
-    'JWT_PAYLOAD_GET_USER_ID_HANDLER': 'helusers.jwt.get_user_id_from_payload_handler',
-    'JWT_AUDIENCE': env('TOKEN_AUTH_ACCEPTED_AUDIENCE'),
-    'JWT_SECRET_KEY': env('TOKEN_AUTH_SHARED_SECRET'),
-    'JWT_AUTH_HEADER_PREFIX': env('JWT_AUTH_HEADER_PREFIX'),
-    'JWT_LEEWAY': env('JWT_LEEWAY'),
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=env('JWT_LIFETIME')),
-    'JWT_PAYLOAD_HANDLER': env('JWT_PAYLOAD_HANDLER')
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ('JWT', ),
+    'LEEWAY': env('JWT_LEEWAY'),
+    'AUDIENCE': env('TOKEN_AUTH_ACCEPTED_AUDIENCE'),
+    'SIGNING_KEY': env('TOKEN_AUTH_SHARED_SECRET'),
+    'AUTH_HEADER_PREFIX': env('JWT_AUTH_HEADER_PREFIX'),
+    'EXPIRATION_DELTA': datetime.timedelta(seconds=env('JWT_LIFETIME')),
+    'PAYLOAD_HANDLER': env('JWT_PAYLOAD_HANDLER')
 }
 
 # toggles auth token api endpoint url
@@ -443,6 +443,8 @@ O365_CALENDAR_AVAILABILITY_EVENT_PREFIX=env('O365_CALENDAR_AVAILABILITY_EVENT_PR
 O365_CALENDAR_RESERVATION_EVENT_PREFIX=env('O365_CALENDAR_RESERVATION_EVENT_PREFIX')
 O365_CALENDAR_RESERVER_INFO_MARK=env('O365_CALENDAR_RESERVER_INFO_MARK')
 O365_CALENDAR_COMMENTS_MARK=env('O365_CALENDAR_COMMENTS_MARK')
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 from easy_thumbnails.conf import Settings as thumbnail_settings  # noqa
 THUMBNAIL_PROCESSORS = (

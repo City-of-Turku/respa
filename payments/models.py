@@ -10,7 +10,7 @@ from django.utils import translation
 from django.utils.formats import localize
 from django.utils.functional import cached_property
 from django.utils.timezone import now, utc
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from resources.models import Reservation, Resource

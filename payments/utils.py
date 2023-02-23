@@ -3,7 +3,7 @@ from datetime import date, datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from functools import wraps
 from typing import List
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils.dateparse import parse_datetime
 
 def price_as_sub_units(price: Decimal) -> int:

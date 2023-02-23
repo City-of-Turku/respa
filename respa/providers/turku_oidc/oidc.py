@@ -2,7 +2,7 @@ from helusers.oidc import resolve_user, ApiTokenAuthentication as HelusersApiTok
 from helusers.authz import UserAuthorization
 from helusers.user_utils import _try_create_or_update
 from rest_framework.exceptions import AuthenticationFailed
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.conf import settings
 from rest_framework import exceptions
 from django.db import transaction, IntegrityError
@@ -16,6 +16,7 @@ class ApiTokenAuthentication(HelusersApiTokenAuthentication):
             payload = self.decode_jwt(jwt_value)
         except:
             return None
+
         self.validate_claims(payload)
         user = get_or_create_user(payload, True)
         auth = UserAuthorization(user, payload, self.settings)

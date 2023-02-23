@@ -1,6 +1,5 @@
 from django.db import models
-from django.contrib.postgres.fields import JSONField
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from resources.models.base import ModifiableModel
 import uuid
 
@@ -26,7 +25,7 @@ class ServiceRequirement(ModifiableModel):
 class ServiceEntrance(ModifiableModel):
     service_point = models.ForeignKey('ServicePoint', on_delete=models.CASCADE, null=True, related_name='service_entrances')
     is_main_entrance = models.BooleanField(default=False)
-    location = JSONField(null=True, blank=True)
+    location = models.JSONField(null=True, blank=True)
     name = models.CharField(max_length=255)
     photo_url = models.URLField(max_length=1000, null=True, blank=True)
     street_view_url = models.URLField(max_length=1000, null=True, blank=True)

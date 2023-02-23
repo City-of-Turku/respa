@@ -3,12 +3,11 @@ import random
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models, transaction
 from django.utils import timezone
 from django.utils.module_loading import import_string
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from resources.models import Resource
 
@@ -56,7 +55,7 @@ class AccessControlUser(models.Model):
         help_text=_('Identifier of user in the access control system (if any)')
     )
 
-    driver_data = JSONField(null=True, blank=True)
+    driver_data = models.JSONField(null=True, blank=True)
 
     objects = AccessControlUserQuerySet.as_manager()
 
@@ -129,7 +128,7 @@ class AccessControlGrant(models.Model):
         default=0, editable=False, help_text=_('How many times the system has tried to remove this grant (and failed)')
     )
 
-    driver_data = JSONField(null=True, blank=True)
+    driver_data = models.JSONField(null=True, blank=True)
 
     objects = AccessControlGrantQuerySet.as_manager()
 
@@ -273,8 +272,8 @@ class AccessControlResource(models.Model):
         help_text=_('Identifier of resource in the access control system (if any)')
     )
 
-    driver_config = JSONField(null=True, blank=True, help_text=_('Driver-specific configuration'))
-    driver_data = JSONField(null=True, editable=False, help_text=_('Internal driver data'))
+    driver_config = models.JSONField(null=True, blank=True, help_text=_('Driver-specific configuration'))
+    driver_data = models.JSONField(null=True, editable=False, help_text=_('Internal driver data'))
 
     class Meta:
         unique_together = (('system', 'resource'),)
@@ -355,8 +354,8 @@ class AccessControlSystem(models.Model):
         help_text=_('How many minutes before and after the reservation the access will be allowed')
     )
 
-    driver_config = JSONField(null=True, blank=True, help_text=_('Driver-specific configuration'))
-    driver_data = JSONField(null=True, editable=False, help_text=_('Internal driver data'))
+    driver_config = models.JSONField(null=True, blank=True, help_text=_('Driver-specific configuration'))
+    driver_data = models.JSONField(null=True, editable=False, help_text=_('Internal driver data'))
 
     # Cached driver instance
     _driver = None
