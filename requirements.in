@@ -28,7 +28,7 @@ django-environ
 django-filter>=2.4.0
 django-grappelli
 django-guardian
-django-helusers>=0.7.1
+django-helusers-turku
 django-hstore
 django-image-cropping
 django-jinja
