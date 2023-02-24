@@ -46,7 +46,9 @@
 {% block body %}
     {% if qualitytool_target_options %}
     <div class="container">
-        <label>{% trans 'Quality tools' %}:</label>
+        <label class="help-text">
+            {% trans 'Suomi.fi e-service' %}
+        </label>
         <div class="col-wrap-container fluid row-wrap" style="margin-top: 0">
         {% for target in qualitytool_target_options %}
             <div class="checkbox-container" data-qualitytool-target="true">
@@ -70,6 +72,9 @@
         <div style="border-bottom: 1px solid lightgray; margin-top: 20px; margin-bottom: 20px;">   
         </div>
         {% if resources %}
+        <h6 class="help-text" style="margin-top:0;margin-bottom:20px;">
+            {% trans 'Suomi.fi e-service connected resources' %}
+        </h6>
         <div class="row">
             <div class="col-sm-9">
                 <div style="display: flex">
@@ -77,7 +82,7 @@
                     <div class="form-group listing-search fluid align-items-center" style="margin-left: auto; margin-bottom: 0;">
                         <div class="input-group">
                             <span class="input-group-addon">{% trans 'Filter' %}</span>
-                            <input type="text" class="form-control text-input" id="resource-filter">
+                            <input type="text" class="form-control text-input" id="resource-filter" />
                         </div>
                     </div>
                 </div>
@@ -86,7 +91,12 @@
             <div class="col-sm-3">
                 <div class="emails-list-form text-align-center">
                     <label class="control-label input-label">
-                        {% trans 'Filter reservations by reservation email' %}
+                        <div style="position: relative;display:flex;justify-content: flex-end;align-items: center;">
+                            {% trans 'Filter reservations by reservation email' %}
+                            <div style="cursor:pointer">
+                                <span class="glyphicon glyphicon-question-sign" title="{% trans 'Limitation for calculating usage volume' %}"></span>
+                            </div>
+                        </div>
                         <input 
                         class="form-control text-input flex-align-end" 
                         type="email" placeholder="{% trans 'Email' %}"
@@ -113,7 +123,7 @@
         <div class="col-wrap-container row-wrap space-between">
             {% csrf_token %}
             {% if is_edit %}
-                <a id="qualitytool-link-btn" class="btn btn-mb-12 border-thick" href="#">{% trans 'Edit' %}</a>
+                <a id="qualitytool-link-btn" class="btn btn-mb-12 border-thick" href="#">{% trans 'Save changes' %}</a>
             {% else %}
                 <a id="qualitytool-link-btn" class="btn btn-mb-12 border-thick" href="#">{% trans 'Save' %}</a>
             {% endif %}

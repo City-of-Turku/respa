@@ -2746,3 +2746,15 @@ msgstr "Add as en embedded iframe"
 
 msgid "Universal data preview label"
 msgstr "Embedded preview:"
+
+msgid "Save changes"
+msgstr ""
+
+msgid "Suomi.fi e-service"
+msgstr ""
+
+msgid "Suomi.fi e-service connected resources"
+msgstr ""
+
+msgid "Limitation for calculating usage volume"
+msgstr ""

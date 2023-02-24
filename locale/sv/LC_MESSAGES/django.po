@@ -2061,3 +2061,15 @@ msgstr "Lägg till som iframe inbäddning"
 
 msgid "Universal data preview label"
 msgstr "Förhandsvisning av inbäddningen:"
+
+msgid "Save changes"
+msgstr "Spara ändringar"
+
+msgid "Suomi.fi e-service"
+msgstr "Suomi.fi transaktionstjänster"
+
+msgid "Suomi.fi e-service connected resources"
+msgstr "Suomi.fi transaktionstjänster länkad resurser"
+
+msgid "Limitation for calculating usage volume"
+msgstr "Gränser för beräkning av användningsmängder"
