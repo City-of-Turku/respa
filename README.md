@@ -1,4 +1,4 @@
-[![GitHub Actions](https://github.com/codepointtku/respa/actions/workflows/respa.yml/badge.svg?branch=develop)](https://github.com/codepointtku/respa/actions/workflows/respa.yml)
+[![GitHub Actions](https://github.com/city-of-turku/respa/actions/workflows/respa.yml/badge.svg?branch=develop)](https://github.com/city-of-turku/respa/actions/workflows/respa.yml)
 [![codecov](https://codecov.io/gh/codepointtku/respa/branch/develop/graph/badge.svg)](https://codecov.io/gh/codepointtku/respa)
 
 Respa – Resource reservation and management service
