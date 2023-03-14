@@ -717,6 +717,10 @@ class ReservationFilterSet(django_filters.rest_framework.FilterSet):
 
 
 class ReservationPermission(permissions.BasePermission):
+    def _is_allowed(self, request):
+        return request.method in permissions.SAFE_METHODS or \
+                    request.user and request.user.is_authenticated
+
     def has_permission(self, request, view):
         request_data = request.data
         if not isinstance(request_data, list):
@@ -724,13 +728,13 @@ class ReservationPermission(permissions.BasePermission):
         resource_id = next(iter([data.get('resource') for data in request_data] or []), None)
 
         if not resource_id:
-            return False
+            return self._is_allowed(request)
 
         try:
             resource = Resource.objects.get(pk=resource_id)
         except Resource.DoesNotExist:
-            return request.method in permissions.SAFE_METHODS or \
-                    request.user and request.user.is_authenticated
+            return self._is_allowed(request)
+
 
         if resource.authentication == 'strong' and \
             not request.user.is_strong_auth:
@@ -1024,7 +1028,9 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
 
             context['prefetched_user'] = prefetched_user
 
-        context['resource'] = self.resource
+
+        if hasattr(self, 'resource'):
+            context['resource'] = self.resource
         return context
 
     def get_queryset(self):
