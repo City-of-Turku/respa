@@ -25,8 +25,6 @@ babel==2.9.1
     # via
     #   -r requirements.in
     #   delorean
-backports-zoneinfo==0.2.1
-    # via exchangelib
 beautifulsoup4==4.9.3
     # via -r requirements.in
 cached-property==1.5.2
@@ -429,10 +427,8 @@ ruamel-yaml==0.17.4
     #   -r requirements.in
     #   drf-yasg
 ruamel-yaml-clib==0.2.2
-    # via
-    #   -r requirements.in
-    #   ruamel-yaml
-sentry-sdk==1.0.0
+    # via -r requirements.in
+sentry-sdk==1.14.0
     # via -r requirements.in
 six==1.15.0
     # via
@@ -490,7 +486,7 @@ uritemplate==3.0.1
     #   drf-yasg
 url-normalize==1.4.3
     # via requests-cache
-urllib3==1.26.5
+urllib3==1.26.15
     # via
     #   -r requirements.in
     #   requests
