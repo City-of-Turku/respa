@@ -18,3 +18,5 @@ STRONG_AUTH_CLAIMS=('very_strong_auth', )
 HELUSERS_PROVIDER = 'helusers.providers.helsinki'
 RESPA_PAYMENTS_BAMBORA_TOKEN_VALID_DAYS = 3
 RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME = 24
+SIMPLE_JWT['AUDIENCE'] = 'https://dummy-aud.respa.turku.fi'
+SIMPLE_JWT['SIGNING_KEY'] = 'very-secret-signing-key'

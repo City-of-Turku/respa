@@ -538,16 +538,20 @@ if os.path.exists(local_settings_path):
 
 # If a secret key was not supplied from elsewhere, generate a random one
 # and store it into a file called .django_secret.
+
+def get_random_string():
+    import random
+    system_random = random.SystemRandom()
+    return ''.join([system_random.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(64)])
+
 if 'SECRET_KEY' not in locals():
     secret_file = os.path.join(BASE_DIR, '.django_secret')
     try:
         with open(secret_file) as f:
             SECRET_KEY = f.read().strip()
     except IOError:
-        import random
-        system_random = random.SystemRandom()
         try:
-            SECRET_KEY = ''.join([system_random.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(64)])
+            SECRET_KEY = get_random_string()
             secret = open(secret_file, 'w')
             os.chmod(secret_file, 0o0600)
             secret.write(SECRET_KEY)

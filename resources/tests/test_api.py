@@ -30,9 +30,9 @@ class JWTMixin(object):
             token.token_type = extra['token_type']
         return 'JWT %s' % str(token)
 
-    def authenticated_post(self, url, data, user, **extra):
-        auth = self.get_auth(user, **extra)
-        response = self.client.post(url, data, HTTP_AUTHORIZATION=auth, **extra)
+    def authenticated_post(self, url, data, **extra):
+        self.client.credentials(HTTP_AUTHORIZATION=self.get_auth(self.user, **extra))
+        response = self.client.post(url, data)
         return response
 
 
@@ -62,6 +62,8 @@ class ReservationApiTestCase(APITestCase, JWTMixin):
             email='Test@User.com',
             preferred_language='en'
         )
+        self.auth = self.get_auth(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=self.auth)
 
     def test_api(self):
         response = self.client.get('/v1/unit/')
@@ -98,7 +100,7 @@ class ReservationApiTestCase(APITestCase, JWTMixin):
         res_end = res_start + datetime.timedelta(hours=2)
 
         data = {'resource': 'r1a', 'begin': res_start, 'end': res_end}
-        response = self.authenticated_post('/v1/reservation/', data, self.user)
+        response = self.authenticated_post('/v1/reservation/', data)
         self.assertContains(response, '"resource":"r1a"', status_code=201)
 
         # Check that available hours are reported correctly for a reserved resource
@@ -111,11 +113,11 @@ class ReservationApiTestCase(APITestCase, JWTMixin):
 
     def test_jwt_expired(self):
         exp = datetime.datetime.utcnow() - datetime.timedelta(minutes=15)
-        response = self.authenticated_post('/v1/reservation/', {}, self.user, exp=exp)
+        response = self.authenticated_post('/v1/reservation/', {}, exp=exp)
         self.assertEqual(response.status_code, 401)
 
     def test_jwt_invalid_token_type(self):
-        response = self.authenticated_post('/v1/reservation/', {}, self.user,
+        response = self.authenticated_post('/v1/reservation/', {},
                                            token_type=generate_random_string(6))
         self.assertEqual(response.status_code, 400)
 
