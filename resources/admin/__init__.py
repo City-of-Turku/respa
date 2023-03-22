@@ -208,7 +208,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
         form = super().get_form(request, obj=obj, **kwargs)
         if 'id' in form.base_fields:
             form.base_fields['id'].initial = generate_id()
-        self.inlines = self.get_inlines(obj)
+        self.inlines = self._get_inlines(obj)
         return form
 
     def get_readonly_fields(self, request, obj=None):
@@ -216,7 +216,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
             return [field.name for field in self.model._meta.fields if field.name != 'is_external'] + [ 'tags', 'purposes' ]
         return super().get_readonly_fields(request, obj)
 
-    def get_inlines(self, obj):
+    def _get_inlines(self, obj):
         return [] if obj and obj.is_external else [
             PeriodInline,
             ResourceEquipmentInline,
