@@ -2114,3 +2114,9 @@ msgstr "Lisää iframe upotuksena"
 
 msgid "Universal data preview label"
 msgstr "Upotuksen esikatselu:"
+
+msgid "Created at"
+msgstr "Luotu"
+
+msgid "Staff event"
+msgstr "Virkailija tapahtuma"

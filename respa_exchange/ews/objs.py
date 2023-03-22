@@ -1,6 +1,6 @@
 import hashlib
 
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 
 from .xml import NAMESPACES, T
@@ -15,8 +15,8 @@ class ItemID:
         """
         Initialize the ItemID. You probably shouldn't call this by hand.
         """
-        self._id = force_text(id)
-        self._change_key = force_text(change_key)
+        self._id = force_str(id)
+        self._change_key = force_str(change_key)
 
     @property
     def change_key(self):

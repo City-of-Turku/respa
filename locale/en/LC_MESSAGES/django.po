@@ -2737,3 +2737,9 @@ msgstr "Add as en embedded iframe"
 
 msgid "Universal data preview label"
 msgstr "Embedded preview:"
+
+msgid "Created at"
+msgstr ""
+
+msgid "Staff event"
+msgstr ""

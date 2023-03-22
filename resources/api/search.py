@@ -1,5 +1,5 @@
 from django.db.models import Q
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from rest_framework import viewsets
 from rest_framework.fields import BooleanField
 from rest_framework.response import Response
@@ -27,8 +27,8 @@ class TypeaheadViewSet(viewsets.ViewSet):
     Currently supported are "resource" and "unit".
     """
     objects = {
-        "resource": {"search_fields": ["name"], "viewset": ResourceListViewSet, "text_getter": force_text},
-        "unit": {"search_fields": ["name"], "viewset": UnitViewSet, "text_getter": force_text},
+        "resource": {"search_fields": ["name"], "viewset": ResourceListViewSet, "text_getter": force_str},
+        "unit": {"search_fields": ["name"], "viewset": UnitViewSet, "text_getter": force_str},
     }
 
     def list(self, request, *args, **kwargs):

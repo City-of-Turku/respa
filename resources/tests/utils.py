@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.test.testcases import SimpleTestCase
 from six import BytesIO
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from dateutil import parser
 from PIL import Image
 
@@ -138,7 +138,7 @@ def assert_non_field_errors_contain(response, text):
     :type response: Response
     :type text: str
     """
-    error_messages = [force_text(error_message) for error_message in response.data['non_field_errors']]
+    error_messages = [force_str(error_message) for error_message in response.data['non_field_errors']]
     assert any(text in error_message for error_message in error_messages)
 
 

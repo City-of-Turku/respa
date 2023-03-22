@@ -15,9 +15,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, ContentType
-from django.utils.translation import ugettext
-from django.utils.translation import ungettext
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, ngettext, gettext_lazy as _
 from django.utils import timezone
 from django.utils.timezone import localtime
 from rest_framework.reverse import reverse
@@ -101,8 +99,8 @@ def humanize_duration(duration):
     """
     hours = duration.days * 24 + duration.seconds // 3600
     mins = duration.seconds // 60 % 60
-    hours_string = ungettext('%(count)d hour', '%(count)d hours', hours) % {'count': hours} if hours else None
-    mins_string = ungettext('%(count)d minute', '%(count)d minutes', mins) % {'count': mins} if mins else None
+    hours_string = ngettext('%(count)d hour', '%(count)d hours', hours) % {'count': hours} if hours else None
+    mins_string = ngettext('%(count)d minute', '%(count)d minutes', mins) % {'count': mins} if mins else None
     return ' '.join(filter(None, (hours_string, mins_string)))
 
 
@@ -262,8 +260,8 @@ def generate_reservation_xlsx(reservations, **kwargs):
     if row > 0:
         row = row+2
         col_format = workbook.add_format({'color': 'red', 'font': 'bold'})
-        worksheet.write(row, 0, ugettext('Reservation hours total'), col_format)
-        worksheet.write(row, 1, ugettext('%(hours)s hours') % ({'hours': int((total_reservation_hours / 60) / 60)}), col_format)
+        worksheet.write(row, 0, gettext('Reservation hours total'), col_format)
+        worksheet.write(row, 1, gettext('%(hours)s hours') % ({'hours': int((total_reservation_hours / 60) / 60)}), col_format)
 
 
     col_format = workbook.add_format()
@@ -274,14 +272,14 @@ def generate_reservation_xlsx(reservations, **kwargs):
 
     worksheet.write(row+2, 0, '', col_format)
     if request:
-        fmt_extra = f"({ugettext('Selected days: %(selected)s') % ({'selected': _build_weekday_string(weekdays)})})" if weekdays else ''
-        worksheet.write(row+2, 1, ugettext('Resource utilization for period %(start)s - %(end)s %(extra)s') % ({
+        fmt_extra = f"({gettext('Selected days: %(selected)s') % ({'selected': _build_weekday_string(weekdays)})})" if weekdays else ''
+        worksheet.write(row+2, 1, gettext('Resource utilization for period %(start)s - %(end)s %(extra)s') % ({
             'start': query_start.date(),
             'end': query_end.date(),
             'extra': fmt_extra
         }), col_format)
     else:
-        worksheet.write(row+2, 1, ugettext('Resource utilization'), col_format)
+        worksheet.write(row+2, 1, gettext('Resource utilization'), col_format)
     worksheet.write(row+2, 2, '', col_format)
     worksheet.write(row+2, 3, '', col_format)
     worksheet.write(row+2, 4, '', col_format)
@@ -292,11 +290,11 @@ def generate_reservation_xlsx(reservations, **kwargs):
     col_format.set_bold()
 
 
-    worksheet.write(row+3, 0, ugettext('Unit'), col_format)
-    worksheet.write(row+3, 1, ugettext('Resource'), col_format)
-    worksheet.write(row+3, 2, ugettext('Resource utilization'), col_format)
-    worksheet.write(row+3, 3, ugettext('Opening hours total'), col_format)
-    worksheet.write(row+3, 4, ugettext('Reservation hours total'), col_format)
+    worksheet.write(row+3, 0, gettext('Unit'), col_format)
+    worksheet.write(row+3, 1, gettext('Resource'), col_format)
+    worksheet.write(row+3, 2, gettext('Resource utilization'), col_format)
+    worksheet.write(row+3, 3, gettext('Opening hours total'), col_format)
+    worksheet.write(row+3, 4, gettext('Reservation hours total'), col_format)
 
     row = row+4
     for idx, resource_info in enumerate(resource_usage_info.items()):
