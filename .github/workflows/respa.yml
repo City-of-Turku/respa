@@ -66,3 +66,6 @@ jobs:
           SECRET_KEY: respa_secret
         run: |
           pytest --cov . --doctest-modules
+      - name: Codecov
+        uses: codecov/codecov-action@v3.1.1
+

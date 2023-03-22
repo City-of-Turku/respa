@@ -121,6 +121,11 @@ class QualityToolManager():
         end = date.replace(hour=23, minute=59, second=59, microsecond=0)
     
         query = models.Q(reservations__created_at__gte=begin, reservations__created_at__lte=end)
+        if qualitytool.emails:
+            query &= models.Q(
+                models.Q(reservations__user__email__in=qualitytool.emails) |
+                models.Q(reservations__reserver_email_address__in=qualitytool.emails)
+            )
         volume = qualitytool.resources.filter(query).values_list('reservations', flat=True)
         return {
             'targetId': str(qualitytool.target_id), 

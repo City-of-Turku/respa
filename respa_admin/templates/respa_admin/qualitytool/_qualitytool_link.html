@@ -46,7 +46,10 @@
 {% block body %}
     {% if qualitytool_target_options %}
     <div class="container">
-        <div class="col-wrap-container fluid row-wrap">
+        <label class="help-text">
+            {% trans 'Suomi.fi e-service' %}
+        </label>
+        <div class="col-wrap-container fluid row-wrap" style="margin-top: 0">
         {% for target in qualitytool_target_options %}
             <div class="checkbox-container" data-qualitytool-target="true">
                 <input 
@@ -66,19 +69,52 @@
             </div>
         {% endfor %}
         </div>
-        <div class="col-wrap-container row-wrap fluid space-between">
-            <div class="col-wrap-container">
-                <button type="button" class="btn btn-default" id="select-all-btn">{% trans 'Select all' %}</button>
+        <div style="border-bottom: 1px solid lightgray; margin-top: 20px; margin-bottom: 20px;">   
+        </div>
+        {% if resources %}
+        <h6 class="help-text" style="margin-top:0;margin-bottom:20px;">
+            {% trans 'Suomi.fi e-service connected resources' %}
+        </h6>
+        <div class="row">
+            <div class="col-sm-9">
+                <div style="display: flex">
+                    <button type="button" class="btn btn-default" id="select-all-btn">{% trans 'Select all' %}</button>
+                    <div class="form-group listing-search fluid align-items-center" style="margin-left: auto; margin-bottom: 0;">
+                        <div class="input-group">
+                            <span class="input-group-addon">{% trans 'Filter' %}</span>
+                            <input type="text" class="form-control text-input" id="resource-filter" />
+                        </div>
+                    </div>
+                </div>
+                {% include "respa_admin/common/_paginated_resource_list.html" with resources=resources per_page=10 paginator_id=random_id_str %}
             </div>
-            <div class="form-group listing-search col-wrap-container fluid align-items-center">
-                <div class="input-group">
-                    <span class="input-group-addon">{% trans 'Filter' %}</span>
-                    <input type="text" class="form-control text-input" id="resource-filter">
+            <div class="col-sm-3">
+                <div class="emails-list-form text-align-center">
+                    <label class="control-label input-label">
+                        <div style="position: relative;display:flex;justify-content: flex-end;align-items: center;">
+                            {% trans 'Filter reservations by reservation email' %}
+                            <div style="cursor:pointer">
+                                <span class="glyphicon glyphicon-question-sign" title="{% trans 'Limitation for calculating usage volume' %}"></span>
+                            </div>
+                        </div>
+                        <input 
+                        class="form-control text-input flex-align-end" 
+                        type="email" placeholder="{% trans 'Email' %}"
+                        id="email-input"
+                        style="margin-top: 5px;" />
+                    </label>
+                    <div>
+                        <a id="add-email-btn" class="btn">{% trans 'Add e-mail' %}</a>
+                        <a id="remove-email-btn" class="btn">{% trans 'Remove selected' %}</a>
+                    </div>
+                    <ul id="quality-tool-emails" class="emails-list">
+                        {% for email in qualitytool_emails %}
+                         <li title="{{ email }}" data-value="{{ email }}">{{ email }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
         </div>
-        {% if resources %}
-        {% include "respa_admin/common/_paginated_resource_list.html" with resources=resources per_page=10 paginator_id=random_id_str %}
         {% else %}
         <div class="col-wrap-container fluid row-wrap justify-center">
             <span class="help-text">{% trans 'No resources found' %}</span>
@@ -87,7 +123,7 @@
         <div class="col-wrap-container row-wrap space-between">
             {% csrf_token %}
             {% if is_edit %}
-                <a id="qualitytool-link-btn" class="btn btn-mb-12 border-thick" href="#">{% trans 'Edit' %}</a>
+                <a id="qualitytool-link-btn" class="btn btn-mb-12 border-thick" href="#">{% trans 'Save changes' %}</a>
             {% else %}
                 <a id="qualitytool-link-btn" class="btn btn-mb-12 border-thick" href="#">{% trans 'Save' %}</a>
             {% endif %}

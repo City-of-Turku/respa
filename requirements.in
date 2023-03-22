@@ -33,6 +33,7 @@ django-hstore
 django-image-cropping
 django-jinja
 django-js-asset
+django-jsonform
 django-modeltranslation
 django-mptt
 django-taggit

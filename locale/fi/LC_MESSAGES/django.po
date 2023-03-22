@@ -2016,6 +2016,9 @@ msgstr "Tulosta per sivu"
 msgid "Quality tool"
 msgstr "Laatutyökalu"
 
+msgid "Quality tools"
+msgstr "Laatutyökalut"
+
 msgid "resource quality tool"
 msgstr "resurssi laatutyökalu"
 
@@ -2082,6 +2085,12 @@ msgstr "Palauta"
 msgid "Restore resources"
 msgstr "Palauta resursseja"
 
+msgid "Add e-mail"
+msgstr "Lisää e-mail"
+
+msgid "Filter reservations by reservation email"
+msgstr "Suodata varaukset varaajan sähköpostin mukaan"
+
 msgid "Universal form field"
 msgstr "Varauslomakkeen yleiskenttä"
 
@@ -2120,3 +2129,15 @@ msgstr "Luotu"
 
 msgid "Staff event"
 msgstr "Virkailija tapahtuma"
+
+msgid "Save changes"
+msgstr "Tallenna muutokset"
+
+msgid "Suomi.fi e-service"
+msgstr "Suomi.fi asiointipalvelu"
+
+msgid "Suomi.fi e-service connected resources"
+msgstr "Suomi.fi asiointipalveluun yhdistetyt resurssit"
+
+msgid "Limitation for calculating usage volume"
+msgstr "Käyttömäärien laskennan rajaukset"

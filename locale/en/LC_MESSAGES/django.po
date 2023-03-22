@@ -2639,6 +2639,9 @@ msgstr ""
 msgid "Quality tool"
 msgstr ""
 
+msgid "Quality tools"
+msgstr ""
+
 msgid "resource quality tool"
 msgstr ""
 
@@ -2705,6 +2708,12 @@ msgstr ""
 msgid "Restore resources"
 msgstr ""
 
+msgid "Add e-mail"
+msgstr ""
+
+msgid "Filter reservations by reservation email"
+msgstr ""
+
 msgid "Universal form field"
 msgstr ""
 
@@ -2742,4 +2751,16 @@ msgid "Created at"
 msgstr ""
 
 msgid "Staff event"
+msgstr ""
+
+msgid "Save changes"
+msgstr ""
+
+msgid "Suomi.fi e-service"
+msgstr ""
+
+msgid "Suomi.fi e-service connected resources"
+msgstr ""
+
+msgid "Limitation for calculating usage volume"
 msgstr ""

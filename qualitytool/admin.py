@@ -12,7 +12,7 @@ from qualitytool.models import ResourceQualityTool, QualityToolFormLanguageOptio
 class ResourceQualityToolAdminForm(forms.ModelForm):
     class Meta:
         model = ResourceQualityTool
-        fields = ( 'name', 'target_id', 'resources', )
+        fields = ( 'name', 'target_id', 'resources', 'emails', )
 
     def clean_resources(self):
         resources = self.cleaned_data.get('resources', [])
@@ -46,6 +46,7 @@ class ResourceQualityToolAdmin(TranslationAdmin):
             'fields': (
                 'name',
                 'target_id',
+                'emails',
             ),
         }),
         (_('Resources'), {
