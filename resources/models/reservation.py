@@ -443,6 +443,11 @@ class Reservation(ModifiableModel):
                 reservations_for_same_unit = Reservation.objects.filter(user=user, resource__unit=self.resource.unit)
             else:
                 reservations_for_same_unit = Reservation.objects.filter(resource__unit=self.resource.unit)
+
+            original = kwargs.get('original_reservation', None)
+            if original:
+                reservations_for_same_unit = reservations_for_same_unit.exclude(id=original.id)
+
             valid_reservations_for_same_unit = reservations_for_same_unit.exclude(state=Reservation.CANCELLED)
             user_has_conflicting_reservations = valid_reservations_for_same_unit.filter(
                 Q(begin__gt=self.begin, begin__lt=self.end)
@@ -556,7 +561,7 @@ class Reservation(ModifiableModel):
                 ground_plan_image_url = ground_plan_image.get_full_url()
                 if ground_plan_image_url:
                     context['resource_ground_plan_image_url'] = ground_plan_image_url
-            
+
             universal_data = getattr(self, 'universal_data', None)
             if universal_data:
                 # reservation contains universal_data
@@ -661,7 +666,7 @@ class Reservation(ModifiableModel):
                                 else:
                                     # only 1 of the product
                                     product['product_quantity'] = float(1)
-                                
+
                             values = calculate_final_product_sums(product=item, quantity=conditional_quantity)
                             product['product_taxfree_total'] = values['product_taxfree_total']
                             product['product_tax_total'] = values['product_tax_total']

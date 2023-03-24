@@ -79,6 +79,15 @@ def test_unit3():
 
 
 @pytest.fixture
+def test_unit4():
+    return Unit.objects.create(
+            name="unit 4",
+            time_zone='Europe/Helsinki',
+            disallow_overlapping_reservations=True
+        )
+
+
+@pytest.fixture
 def generic_terms():
     return TermsOfUse.objects.create(
         name_fi='testikäyttöehdot',
@@ -144,6 +153,53 @@ def resource_in_unit3(space_resource_type, test_unit3):
         max_period=datetime.timedelta(hours=4),
         reservable=True,
     )
+
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_in_unit4_1(space_resource_type, test_unit4):
+    resource = Resource.objects.create(
+        type=space_resource_type,
+        authentication="none",
+        name="resource in unit 4 first",
+        unit=test_unit4,
+        max_reservations_per_user=5,
+        max_period=datetime.timedelta(hours=4),
+        reservable=True,
+    )
+    p1 = Period.objects.create(start=datetime.date(2115, 1, 1),
+                               end=datetime.date(2115, 12, 31),
+                               resource=resource, name='regular hours')
+    for weekday in range(0, 7):
+        Day.objects.create(period=p1, weekday=weekday,
+                           opens=datetime.time(8, 0),
+                           closes=datetime.time(18, 0))
+    resource.update_opening_hours()
+    return resource
+
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_in_unit4_2(space_resource_type, test_unit4):
+    resource = Resource.objects.create(
+        type=space_resource_type,
+        authentication="none",
+        name="resource in unit 4 second",
+        unit=test_unit4,
+        max_reservations_per_user=5,
+        max_period=datetime.timedelta(hours=4),
+        reservable=True,
+    )
+    p1 = Period.objects.create(start=datetime.date(2115, 1, 1),
+                               end=datetime.date(2115, 12, 31),
+                               resource=resource, name='regular hours')
+    for weekday in range(0, 7):
+        Day.objects.create(period=p1, weekday=weekday,
+                           opens=datetime.time(8, 0),
+                           closes=datetime.time(18, 0))
+    resource.update_opening_hours()
+    return resource
+
 
 @pytest.mark.django_db
 @pytest.fixture
@@ -304,6 +360,22 @@ def unit_manager_user(resource_in_unit):
     )
     user.unit_authorizations.create(subject=resource_in_unit.unit, level=UnitAuthorizationLevel.manager)
     return user
+
+
+@pytest.mark.django_db
+@pytest.fixture
+def unit4_manager_user(resource_in_unit4_1):
+    user = get_user_model().objects.create(
+        username='test_manager_user',
+        first_name='Inspector',
+        last_name='Lestrade',
+        email='lestrade@scotlandyard.co.uk',
+        is_staff=True,
+        preferred_language='en'
+    )
+    user.unit_authorizations.create(subject=resource_in_unit4_1.unit, level=UnitAuthorizationLevel.manager)
+    return user
+
 
 @pytest.mark.django_db
 @pytest.fixture

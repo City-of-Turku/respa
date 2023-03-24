@@ -135,6 +135,34 @@ def reservation3(resource_in_unit2, user2):
 
 @pytest.mark.django_db
 @pytest.fixture
+def reservation4(resource_in_unit4_1, user):
+    # reservation in unit 4 which has overlap restriction
+    return Reservation.objects.create(
+        resource=resource_in_unit4_1,
+        begin='2115-04-04T09:00:00+02:00',
+        end='2115-04-04T10:00:00+02:00',
+        user=user,
+        reserver_name='testi testaaja',
+        state=Reservation.CONFIRMED
+    )
+
+
+@pytest.mark.django_db
+@pytest.fixture
+def reservation5(resource_in_unit4_2, user):
+    # reservation in unit 4 which has overlap restriction
+    return Reservation.objects.create(
+        resource=resource_in_unit4_2,
+        begin='2115-04-04T12:00:00+02:00',
+        end='2115-04-04T13:00:00+02:00',
+        user=user,
+        reserver_name='testi testaaja',
+        state=Reservation.CONFIRMED
+    )
+
+
+@pytest.mark.django_db
+@pytest.fixture
 def other_resource(space_resource_type, test_unit):
     return Resource.objects.create(
         type=space_resource_type,
@@ -2770,3 +2798,159 @@ def test_disallow_overlapping_reservations(resource_in_unit, resource_in_unit2, 
 
     response2 = user_api_client.post(list_url, reservation_data2)
     assert response2.status_code == 201
+
+
+@pytest.mark.django_db
+def test_reservation_can_be_made_to_unit_with_overlap_restriction_when_no_overlap(
+        api_client, reservation_data, user, list_url, resource_in_unit4_1
+    ):
+    """
+    Tests that a reservation can be made to a resource in unit with overlap restriction
+    when there is no overlap
+    """
+    api_client.force_authenticate(user=user)
+    reservation_data['resource'] = resource_in_unit4_1.pk
+    reservation_data['begin'] = '2115-04-04T09:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T10:00:00+02:00'
+    response = api_client.post(list_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == 201
+
+
+@pytest.mark.parametrize("resource,is_staff,expected", [
+    (1, False, 400),
+    (2, False, 400),
+    (1, True, 400),
+    (2, True, 201),
+])
+@pytest.mark.django_db
+def test_reservations_made_to_unit_with_overlap_restriction_when_overlapping(
+        resource, is_staff, expected, api_client, reservation_data,
+        user, unit4_manager_user, list_url, resource_in_unit4_1, resource_in_unit4_2, reservation4
+    ):
+    """
+    Tests that reservations are handled correctly to resources in units with overlap
+    restrictions
+    """
+    if is_staff:
+        api_client.force_authenticate(user=unit4_manager_user)
+    else:
+        api_client.force_authenticate(user=user)
+
+    reservation_data['resource'] = resource_in_unit4_1.pk if resource == 1 else resource_in_unit4_2.pk
+    reservation_data['begin'] = '2115-04-04T09:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T10:00:00+02:00'
+    response = api_client.post(list_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == expected
+
+
+@pytest.mark.django_db
+def test_reservation_can_be_updated_in_unit_with_overlap_restriction_when_no_overlap(
+        api_client, reservation_data, user, resource_in_unit4_1, reservation4
+    ):
+    """
+    Tests that a reservation can be updated to a resource in unit with overlap restriction
+    when there is no overlap
+    """
+    api_client.force_authenticate(user=user)
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation4.pk})
+
+    reservation_data['resource'] = resource_in_unit4_1.pk
+    reservation_data['begin'] = '2115-04-04T09:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T12:00:00+02:00'
+    response = api_client.put(detail_url, reservation_data)
+    assert response.status_code == 200
+    reservation = Reservation.objects.get(pk=reservation4.pk)
+    assert reservation.begin == dateparse.parse_datetime('2115-04-04T09:00:00+02:00')
+    assert reservation.end == dateparse.parse_datetime('2115-04-04T12:00:00+02:00')
+
+
+@pytest.mark.django_db
+def test_reservation_can_be_made_to_unit_with_per_user_overlap_restriction_when_no_overlap(
+        api_client, reservation_data, user, list_url, resource_in_unit4_1
+    ):
+    """
+    Tests that a reservation can be made to a resource in unit with per user overlap restriction
+    when there is no overlap
+    """
+    resource_in_unit4_1.disallow_overlapping_reservations_per_user = True
+    resource_in_unit4_1.save()
+    api_client.force_authenticate(user=user)
+    reservation_data['resource'] = resource_in_unit4_1.pk
+    reservation_data['begin'] = '2115-04-04T09:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T10:00:00+02:00'
+    response = api_client.post(list_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == 201
+
+
+@pytest.mark.parametrize("same_user,expected", [
+    (True, 400),
+    (False, 201),
+])
+@pytest.mark.django_db
+def test_reservations_made_to_unit_with_per_user_overlap_restriction(
+        api_client, reservation_data, user, user2, list_url, test_unit4, resource_in_unit4_2,
+        reservation4, same_user, expected
+    ):
+    """
+    Tests that reservations are handled correctly to a resource in unit with per user overlap restriction
+    when same or other user has made a reservation to another resource in the same unit with overlapping time
+    """
+    test_unit4.disallow_overlapping_reservations_per_user = True
+    test_unit4.save()
+    if same_user:
+        api_client.force_authenticate(user=user)
+    else:
+        api_client.force_authenticate(user=user2)
+
+    reservation_data['resource'] = resource_in_unit4_2.pk
+    reservation_data['begin'] = '2115-04-04T09:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T10:00:00+02:00'
+    response = api_client.post(list_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == expected
+    if expected == 400:
+        assert response.data.get('non_field_errors')[0].code == 'conflicting_reservation'
+
+
+@pytest.mark.django_db
+def test_reservation_can_be_updated_in_unit_with_per_user_overlap_restriction_when_no_overlap(
+        api_client, reservation_data, user, resource_in_unit4_1, reservation4, test_unit4
+    ):
+    """
+    Tests that a reservation can be updated to a resource in unit with per user overlap restriction
+    when there is no overlap
+    """
+    test_unit4.disallow_overlapping_reservations_per_user = True
+    test_unit4.save()
+    api_client.force_authenticate(user=user)
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation4.pk})
+
+    reservation_data['resource'] = resource_in_unit4_1.pk
+    reservation_data['begin'] = '2115-04-04T09:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T12:00:00+02:00'
+    response = api_client.put(detail_url, reservation_data)
+    assert response.status_code == 200
+    reservation = Reservation.objects.get(pk=reservation4.pk)
+    assert reservation.begin == dateparse.parse_datetime('2115-04-04T09:00:00+02:00')
+    assert reservation.end == dateparse.parse_datetime('2115-04-04T12:00:00+02:00')
+
+
+@pytest.mark.django_db
+def test_reservation_cannot_be_updated_in_unit_with_per_user_overlap_restriction_when_overlapping(
+        api_client, reservation_data, user, resource_in_unit4_1, reservation4, reservation5, test_unit4
+    ):
+    """
+    Tests that a reservation cannot be updated to a resource in unit with per user overlap restriction
+    when there is overlap
+    """
+    test_unit4.disallow_overlapping_reservations_per_user = True
+    test_unit4.save()
+    api_client.force_authenticate(user=user)
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation4.pk})
+
+    # update reservation to overlap with reservation5
+    reservation_data['resource'] = resource_in_unit4_1.pk
+    reservation_data['begin'] = '2115-04-04T09:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T13:00:00+02:00'
+    response = api_client.put(detail_url, reservation_data)
+    assert response.status_code == 400
+    assert response.data.get('non_field_errors')[0].code == 'conflicting_reservation'
