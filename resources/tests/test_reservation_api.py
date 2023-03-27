@@ -2954,3 +2954,38 @@ def test_reservation_cannot_be_updated_in_unit_with_per_user_overlap_restriction
     response = api_client.put(detail_url, reservation_data)
     assert response.status_code == 400
     assert response.data.get('non_field_errors')[0].code == 'conflicting_reservation'
+
+
+@pytest.mark.parametrize("begin,end,expected", [
+    ('2115-04-03T09:00:00+02:00', '2115-04-03T09:30:00+02:00', 201),
+    ('2115-04-04T08:00:00+02:00', '2115-04-04T08:30:00+02:00', 201),
+    ('2115-04-04T08:30:00+02:00', '2115-04-04T09:00:00+02:00', 201),
+    ('2115-04-04T08:30:00+02:00', '2115-04-04T09:30:00+02:00', 400),
+    ('2115-04-04T08:30:00+02:00', '2115-04-04T10:00:00+02:00', 400),
+    ('2115-04-04T08:30:00+02:00', '2115-04-04T11:00:00+02:00', 400),
+    ('2115-04-04T09:00:00+02:00', '2115-04-04T09:30:00+02:00', 400),
+    ('2115-04-04T09:00:00+02:00', '2115-04-04T10:00:00+02:00', 400),
+    ('2115-04-04T09:00:00+02:00', '2115-04-04T11:00:00+02:00', 400),
+    ('2115-04-04T09:30:00+02:00', '2115-04-04T10:00:00+02:00', 400),
+    ('2115-04-04T09:30:00+02:00', '2115-04-04T11:00:00+02:00', 400),
+    ('2115-04-04T10:00:00+02:00', '2115-04-04T10:30:00+02:00', 201),
+    ('2115-04-04T10:30:00+02:00', '2115-04-04T11:00:00+02:00', 201),
+    ('2115-04-05T09:00:00+02:00', '2115-04-05T09:30:00+02:00', 201),
+])
+@pytest.mark.django_db
+def test_reservations_made_to_unit_with_overlap_restriction_with_different_times(
+        begin, end, expected, api_client, reservation_data, user, list_url,
+        resource_in_unit4_1, resource_in_unit4_2, reservation4, reservation5
+    ):
+    """
+    Tests that reservations are handled correctly to resources in units with overlap
+    restrictions when reserving different length reservations and with different overlaps
+    """
+    api_client.force_authenticate(user=user)
+    reservation_data['resource'] = resource_in_unit4_2.pk
+    reservation_data['begin'] = begin
+    reservation_data['end'] = end
+    response = api_client.post(list_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == expected
+    if expected == 400:
+        assert response.data.get('non_field_errors')[0].code == 'conflicting_reservation'

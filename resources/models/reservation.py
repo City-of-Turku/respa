@@ -453,6 +453,7 @@ class Reservation(ModifiableModel):
                 Q(begin__gt=self.begin, begin__lt=self.end)
                 | Q(begin__lt=self.begin, end__gt=self.begin)
                 | Q(begin__gte=self.begin, end__lte=self.end)
+                | Q(begin__lte=self.begin, end__gt=self.end)
             )
 
             if user_has_conflicting_reservations:
