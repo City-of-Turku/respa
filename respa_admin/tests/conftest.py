@@ -220,7 +220,7 @@ def test_unit_form_data(test_unit, empty_unit_form_data, empty_period_form_data,
         'municipality': municipality.pk,
         'name': test_unit.name or '',
         'phone': test_unit.phone or '',
-        'street_address': test_unit.street_address or '',
+        'street_address_fi': test_unit.street_address_fi or 'Some street',
         'www_url': test_unit.www_url or '',
     })
     empty_unit_form_data.update(empty_period_form_data)
