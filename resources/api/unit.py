@@ -146,7 +146,9 @@ class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer):
                     not has_permission(user, 'resources.view_unit')):
                         del ret['created_by']
                         del ret['modified_by']
-
+        if 'street_address' in ret:
+            if isinstance(ret['street_address'], dict) and not ret['street_address']:
+                ret['street_address'] = None
         return ret
 
     

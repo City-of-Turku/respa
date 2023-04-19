@@ -152,6 +152,7 @@ class UnitEditView(ExtraContextMixin, PeriodMixin, CreateView):
                 period_formset_with_days=period_formset_with_days,
                 trans_fields=trans_fields,
                 page_headline=_('Edit Unit'),
+                IS_UNIT_PAGE=True
             )
         )
 

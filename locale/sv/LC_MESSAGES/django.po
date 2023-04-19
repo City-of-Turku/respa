@@ -1313,7 +1313,7 @@ msgstr "Tidsintervall"
 msgid "Remove time period"
 msgstr "Ta bort tidsperiod"
 
-msgid "Tarkista seuraavat virheet"
+msgid "Check the following errors"
 msgstr "Kontrollera följande fel"
 
 msgid "Choose image"

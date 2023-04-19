@@ -1832,7 +1832,7 @@ msgid "Remove time period"
 msgstr ""
 
 #: respa_admin/templates/respa_admin/forms/_form_errors.html:5
-msgid "Tarkista seuraavat virheet"
+msgid "Check the following errors"
 msgstr ""
 
 #: respa_admin/templates/respa_admin/forms/_image.html:7

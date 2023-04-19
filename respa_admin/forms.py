@@ -386,6 +386,10 @@ class UnitForm(forms.ModelForm):
         label='Nimi [fi]',
     )
 
+    street_address_fi = forms.CharField(
+        required=True,
+        label=f"{_('Street address')} [fi]"
+    )
     class Meta:
         model = Unit
 

@@ -46,7 +46,7 @@ def user_has_permission(user, permission, obj):
 
 @register.filter
 def is_truthy(collection):
-    return any([bool(value) for value in collection])
+    return any([bool(value) for value in collection or []])
 
 
 @register.filter
