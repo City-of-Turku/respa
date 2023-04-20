@@ -149,6 +149,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
             'fields': (
                 'is_external',
                 'public', 'reservable',
+                'reservable_by_all_staff',
                 'name', 'description',
                 'authentication',
                 'min_age', 'max_age',

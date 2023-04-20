@@ -538,6 +538,14 @@ class Reservation(ModifiableModel):
 
             if self.user and self.user.is_staff:
                 context['staff_name'] = self.user.get_display_name()
+            
+            # Comments should only be added to notifications that are sent to staff.
+            if notification_type in [NotificationType.RESERVATION_CREATED_OFFICIAL] and self.comments:
+                context['comments'] = self.comments
+
+            # Generic 'additional information' value
+            if self.resource.reservation_additional_information:
+                context['additional_information'] = self.resource.reservation_additional_information
 
             if notification_type in [NotificationType.RESERVATION_CONFIRMED, NotificationType.RESERVATION_CREATED]:
                 if self.resource.reservation_confirmed_notification_extra:
@@ -793,8 +801,11 @@ class Reservation(ModifiableModel):
 
     def notify_staff_about_reservation(self, notification):
         if self.resource.resource_staff_emails:
+            reservations = [self]
+            ical_file = build_reservations_ical_file(reservations)
+            attachment = ('reservation.icss', ical_file, 'text/calendar')
             for email in self.resource.resource_staff_emails:
-                self.send_reservation_mail(notification, staff_email=email)
+                self.send_reservation_mail(notification, staff_email=email, attachments=[attachment])
         else:
             notify_users = self.resource.get_users_with_perm('can_approve_reservation')
             if len(notify_users) > 100:
@@ -809,6 +820,9 @@ class Reservation(ModifiableModel):
     def send_reservation_modified_mail(self, action_by_official=False):
         notification = NotificationType.RESERVATION_MODIFIED_BY_OFFICIAL if action_by_official else NotificationType.RESERVATION_MODIFIED
         self.send_reservation_mail(notification, action_by_official=action_by_official)
+        if action_by_official:
+            # staff should also get notification with the updated reservations details.
+            self.notify_staff_about_reservation(NotificationType.RESERVATION_MODIFIED_OFFICIAL)
 
     def send_reservation_denied_mail(self):
         self.send_reservation_mail(NotificationType.RESERVATION_DENIED)

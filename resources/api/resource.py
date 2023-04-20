@@ -614,6 +614,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     min_price_per_hour = serializers.SerializerMethodField()
     resource_staff_emails = ResourceStaffEmailsField()
     universal_field = ResourceUniversalFieldSerializer(many=True, read_only=True, source='resource_universal_field')
+    reservable_by_all_staff = serializers.BooleanField(required=False)
 
     def get_max_price_per_hour(self, obj):
         """Backwards compatibility for 'max_price_per_hour' field that is now deprecated"""
@@ -660,8 +661,10 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
         if request:
             user = prefetched_user or request.user
 
+        can_make_reservations_for_customers = obj.can_create_reservations_for_other_users(user) if request else False
         return {
             'can_make_reservations': obj.can_make_reservations(user) if request else False,
+            **({'can_make_reservations_for_customer': can_make_reservations_for_customers} if (request and can_make_reservations_for_customers) else {}),
             'can_ignore_opening_hours': obj.can_ignore_opening_hours(user) if request else False,
             'is_admin': obj.is_admin(user) if request else False,
             'is_manager': obj.is_manager(user) if request else False,

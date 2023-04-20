@@ -59,7 +59,7 @@ def user_with_permissions():
 
 
 def _check_permissions_dict(api_client, resource, is_admin, is_manager, is_viewer, can_make_reservations,
-                            can_ignore_opening_hours, can_bypass_payment):
+                            can_ignore_opening_hours, can_bypass_payment, can_create_reservations_for_other_users = False):
     """
     Check that user permissions returned from resource endpoint contain correct values
     for given user and resource. api_client should have the user authenticated.
@@ -70,7 +70,14 @@ def _check_permissions_dict(api_client, resource, is_admin, is_manager, is_viewe
     print(response.data)
     assert response.status_code == 200
     permissions = response.data['user_permissions']
-    assert len(permissions) == 6
+    
+    if can_create_reservations_for_other_users:
+        # exists and is True if user is staff for the resource
+        # OR the user is staff and the resource has reservable_by_all_staff set to True
+        assert len(permissions) == 7
+        assert permissions['can_make_reservations_for_customer'] == can_create_reservations_for_other_users
+    else:
+        assert len(permissions) == 6
     assert permissions['is_admin'] == is_admin
     assert permissions['is_manager'] == is_manager
     assert permissions['is_viewer'] == is_viewer
@@ -112,7 +119,7 @@ def test_user_permissions_in_resource_endpoint(api_client, resource_in_unit, use
     api_client.force_authenticate(user=user)
     _check_permissions_dict(api_client, resource_in_unit, is_admin=True, is_manager=False,
                             is_viewer=False, can_make_reservations=True, can_ignore_opening_hours=True,
-                            can_bypass_payment=True)
+                            can_bypass_payment=True, can_create_reservations_for_other_users=True)
     user.is_general_admin = False
     user.save()
 
@@ -159,7 +166,7 @@ def test_user_permissions_in_resource_endpoint(api_client, resource_in_unit, use
     api_client.force_authenticate(user=user)
     _check_permissions_dict(api_client, resource_in_unit, is_admin=True, is_manager=False,
                             is_viewer=False, can_make_reservations=True,can_ignore_opening_hours=True,
-                            can_bypass_payment=True)
+                            can_bypass_payment=True, can_create_reservations_for_other_users=True)
     user.unit_authorizations.all().delete()
 
     # unit managers can ignore opening hours
@@ -172,7 +179,7 @@ def test_user_permissions_in_resource_endpoint(api_client, resource_in_unit, use
     api_client.force_authenticate(user=user)
     _check_permissions_dict(api_client, resource_in_unit, is_admin=False, is_manager=True,
                             is_viewer=False, can_make_reservations=True, can_ignore_opening_hours=True,
-                            can_bypass_payment=True)
+                            can_bypass_payment=True, can_create_reservations_for_other_users=True)
     user.unit_authorizations.all().delete()
 
     # unit viewer
@@ -1194,3 +1201,67 @@ def test_api_soft_delete_and_restore_resource(
     response = staff_api_client.post('%srestore/' % list_url, data={'id': pk})
     assert response.status_code == 200
     assert Resource.objects.filter(pk=pk).count() == 1
+
+
+@pytest.mark.django_db
+def test_user_permissions_external_resources(api_client, resource_in_unit, user, resource_in_unit2, resource_in_unit3):
+    api_client.force_authenticate(user=user)
+    resource_in_unit2.reservable_by_all_staff = True
+    # resource_in_unit2.save()
+    resource_in_unit2.save(update_fields=['reservable_by_all_staff'])
+
+    # unit admins can create reservations for customers on resources that have reservable_by_all_staff set to True.
+    # user is admin for resource_in_unit
+    user.unit_authorizations.create(
+        authorized=user,
+        level=UnitAuthorizationLevel.admin,
+        subject=resource_in_unit.unit
+    )
+    user.is_staff = True
+    user.save()
+    api_client.force_authenticate(user=user)
+    # can_create_reservations_for_other_users should be True for resource_in_unit2
+    _check_permissions_dict(api_client, resource_in_unit2, is_admin=False, is_manager=False,
+                            is_viewer=False, can_make_reservations=True,can_ignore_opening_hours=False,
+                            can_bypass_payment=False, can_create_reservations_for_other_users=True)
+    # can_create_reservations_for_other_users should be False for resource_in_unit3
+    _check_permissions_dict(api_client, resource_in_unit3, is_admin=False, is_manager=False,
+                            is_viewer=False, can_make_reservations=True,can_ignore_opening_hours=False,
+                            can_bypass_payment=False, can_create_reservations_for_other_users=False)
+    user.unit_authorizations.all().delete()
+
+    # unit managers can create reservations for customers on resources that have reservable_by_all_staff set to True.
+    user.unit_authorizations.create(
+        authorized=user,
+        level=UnitAuthorizationLevel.manager,
+        subject=resource_in_unit.unit
+    )
+    user.save()
+    api_client.force_authenticate(user=user)
+    # can_create_reservations_for_other_users should be True for resource_in_unit2
+    _check_permissions_dict(api_client, resource_in_unit2, is_admin=False, is_manager=False,
+                            is_viewer=False, can_make_reservations=True, can_ignore_opening_hours=False,
+                            can_bypass_payment=False, can_create_reservations_for_other_users=True)
+    # can_create_reservations_for_other_users should be False for resource_in_unit3
+    _check_permissions_dict(api_client, resource_in_unit3, is_admin=False, is_manager=False,
+                            is_viewer=False, can_make_reservations=True, can_ignore_opening_hours=False,
+                            can_bypass_payment=False, can_create_reservations_for_other_users=False)
+
+    user.unit_authorizations.all().delete()
+
+    # unit viewer can create reservations for customers on resources that have reservable_by_all_staff set to True.
+    user.unit_authorizations.create(
+        authorized=user,
+        level=UnitAuthorizationLevel.viewer,
+        subject=resource_in_unit.unit
+    )
+    user.save()
+    api_client.force_authenticate(user=user)
+    # can_create_reservations_for_other_users should be True for resource_in_unit2
+    _check_permissions_dict(api_client, resource_in_unit2, is_admin=False, is_manager=False,
+                            is_viewer=False, can_make_reservations=True, can_ignore_opening_hours=False,
+                            can_bypass_payment=False, can_create_reservations_for_other_users=True)
+    # can_create_reservations_for_other_users should be False for resource_in_unit3
+    _check_permissions_dict(api_client, resource_in_unit3, is_admin=False, is_manager=False,
+                            is_viewer=False, can_make_reservations=True, can_ignore_opening_hours=False,
+                            can_bypass_payment=False, can_create_reservations_for_other_users=False)

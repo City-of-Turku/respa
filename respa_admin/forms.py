@@ -314,7 +314,8 @@ class ResourceForm(forms.ModelForm):
             'reservation_home_municipality_set',
             'resource_tags',
             'payment_requested_waiting_time',
-            'cash_payments_allowed'
+            'cash_payments_allowed',
+            'reservable_by_all_staff'
         ] + translated_fields
 
         widgets = {
@@ -342,6 +343,9 @@ class ResourceForm(forms.ModelForm):
                 choices=((False, _('Can not be reserved')), (True, _('Bookable')))
             ),
             'cash_payments_allowed': RespaRadioSelect(
+                choices=((True, _('Yes')), (False, _('No')))
+            ),
+            'reservable_by_all_staff': RespaRadioSelect(
                 choices=((True, _('Yes')), (False, _('No')))
             ),
         }

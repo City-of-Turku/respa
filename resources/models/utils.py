@@ -19,7 +19,7 @@ from django.utils.translation import gettext, ngettext, gettext_lazy as _
 from django.utils import timezone
 from django.utils.timezone import localtime
 from rest_framework.reverse import reverse
-from icalendar import Calendar, Event, vDatetime, vText, vGeo
+from icalendar import Calendar, Event, vDatetime, vText, vGeo, vCalAddress
 from modeltranslation.translator import NotRegistered, translator
 
 import xlsxwriter
@@ -371,6 +371,8 @@ def build_reservations_ical_file(reservations):
     """
 
     cal = Calendar()
+    cal.add('prodid', '-//Varaamo Turku//')
+    cal.add('version', '2.0')
     for reservation in reservations:
         event = Event()
         begin_utc = timezone.localtime(reservation.begin, timezone.utc)
@@ -378,11 +380,37 @@ def build_reservations_ical_file(reservations):
         event['uid'] = 'respa_reservation_{}'.format(reservation.id)
         event['dtstart'] = vDatetime(begin_utc)
         event['dtend'] = vDatetime(end_utc)
+        if reservation.created_at:
+            event['dtstamp'] = vDatetime(reservation.created_at)
         unit = reservation.resource.unit
         event['location'] = vText('{} {} {}'.format(unit.name, unit.street_address, unit.address_zip))
         if unit.location:
             event['geo'] = vGeo(unit.location)
         event['summary'] = vText('{} {}'.format(unit.name, reservation.resource.name))
+        universal_data = getattr(reservation, 'universal_data', None)
+        description_text = None
+
+        if universal_data:
+            # reservation contains universal_data
+            selected_option = universal_data.get('selected_option')
+            universal_field =universal_data.get('field')
+            if selected_option and universal_field:
+                selected_values = [x['text'] for x in universal_field.get('options') if x['id'] == int(selected_option)]
+                description_text = '{}: {}'.format(universal_field.get('label'), selected_values[0])
+
+        if description_text is not None:
+            if reservation.comments:
+                event['description'] = vText('{}, {}, {}'.format(reservation.reserver_name, description_text, reservation.comments))
+            else:
+                event['description'] = vText('{}, {}'.format(reservation.reserver_name, description_text))
+        else:
+            event['description'] = vText('{}'.format(reservation.reserver_name))
+            
+        if reservation.reserver_email_address:
+            attendee = vCalAddress(f'MAILTO:{reservation.reserver_email_address}')
+            attendee.params['cn'] = vText(reservation.reserver_name)
+            event.add('attendee', attendee, encode=0)
+
         cal.add_component(event)
     return cal.to_ical()
 

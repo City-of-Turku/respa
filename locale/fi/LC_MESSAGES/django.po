@@ -2141,3 +2141,9 @@ msgstr "Suomi.fi asiointipalveluun yhdistetyt resurssit"
 
 msgid "Limitation for calculating usage volume"
 msgstr "Käyttömäärien laskennan rajaukset"
+
+msgid "Resource is reservable by all staff users"
+msgstr "Toisten toimipisteiden virkailijat pystyvät tekemään varauksia asiakkaan puolesta"
+
+msgid "All staff users can create reservations on behalf of customers"
+msgstr "Kaikki virkailijat (toimipisteestä huolimatta) pystyvät tekemään varauksia asiakkaan puolesta."

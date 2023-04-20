@@ -2079,3 +2079,9 @@ msgstr "Suomi.fi transaktionstjänster länkad resurser"
 
 msgid "Limitation for calculating usage volume"
 msgstr "Gränser för beräkning av användningsmängder"
+
+msgid "Resource is reservable by all staff users"
+msgstr "Personal från andra enheter kan göra bokningar för kunder"
+
+msgid "All staff users can create reservations on behalf of customers"
+msgstr "Alla personalkonton (oberoende av enhet) kan göra bokningar för kunder i denna resurs."

@@ -2764,3 +2764,9 @@ msgstr ""
 
 msgid "Limitation for calculating usage volume"
 msgstr ""
+
+msgid "Resource is reservable by all staff users"
+msgstr "Staff users of other units can create reservations for customers"
+
+msgid "All staff users can create reservations on behalf of customers"
+msgstr "System-wide setting that allows all staff users (regardless of unit) to create reservations on behalf of customers on this resource."

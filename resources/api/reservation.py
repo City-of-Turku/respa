@@ -264,6 +264,12 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         reservation = self.instance
         request_user = self.context['request'].user
         # this check is probably only needed for PATCH
+
+        obj_user_is_staff = bool(request_user and request_user.is_staff)
+        action_by_official = False
+        if 'reserver_email_address' in data and request_user.email:
+            action_by_official = obj_user_is_staff and data['reserver_email_address'] != request_user.email
+
         try:
             resource = data['resource']
         except KeyError:
@@ -347,8 +353,10 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
                 raise ValidationError({'type': _('You are not allowed to make a reservation of this type')})
 
         if 'comments' in data:
-            if not resource.can_comment_reservations(request_user):
-                raise ValidationError(dict(comments=_('Only allowed to be set by staff members')))
+            perm_skip = obj_user_is_staff is True and action_by_official is True
+            if perm_skip is False:
+                if not resource.can_comment_reservations(request_user):
+                    raise ValidationError(dict(comments=_('Only allowed to be set by staff members')))
 
         if 'takes_place_virtually' in data:
             if not resource.can_create_staff_event(request_user):
