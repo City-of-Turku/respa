@@ -469,8 +469,16 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
                 'require_workstation': instance.require_workstation,
             })
 
+        # true if user is not admin, manager or viewer for the resource.
         if not resource.can_access_reservation_comments(user):
-            del data['comments']
+            insufficient_rights = [
+                not user.is_staff and not resource.reservable_by_all_staff,
+                user.is_staff and not resource.reservable_by_all_staff,
+                not user.is_staff and resource.reservable_by_all_staff,
+                instance.user != user
+            ]
+            if any(insufficient_rights):
+                del data['comments']
 
         if not resource.can_view_reservation_user(user):
             del data['user']
