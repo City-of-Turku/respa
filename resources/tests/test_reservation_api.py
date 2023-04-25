@@ -496,6 +496,66 @@ def test_comments_can_be_created_by_correct_people_when_resource_sets_is_reserva
     if response.status_code == 201:
         assert response.data['comments'] == test_comment
 
+@pytest.mark.parametrize('user_fixture, expected_status_post, expected_status_put ', [
+    (None, 401, 400),
+    ('user', 400, 400),
+    ('user2', 201, 200),
+    ('staff_user', 201, 200),
+    ('unit4_manager_user', 201, 200),
+])
+
+@pytest.mark.django_db
+def test_comments_can_be_updated_by_correct_people_when_resource_sets_is_reservable_by_all(
+        api_client, list_url, resource_in_unit, resource_in_unit3, reservation_data, user_fixture, expected_status_post, expected_status_put,
+        user, user2, staff_user, unit4_manager_user):
+    """
+    Tests that only staff users that have rights to some unit, can create and update
+    reservations that they've created for customers to a resource where reservable_by_all_staff is True.
+    """
+    # update resource metadata_set to include these fields.
+    field_1 = ReservationMetadataField.objects.get(field_name='reserver_name')
+    field_2 = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    field_3 = ReservationMetadataField.objects.get(field_name='reserver_email_address')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='updated_metadata',
+    )
+    metadata_set.supported_fields.set([field_1, field_2, field_3])
+    resource_in_unit.reservation_metadata_set = ReservationMetadataSet.objects.get(name='updated_metadata')
+    resource_in_unit.reservable_by_all_staff = True
+    resource_in_unit.save()
+    # create initial reservation
+    reservation_data.update({
+        'comments': 'test comment abc',
+        'reserver_email_address': 'test.reserver@test.com',
+        'reserver_name': 'Veikko Varaaja'
+    })
+    
+    if user_fixture:
+        test_user = locals().get(user_fixture)
+        if test_user == user2:
+            # user2 is an admin in another unit.
+            UnitAuthorization.objects.create(
+                subject=resource_in_unit3.unit, level=UnitAuthorizationLevel.admin, authorized=test_user)
+            test_user.is_staff = True
+            test_user.save()
+
+        api_client.force_authenticate(test_user)
+
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == expected_status_post
+    if response.status_code is 201:
+        reservation = Reservation.objects.filter(user=test_user).first()
+        updated_comment = 'updated comment text'
+        # update comment
+        reservation_data.update({
+            'comments': updated_comment
+        })
+        detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+        response = api_client.put(detail_url, data=reservation_data, format='json')
+        assert response.status_code == expected_status_put
+        if response.status_code == 200:
+            assert response.data['comments'] == updated_comment
+
 @pytest.mark.django_db
 def test_anon_and_other_users_cannot_see_virtual_event_data(api_client, reservation, user2):
     """
