@@ -803,7 +803,7 @@ class Reservation(ModifiableModel):
         if self.resource.resource_staff_emails:
             reservations = [self]
             ical_file = build_reservations_ical_file(reservations)
-            attachment = ('reservation.icss', ical_file, 'text/calendar')
+            attachment = ('reservation.ics', ical_file, 'text/calendar')
             for email in self.resource.resource_staff_emails:
                 self.send_reservation_mail(notification, staff_email=email, attachments=[attachment])
         else:
