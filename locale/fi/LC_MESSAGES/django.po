@@ -2147,3 +2147,6 @@ msgstr "Toisten toimipisteiden virkailijat pystyvät tekemään varauksia asiakk
 
 msgid "All staff users can create reservations on behalf of customers"
 msgstr "Kaikki virkailijat (toimipisteestä huolimatta) pystyvät tekemään varauksia asiakkaan puolesta."
+
+msgid "This rule does not apply for unauthenticated users"
+msgstr "Tämä sääntö ei koske käyttäjiä, jotka eivät ole kirjautuneet sisään"

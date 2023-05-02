@@ -6,6 +6,7 @@ import pytz
 from django.utils import timezone
 import django.contrib.postgres.fields as pgfields
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.gis.db import models
 from django.utils import translation
 from django.utils.timezone import now
@@ -437,7 +438,8 @@ class Reservation(ModifiableModel):
         # Check if Unit has disallow_overlapping_reservations value of True
         if (
             self.resource.unit.disallow_overlapping_reservations and not
-            self.resource.can_create_overlapping_reservations(user)
+            self.resource.can_create_overlapping_reservations(user) and not
+            isinstance(user, AnonymousUser)
         ):
             if self.resource.unit.disallow_overlapping_reservations_per_user:
                 reservations_for_same_unit = Reservation.objects.filter(user=user, resource__unit=self.resource.unit)
@@ -538,7 +540,7 @@ class Reservation(ModifiableModel):
 
             if self.user and self.user.is_staff:
                 context['staff_name'] = self.user.get_display_name()
-            
+
             # Comments should only be added to notifications that are sent to staff.
             if notification_type in [NotificationType.RESERVATION_CREATED_OFFICIAL] and self.comments:
                 context['comments'] = self.comments

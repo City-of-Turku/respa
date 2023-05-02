@@ -469,7 +469,7 @@ def test_comments_can_be_created_by_correct_people_when_resource_sets_is_reserva
     resource_in_unit.reservation_metadata_set = ReservationMetadataSet.objects.get(name='updated_metadata')
     resource_in_unit.reservable_by_all_staff = True
     resource_in_unit.save()
-    
+
 
     test_comment = 'test comment abc'
     reservation_data.update({
@@ -477,7 +477,7 @@ def test_comments_can_be_created_by_correct_people_when_resource_sets_is_reserva
         'reserver_email_address': 'test.reserver@test.com',
         'reserver_name': 'Veikko Varaaja'
     })
-    
+
     if user_fixture:
         test_user = locals().get(user_fixture)
         if test_user == user2:
@@ -529,7 +529,7 @@ def test_comments_can_be_updated_by_correct_people_when_resource_sets_is_reserva
         'reserver_email_address': 'test.reserver@test.com',
         'reserver_name': 'Veikko Varaaja'
     })
-    
+
     if user_fixture:
         test_user = locals().get(user_fixture)
         if test_user == user2:
@@ -3022,6 +3022,23 @@ def test_reservations_made_to_unit_with_per_user_overlap_restriction(
     assert response.status_code == expected
     if expected == 400:
         assert response.data.get('non_field_errors')[0].code == 'conflicting_reservation'
+
+
+@pytest.mark.django_db
+def test_reservation_can_be_made_to_unit_with_per_user_overlap_restriction_and_anon_user(
+    api_client, reservation_data, list_url, test_unit4, resource_in_unit4_2, reservation4
+):
+    """Tests that anon users can bypass per user overlap restriction"""
+    test_unit4.disallow_overlapping_reservations_per_user = True
+    test_unit4.save()
+    resource_in_unit4_2.authentication = 'unauthenticated'
+    resource_in_unit4_2.save()
+
+    reservation_data['resource'] = resource_in_unit4_2.pk
+    reservation_data['begin'] = '2115-04-04T09:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T10:00:00+02:00'
+    response = api_client.post(list_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == 201
 
 
 @pytest.mark.django_db

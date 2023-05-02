@@ -117,6 +117,7 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
     )
     disallow_overlapping_reservations_per_user = models.BooleanField(
         verbose_name=_('Disallow overlapping reservations in this unit only for the same user.'),
+        help_text=_('This rule does not apply for unauthenticated users'),
         default=False,
     )
 
@@ -211,7 +212,7 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
         unit_auth = self.authorizations.create(authorized=user, level=level)
         unit_auth._ensure_lower_auth()
         return unit_auth
-    
+
 
 class UnitAuthorizationQuerySet(models.QuerySet):
     def for_user(self, user):
@@ -231,10 +232,10 @@ class UnitAuthorizationQuerySet(models.QuerySet):
             UnitAuthorizationLevel.admin,
             UnitAuthorizationLevel.manager,
         })
-    
+
     def highest_per_user(self):
         return self.filter(id__in=[
-            max(self.filter(authorized=user)).id 
+            max(self.filter(authorized=user)).id
             for user in self.values_list('authorized', flat=True).distinct()
         ])
 
@@ -274,7 +275,7 @@ class UnitAuthorization(models.Model):
     def __le__(self, other):
         return self.level <= other.level
 
-    
+
     def _ensure_lower_auth(self):
         """
         Ensure that the user also has permission levels lower than the given one.
@@ -288,7 +289,7 @@ class UnitAuthorization(models.Model):
             highest = max(auths)
             for level in highest.level.below():
                 UnitAuthorization.objects.get_or_create(authorized=self.authorized, subject=self.subject, level=level)
-            
+
 
 
 class UnitIdentifier(models.Model):

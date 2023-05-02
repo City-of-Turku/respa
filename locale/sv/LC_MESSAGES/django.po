@@ -2085,3 +2085,6 @@ msgstr "Personal från andra enheter kan göra bokningar för kunder"
 
 msgid "All staff users can create reservations on behalf of customers"
 msgstr "Alla personalkonton (oberoende av enhet) kan göra bokningar för kunder i denna resurs."
+
+msgid "This rule does not apply for unauthenticated users"
+msgstr "Denna regel gäller inte för oautentiserade användare"
