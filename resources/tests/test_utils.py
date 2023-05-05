@@ -2,7 +2,7 @@ import datetime
 import pytest
 from django.conf import settings
 from django.test.utils import override_settings
-from resources.models.utils import get_payment_requested_waiting_time
+from resources.models.utils import get_payment_requested_waiting_time, is_reservation_metadata_or_times_different
 
 from resources.models import Reservation, Resource, Unit
 from payments.models import Product, Order
@@ -76,6 +76,17 @@ def get_reservation_data(user):
     }
 
 @pytest.fixture
+def get_reservation_extradata(get_reservation_data):
+    data_with_extra = get_reservation_data
+    data_with_extra.update({
+        'reserver_name': 'Test Tester',
+        'reserver_email_address': 'test.tester@service.com',
+        'reserver_phone_number': '+358404040404',
+    })
+    return data_with_extra
+
+
+@pytest.fixture
 def reservation_resource_waiting_time(resource_resource_waiting_time, get_reservation_data):
     '''
     Reservation for test where the resource waiting_time is used.
@@ -108,6 +119,16 @@ def reservation_env_waiting_time(resource_env_waiting_time, get_reservation_data
         reserver_name='name_time_from_env',
         **get_reservation_data
     )
+
+
+@pytest.fixture
+def reservation_basic(resource_with_metadata, get_reservation_data):
+    return Reservation.objects.create(
+        resource=resource_with_metadata,
+        reserver_name='basic reserver',
+        **get_reservation_data
+    )
+
 
 @pytest.fixture
 def get_order_data():
@@ -163,7 +184,7 @@ def test_returns_waiting_time_from_resource(reservation_resource_waiting_time, o
     '''
     reservation = Reservation.objects.get(reserver_name='name_time_from_resource')
     return_value = get_payment_requested_waiting_time(reservation)
-    
+
     expected_value = calculate_times(reservation=reservation, waiting_time=reservation.resource.payment_requested_waiting_time)
     assert return_value == expected_value
 
@@ -175,7 +196,7 @@ def test_return_waiting_time_from_unit(reservation_unit_waiting_time, order_unit
     '''
     reservation = Reservation.objects.get(reserver_name='name_time_from_unit')
     return_value = get_payment_requested_waiting_time(reservation)
-    
+
     expected_value = calculate_times(reservation=reservation, waiting_time=reservation.resource.unit.payment_requested_waiting_time)
     assert return_value == expected_value
 
@@ -184,10 +205,44 @@ def test_return_waiting_time_from_unit(reservation_unit_waiting_time, order_unit
 @override_settings(RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME=6)
 def test_return_waiting_time_from_env(reservation_env_waiting_time, order_env_waiting_time):
     '''
-    Environment variable is used when neither the resource or the unit have a waiting_time. 
+    Environment variable is used when neither the resource or the unit have a waiting_time.
     '''
     reservation = Reservation.objects.get(reserver_name='name_time_from_env')
     return_value = get_payment_requested_waiting_time(reservation)
-    
+
     expected_value = calculate_times(reservation=reservation, waiting_time=settings.RESPA_PAYMENTS_PAYMENT_REQUESTED_WAITING_TIME)
     assert return_value == expected_value
+
+
+@pytest.mark.django_db
+def test_is_reservation_metadata_or_times_different_when_meta_changes(resource_with_metadata, get_reservation_extradata):
+    '''
+    Tests that the function returns True when the metadata changes.
+    '''
+    reservation_a = Reservation.objects.create(resource=resource_with_metadata, **get_reservation_extradata)
+    new_data = {'reserver_name': 'new name'}
+    updated_extradata = {**get_reservation_extradata, **new_data}
+    reservation_b = Reservation.objects.create(resource=resource_with_metadata, **updated_extradata)
+    assert is_reservation_metadata_or_times_different(reservation_a, reservation_b) == True
+
+
+@pytest.mark.django_db
+def test_is_reservation_metadata_or_times_different_when_time_changes(resource_with_metadata, get_reservation_extradata):
+    '''
+    Tests that the function returns True when a time changes.
+    '''
+    reservation_a = Reservation.objects.create(resource=resource_with_metadata, **get_reservation_extradata)
+    new_data = {'end': '2022-02-02T14:30:00+02:00'}
+    updated_extradata = {**get_reservation_extradata, **new_data}
+    reservation_b = Reservation.objects.create(resource=resource_with_metadata, **updated_extradata)
+    assert is_reservation_metadata_or_times_different(reservation_a, reservation_b) == True
+
+
+@pytest.mark.django_db
+def test_is_reservation_metadata_or_times_different_when_no_changes(resource_with_metadata, get_reservation_extradata):
+    '''
+    Tests that the function returns False when there are no changes.
+    '''
+    reservation_a = Reservation.objects.create(resource=resource_with_metadata, **get_reservation_extradata)
+    reservation_b = Reservation.objects.create(resource=resource_with_metadata, **get_reservation_extradata)
+    assert is_reservation_metadata_or_times_different(reservation_a, reservation_b) == False

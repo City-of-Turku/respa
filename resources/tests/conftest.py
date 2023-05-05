@@ -11,6 +11,7 @@ from resources.models import Resource, ResourceType, Unit, Purpose, Day, Period
 from resources.models import Equipment, EquipmentAlias, ResourceEquipment, EquipmentCategory, TermsOfUse, ResourceGroup
 from resources.models import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility, UnitAccessibility, MaintenanceMessage
 from resources.models import ResourceUniversalFormOption, ResourceUniversalField, UniversalFormFieldType
+from resources.models import ReservationMetadataSet, ReservationMetadataField
 from munigeo.models import Municipality
 
 
@@ -105,6 +106,30 @@ def payment_terms():
         text_fi='kaikki on maksullista',
         text_en='everything is chargeable',
         terms_type=TermsOfUse.TERMS_TYPE_PAYMENT
+    )
+
+@pytest.fixture
+def metadataset_1():
+    name_field = ReservationMetadataField.objects.get(field_name='reserver_name')
+    email_field = ReservationMetadataField.objects.get(field_name='reserver_email_address')
+    phone_field = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='test_metadataset_1',
+        )
+    metadata_set.supported_fields.set([name_field, email_field, phone_field])
+    return metadata_set
+
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_with_metadata(space_resource_type, metadataset_1, test_unit):
+    return Resource.objects.create(
+        type=space_resource_type,
+        authentication="none",
+        name="resource with metadata",
+        reservation_metadata_set=metadataset_1,
+        unit=test_unit,
+        reservable=True,
     )
 
 

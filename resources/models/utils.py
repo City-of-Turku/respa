@@ -222,7 +222,7 @@ def generate_reservation_xlsx(reservations, **kwargs):
                 if resource not in resource_usage_info:
                     resource_usage_info[resource] = {'total_opening_hours': 0, 'total_reservation_hours': 0}
                 resource_usage_info[resource]['total_opening_hours'] += (closes[1] - opens[1]).total_seconds() / 3600
-    
+
     date_format = workbook.add_format({'num_format': 'dd.mm.yyyy hh:mm', 'align': 'left'})
     total_reservation_hours = 0
     row = 0
@@ -405,7 +405,7 @@ def build_reservations_ical_file(reservations):
                 event['description'] = vText('{}, {}'.format(reservation.reserver_name, description_text))
         else:
             event['description'] = vText('{}'.format(reservation.reserver_name))
-            
+
         if reservation.reserver_email_address:
             attendee = vCalAddress(f'MAILTO:{reservation.reserver_email_address}')
             attendee.params['cn'] = vText(reservation.reserver_name)
@@ -479,7 +479,7 @@ def get_order_quantity(item):
         return float(quantity)
 
     return float(item["quantity"])
-  
+
 
 def get_order_tax_price(item):
     '''
@@ -495,13 +495,13 @@ def get_order_tax_price(item):
         if item["product"]["type"] != "rent":
             # Use the precalculated tax price if type is not 'rent'
             return float(item["reservation_tax_price"])
-        
+
         quantity = float(item["unit_price"].replace(',','.')) / float(item["product"]["price"].replace(',','.'))
         if quantity > 1:
             return float(item["product"]["tax_price"].replace(',','.'))
 
     return float(item["reservation_tax_price"])
-  
+
 
 def get_order_pretax_price(item):
     '''
@@ -517,7 +517,7 @@ def get_order_pretax_price(item):
         quantity = float(item["unit_price"].replace(',','.')) / float(item["product"]["price"].replace(',','.'))
         if quantity < 1 or item["product"]["type"] != "rent":
             return float(item['reservation_pretax_price'])
-            
+
         return float(item["product"]["pretax_price"].replace(',','.'))
 
     return float(item['reservation_pretax_price'])
@@ -587,7 +587,7 @@ def calculate_final_product_sums(product: dict, quantity: int = 1):
         taxfree_price += x['taxfree_price_total']
 
     tax_total = quantity * tax_raw
-    
+
     return {
         'product_tax_total': tax_total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
         'product_taxfree_total': taxfree_price * quantity
@@ -607,7 +607,7 @@ def calculate_final_order_sums(all_products):
     '''
     # contains order totals using the new taxfree values
     order_totals = {'order_taxfree_total': Decimal('0.0'), 'order_tax_total': {}, 'order_total': Decimal('0.0')}
-    # iterate through each unique tax % found 
+    # iterate through each unique tax % found
     for perc in list(set(x['tax_percentage'] for x in all_products)):
         # list containing products with tax_percentage == perc
         perc_products = filter(lambda seq: product_has_given_tax_percentage(seq, perc), all_products)
@@ -633,7 +633,7 @@ def calculate_final_order_sums(all_products):
         # rounded version of the VAT total
         rounded_vat_amount_value = exact_vat_amount_value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-        # add the total rounded VAT value to the orders tax_total 
+        # add the total rounded VAT value to the orders tax_total
         order_totals['order_tax_total'][perc] = rounded_vat_amount_value
 
         # add total rounded VAT value for this VAT to the orders total.
@@ -649,5 +649,20 @@ def product_has_given_tax_percentage(product, percentage):
     '''
     if product['tax_percentage'] == percentage:
         return True
-    
+
+    return False
+
+
+def is_reservation_metadata_or_times_different(old_reservation, new_reservation) -> bool:
+    '''
+    Return True if metadata fields or reservation begin or end changed
+    '''
+    field_names = new_reservation.resource.get_supported_reservation_extra_field_names()
+    for field_name in field_names:
+        if hasattr(old_reservation, field_name) and getattr(old_reservation, field_name) != getattr(new_reservation, field_name):
+            return True
+
+    if old_reservation.end != new_reservation.end or old_reservation.begin != new_reservation.begin:
+        return True
+
     return False

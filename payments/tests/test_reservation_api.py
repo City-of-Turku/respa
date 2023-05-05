@@ -401,7 +401,7 @@ def test_cash_paid_reservation_process_flow_works_correctly(
     )
 
     # user updates their reservation
-    reservation_data.update({'reserver_name': 'Test Tester'})
+    reservation_data.update({'end': '2115-04-04T12:30:00+02:00'})
     response = user_api_client.put(get_detail_url(new_reservation), reservation_data)
     assert response.status_code == 200
     assert response.data['state'] == Reservation.REQUESTED

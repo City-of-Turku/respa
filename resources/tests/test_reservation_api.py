@@ -203,6 +203,30 @@ def reservation_created_notification():
         )
 
 
+@pytest.fixture
+def reservation_modified_by_official_notification():
+    with translation.override('en'):
+        return NotificationTemplate.objects.create(
+            type=NotificationType.RESERVATION_MODIFIED_BY_OFFICIAL,
+            is_default_template=True,
+            short_message='reservation modified by official short message.',
+            subject='reservation modified by official subject.',
+            body='reservation modified by official body.',
+        )
+
+
+@pytest.fixture
+def reservation_modified_notification():
+    with translation.override('en'):
+        return NotificationTemplate.objects.create(
+            type=NotificationType.RESERVATION_MODIFIED,
+            is_default_template=True,
+            short_message='reservation modified short message.',
+            subject='reservation modified subject.',
+            body='reservation modified body.',
+        )
+
+
 @pytest.mark.django_db
 def test_disallowed_methods(all_user_types_api_client, list_url):
     """
@@ -1747,6 +1771,43 @@ def test_reservation_mail_images(user_api_client, user, list_url, reservation_da
         'image url: https://foo.bar/baz/resource_image/{}'.format(main_image.id),
         html_body='image: <img src="https://foo.bar/baz/resource_image/{}">'.format(last_ground_plan_image.id),
     )
+
+
+@override_settings(RESPA_MAILS_ENABLED=True)
+@pytest.mark.django_db
+def test_reservation_modified_email_by_official(reservation, reservation_data, staff_api_client, staff_user,
+                                    reservation_modified_by_official_notification):
+    reservation.reserver_email_address = 'test@tester.com'
+    reservation.save()
+    UnitAuthorization.objects.create(subject=reservation.resource.unit, level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    reservation_data['preferred_language'] = 'en'
+    reservation_data['reserver_name'] = 'new name'
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+    response = staff_api_client.put(detail_url, data=reservation_data, format='json')
+    assert response.status_code == 200
+    assert len(mail.outbox) == 1
+    check_received_mail_exists(
+        'reservation modified by official subject.',
+        'test@tester.com',
+        'reservation modified by official body.'
+    )
+
+
+@override_settings(RESPA_MAILS_ENABLED=True)
+@pytest.mark.django_db
+def test_reservation_modified_email_by_official_comment_only(reservation, reservation_data, staff_api_client, staff_user,
+                                    reservation_modified_by_official_notification):
+    reservation.reserver_email_address = 'test@tester.com'
+    reservation.save()
+    UnitAuthorization.objects.create(subject=reservation.resource.unit, level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    reservation_data['preferred_language'] = 'en'
+    reservation_data['comments'] = 'test comment'
+    reservation_data['begin'] = reservation.begin
+    reservation_data['end'] = reservation.end
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+    response = staff_api_client.put(detail_url, data=reservation_data, format='json')
+    assert response.status_code == 200
+    assert len(mail.outbox) == 0
 
 
 @pytest.mark.parametrize('perm_type', ['unit', 'resource_group'])

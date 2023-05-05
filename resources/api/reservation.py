@@ -50,7 +50,7 @@ from .base import (
     ExtraDataMixin
 )
 
-from ..models.utils import dateparser
+from ..models.utils import dateparser, is_reservation_metadata_or_times_different
 from respa.renderers import ResourcesBrowsableAPIRenderer
 from payments.utils import is_free, get_price
 
@@ -1103,8 +1103,11 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
             new_state == Reservation.CONFIRMED:
             new_instance.get_order().set_state(Order.CONFIRMED, 'Cash payment confirmed.')
 
-        if new_state == old_instance.state and new_state not in ['denied'] and self.request.method != 'PATCH': # Reservation was modified, don't send modified upon patch.
-            self.send_modified_mail(new_instance, is_staff=self.request.user.is_staff)
+        # Reservation was modified, don't send modified upon patch.
+        if new_state == old_instance.state and new_state not in ['denied'] and self.request.method != 'PATCH':
+            # dont send if main reservation fields are not different e.g. only comments changes
+            if is_reservation_metadata_or_times_different(old_instance, new_instance):
+                self.send_modified_mail(new_instance, is_staff=self.request.user.is_staff)
 
     def perform_destroy(self, instance):
         instance.set_state(Reservation.CANCELLED, self.request.user)
