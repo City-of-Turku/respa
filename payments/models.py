@@ -439,7 +439,7 @@ class Product(models.Model):
 
         price = self.price if not product_cg else product_cg.price
         time_slot_prices = TimeSlotPrice.objects.filter(product=self)
-        tz = self.resources.first().unit.get_tz()
+        tz = self.resources.with_soft_deleted.first().unit.get_tz()
         local_tz_begin = begin.astimezone(tz)
         local_tz_end = end.astimezone(tz)
         if self.price_type == Product.PRICE_FIXED:
@@ -494,7 +494,7 @@ class Product(models.Model):
         price = self.price if not product_cg else product_cg.price
         price_tax_free = self.price_tax_free if not product_cg else product_cg.price_tax_free
         time_slot_prices = TimeSlotPrice.objects.filter(product=self)
-        tz = self.resources.first().unit.get_tz()
+        tz = self.resources.with_soft_deleted.first().unit.get_tz()
         local_tz_begin = begin.astimezone(tz)
         local_tz_end = end.astimezone(tz)
         # dict with keys for each unique price.
