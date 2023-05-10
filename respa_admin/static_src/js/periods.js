@@ -6,6 +6,9 @@ export function initializePeriods() {
   enableAddNewPeriod();
   setPeriodAndDayItems();
   initialSortPeriodDays();
+
+  // recreate new periods that are to be added in case of unknown period errors
+  recreateNewPeriods();
 }
 
 function getEmptyPeriodItem() {
@@ -487,34 +490,6 @@ function updatePeriodsTotalForms() {
 }
 
 /*
-* Appends a copy of the given period element.
-* */
-function copyTimePeriod(periodItem) {
-  let $periodsList = $('#current-periods-list');
-  let newItem = $(periodItem).clone();
-  $periodsList.append(newItem);
-
-  updatePeriodInputIds();
-  updatePeriodsTotalForms();
-  attachPeriodEventHandlers(newItem);
-
-  updateAllPeriodDaysIndices();
-  updateAllDaysMgmtFormIndices();
-
-  //Remove the copied ID from the previous ID
-  //which ties the DOM object to a Database object.
-  newItem.find("[id$='-id']").removeAttr('value');
-
-  //Remove the days ids as well.
-  newItem.find('#day-db-ids').children().each(function(i, input) {
-    $(input).removeAttr('value');
-  });
-
-  //Reset initial forms in case there are some days present in the previous period.
-  newItem.find('#days-management-form').find('[id$="-INITIAL_FORMS"]').val('0');
-}
-
-/*
  * Copy opening and closing times to next row in period
  */
 function copyTimeToNext(event) {
@@ -527,5 +502,95 @@ function copyTimeToNext(event) {
   const nextTimeInputs = nextRow.querySelectorAll('.time-input-row input');
   for (let i = 0; i < timeInputs.length; i++) {
     nextTimeInputs[i].value = timeInputs[i].value;
+  }
+}
+
+/*
+  Creates a new period and adds values from source period
+*/
+function copyTimePeriod(periodItem) {
+  let $periodsList = $('#current-periods-list');
+  let $periodItem = $(periodItem);
+  let $newItem = getEmptyPeriodItem().clone();
+  $periodsList.append($newItem);
+  updatePeriodsTotalForms();
+  removePeriodExtraDays($newItem);
+  updatePeriodInputIds();
+  attachPeriodEventHandlers($newItem);
+
+  // copy time range from source period
+  $newItem.find("[name$='-name']").val($periodItem.find("[name$='-name']").val());
+  const startVal = $periodItem.find("[name$='-start']").val()
+  const endVal = $periodItem.find("[name$='-end']").val()
+  $newItem.find("[name$='-start']").val(startVal);
+  $newItem.find("[name$='-end']").val(endVal);
+
+  let startDate = new Date(convertDateFormat(startVal));
+  let endDate = new Date(convertDateFormat(endVal));
+
+  if ((!startDate || !endDate) || (isNaN(startDate) || isNaN(endDate)) || (startDate > endDate)) {
+    return;
+  }
+
+  let $periodHeading = $newItem.find('.panel-heading-period');
+  $periodHeading.text(`${startDate.toLocaleDateString('fi-FI')} - ${endDate.toLocaleDateString('fi-FI')}`);
+
+   // copy days from source period
+  let $daysList = $newItem.find('#period-days-list');
+  let newDays = getDayValuesInterval(getDateInterval(startDate, endDate));
+
+  for (let i  = 0; i < newDays.length; i++) {
+    addDay($daysList, newDays[i]);
+  }
+
+  if (newDays.length > 0) {
+    sortPeriodDays($newItem);
+  }
+
+  updatePeriodDaysIndices($newItem);
+  updateTotalDays($newItem);
+
+  // copy day times and closed from source period
+  const $sourceDayRows = $periodItem.find('.weekday-row');
+  const $newDayRows = $newItem.find('.weekday-row');
+
+  for (let i = 0; i < $sourceDayRows.length; i++) {
+    const $sourceDayRow = $sourceDayRows[i];
+    const $newDayRow = $newDayRows[i];
+    const $sourceTimeInputs = $sourceDayRow.querySelectorAll('.time-input-row input');
+    const $newTimeInputs = $newDayRow.querySelectorAll('.time-input-row input');
+
+    for (let j = 0; j < $sourceTimeInputs.length; j++) {
+      $newTimeInputs[j].value = $sourceTimeInputs[j].value;
+    }
+
+    const $sourceClosed = $sourceDayRow.querySelector("[name$='-closed']");
+    const $newClosed = $newDayRow.querySelector("[name$='-closed']");
+    $newClosed.checked = $sourceClosed.checked;
+  }
+}
+
+/*
+  Finds periods that are new, creates copies of them and removes
+  the original ones.
+*/
+function recreateNewPeriods() {
+  const allPeriods = getPeriodsList()
+  const newPeriods = [];
+
+  // find new periods by checking if period input value is missing
+  for (let index = 0; index < allPeriods.length; index++) {
+    const period = allPeriods[index];
+    const periodInput = period.querySelector("[id^='id_periods-']");
+    if ($(periodInput).attr('value') == undefined) {
+      newPeriods.push(period);
+    }
+  }
+
+  // make a copy of each new period and then delete the original ones
+  for (let index = 0; index < newPeriods.length; index++) {
+    const period = newPeriods[index];
+    copyTimePeriod(period);
+    removePeriod(period);
   }
 }
