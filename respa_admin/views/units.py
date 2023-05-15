@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied, FieldDoesNotExist
+from django.core.exceptions import PermissionDenied, FieldDoesNotExist, ValidationError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse_lazy
 from django.utils.translation import gettext as _
@@ -130,15 +130,19 @@ class UnitEditView(ExtraContextMixin, PeriodMixin, CreateView):
         is_creating_new = self.object is None
         user = self.request.user
 
-        self.object = form.save()
-        log_entry(self.object, user, is_edit=not is_creating_new, message=construct_change_message(
-            form, None, is_creating_new
-        ))
-        self.save_period_formset(period_formset_with_days)
+        try:
+            self.object = form.save()
+            self.save_period_formset(period_formset_with_days)
 
-        if is_creating_new:
-            UnitAuthorization.objects.create(
-                subject=self.object, authorized=self.request.user, level=UnitAuthorizationLevel.admin)
+            if is_creating_new:
+                UnitAuthorization.objects.create(
+                    subject=self.object, authorized=self.request.user, level=UnitAuthorizationLevel.admin)
+            
+            log_entry(self.object, user, is_edit=not is_creating_new, message=construct_change_message(
+                form, None, is_creating_new
+            ))
+        except ValidationError:
+            return self.forms_invalid(form, period_formset_with_days)
 
         return HttpResponseRedirect(self.get_success_url())
 
