@@ -1,12 +1,14 @@
 {% load i18n %}
 
 <div class="accordion-item" id="accordion-item-{{id}}">
+    <div style="display:none;">
     {{ period.id }}
     {% if period.resource.value %}
         {{ period.resource }}
     {% else %}
         {{ period.unit }}
     {% endif %}
+    </div>
     <div class="dropdown-time panel-group input-row" id="accordion{{id}}" role="tablist" aria-multiselectable="true">
         <div class="panel-heading">
             <div class="left-group">
