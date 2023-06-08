@@ -98,11 +98,16 @@ class NotificationTemplateImportView(NotificationTemplateBaseView):
                 })
             else:
                 templates[type].update({ language: html_body })
+        
+        invalid_templates = []
 
         for type, template in templates.items():
             notification_templates = NotificationTemplate.objects.filter(type=type)
+
             if not notification_templates.exists():
-                notification_templates = [NotificationTemplate(type=type)]
+                invalid_templates.append(type)
+                continue
+
             for notification_template in notification_templates:
                 for language, html_body in template.items():
                     notification_template.set_current_language(language)
@@ -110,11 +115,15 @@ class NotificationTemplateImportView(NotificationTemplateBaseView):
                 notification_template.save()
 
 
+        if invalid_templates:
+            msg = _('Some notification templates have missing entries')
+        else:
+            msg = _('Notification templates imported')
 
 
         self.set_session_context(request, redirect_message={
-            'message': _('Notification templates imported'),
-            'type': 'success'
+            'message': msg,
+            'type': 'success' if not invalid_templates else 'error'
         })
 
 
@@ -165,7 +174,7 @@ class NotificationTemplateRemoveView(NotificationTemplateBaseView):
         else:
             instance.delete()
             self.set_session_context(request, redirect_message={
-                'message': _('Notification template removed.'),
+                'message': _('Notification template removed'),
                 'type':'success'
             })
         return redirect('respa_admin:ra-notifications')
