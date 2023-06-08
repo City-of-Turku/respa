@@ -2177,3 +2177,6 @@ msgstr "Tuo herätemallit"
 
 msgid "Add a new notification template group"
 msgstr "Lisää uusi herätemalliryhmä"
+
+msgid "Notification templates imported"
+msgstr "Herätemallit lisätty"

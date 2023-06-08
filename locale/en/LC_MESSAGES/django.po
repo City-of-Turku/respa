@@ -2800,3 +2800,6 @@ msgstr ""
 
 msgid "Add a new notification template group"
 msgstr ""
+
+msgid "Notification templates imported"
+msgstr ""

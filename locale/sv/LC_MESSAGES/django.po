@@ -2115,3 +2115,6 @@ msgstr "Importera meddelandemallar"
 
 msgid "Add a new notification template group"
 msgstr "Lägg till en ny grupp för meddelandemallar"
+
+msgid "Notification templates imported"
+msgstr "Meddelandemallar importerade"

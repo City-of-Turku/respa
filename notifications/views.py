@@ -100,17 +100,20 @@ class NotificationTemplateImportView(NotificationTemplateBaseView):
                 templates[type].update({ language: html_body })
 
         for type, template in templates.items():
-            notif = NotificationTemplate(type=type)
-            for lang, data in template.items():
-                notif.set_current_language(lang)
-                notif.html_body = data
-            notif.save()
+            notification_templates = NotificationTemplate.objects.filter(type=type)
+            if not notification_templates.exists():
+                notification_templates = [NotificationTemplate(type=type)]
+            for notification_template in notification_templates:
+                for language, html_body in template.items():
+                    notification_template.set_current_language(language)
+                    notification_template.html_body = html_body
+                notification_template.save()
 
 
 
 
         self.set_session_context(request, redirect_message={
-            'message': 'Notification templates imported',
+            'message': _('Notification templates imported'),
             'type': 'success'
         })
 
