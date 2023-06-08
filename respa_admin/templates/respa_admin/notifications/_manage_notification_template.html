@@ -30,17 +30,21 @@
 </div>
 {% endblock %}
 {% block body %}
-<form class="container form-container" action=".">
+<form 
+    method="post"
+    enctype="multipart/form-data"
+    class="container form-container resource-form">
+    {% csrf_token %}
     <div class="form-section-header">
         <h2>{% trans "Notification template information"  %}</h2>
         <span class="pull-right">{% trans "*Mandatory Fields" %}</span>
     </div>
     <div class="checkbox-container">
         <input
-            id="notification-template-is-default"
+            id="id_is_default_template"
+            name="is_default_template"
             type="checkbox" 
             class="bg-input" 
-            value="{{ instance.is_default_template }}"
             {% if instance.is_default_template %} checked {% endif %}/>
         <label
             for="notification-template-is-default"
@@ -52,12 +56,13 @@
         <div class="form-group">
             <label
                 class="control-label input-label"
-                for="notification-template-name">
+                for="id_name">
                     {% trans "Name" %}
             </label>
             <input 
-                id="notification-template-name"
+                id="id_name"
                 class="form-control text-input"
+                name="name"
                 value="{{ instance.name }}"/>
         </div>
         <div class="form-group">
@@ -106,6 +111,9 @@
                 {% include "respa_admin/notifications/forms/_lang_container.html" with lang="en" %}
             </div>
         </div>
+    </div>
+    <div class="navbar-fixed-bottom">
+        {% include "respa_admin/notifications/forms/_toolbar.html" %}
     </div>
 </form>
 {% endblock body %}

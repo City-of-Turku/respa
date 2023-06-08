@@ -2,14 +2,15 @@
     <div class="textarea-wrapper">
         <label
             class="control-label input-label"
-            for="{{ id }}-{{ lang }}"
+            for="{{ id }}"
         >
            {{ label }}
         </label>
         <div class="textarea-with-toolbar">
             <textarea
-                id="{{ id }}-{{ lang }}"
                 class="form-control"
+                id="{{ id }}"
+                name="{{ name }}"
                 rows="{{ rows }}"
                 cols="{{ cols }}"
             > {{ value }}</textarea>

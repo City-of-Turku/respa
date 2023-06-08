@@ -1,7 +1,7 @@
 from django.utils.translation import gettext as _
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.forms import ValidationError
+from django.conf import settings
 from django.http import JsonResponse, Http404
 from django.views.generic.base import TemplateView, View
 from django.db.models import Q
@@ -18,6 +18,12 @@ IGNORED_TEMPLATE_NAMES = (
     '.gitkeep',
     '.gitignore'
 )
+
+LANGUAGES = [lang for lang, _ in settings.LANGUAGES]
+
+
+class NotificationTemplateValidationError(Exception):
+    pass
 
 class NotificationTemplateBase(ExtraContextMixin):
     def _process_list_view(self, request, *args, **kwargs):
@@ -148,7 +154,17 @@ class NotificationTemplateManagementView(NotificationTemplateBaseView, TemplateV
     class Meta:
         fields = (
             'type', 'name',
-            'translations', 'is_default_template'
+            'is_default_template'
+        )
+        required_fields = (
+            'type',
+            'subject'
+        )
+        translated_fields = (
+            'subject',
+            'body',
+            'html_body',
+            'short_message'
         )
     
     def get_context_data(self, **kwargs):
@@ -157,6 +173,83 @@ class NotificationTemplateManagementView(NotificationTemplateBaseView, TemplateV
         context['NOTIFICATION_TYPES'] = NotificationTemplate.NOTIFICATION_TYPE_CHOICES
         context['DEFAULT_LANG'] = DEFAULT_LANG
         return context
+    
+    def validate(self, attr):
+        for field in self.Meta.required_fields:
+            value = attr.get(field)
+            if not isinstance(value, dict):
+                if not value:
+                    raise NotificationTemplateValidationError('Field: %s is required' % field)
+            else:
+                for lang in LANGUAGES:
+                    if not value.get(lang):
+                        raise NotificationTemplateValidationError('Translated field: %s: "%s" is required.' % (field, lang))
+            
+
+    def get_fields(self, data):
+        translated = {}
+        normals = {}
+        for lang in LANGUAGES:
+            for field in self.Meta.translated_fields:
+                if field not in translated:
+                    translated[field] = {}
+                translated[field].update({ lang: data.get('%s_%s' % (field, lang))})
+        
+        for field in self.Meta.fields:
+            normals.update({ field: data.get(field) })
+
+        return {**normals, **translated}
+
+    def post(self, request, *args, **kwargs):
+        self.process_request(request, *args, **kwargs)
+        payload = self.get_fields(request.POST)
+        try:
+            self.validate(payload)
+        except NotificationTemplateValidationError as exc:
+            self.set_session_context(request, redirect_message={
+                'message': '%(message)s %(extra)s' % {
+                    'message': _('Failed to create notification template') if not self.object else  _('Failed to update notification template'),
+                    'extra': str(exc)
+                },
+                'type':'error'
+            })
+            if self.object:
+                return redirect('respa_admin:ra-notifications-edit', notification_id = self.object.pk)
+            else:
+                return redirect('respa_admin:ra-notifications-create')
+
+        payload['is_default_template'] = bool(payload['is_default_template'])
+        
+        try:
+            notification_template = self.object or NotificationTemplate()
+
+            for field in self.Meta.fields:
+                value = payload[field]
+                if isinstance(value, str):
+                    value = value.strip()
+                setattr(notification_template, field, value)
+
+            
+            for language in LANGUAGES:
+                notification_template.set_current_language(language)
+                for field in self.Meta.translated_fields:
+                    translated_field = payload.get(field)
+                    setattr(notification_template, field, translated_field.get(language).strip())
+            
+            notification_template.save()
+            self.set_session_context(request, redirect_message={
+                'message': _('Notification template created') if not self.object else _('Notification template updated'),
+                'type':'success'
+            })
+            return redirect('respa_admin:ra-notifications-edit', notification_id = notification_template.pk)
+        except:
+            self.set_session_context(request, redirect_message={
+                'message': _('Failed to create notification template') if not self.object else  _('Failed to update notification template'),
+                'type':'error'
+            })
+            if self.object:
+                return redirect('respa_admin:ra-notifications-edit', notification_id = self.object.pk)
+            return redirect('respa_admin:ra-notifications-create')
 
 
 class NotificationTemplateRemoveView(NotificationTemplateBaseView):

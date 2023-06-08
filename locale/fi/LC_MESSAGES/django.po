@@ -2180,3 +2180,15 @@ msgstr "Lisää uusi herätemalliryhmä"
 
 msgid "Notification templates imported"
 msgstr "Herätemallit lisätty"
+
+msgid "Notification template created"
+msgstr "Herätemalli luotu"
+
+msgid "Notification template updated"
+msgstr "Herätemalli päivitetty"
+
+msgid "Failed to create notification template"
+msgstr "Herätemallin luominen epäonnistui"
+
+msgid "Failed to update notification template"
+msgstr "Herätemallin päivittäminen epäonnistui"

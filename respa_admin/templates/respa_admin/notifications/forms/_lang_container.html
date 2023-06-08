@@ -9,32 +9,37 @@
         <div class="form-group" style="margin-top: 10px;">
             <label
                 class="control-label input-label"
-                for="notification-template-subject">
+                for="id_subject_{{ lang }}">
                     {% trans "Subject" %}
             </label>
             <input 
-                id="notification-template-subject"
+                id="id_subject_{{ lang }}"
+                name="subject_{{ lang }}"
                 class="form-control text-input"
-                value="{{ instance.subject }}"/>
+                {% if instance %}
+                {% objectlanguage instance lang %} 
+                value="{{ instance.subject }}" 
+                {% endobjectlanguage %} 
+                {% endif %}/>
         </div>
         <div class="form-group">
             {% trans "Body" as body_label %}
             {% if instance %}
                 {% objectlanguage instance lang %}
-                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-body" rows="15" cols="100" label=body_label lang=lang value=instance.body %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="id_body_"|add:lang name="body_"|add:lang rows="15" cols="100" label=body_label value=instance.body %}
                 {% endobjectlanguage %}
             {% else %}
-                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-body" rows="15" cols="100" label=body_label lang=DEFAULT_LANG value="" %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="id_body_"|add:lang name="body_"|add:lang rows="15" cols="100" label=body_label value="" %}
             {% endif %}
         </div>
         <div class="form-group">
             {% trans "HTML body" as html_body_label %}
             {% if instance %}
                 {% objectlanguage instance lang %}
-                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-html-body" rows="25" cols="100" label=html_body_label lang=lang value=instance.html_body %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="id_html_body_"|add:lang name="html_body_"|add:lang rows="25" cols="100" label=html_body_label value=instance.html_body %}
                 {% endobjectlanguage %}
             {% else %}
-                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-html-body" rows="25" cols="100" label=html_body_label lang=DEFAULT_LANG value="" %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="id_html_body_"|add:lang name="html_body_"|add:lang rows="25" cols="100" label=html_body_label value="" %}
             {% endif %}
             <button id="preview-modal-btn-{{ lang }}" type="button" class="btn btn-primary inverse" style="min-width:85px">{% trans "Preview" %}</button>
         </div>
@@ -46,10 +51,10 @@
             {% trans "Short message" as short_message %}
             {% if instance %}
                 {% objectlanguage instance lang %}
-                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-short-message" rows="6" cols="35" label=short_message lang=lang value=instance.short_message %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="id_short_message_"|add:lang name="short_message_"|add:lang rows="6" cols="35" label=short_message value=instance.short_message %}
                 {% endobjectlanguage %}
             {% else %}
-                {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-short-message" rows="6" cols="35" label=short_message lang=DEFAULT_LANG value="" %}
+                {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="id_short_message_"|add:lang name="short_message_"|add:lang rows="6" cols="35" label=short_message value="" %}
             {% endif %}
         </div>
     </div>

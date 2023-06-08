@@ -2118,3 +2118,15 @@ msgstr "Lägg till en ny grupp för meddelandemallar"
 
 msgid "Notification templates imported"
 msgstr "Meddelandemallar importerade"
+
+msgid "Notification template created"
+msgstr "Meddelandemall skapad"
+
+msgid "Notification template updated"
+msgstr "Meddelandemall uppdaterad"
+
+msgid "Failed to create notification template"
+msgstr "Det gick inte att skapa meddelandemallen"
+
+msgid "Failed to update notification template"
+msgstr "Det gick inte att uppdatera meddelandemallen"

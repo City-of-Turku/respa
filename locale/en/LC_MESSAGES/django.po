@@ -2803,3 +2803,15 @@ msgstr ""
 
 msgid "Notification templates imported"
 msgstr ""
+
+msgid "Notification template created"
+msgstr ""
+
+msgid "Notification template updated"
+msgstr ""
+
+msgid "Failed to create notification template"
+msgstr ""
+
+msgid "Failed to update notification template"
+msgstr ""
