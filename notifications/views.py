@@ -10,9 +10,14 @@ from resources.models.utils import generate_id
 from resources.auth import is_superuser
 import json
 
-from notifications.models import NotificationTemplate
+from notifications.models import NotificationTemplate, DEFAULT_LANG
 
 
+
+IGNORED_TEMPLATE_NAMES = (
+    '.gitkeep',
+    '.gitignore'
+)
 
 class NotificationTemplateBase(ExtraContextMixin):
     def _process_list_view(self, request, *args, **kwargs):
@@ -66,12 +71,52 @@ class NotificationTemplateBaseView(NotificationTemplateBase, View):
     
 
     def post(self, request, *args, **kwargs):
-        self.process_request(request, *args, **kwargs)
-        return super().post(request, *args, **kwargs)
+        raise NotImplementedError()
     
     def get(self, request, *args, **kwargs):
         self.process_request(request, *args, **kwargs)
         return super().get(request, *args, **kwargs)
+
+
+class NotificationTemplateImportView(NotificationTemplateBaseView):
+    def post(self, request, *args, **kwargs):
+        self.process_request(request, *args, **kwargs)
+
+        notification_templates = request.FILES.getlist('notification_templates')
+
+        templates =  {}
+
+        for template in notification_templates:
+            if template.name in IGNORED_TEMPLATE_NAMES:
+                continue
+            language, type = template.name.strip().split('-')
+            type = type.replace('.html', '')
+            html_body = template.read().decode('utf-8')
+            if type not in templates:
+                templates.update({
+                    type: { language: html_body }
+                })
+            else:
+                templates[type].update({ language: html_body })
+
+        for type, template in templates.items():
+            notif = NotificationTemplate(type=type)
+            for lang, data in template.items():
+                notif.set_current_language(lang)
+                notif.html_body = data
+            notif.save()
+
+
+
+
+        self.set_session_context(request, redirect_message={
+            'message': 'Notification templates imported',
+            'type': 'success'
+        })
+
+
+        return redirect('respa_admin:ra-notifications')
+
 
 
 class NotificationTemplateListView(
@@ -98,6 +143,7 @@ class NotificationTemplateManagementView(NotificationTemplateBaseView, TemplateV
         context = super().get_context_data(**kwargs)
         context['instance'] = self.object
         context['NOTIFICATION_TYPES'] = NotificationTemplate.NOTIFICATION_TYPE_CHOICES
+        context['DEFAULT_LANG'] = DEFAULT_LANG
         return context
 
 

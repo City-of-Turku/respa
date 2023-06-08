@@ -29,7 +29,7 @@
                             <div class="panel-body">
                                 <div class="col-2">
                                     <a href="{% url 'respa_admin:ra-notifications-edit' notification_id=notification.pk %}">
-                                        <h4>{{ notification.get_type_display }}</h4>
+                                        <h4>{{ notification.get_type_display }}: {{ notification.name }}</h4>
                                     </a>
                                 </div>
                                 <div class="col-3"></div>

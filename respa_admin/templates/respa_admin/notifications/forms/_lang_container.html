@@ -24,7 +24,7 @@
                     {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-body" rows="15" cols="100" label=body_label lang=lang value=instance.body %}
                 {% endobjectlanguage %}
             {% else %}
-                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-body" rows="15" cols="100" label=body_label lang="fi" value="" %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-body" rows="15" cols="100" label=body_label lang=DEFAULT_LANG value="" %}
             {% endif %}
         </div>
         <div class="form-group">
@@ -34,9 +34,9 @@
                     {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-html-body" rows="25" cols="100" label=html_body_label lang=lang value=instance.html_body %}
                 {% endobjectlanguage %}
             {% else %}
-                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-html-body" rows="25" cols="100" label=html_body_label lang="fi" value="" %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-html-body" rows="25" cols="100" label=html_body_label lang=DEFAULT_LANG value="" %}
             {% endif %}
-            <button id="preview-modal-btn-{{ lang }}" type="button" class="btn btn-primary inverse">{% trans "Preview" %}</button>
+            <button id="preview-modal-btn-{{ lang }}" type="button" class="btn btn-primary inverse" style="min-width:85px">{% trans "Preview" %}</button>
         </div>
         <div id="previewModal-{{ lang }}"></div>
     </div>
@@ -49,7 +49,7 @@
                     {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-short-message" rows="6" cols="35" label=short_message lang=lang value=instance.short_message %}
                 {% endobjectlanguage %}
             {% else %}
-                {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-short-message" rows="6" cols="35" label=short_message lang="fi" value="" %}
+                {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-short-message" rows="6" cols="35" label=short_message lang=DEFAULT_LANG value="" %}
             {% endif %}
         </div>
     </div>

@@ -2090,19 +2090,28 @@ msgid "This rule does not apply for unauthenticated users"
 msgstr "Denna regel gäller inte för oautentiserade användare"
 
 msgid "Add a new notification template"
-msgstr "Skapa ny meddelande mall"
+msgstr "Skapa ny meddelandemall"
 
 msgid "All notification templates"
-msgstr "Alla meddelande mallar"
+msgstr "Alla meddelandemallar"
 
 msgid "Create notification template"
-msgstr "Skapa meddelande mall"
+msgstr "Skapa meddelandemall"
 
 msgid "Edit notification template"
-msgstr "Modifiera meddelande mall"
+msgstr "Modifiera meddelandemall"
 
 msgid "No notification templates found"
-msgstr "Inga meddelande mallar hittades"
+msgstr "Inga meddelandemallar hittades"
 
 msgid "Notification template information"
-msgstr "Meddelande mall information"
+msgstr "Meddelandemall information"
+
+msgid "Notification template removed"
+msgstr "Meddelandemall borttagen"
+
+msgid "Import notification templates"
+msgstr "Importera meddelandemallar"
+
+msgid "Add a new notification template group"
+msgstr "Lägg till en ny grupp för meddelandemallar"

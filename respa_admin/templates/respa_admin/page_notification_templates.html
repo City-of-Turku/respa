@@ -25,9 +25,23 @@
                     <span class="glyphicon glyphicon-plus-sign icon-left" aria-hidden="true"></span>
                     {% trans 'Add a new notification template' %}<span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
                 </a>
+                <div class="col-container">
+                    <form 
+                        id="notification-templates-uploader-form" 
+                        method="post" 
+                        action="{% url 'respa_admin:ra-notifications-import' %}" 
+                        enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <label class="btn resource-control" for="template-upload">
+                            <span class="glyphicon glyphicon-import icon-left" aria-hidden="true"></span>
+                            {% trans 'Import notification templates' %}
+                            <input id="template-upload" type="file" name="notification_templates" onchange="this.form.submit();" style="display: none;"  webkitdirectory directory multiple/>
+                        </label>
+                    </form>
+                </div>
                 <a class="btn resource-control" href="#" disabled>
-                    <span class="glyphicon glyphicon-import icon-left" aria-hidden="true"></span>
-                    {% trans 'Import notifications' %}<span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+                    <span class="glyphicon glyphicon-plus-sign icon-left" aria-hidden="true"></span>
+                    {% trans 'Add a new notification template group' %}<span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
                 </a>
             </div>
             <form action="." method="get">

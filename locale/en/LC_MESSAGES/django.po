@@ -2791,3 +2791,12 @@ msgstr ""
 
 msgid "Notification template information"
 msgstr ""
+
+msgid "Notification template removed"
+msgstr ""
+
+msgid "Import notification templates"
+msgstr ""
+
+msgid "Add a new notification template group"
+msgstr ""

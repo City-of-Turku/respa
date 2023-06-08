@@ -2168,3 +2168,12 @@ msgstr "Ei herätemalleja"
 
 msgid "Notification template information"
 msgstr "Herätemallin tiedot"
+
+msgid "Notification template removed"
+msgstr "Herätemalli poistettu"
+
+msgid "Import notification templates"
+msgstr "Tuo herätemallit"
+
+msgid "Add a new notification template group"
+msgstr "Lisää uusi herätemalliryhmä"

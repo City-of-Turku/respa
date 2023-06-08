@@ -1,4 +1,4 @@
-import { alertPopup, Paginate, getErrorMessage } from './utils';
+import { alertPopup, Paginate, getErrorMessage, ajaxRequest } from './utils';
 
 
 let paginator;
@@ -22,6 +22,7 @@ function bindLangTabs() {
     $(tabButtons).each((_, btn) => {
         $(btn).on('click', (e) => {
             e.preventDefault();
+            if (previewState) { $("#close-modal-btn").click(); }
             $(tabButtons).removeClass('active');
             $(langContainers).hide();
             const lang = $(btn).data('value');
