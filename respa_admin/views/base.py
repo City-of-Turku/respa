@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core import exceptions
 from django.contrib.staticfiles.storage import staticfiles_storage
-from resources.auth import is_any_admin, is_any_manager
+from resources.auth import is_any_admin, is_any_manager, is_superuser
 from resources.models import Day, Period
 from respa_admin.forms import get_period_formset
 
@@ -19,6 +19,7 @@ class ExtraContextMixin():
         context['user_is_any_manager'] = is_any_manager(user)
         context['OUTLOOK_IS_ENABLED'] = bool(settings.O365_CLIENT_ID)
         context['QUALITYTOOL_IS_ENABLED'] = settings.QUALITYTOOL_ENABLED
+        context['SHOW_NOTIFICATION_TEMPLATE_PAGE'] = is_superuser(user)
         context['AVAILABLE_LANGUAGE_CODES'] = [code for code, _ in settings.LANGUAGES]
         return context
 

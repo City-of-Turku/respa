@@ -120,6 +120,7 @@ main {
     }
   }
 
+  section.notifications,
   section.qualitytool,
   section.resources,
   section.units {
@@ -157,6 +158,7 @@ main {
 
     .resource-list ul li,
     .qualitytool-list ul li,
+    .notification-list ul li,
     .unit-list ul li {
       $list-item-height: 100px;
       $table-template: $list-item-height 4fr 3fr 3fr 2fr;

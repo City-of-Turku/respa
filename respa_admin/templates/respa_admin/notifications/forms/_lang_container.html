@@ -1,0 +1,56 @@
+{% load static %}
+{% load i18n %}
+{% load templatetags %}
+{% load parler_tags %}
+
+<div class="container">
+    <div id="email-message-{{ lang }}" style="margin-top: 20px;">
+        <h4>{% trans "Email template" %}</h4>
+        <div class="form-group" style="margin-top: 10px;">
+            <label
+                class="control-label input-label"
+                for="notification-template-subject">
+                    {% trans "Subject" %}
+            </label>
+            <input 
+                id="notification-template-subject"
+                class="form-control text-input"
+                value="{{ instance.subject }}"/>
+        </div>
+        <div class="form-group">
+            {% trans "Body" as body_label %}
+            {% if instance %}
+                {% objectlanguage instance lang %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-body" rows="15" cols="100" label=body_label lang=lang value=instance.body %}
+                {% endobjectlanguage %}
+            {% else %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-body" rows="15" cols="100" label=body_label lang="fi" value="" %}
+            {% endif %}
+        </div>
+        <div class="form-group">
+            {% trans "HTML body" as html_body_label %}
+            {% if instance %}
+                {% objectlanguage instance lang %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-html-body" rows="25" cols="100" label=html_body_label lang=lang value=instance.html_body %}
+                {% endobjectlanguage %}
+            {% else %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-email-html-body" rows="25" cols="100" label=html_body_label lang="fi" value="" %}
+            {% endif %}
+            <button id="preview-modal-btn-{{ lang }}" type="button" class="btn btn-primary inverse">{% trans "Preview" %}</button>
+        </div>
+        <div id="previewModal-{{ lang }}"></div>
+    </div>
+    <div id="short-messages-{{ lang }}" style="margin-top: 20px;">
+        <h4>Sms</h4>
+        <div class="input-row">
+            {% trans "Short message" as short_message %}
+            {% if instance %}
+                {% objectlanguage instance lang %}
+                    {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-short-message" rows="6" cols="35" label=short_message lang=lang value=instance.short_message %}
+                {% endobjectlanguage %}
+            {% else %}
+                {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="notification-template-short-message" rows="6" cols="35" label=short_message lang="fi" value="" %}
+            {% endif %}
+        </div>
+    </div>
+</div>

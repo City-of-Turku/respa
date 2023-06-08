@@ -97,6 +97,11 @@
                     <a href="{% url 'respa_admin:user-management' %}">{% trans "User management" %}</a>
                 </li>
                 {% endif %}
+                {% if SHOW_NOTIFICATION_TEMPLATE_PAGE %}
+                <li>
+                    <a href="{% url 'respa_admin:ra-notifications' %}">{% trans "Notification templates" %}</a>
+                </li>
+                {% endif %}
                 {% if SUPPORT_EMAIL %}
                 <li>
                     <a href="mailto:{{ SUPPORT_EMAIL }}">

@@ -2773,3 +2773,21 @@ msgstr "System-wide setting that allows all staff users (regardless of unit) to 
 
 msgid "This rule does not apply for unauthenticated users"
 msgstr ""
+
+msgid "Add a new notification template"
+msgstr ""
+
+msgid "All notification templates"
+msgstr ""
+
+msgid "Create notification template"
+msgstr ""
+
+msgid "Edit notification template"
+msgstr ""
+
+msgid "No notification templates found"
+msgstr ""
+
+msgid "Notification template information"
+msgstr ""

@@ -1,0 +1,116 @@
+{% extends "respa_admin/_base.html" %}
+{% load static %}
+{% load i18n %}
+{% load templatetags %}
+{% load parler_tags %}
+
+{% block form_nav %}
+<div id="popup-notification" class="popup-notification success">
+    <span id="popup-message" class="text-center"></span>
+</div>
+{% if notification_redirect_context %}
+<div class="panel panel-default noti {{ notification_redirect_context.type }} closable-notification">
+    <h4 class="center-block">{{ notification_redirect_context.message }}</h4>
+    <button class="remove-click pull-right" type="button">
+        {% trans 'Close' %} <span class="glyphicon glyphicon-remove icon-right" aria-hidden="true"></span>
+    </button>
+</div>
+{% endif %}
+<div class="panel panel-default form-nav-wrapper">
+    <div class='container form-header-wrapper'>
+        <div class="container-fluid row form-header">
+            <div class='form-title col-sm-6'>
+                <h2>
+                    <span class="glyphicon {% if is_edit %}glyphicon-wrench{% else %}glyphicon-plus-sign{% endif %} icon-left" aria-hidden="true"></span>
+                    <p style="margin-left: 15px;">{{ page_title }}</p>
+                </h2>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block body %}
+<form class="container form-container" action=".">
+    <div class="form-section-header">
+        <h2>{% trans "Notification template information"  %}</h2>
+        <span class="pull-right">{% trans "*Mandatory Fields" %}</span>
+    </div>
+    <div class="checkbox-container">
+        <input
+            id="notification-template-is-default"
+            type="checkbox" 
+            class="bg-input" 
+            value="{{ instance.is_default_template }}"
+            {% if instance.is_default_template %} checked {% endif %}/>
+        <label
+            for="notification-template-is-default"
+            class="margin-sm-left text-align-center">
+            {% trans "Set this template as a default template." %}    
+        </label>
+    </div>
+    <div class="input-row dropdown-row">
+        <div class="form-group">
+            <label
+                class="control-label input-label"
+                for="notification-template-name">
+                    {% trans "Name" %}
+            </label>
+            <input 
+                id="notification-template-name"
+                class="form-control text-input"
+                value="{{ instance.name }}"/>
+        </div>
+        <div class="form-group">
+            <label
+            class="control-label input-label"
+            for="notification-template-type">
+                {% trans "Type" %}
+            </label>
+            <div
+                id="notification-template-type"
+                class="select-dropdown btn btn-primary {% if extra_classes %}{{ extra_classes }}{% endif %}">
+                <select name="type" required id="id_type">
+                    <option>---------</option>
+                    {% for notif_id, display in NOTIFICATION_TYPES %}
+                        <option value="{{ notif_id }}" {% if notif_id == instance.type %} selected {% endif %}>{{ display }}</option>
+                    {% endfor %}
+                </select>
+                <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+            </div>
+        </div>
+    </div>
+    <div class="form-section-header">
+        <h2>{% trans "Notification template"  %}</h2>
+        <span class="pull-right">{% trans "*Mandatory Fields" %}</span>
+    </div>
+    <div id="notification-templates">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a tab-button="true" class="btn active" href="#" data-value="fi">Fi</a>
+            </li>
+            <li class="nav-item">
+                <a tab-button="true" class="btn" href="#" data-value="sv">Sv</a>
+            </li>
+            <li class="nav-item">
+                <a tab-button="true" class="btn" href="#" data-value="en">En</a>
+            </li>
+        </ul>
+        <div>
+            <div data-value="fi" lang-container="true">
+                {% include "respa_admin/notifications/forms/_lang_container.html" with lang="fi" %}
+            </div>
+            <div data-value="sv" lang-container="true" style="display: none;">
+                {% include "respa_admin/notifications/forms/_lang_container.html" with lang="sv" %}
+            </div>
+            <div data-value="en" lang-container="true" style="display: none;">
+                {% include "respa_admin/notifications/forms/_lang_container.html" with lang="en" %}
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock body %}
+
+
+{% block js_extra %}
+<script type="text/javascript" src="{% static 'respa_admin/notificationsForm-bundle.js' %}"></script>
+{% endblock js_extra %}

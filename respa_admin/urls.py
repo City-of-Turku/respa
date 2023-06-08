@@ -11,6 +11,11 @@ from .views.resources import (
 from .views.units import UnitEditView, UnitListView
 from .views.reports import ReportView
 
+from notifications.views import (
+    NotificationTemplateListView, 
+    NotificationTemplateManagementView,
+    NotificationTemplateRemoveView
+)
 
 
 app_name = 'respa_admin'
@@ -32,6 +37,10 @@ urlpatterns = [
     url(r'^user_management/search/$', ManageUserPermissionsSearchView.as_view(), name='user-management-search'),
     url(r'^user_management/(?P<user_id>\w+)/$', ManageUserPermissionsView.as_view(), name='edit-user'),
     url(r'^reports/', ReportView.as_view(), name='ra-reports'),
+    url(r'^notifications/$', NotificationTemplateListView.as_view(), name='ra-notifications'),
+    url(r'^notifications/manage/$', NotificationTemplateManagementView.as_view(), name='ra-notifications-create'),
+    url(r'^notifications/remove/(?P<notification_id>[0-9A-Fa-f-]+)/$', NotificationTemplateRemoveView.as_view(), name='ra-notifications-remove'),
+    url(r'^notifications/manage/(?P<notification_id>\w+)/$', NotificationTemplateManagementView.as_view(), name='ra-notifications-edit'),
 ]
 
 

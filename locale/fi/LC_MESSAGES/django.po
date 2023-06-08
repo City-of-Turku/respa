@@ -2150,3 +2150,21 @@ msgstr "Kaikki virkailijat (toimipisteestä huolimatta) pystyvät tekemään var
 
 msgid "This rule does not apply for unauthenticated users"
 msgstr "Tämä sääntö ei koske käyttäjiä, jotka eivät ole kirjautuneet sisään"
+
+msgid "Add a new notification template"
+msgstr "Lisää uusi herätemalli"
+
+msgid "All notification templates"
+msgstr "Kaikki herätemallit"
+
+msgid "Create notification template"
+msgstr "Luo herätemalli"
+
+msgid "Edit notification template"
+msgstr "Muokkaa herätemallia"
+
+msgid "No notification templates found"
+msgstr "Ei herätemalleja"
+
+msgid "Notification template information"
+msgstr "Herätemallin tiedot"
