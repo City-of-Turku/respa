@@ -44,7 +44,7 @@ function bindTogglePreviewModal() {
         let previewModal = $(`div[id=previewModal-${selectedTab}`);
         if (previewState) { $("#close-modal-btn").click(); return; }
 
-        let html = $(`textarea[id=id_html_body-${selectedTab}`).val();
+        let html = $(`textarea[id=id_html_body_${selectedTab}`).val();
         $(previewModal).css({ 
             'top': `${($(window).scrollTop() + 10)}px`,
             'left': '60%',
