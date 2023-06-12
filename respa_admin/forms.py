@@ -133,9 +133,11 @@ class DaysForm(forms.ModelForm):
         is_closed = cleaned_data.get('closed', False)
         if (not opens or not closes):
             if not is_closed:
+                self.add_error('period', 'Missing opening hours')
                 raise ValidationError('Missing opening hours')
         else:
             if opens > closes:
+                self.add_error('period','Opening hours cannot be greater than closing hours')
                 raise ValidationError('Opening hours cannot be greater than closing hours')
 
         return cleaned_data
@@ -478,7 +480,7 @@ class PeriodFormset(forms.BaseInlineFormSet):
             valid_days.append(form.days.is_valid())
             if not form.days.is_valid():
                 if hasattr(form, 'cleaned_data'):
-                    form.add_error(None, _('Please check the opening hours.'))
+                    form.add_error(None, form.days.errors)
 
         return valid_form and all(valid_days)
 
