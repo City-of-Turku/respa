@@ -132,15 +132,14 @@ class DaysForm(forms.ModelForm):
         closes = cleaned_data.get('closes', None)
         is_closed = cleaned_data.get('closed', False)
         if (not opens or not closes):
-            if not is_closed:
-                self.add_error('period', 'Missing opening hours')
-                raise ValidationError('Missing opening hours')
+            if not is_closed and (not self.has_error('opens') and not self.has_error('closes')):
+                self.add_error('period', _('Missing opening or closing time'))
         else:
             if opens > closes:
-                self.add_error('period','Opening hours cannot be greater than closing hours')
-                raise ValidationError('Opening hours cannot be greater than closing hours')
+                self.add_error('period', _('Opening time cannot be greater than closing time'))
 
         return cleaned_data
+
 
 class PeriodForm(forms.ModelForm):
     name = forms.CharField(
@@ -208,6 +207,7 @@ class ResourceTagField(forms.CharField):
                 data['create'].append(tag)
         return data
 
+
 class RespaMultiEmailField(MultiEmailField):
     def to_python(self, value):
         if not value:
@@ -240,7 +240,6 @@ class ResourceForm(forms.ModelForm):
         label=_('Keywords')
     )
 
-
     resource_staff_emails = RespaMultiEmailField(
         required=False,
         label=_('E-mail addresses for client correspondence')
@@ -255,8 +254,6 @@ class ResourceForm(forms.ModelForm):
             if df_set:
                 for field in set(df_set) - set(['groups', 'periods', 'images', 'free_of_charge']):
                     self.fields[field].disabled = True
-
-
 
     class Meta:
         model = Resource
@@ -337,7 +334,7 @@ class ResourceForm(forms.ModelForm):
             ),
             'cooldown': forms.Select(
                 choices=(
-                    (('00:00:00', '0 h') , ) + thirty_minute_increment_choices
+                    (('00:00:00', '0 h'), ) + thirty_minute_increment_choices
                 )
             ),
             'need_manual_confirmation': RespaRadioSelect(
@@ -391,6 +388,7 @@ class ResourceForm(forms.ModelForm):
 
         return self.instance
 
+
 class UnitForm(forms.ModelForm):
     name_fi = forms.CharField(
         required=True,
@@ -401,6 +399,7 @@ class UnitForm(forms.ModelForm):
         required=True,
         label=f"{_('Street address')} [fi]"
     )
+
     class Meta:
         model = Unit
 
@@ -512,10 +511,9 @@ def get_period_formset(request=None, extra=1, instance=None, parent_class=Resour
             field.disabled = 'periods' in df_set
             if field.disabled:
                 field.required = False
-    else: # fields are getting cached?
+    else:  # fields are getting cached?
         for _, field in period_formset_with_days.form.base_fields.items():
             field.disabled = False
-
 
     if not request:
         return period_formset_with_days(instance=instance)
@@ -541,14 +539,14 @@ class UniversalFieldForm(forms.ModelForm):
         label_val = cleaned_data.get('label_fi')
         desc_val = cleaned_data.get('description_fi')
         # set missing language values to same value as the required finnish value.
-        for x in ['label_en','label_sv','description_en','description_sv']:
+        for x in ['label_en', 'label_sv', 'description_en', 'description_sv']:
             if not cleaned_data[x]:
                 if 'label' in x and label_val:
                     cleaned_data[x] = label_val
                 elif 'description' in x and desc_val:
                     cleaned_data[x] = desc_val
                 else:
-                    raise ValidationError("Missing values for 'label_fi' and 'description_fi'.")         
+                    raise ValidationError("Missing values for 'label_fi' and 'description_fi'.")
 
         return cleaned_data
 
@@ -577,31 +575,30 @@ def get_resource_universal_formset(request=None, extra=1, instance=None):
     if request.method == 'GET':
         return resource_universal_formset(instance=instance)
     else:
-        return resource_universal_formset(data=request.POST,instance=instance)
+        return resource_universal_formset(data=request.POST, instance=instance)
 
 
 class OptionsForm(forms.ModelForm):
     class Meta:
         model = ResourceUniversalFormOption
-        translated_fields = ['text_fi','text_sv','text_en']
+        translated_fields = ['text_fi', 'text_sv', 'text_en']
         fields = ['resource_universal_field', 'name', 'sort_order'] + translated_fields
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['text_fi'].help_text = _('Universal value inherit info')
-        
 
     def clean(self):
         cleaned_data = super().clean()
         text_fi_value = cleaned_data.get('text_fi')
         if text_fi_value:
             # set missing language texts to same value as 'text_fi'
-            for x in ['text_sv','text_en']:
+            for x in ['text_sv', 'text_en']:
                 if not cleaned_data[x]:
                     cleaned_data[x] = text_fi_value
 
         return cleaned_data
-   
+
 
 def get_universal_options_formset(request=None, extra=1, instance=None):
     parent = Resource
@@ -640,7 +637,7 @@ def get_universal_options_formset(request=None, extra=1, instance=None):
     if request.method == 'GET':
         return universal_options_formset(instance=instance)
     else:
-        return universal_options_formset(data=request.POST,instance=instance)
+        return universal_options_formset(data=request.POST, instance=instance)
 
 
 def get_resource_image_formset(request=None, extra=1, instance=None):
@@ -657,13 +654,12 @@ def get_resource_image_formset(request=None, extra=1, instance=None):
             field.disabled = 'images' in df_set
             if field.disabled:
                 field.required = False
-    else: # fields are getting cached?
+    else:  # fields are getting cached?
         for _, field in resource_image_formset.form.base_fields.items():
             field.disabled = False
 
     if not request:
         return resource_image_formset(instance=instance)
-
 
     if request.method == 'GET':
         return resource_image_formset(instance=instance)

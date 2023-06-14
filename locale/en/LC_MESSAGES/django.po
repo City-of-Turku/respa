@@ -2773,3 +2773,9 @@ msgstr "System-wide setting that allows all staff users (regardless of unit) to 
 
 msgid "This rule does not apply for unauthenticated users"
 msgstr ""
+
+msgid "Missing opening or closing time"
+msgstr ""
+
+msgid "Opening time cannot be greater than closing time"
+msgstr ""

@@ -2150,3 +2150,9 @@ msgstr "Kaikki virkailijat (toimipisteestä huolimatta) pystyvät tekemään var
 
 msgid "This rule does not apply for unauthenticated users"
 msgstr "Tämä sääntö ei koske käyttäjiä, jotka eivät ole kirjautuneet sisään"
+
+msgid "Missing opening or closing time"
+msgstr "Aloitus- tai sulkemisaika puuttuu"
+
+msgid "Opening time cannot be greater than closing time"
+msgstr "Aloitusaika ei voi olla suurempi kuin sulkemisaika"
