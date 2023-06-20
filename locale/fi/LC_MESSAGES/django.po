@@ -2156,3 +2156,6 @@ msgstr "Aloitus- tai sulkemisaika puuttuu"
 
 msgid "Opening time cannot be greater than closing time"
 msgstr "Aloitusaika ei voi olla suurempi kuin sulkemisaika"
+
+msgid "Private event"
+msgstr "Yksityinen tapahtuma"

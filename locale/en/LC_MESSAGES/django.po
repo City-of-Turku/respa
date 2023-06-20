@@ -2779,3 +2779,6 @@ msgstr ""
 
 msgid "Opening time cannot be greater than closing time"
 msgstr ""
+
+msgid "Private event"
+msgstr ""

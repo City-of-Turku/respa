@@ -2094,3 +2094,6 @@ msgstr "Saknad öppnings- eller stängningstid"
 
 msgid "Opening time cannot be greater than closing time"
 msgstr "Starttiden kan inte vara senare än stängningstiden"
+
+msgid "Private event"
+msgstr "Privat evenemang"

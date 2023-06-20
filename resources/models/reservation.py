@@ -42,7 +42,7 @@ RESERVATION_BILLING_FIELDS = ('billing_first_name', 'billing_last_name', 'billin
 RESERVATION_EXTRA_FIELDS = ('reserver_name', 'reserver_phone_number', 'reserver_address_street', 'reserver_address_zip',
                             'reserver_address_city', 'company', 'event_description', 'event_subject', 'reserver_id',
                             'number_of_participants', 'participants', 'reserver_email_address', 'require_assistance',
-                            'require_workstation', 'host_name', 'reservation_extra_questions', 'home_municipality'
+                            'require_workstation', 'private_event', 'host_name', 'reservation_extra_questions', 'home_municipality'
                             ) + RESERVATION_BILLING_FIELDS
 
 
@@ -163,6 +163,7 @@ class Reservation(ModifiableModel):
     host_name = models.CharField(verbose_name=_('Host name'), max_length=100, blank=True)
     require_assistance = models.BooleanField(verbose_name=_('Require assistance'), default=False)
     require_workstation = models.BooleanField(verbose_name=_('Require workstation'), default=False)
+    private_event = models.BooleanField(verbose_name=_('Private event'), default=False)
     home_municipality = models.ForeignKey('ReservationHomeMunicipalityField', verbose_name=_('Home municipality'),
                                             null=True, blank=True, on_delete=models.SET_NULL)
     universal_data = models.JSONField(verbose_name=_('Data'), null=True, blank=True)
@@ -511,6 +512,7 @@ class Reservation(ModifiableModel):
                 'reserver_email_address': reserver_email_address,
                 'require_assistance': self.require_assistance,
                 'require_workstation': self.require_workstation,
+                'private_event': self.private_event,
                 'extra_question': self.reservation_extra_questions,
                 'home_municipality_id': reserver_home_municipality
             }
