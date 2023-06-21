@@ -1,6 +1,6 @@
 {% load i18n %}
 <style>
-    #resource-universal-forms > * {
+    #resource-universal-forms>* {
         margin-top: 20px;
     }
 </style>
@@ -10,72 +10,77 @@
         <span class="pull-right">{% trans "*Mandatory fields" %}</span>
     </div>
     <div id="resource-universal-forms">
-    {{ resource_universal_formset.management_form }}
-    {% for uni_form in resource_universal_formset %}
-    <div class="resource-universal-form" style="border-bottom:1px solid lightgray;">
-        {% with forloop.counter0 as id %}
+        {{ resource_universal_formset.management_form }}
+        {% for uni_form in resource_universal_formset %}
+        <div class="resource-universal-form" style="border-bottom:1px solid lightgray;">
+            {% with forloop.counter0 as id %}
             {% for hidden in uni_form.hidden_fields %}
-                {{ hidden }}
+            {{ hidden }}
             {% endfor %}
-        <div>
-            <h4 style="display: none;">
-                {% if uni_form.name.value %}
+            <div>
+                <h4 style="display: none;">
+                    {% if uni_form.name.value %}
                     {{ uni_form.name.value|capfirst }}
-                {% else %}
+                    {% else %}
                     {% trans "New universal field" %}
-                {% endif %}
-            </h4>
-            <button id="form-toggle-{{ forloop.counter0 }}" class="btn field-toggle" style="background: transparent; font-size: 24px; font-weight: 600; line-height: 1.1;">
-                {% if uni_form.name.value %}
+                    {% endif %}
+                </h4>
+                <button id="form-toggle-{{ forloop.counter0 }}" class="btn field-toggle"
+                    style="background: transparent; font-size: 24px; font-weight: 600; line-height: 1.1;">
+                    {% if uni_form.name.value %}
                     {{ uni_form.name.value|capfirst }}
-                {% else %}
+                    {% else %}
                     {% trans "New universal field" %}
-                {% endif %}    
-            </button>
-            <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
-        </div>
-        <div class="input-row uni-row">
-            {% include "respa_admin/forms/_select.html" with field=uni_form.field_type %}
-            {% include "respa_admin/forms/_checkbox.html" with field=uni_form.DELETE %}
-        </div>
-        <div class="input-row uni-row">
-            {% include "respa_admin/forms/_input.html" with field=uni_form.name %}
-        </div>
-        <div class="input-row uni-row">
-            {% include "respa_admin/forms/_input.html" with field=uni_form.label_fi %}
-            {% include "respa_admin/forms/_input.html" with field=uni_form.label_en %}
-            {% include "respa_admin/forms/_input.html" with field=uni_form.label_sv %}
-        </div>
-        
-        <div class="input-row uni-row">
-            {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.description_fi %}
-            {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.description_en %}
-            {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.description_sv %}
-        </div>
-        <div class="input-row uni-row">
-            {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.data %}
-            <div class="form-group">
-                <div style="display: flex; flex-direction: column;">
-                    <label class="input-label">
-                        {% trans "Universal data url input" %}
-                        <input class="text-input" id="universal-data-url" type="text" style="width: 100%;" />
-                    </label>
-                    <div>
-                        <button class="resources-button" onclick="universalDataFormatter('img')" type="button">{% trans "Universal data url img button" %}</button>
-                        <button class="resources-button" onclick="universalDataFormatter('iframe')" type="button">{% trans "Universal data url iframe button" %}</button>
+                    {% endif %}
+                </button>
+                <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+            </div>
+            <div class="input-row uni-row">
+                {% include "respa_admin/forms/_select.html" with field=uni_form.field_type %}
+                {% include "respa_admin/forms/_checkbox.html" with field=uni_form.DELETE %}
+            </div>
+            <div class="input-row uni-row">
+                {% include "respa_admin/forms/_input.html" with field=uni_form.name %}
+            </div>
+            <div class="input-row uni-row">
+                {% include "respa_admin/forms/_input.html" with field=uni_form.label_fi %}
+                {% include "respa_admin/forms/_input.html" with field=uni_form.label_en %}
+                {% include "respa_admin/forms/_input.html" with field=uni_form.label_sv %}
+            </div>
+
+            <div class="input-row uni-row">
+                {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.description_fi %}
+                {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.description_en %}
+                {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.description_sv %}
+            </div>
+            <div class="input-row uni-row">
+                {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.data %}
+                <div class="form-group">
+                    <div style="display: flex; flex-direction: column;">
+                        <label class="input-label">
+                            {% trans "Universal data url input" %}
+                            <input class="text-input" id="universal-data-url" type="text" style="width: 100%;" />
+                        </label>
+                        <div class="embed-buttons">
+                            <button class="resources-button" onclick="universalDataFormatter('img')" type="button">
+                                {% trans "Universal data url img button" %}
+                            </button>
+                            <button class="resources-button" onclick="universalDataFormatter('iframe')" type="button">
+                                {% trans "Universal data url iframe button" %}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="input-row uni-row" style="flex-direction: column;">
-            <p>{% trans "Universal data preview label" %}</p>
-            <div class="form-group" style="max-width: 675px;">
-                <span id="data-preview-anchor"></span>
+            <div class="input-row uni-row" style="flex-direction: column;">
+                <p>{% trans "Universal data preview label" %}</p>
+                <div class="form-group embed-container">
+                    <span id="data-preview-anchor"></span>
+                </div>
             </div>
+            {% endwith %}
         </div>
-        {% endwith %}
-    </div>
-    {% endfor %}
+        {% endfor %}
     </div>
 </div>
 <script>
@@ -87,7 +92,7 @@
             if (parseData.url) {
                 const element = document.createElement('img');
                 element.setAttribute('src', parseData.url);
-                element.style.width = '50%';
+                element.setAttribute('class', 'embedded-image')
                 document.querySelector('#data-preview-anchor').insertAdjacentElement('afterbegin', element);
             }
             if (parseData.iframe) {
@@ -109,7 +114,7 @@
     // toggle visibility of universal field.
     function toggleFieldVisibility(e) {
         e.preventDefault();
-        
+
         const indexNum = Number.parseInt(e.target.id.replaceAll(/\D/g, ''))
         const rows = hideParent[indexNum].querySelectorAll('.input-row');
         rows.forEach(row => row.style.display ? row.style.display = "" : row.style.display = "none");
@@ -124,14 +129,14 @@
     universalFieldToggleButtons.forEach((element, index) => {
         element.addEventListener('click', toggleFieldVisibility);
     })
-    
+
     // check visibility of universal field container according to if a type is selected.
     function checkTypeChangeVisibility(e) {
         const indexNum = Number.parseInt(e.target.id.replaceAll(/\D/g, ''))
         const rows = hideParent[indexNum].querySelectorAll('.uni-row');
         const displayValue = e.target.selectedIndex ? "" : "none";
         rows.forEach(row => row.style.display = displayValue);
-        
+
         const spanElement = hideParent[indexNum].querySelector('span.glyphicon');
         if (spanElement.className.includes('down')) {
             spanElement.className = 'glyphicon glyphicon-chevron-right';
@@ -142,7 +147,7 @@
     // closes empty universal field sections when initially loading the page.
     universalFieldElements.forEach((element, index) => {
         if (!element.selectedIndex) {
-            checkTypeChangeVisibility({target: {id: element.id, selectedIndex: element.selectedIndex}});
+            checkTypeChangeVisibility({ target: { id: element.id, selectedIndex: element.selectedIndex } });
         }
     });
     // listener to close section if type changes to 'unselected'.
@@ -180,10 +185,10 @@
         }
         if (source === 'img') {
             // data is used to display an image.
-            newValue = {"url": `${value}`}
+            newValue = { "url": `${value}` }
         } else if (source === 'iframe') {
             // data is used to display an iframe.
-            newValue = {"iframe": `<iframe id='universal-iframe' title='Universal field iframe' width='100%' height='400' src='${value}'></iframe>`};
+            newValue = { "iframe": `<iframe id='universal-iframe' title='Universal field iframe' width='100%' height='400' src='${value}'></iframe>` };
         }
         dataInput.value = JSON.stringify(newValue);
         refreshPreview();
@@ -199,7 +204,7 @@
             if (parseData.url) {
                 const element = document.createElement('img');
                 element.setAttribute('src', parseData.url);
-                element.style.width = '50%';
+                element.setAttribute('class', 'embedded-image')
                 document.querySelector('#data-preview-anchor').insertAdjacentElement('afterbegin', element);
             } else if (parseData.iframe) {
                 document.querySelector('#data-preview-anchor').insertAdjacentHTML('afterbegin', parseData.iframe);
