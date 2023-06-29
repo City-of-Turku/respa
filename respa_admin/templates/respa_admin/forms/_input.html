@@ -1,6 +1,6 @@
 <div class="form-group">
     <label
-        class="control-label input-label"
+        class="control-label input-label{% if always_show %} always-show{% endif %}"
         for="{{ field.id_for_label }}"
     >
         {{ field.label }}{% if field.field.required %}*{% endif %}
@@ -16,7 +16,7 @@
         {% if field.value != None %}
             value="{{ field.value|stringformat:'s' }}"
         {% endif %}
-        class="form-control text-input"
+        class="form-control text-input{% if always_show %} always-show{% endif %}"
         {% include "django/forms/widgets/attrs.html" %}
         {% if field.field.disabled %} disabled="disabled" {% endif %}
     >

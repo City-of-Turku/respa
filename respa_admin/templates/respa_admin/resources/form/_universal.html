@@ -43,13 +43,13 @@
                 {% include "respa_admin/forms/_input.html" with field=uni_form.name %}
             </div>
             <div class="input-row uni-row">
-                {% include "respa_admin/forms/_input.html" with field=uni_form.label_fi %}
+                {% include "respa_admin/forms/_input.html" with field=uni_form.label_fi always_show=True %}
                 {% include "respa_admin/forms/_input.html" with field=uni_form.label_en %}
                 {% include "respa_admin/forms/_input.html" with field=uni_form.label_sv %}
             </div>
 
             <div class="input-row uni-row">
-                {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.description_fi %}
+                {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.description_fi always_show=True %}
                 {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.description_en %}
                 {% include "respa_admin/forms/_textarea_input.html" with field=uni_form.description_sv %}
             </div>
