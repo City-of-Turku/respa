@@ -330,7 +330,7 @@ pyflakes==3.0.1
     # via
     #   -r requirements.in
     #   flake8
-pygments==2.14.0
+pygments==2.15.0
     # via exchangelib
 pyjwkest==1.4.2
     # via
