@@ -1,8 +1,8 @@
-$brand-light:       #00d7a7; // $hel-fog
-$brand-dark:        #009246; // $hel-tram
-$brand-red:         #fd4f00;
-$brand-dark-red:    #922e00;
-$brand-grey:        #d3d3d3;
+$brand-light: #00d7a7; // $hel-fog
+$brand-dark: #009246; // $hel-tram
+$brand-red: #fd4f00;
+$brand-dark-red: #922e00;
+$brand-grey: #d3d3d3;
 
 // // Import Open City Design styles
 
@@ -37,3 +37,4 @@ $icon-font-path: "~bootstrap-sass/assets/fonts/bootstrap/";
 @import "./page-user-management-list";
 @import "./page-qualitytool";
 @import "./common";
+@import "./modal";

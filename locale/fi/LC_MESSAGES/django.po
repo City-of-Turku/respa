@@ -2192,3 +2192,9 @@ msgstr "Herätemallin luominen epäonnistui"
 
 msgid "Failed to update notification template"
 msgstr "Herätemallin päivittäminen epäonnistui"
+
+msgid "Preview"
+msgstr "Esikatselu"
+
+msgid "HTML preview"
+msgstr "HTML:n esikatselu"

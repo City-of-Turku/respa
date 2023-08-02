@@ -2130,3 +2130,9 @@ msgstr "Det gick inte att skapa meddelandemallen"
 
 msgid "Failed to update notification template"
 msgstr "Det gick inte att uppdatera meddelandemallen"
+
+msgid "Preview"
+msgstr "Förhandsvisning"
+
+msgid "HTML preview"
+msgstr "HTML-förhandsgranskning"

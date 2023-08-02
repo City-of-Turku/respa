@@ -2815,3 +2815,9 @@ msgstr ""
 
 msgid "Failed to update notification template"
 msgstr ""
+
+msgid "Preview"
+msgstr ""
+
+msgid "HTML preview"
+msgstr ""

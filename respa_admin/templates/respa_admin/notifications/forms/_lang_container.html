@@ -12,14 +12,14 @@
                 for="id_subject_{{ lang }}">
                     {% trans "Subject" %}
             </label>
-            <input 
+            <input
                 id="id_subject_{{ lang }}"
                 name="subject_{{ lang }}"
                 class="form-control text-input"
                 {% if instance %}
-                {% objectlanguage instance lang %} 
-                value="{{ instance.subject }}" 
-                {% endobjectlanguage %} 
+                {% objectlanguage instance lang %}
+                value="{{ instance.subject }}"
+                {% endobjectlanguage %}
                 {% endif %}/>
         </div>
         <div class="form-group">
@@ -41,9 +41,13 @@
             {% else %}
                     {% include  "respa_admin/notifications/forms/_textarea_input.html" with id="id_html_body_"|add:lang name="html_body_"|add:lang rows="25" cols="100" label=html_body_label value="" %}
             {% endif %}
-            <button id="preview-modal-btn-{{ lang }}" type="button" class="btn btn-primary inverse" style="min-width:85px">{% trans "Preview" %}</button>
+            <!-- <button id="preview-modal-btn-{{ lang }}" type="button" class="btn btn-primary inverse" style="min-width:85px">{% trans "Preview" %}</button> -->
         </div>
-        <div id="previewModal-{{ lang }}"></div>
+        <!-- <div id="previewModal-{{ lang }}"></div> -->
+        <!-- Button trigger modal -->
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#htmlPreviewModal-{{ lang }}">
+            {% trans "Preview" %}
+        </button>
     </div>
     <div id="short-messages-{{ lang }}" style="margin-top: 20px;">
         <h4>Sms</h4>
@@ -58,4 +62,28 @@
             {% endif %}
         </div>
     </div>
+</div>
+<!-- Modal -->
+<div class="modal" id="htmlPreviewModal-{{ lang }}" tabindex="-1" aria-labelledby="htmlPreviewModalLabel-{{ lang }}" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      {% trans "Close" as close_label %}
+      <div class="modal-header">
+        <h4 class="modal-title fs-5" id="htmlPreviewModalLabel-{{ lang }}">{% trans "HTML preview" %}</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label={{ close_label }}></button>
+      </div>
+      <div class="modal-body preview-body">
+        {% if instance %}
+            {% objectlanguage instance lang %}
+                {{instance.html_body |safe}}
+            {% endobjectlanguage %}
+        {% else %}
+            <p>Error</p>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ close_label }}</button>
+      </div>
+    </div>
+  </div>
 </div>
