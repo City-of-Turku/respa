@@ -53,13 +53,13 @@ class Command(BaseCommand):
     def handle_obj_update(self, file_name, file_content, template_objects, decode_file=False):
         language, name = extract_identifier_from_file_name(file_name)
         try:
-            obj = template_objects.get(type=name, name='default', is_default_template=True)
+            obj = template_objects.get(type=name, is_default_template=True)
             obj.set_current_language(language)
             obj.html_body = file_content if not decode_file else file_content.decode('utf-8')
             obj.save()
         except NotificationTemplate.DoesNotExist:
             self.stdout.write(self.style.NOTICE(
-                f"No default NotificationTemplate object found for type '{name}' named as 'default'."))
+                f"No default NotificationTemplate object found for type '{name}'."))
         except Exception as e:
             self.stderr.write(self.style.ERROR(
                 f"An unexpected error occurred: {str(e)}"))
