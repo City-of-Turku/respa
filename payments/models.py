@@ -609,6 +609,9 @@ class Product(models.Model):
                         pretax=self.get_pretax_price_context(price, rounded=False),
                         taxfree_price=self.price_tax_free
                     )
+                    if quantity > 1:
+                        # quantity is only defined/>1 if there are multiples of the same product
+                        detailed_pricing['default']['quantity'] = quantity
                 slot_begin += check_interval
 
             detailed_pricing = finalize_price_data(detailed_pricing, self.price_type, self.price_period)
