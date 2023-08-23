@@ -380,17 +380,21 @@ class TermsOfUseAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Trans
 
 class ReservationMetadataSetForm(forms.ModelForm):
     supported_fields = forms.ModelMultipleChoiceField(
-        ReservationMetadataField.objects.all(), widget=FilteredSelectMultiple(_('Supported fields'), False))
+        ReservationMetadataField.objects.all(),
+        widget=FilteredSelectMultiple(_('Supported fields'), False),
+        required=False)
     required_fields = forms.ModelMultipleChoiceField(
-        ReservationMetadataField.objects.all(), widget=FilteredSelectMultiple(_('Required fields'), False))
+        ReservationMetadataField.objects.all(),
+        widget=FilteredSelectMultiple(_('Required fields'), False),
+        required=False)
 
     class Meta:
         model = ReservationMetadataSet
         exclude = CommonExcludeMixin.exclude + ('id',)
 
     def clean(self):
-        supported = set(self.cleaned_data.get('supported_fields'))
-        required = set(self.cleaned_data.get('required_fields'))
+        supported = set(self.cleaned_data.get('supported_fields', []))
+        required = set(self.cleaned_data.get('required_fields', []))
         if not required.issubset(supported):
             raise ValidationError(_('Required fields must be a subset of supported fields'))
         return self.cleaned_data
