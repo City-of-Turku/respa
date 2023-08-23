@@ -125,7 +125,10 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['resources'] = forms.ModelMultipleChoiceField(queryset=Resource.objects.order_by('name'))
+        self.fields['resources'] = forms.ModelMultipleChoiceField(
+            queryset=Resource.objects.order_by('name'), 
+            widget=admin.widgets.FilteredSelectMultiple(_('resources'), False)
+        )
 
     def clean(self):
         super().clean()
@@ -176,6 +179,7 @@ class ProductAdmin(TranslationAdmin):
         'max_quantity', 'get_resources', 'get_created_at', 'get_modified_at', 'price_tax_free'
     )
     readonly_fields = ('product_id',)
+    filter_horizontal = ('resources',)
     fieldsets = (
         (None, {
             'fields': ('sku', 'type', 'name', 'description', 'max_quantity')
