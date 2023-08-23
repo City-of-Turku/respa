@@ -5,6 +5,7 @@ from django.conf.urls import re_path
 from django.contrib import admin
 from django.contrib.admin import site as admin_site
 from django.contrib.admin.utils import unquote
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.gis.admin import OSMGeoAdmin
@@ -229,7 +230,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
 
     def has_change_permission(self, request, obj=None):
         return super().has_change_permission(request, obj) and (obj and not obj.soft_deleted)
-    
+
     def has_delete_permission(self, request, obj=None):
         return False
 
@@ -378,6 +379,11 @@ class TermsOfUseAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Trans
 
 
 class ReservationMetadataSetForm(forms.ModelForm):
+    supported_fields = forms.ModelMultipleChoiceField(
+        ReservationMetadataField.objects.all(), widget=FilteredSelectMultiple(_('Supported fields'), False))
+    required_fields = forms.ModelMultipleChoiceField(
+        ReservationMetadataField.objects.all(), widget=FilteredSelectMultiple(_('Required fields'), False))
+
     class Meta:
         model = ReservationMetadataSet
         exclude = CommonExcludeMixin.exclude + ('id',)
