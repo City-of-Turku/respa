@@ -812,8 +812,8 @@ msgstr "Extra frågor för bokning"
 msgid "Reserver name"
 msgstr "Reservnamn"
 
-msgid "Reserver ID (business or person)"
-msgstr "Reserv ID (företag eller person)"
+msgid "Reserver ID (business)"
+msgstr "Reserv ID (företag)"
 
 msgid "Reserver email address"
 msgstr "Reserverares email adress"

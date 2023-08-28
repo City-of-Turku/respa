@@ -810,8 +810,8 @@ msgstr "Varauksen lisäkysymykset"
 msgid "Reserver name"
 msgstr "Varaajan nimi"
 
-msgid "Reserver ID (business or person)"
-msgstr "Varaajan tunniste (yritys tai henkilö)"
+msgid "Reserver ID (business)"
+msgstr "Varaajan tunniste (yritys)"
 
 msgid "Reserver email address"
 msgstr "Varaajan sähköpostiosoite"

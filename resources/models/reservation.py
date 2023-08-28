@@ -170,7 +170,7 @@ class Reservation(ModifiableModel):
     # extra detail fields for manually confirmed reservations
 
     reserver_name = models.CharField(verbose_name=_('Reserver name'), max_length=100, blank=True)
-    reserver_id = models.CharField(verbose_name=_('Reserver ID (business or person)'), max_length=30, blank=True)
+    reserver_id = models.CharField(verbose_name=_('Reserver ID (business)'), max_length=30, blank=True)
     reserver_email_address = models.EmailField(verbose_name=_('Reserver email address'), blank=True)
     reserver_phone_number = models.CharField(verbose_name=_('Reserver phone number'), max_length=30, blank=True)
     reserver_address_street = models.CharField(verbose_name=_('Reserver address street'), max_length=100, blank=True)

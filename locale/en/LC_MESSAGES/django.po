@@ -1130,7 +1130,7 @@ msgid "Reserver name"
 msgstr ""
 
 #: resources/models/reservation.py:156
-msgid "Reserver ID (business or person)"
+msgid "Reserver ID (business)"
 msgstr ""
 
 #: resources/models/reservation.py:157
