@@ -41,7 +41,7 @@ def get_value_from_dict(dict_data, key):
 
 @register.simple_tag
 def user_has_permission(user, permission, obj):
-    return user.has_perm(permission, obj) or obj.is_manager(user)
+    return user.has_perm(permission, obj)
 
 
 @register.filter

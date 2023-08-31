@@ -103,9 +103,25 @@ function updateAllPermissionMgmtFormIndices() {
   }
 }
 
+function canApproveReservationsListener() {
+  $('[id*="-can_approve_reservation"]').on('click', handleCanApproveReservationsChange);
+}
+
+function handleCanApproveReservationsChange(event) {
+  const unitId = $(this).closest('.custom-checkbox').attr('data-unit-id')
+  const value = event.currentTarget.checked
+  if (unitId) {
+    const $inputs = $('[data-unit-id="' + unitId + '"]');
+    $inputs.prop('checked', value)
+  }
+
+  initializeUserForm();
+}
+
 export function initializeUserFormEventHandlers() {
   enableRemovePermission();
   enableAddNewPermission();
   setEmptyPermissionItem();
   isStaffCheckboxListener();
+  canApproveReservationsListener();
 }
