@@ -37,7 +37,8 @@ from payments.models import Order
 
 from resources.models import (
     Reservation, Resource, ReservationMetadataSet,
-    ReservationHomeMunicipalityField, ReservationBulk, Unit
+    ReservationHomeMunicipalityField, ReservationBulk, Unit,
+    MaintenanceMode
 )
 from resources.models.reservation import RESERVATION_BILLING_FIELDS, RESERVATION_EXTRA_FIELDS
 from resources.models.utils import build_reservations_ical_file
@@ -265,6 +266,11 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         # this check is probably only needed for PATCH
 
         obj_user_is_staff = bool(request_user and request_user.is_staff)
+
+        if (not reservation or (reservation and reservation.state != Reservation.WAITING_FOR_PAYMENT)) \
+            and MaintenanceMode.objects.active().exists():
+                raise ValidationError(_('Reservations are disabled at this moment.'))
+
 
         try:
             resource = data['resource']

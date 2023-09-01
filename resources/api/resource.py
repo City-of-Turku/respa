@@ -45,7 +45,7 @@ from resources.models import (
     ResourceImage, ResourceType, ResourceEquipment, TermsOfUse, Equipment, ReservationMetadataSet,
     ReservationMetadataField, ReservationHomeMunicipalityField,
     ReservationHomeMunicipalitySet, ResourceDailyOpeningHours, UnitAccessibility, Unit, ResourceTag,
-    ResourceUniversalField, ResourceUniversalFormOption, UniversalFormFieldType
+    ResourceUniversalField, ResourceUniversalFormOption, UniversalFormFieldType, MaintenanceMode
 )
 from resources.models.resource import determine_hours_time_range
 from payments.models import Product
@@ -615,6 +615,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     resource_staff_emails = ResourceStaffEmailsField()
     universal_field = ResourceUniversalFieldSerializer(many=True, read_only=True, source='resource_universal_field')
     reservable_by_all_staff = serializers.BooleanField(required=False)
+    reservable = serializers.SerializerMethodField()
 
     def get_max_price_per_hour(self, obj):
         """Backwards compatibility for 'max_price_per_hour' field that is now deprecated"""
@@ -655,6 +656,8 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
             [tag.label for tag in ResourceTag.objects.filter(resource=obj)] + list(obj.tags.names())))
 
     def get_user_permissions(self, obj):
+        if MaintenanceMode.objects.active().exists():
+            return { }
         request = self.context.get('request', None)
         prefetched_user = self.context.get('prefetched_user', None)
 
@@ -683,6 +686,11 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     def get_payment_terms(self, obj):
         data = TermsOfUseSerializer(obj.payment_terms).data
         return data['text']
+
+    def get_reservable(self, obj):
+        if MaintenanceMode.objects.active().exists():
+            return False
+        return obj.reservable
 
     def get_reservable_before(self, obj):
         request = self.context.get('request')
@@ -786,6 +794,9 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
             self.context.update(times)
 
     def get_opening_hours(self, obj):
+        if MaintenanceMode.objects.active().exists():
+            return [ ]
+
         if 'start' in self.context:
             start = self.context['start']
             end = self.context['end']

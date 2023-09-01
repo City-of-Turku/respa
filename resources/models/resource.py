@@ -1205,4 +1205,24 @@ class MaintenanceMessage(ModifiableModel):
         if self.end <= self.start:
             raise ValidationError(_("Invalid start or end time"))
 
+class MaintenanceModeQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(start__lt=timezone.now(), end__gt=timezone.now())
 
+
+class MaintenanceMode(ModifiableModel):
+    start = models.DateTimeField(verbose_name=_('Begin time'), null=False, blank=False)
+    end = models.DateTimeField(verbose_name=_('End time'), null=False, blank=False)
+    maintenance_message = models.ForeignKey(MaintenanceMessage, on_delete=models.CASCADE, null=True, blank=True)
+
+    objects = MaintenanceModeQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = _('maintenance mode')
+        verbose_name_plural = _('maintenance modes')
+        ordering = ('start', )
+
+    def clean(self):
+        super().clean()
+        if self.end <= self.start:
+            raise ValidationError(_("Invalid start or end time"))

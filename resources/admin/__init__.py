@@ -6,6 +6,7 @@ from django.contrib import admin
 from django.contrib.admin import site as admin_site
 from django.contrib.admin.utils import unquote
 from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.contrib.admin.options import InlineModelAdmin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.gis.admin import OSMGeoAdmin
@@ -29,7 +30,7 @@ from ..models import (
     ReservationHomeMunicipalityField, ReservationHomeMunicipalitySet, Resource, ResourceTag, ResourceAccessibility,
     ResourceEquipment, ResourceGroup, ResourceImage, ResourceType, TermsOfUse,
     Unit, UnitAuthorization, UnitIdentifier, UnitGroup, UnitGroupAuthorization,
-    MaintenanceMessage, UniversalFormFieldType, ResourceUniversalField, ResourceUniversalFormOption,
+    MaintenanceMessage, UniversalFormFieldType, ResourceUniversalField, ResourceUniversalFormOption, MaintenanceMode
 )
 from ..models.utils import generate_id
 from munigeo.models import Municipality
@@ -529,6 +530,14 @@ class RespaTokenAdmin(admin.ModelAdmin):
     raw_id_fields = ('user',)
 
 
+class MaintenanceModeInline(admin.TabularInline):
+    model = MaintenanceMode
+    fields = ('start', 'end', )
+    verbose_name = _('maintenance mode')
+    verbose_name_plural = _('maintenance modes')
+    extra = 0
+
+
 class MaintenanceMessageAdminForm(forms.ModelForm):
     class Meta:
         model = MaintenanceMessage
@@ -546,6 +555,7 @@ class MaintenanceMessageAdminForm(forms.ModelForm):
 
 class MaintenanceMessageAdmin(TranslationAdmin):
     form = MaintenanceMessageAdminForm
+    inlines = ( MaintenanceModeInline, )
     fieldsets = (
         (_('General'), {
             'fields': (
