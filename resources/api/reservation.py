@@ -37,8 +37,7 @@ from payments.models import Order
 
 from resources.models import (
     Reservation, Resource, ReservationMetadataSet,
-    ReservationHomeMunicipalityField, ReservationBulk, Unit,
-    MaintenanceMode
+    ReservationHomeMunicipalityField, ReservationBulk, Unit
 )
 from resources.models.reservation import RESERVATION_BILLING_FIELDS, RESERVATION_EXTRA_FIELDS
 from resources.models.utils import build_reservations_ical_file
@@ -54,6 +53,8 @@ from .base import (
 from ..models.utils import dateparser, is_reservation_metadata_or_times_different
 from respa.renderers import ResourcesBrowsableAPIRenderer
 from payments.utils import is_free, get_price
+
+from maintenance.models import MaintenanceMode
 
 User = get_user_model()
 

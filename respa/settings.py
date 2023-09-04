@@ -222,6 +222,7 @@ INSTALLED_APPS = [
     'respa_outlook',
     'respa_o365',
     'respa_admin',
+    'maintenance',
 
     'sanitized_dump',
     'drf_yasg',

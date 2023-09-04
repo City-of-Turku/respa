@@ -10,6 +10,7 @@ from resources.views.images import ResourceImageView
 from resources.views.ical import ICalFeedView
 
 import accessibility.api
+import maintenance.api
 
 if getattr(settings, 'RESPA_COMMENTS_ENABLED', False):
     import comments.api

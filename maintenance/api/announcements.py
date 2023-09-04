@@ -1,6 +1,6 @@
 from rest_framework import viewsets
-from .base import TranslatedModelSerializer, register_view
-from resources.models import MaintenanceMessage
+from resources.api.base import TranslatedModelSerializer, register_view
+from maintenance.models import MaintenanceMessage
 
 
 

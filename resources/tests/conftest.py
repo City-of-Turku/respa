@@ -9,11 +9,11 @@ from rest_framework.test import APIClient, APIRequestFactory
 from resources.enums import UnitAuthorizationLevel
 from resources.models import Resource, ResourceType, Unit, Purpose, Day, Period
 from resources.models import Equipment, EquipmentAlias, ResourceEquipment, EquipmentCategory, TermsOfUse, ResourceGroup
-from resources.models import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility, UnitAccessibility, MaintenanceMessage
+from resources.models import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility, UnitAccessibility
 from resources.models import ResourceUniversalFormOption, ResourceUniversalField, UniversalFormFieldType
 from resources.models import ReservationMetadataSet, ReservationMetadataField
 from munigeo.models import Municipality
-
+from maintenance.models import MaintenanceMessage, MaintenanceMode
 
 @pytest.fixture
 def api_client():
@@ -584,6 +584,12 @@ def maintenance_message():
         message_fi='Tämä on ilmoitus',
         message_en='This is a notice',
         message_sv='Detta är ett meddelande'
+    )
+
+@pytest.fixture
+def maintenance_mode():
+    return MaintenanceMode.objects.create(
+        start=timezone.now(), end=timezone.now() + datetime.timedelta(minutes=20)
     )
 
 @pytest.mark.django_db

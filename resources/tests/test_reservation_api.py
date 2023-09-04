@@ -15,11 +15,17 @@ from rest_framework.exceptions import ErrorDetail
 from caterings.models import CateringOrder, CateringProvider
 
 from resources.enums import UnitAuthorizationLevel
-from resources.models import (Period, Day, Reservation, Resource, ResourceGroup, ReservationMetadataField,
-                              ReservationMetadataSet, UnitAuthorization)
+from resources.models import (
+    Period, Day, Reservation, 
+    Resource, ResourceGroup, ReservationMetadataField,
+    ReservationMetadataSet, UnitAuthorization
+)
 from notifications.models import NotificationTemplate, NotificationType
 from notifications.tests.utils import check_received_mail_exists
-from .utils import check_disallowed_methods, assert_non_field_errors_contain, assert_response_objects, MAX_QUERIES
+from .utils import (
+    check_disallowed_methods, assert_non_field_errors_contain,
+    assert_response_objects, MAX_QUERIES
+)
 
 
 DEFAULT_RESERVATION_EXTRA_FIELDS = ('reserver_name', 'reserver_phone_number', 'reserver_address_street',
@@ -3258,3 +3264,12 @@ def test_reservations_made_to_unit_with_overlap_restriction_with_different_times
     assert response.status_code == expected
     if expected == 400:
         assert response.data.get('non_field_errors')[0].code == 'conflicting_reservation'
+
+@pytest.mark.django_db
+def test_reservation_not_allowed_during_maintenance_mode(
+    api_client, user, list_url, reservation_data_extra, maintenance_mode):
+    api_client.force_authenticate(user=user)
+
+    response = api_client.post(list_url, data=reservation_data_extra)
+    assert response.status_code == 400
+    assert_non_field_errors_contain(response, 'Reservations are disabled at this moment')
