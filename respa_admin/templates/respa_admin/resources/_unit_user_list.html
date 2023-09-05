@@ -40,7 +40,7 @@
                     {% if unit_auths|length > 6 %}style="min-height: 690px;"{% endif %}>
                 {% for authorization in unit_auths %}
                 {% with authorization.authorized as unit_user %}
-                {% user_has_permission unit_user 'can_approve_reservation' unit as user_can_approve %}
+                {% user_has_permission unit_user 'unit:can_approve_reservation' unit as user_can_approve %}
                 <div class="row panel management-list list-item" data-paginator-item="true">
                     <div class="col-md-2">
                         <span>{{ unit_user.first_name }} {{ unit_user.last_name }}</span>
