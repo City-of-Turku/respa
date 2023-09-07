@@ -2115,3 +2115,12 @@ msgstr "e-postmallprojekt"
 
 msgid "Update HTML Templates"
 msgstr "Uppdatera HTML-mallar"
+
+msgid "HTML Preview"
+msgstr "HTML-förhandsgranskning"
+
+msgid "Show Preview"
+msgstr "Visa förhandsgranskning"
+
+msgid "Hide Preview"
+msgstr "Dölj förhandsgranskningen"

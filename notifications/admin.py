@@ -71,6 +71,7 @@ class NotificationTemplateAdmin(TranslatableAdmin):
     # variables are accessed?
     #
     form = NotificationTemplateForm
+    change_form_template = 'admin/html_preview.html'
     actions = ['update_notification_html_templates']
 
     def get_urls(self):

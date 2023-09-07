@@ -2800,3 +2800,12 @@ msgstr ""
 
 msgid "Update HTML Templates"
 msgstr ""
+
+msgid "HTML Preview"
+msgstr ""
+
+msgid "Show Preview"
+msgstr ""
+
+msgid "Hide Preview"
+msgstr ""

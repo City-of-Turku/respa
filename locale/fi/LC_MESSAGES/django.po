@@ -2177,3 +2177,12 @@ msgstr "sähköpostimalliprojekti"
 
 msgid "Update HTML Templates"
 msgstr "Päivitä HTML-pohjat"
+
+msgid "HTML Preview"
+msgstr "HTML:n esikatselu"
+
+msgid "Show Preview"
+msgstr "Näytä esikatselu"
+
+msgid "Hide Preview"
+msgstr "Piilota esikatselu"
