@@ -587,9 +587,10 @@ def maintenance_message():
     )
 
 @pytest.fixture
-def maintenance_mode():
+def maintenance_mode(maintenance_message):
     return MaintenanceMode.objects.create(
-        start=timezone.now(), end=timezone.now() + datetime.timedelta(minutes=20)
+        start=timezone.now(), end=timezone.now() + datetime.timedelta(minutes=20),
+        maintenance_message=maintenance_message
     )
 
 @pytest.mark.django_db
