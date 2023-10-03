@@ -105,6 +105,7 @@ env = environ.Env(
     QUALITYTOOL_PASSWORD=(str, ''),
     QUALITYTOOL_API_BASE=(str, ''),
     QUALITYTOOL_ENABLED=(bool, False),
+    USE_KEYCLOAK=(bool, False),
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -356,6 +357,8 @@ SOCIALACCOUNT_PROVIDERS = {
         'VERIFIED_EMAIL': True
     }
 }
+
+USE_KEYCLOAK = env('USE_KEYCLOAK')
 
 STRONG_AUTH_CLAIMS = env('STRONG_AUTH_CLAIMS')
 

@@ -6,12 +6,21 @@ from allauth.socialaccount.providers.oauth2.views import (
 from respa.providers.turku_oidc.provider import TurkuOIDCProvider
 from django.conf import settings
 
+if settings.USE_KEYCLOAK:
+    ACCESS_TOKEN_URL = '%s/protocol/openid-connect/token' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
+    AUTHORIZE_URL =  '%s/protocol/openid-connect/auth' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
+    PROFILE_URL = '%s/protocol/openid-connect/userinfo' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
+else:
+    ACCESS_TOKEN_URL = '%s/openid/token/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
+    AUTHORIZE_URL = '%s/openid/authorize/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
+    PROFILE_URL = '%s/openid/userinfo/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
+
 
 class OIDCOAuth2Adapter(OAuth2Adapter):
     provider_id = TurkuOIDCProvider.id
-    access_token_url = '%s/openid/token/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
-    authorize_url = '%s/openid/authorize/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
-    profile_url = '%s/openid/userinfo/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
+    access_token_url = ACCESS_TOKEN_URL
+    authorize_url = AUTHORIZE_URL
+    profile_url = PROFILE_URL
 
     def complete_login(self, request, app, token, **kwargs):
         headers = {'Authorization': 'Bearer {0}'.format(token.token)}
