@@ -338,6 +338,12 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         default=False, 
         help_text=_('All staff users can create reservations on behalf of customers')
     )
+    send_sms_notification = models.BooleanField(
+        verbose_name=_('Send reservation SMS'),
+        default=False,
+        help_text=_('SMS will be sent to reserver in addition to email notifications. '
+                    'Reservation requires phone number field to be set.')
+    )
     reservable_max_days_in_advance = models.PositiveSmallIntegerField(verbose_name=_('Reservable max. days in advance'),
                                                                       null=True, blank=True)
     reservable_min_days_in_advance = models.PositiveSmallIntegerField(verbose_name=_('Reservable min. days in advance'),

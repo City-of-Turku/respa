@@ -31,6 +31,7 @@ env = environ.Env(
     SENTRY_ENVIRONMENT=(str, ''),
     COOKIE_PREFIX=(str, 'respa'),
     INTERNAL_IPS=(list, []),
+    SMS_ENABLED=(bool, False),
     MAIL_ENABLED=(bool, False),
     MAIL_DEFAULT_FROM=(str, ''),
     MAIL_MAILGUN_KEY=(str, ''),
@@ -455,6 +456,7 @@ THUMBNAIL_PROCESSORS = (
 ) + thumbnail_settings.THUMBNAIL_PROCESSORS
 
 
+RESPA_SMS_ENABLED = env('SMS_ENABLED')
 RESPA_MAILS_ENABLED = env('MAIL_ENABLED')
 RESPA_MAILS_FROM_ADDRESS = env('MAIL_DEFAULT_FROM')
 RESPA_CATERINGS_ENABLED = False

@@ -169,6 +169,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
         (_('Reservation Information'), {
             'fields': (
                 'need_manual_confirmation',
+                'send_sms_notification',
                 'reservation_metadata_set',
                 'reservation_home_municipality_set',
                 'reservable_min_days_in_advance',
