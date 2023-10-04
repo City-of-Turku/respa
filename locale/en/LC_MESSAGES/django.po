@@ -1356,7 +1356,7 @@ msgstr ""
 
 #: resources/models/resource.py:187
 msgid "E-mail addresses for client correspondence"
-msgstr ""
+msgstr "Email addresses for receiving notifications of customer reservations"
 
 #: resources/models/resource.py:189
 msgid "Authentication"
@@ -2010,7 +2010,7 @@ msgstr ""
 
 #: respa_admin/templates/respa_admin/resources/form/_booking.html:41
 msgid "A notification will be sent when a space is booked."
-msgstr ""
+msgstr "Notifications are sent regarding customer-made reservations, including their confirmations, changes, and cancellations."
 
 #: respa_admin/templates/respa_admin/resources/form/_equipment.html:8
 msgid "Choose from the list below"
