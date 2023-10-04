@@ -729,10 +729,10 @@ class Reservation(ModifiableModel):
         """
         if getattr(self, 'order', None) and self.billing_email_address:
             return self.billing_email_address
+        elif self.reserver_email_address:
+            return self.reserver_email_address
         elif user:
             return user.email
-        else:
-            return self.reserver_email_address
     
     def update_sms_reminder(self, notification_type, user, action_by_official):
         # Only allow certain notification types as reminders e.g. exclude reservation_access_code_created

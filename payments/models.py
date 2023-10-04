@@ -804,7 +804,7 @@ class Order(models.Model):
     def get_price(self) -> Decimal:
         total_sum = sum(order_line.get_price() for order_line in self.get_order_lines())
         # The final total is rounded, NO ROUNDING BEFORE THIS.
-        return total_sum.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return Decimal(total_sum).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     def set_state(
             self, new_state: str, log_message: str = None,
