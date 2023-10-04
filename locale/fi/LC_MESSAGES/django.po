@@ -240,6 +240,13 @@ msgstr "Varauskommentti luotu"
 msgid "Catering order comment created"
 msgstr "Tarjoilutilauskommentti luotu"
 
+#: notifications/models.py:98
+msgid "Reservation bulk created"
+msgstr "Varausmassa luotu"
+
+msgid "Reservation reminder"
+msgstr "Varausmuistutus"
+
 msgid "Type"
 msgstr "Tyyppi"
 

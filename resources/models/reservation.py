@@ -737,6 +737,7 @@ class Reservation(ModifiableModel):
     def update_sms_reminder(self, notification_type, user, action_by_official):
         # Only allow certain notification types as reminders e.g. exclude reservation_access_code_created
         allowed_reminder_notification_types = (
+            NotificationType.RESERVATION_REMINDER,
             NotificationType.RESERVATION_CONFIRMED,
             NotificationType.RESERVATION_CREATED,
             NotificationType.RESERVATION_CREATED_BY_OFFICIAL,
@@ -1017,7 +1018,7 @@ class ReservationReminder(models.Model):
 
     def remind(self):
         self.reservation.send_reservation_mail(
-            notification_type = self.notification_type,
+            notification_type = NotificationType.RESERVATION_REMINDER,
             user = self.user,
             action_by_official = self.action_by_official,
             is_reminder = True

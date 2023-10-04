@@ -370,6 +370,9 @@ msgstr ""
 msgid "Reservation bulk created"
 msgstr ""
 
+msgid "Reservation reminder"
+msgstr ""
+
 #: notifications/models.py:102 resources/models/reservation.py:137
 #: resources/models/resource.py:686
 msgid "Type"

@@ -29,6 +29,7 @@ class NotificationType:
     RESERVATION_CANCELLED_BY_OFFICIAL = 'reservation_cancelled_by_official'
 
     RESERVATION_CREATED = 'reservation_created'
+    RESERVATION_REMINDER = 'reservation_reminder'
     RESERVATION_CREATED_OFFICIAL = 'reservation_created_official'
     RESERVATION_CREATED_BY_OFFICIAL = 'reservation_created_by_official'
 
@@ -99,7 +100,8 @@ class NotificationTemplate(TranslatableModel):
         (NotificationType.RESERVATION_COMMENT_CREATED, _('Reservation comment created')),
         (NotificationType.CATERING_ORDER_COMMENT_CREATED, _('Catering order comment created')),
 
-        (NotificationType.RESERVATION_BULK_CREATED, _('Reservation bulk created'))
+        (NotificationType.RESERVATION_BULK_CREATED, _('Reservation bulk created')),
+        (NotificationType.RESERVATION_REMINDER, _('Reservation reminder')),
     )
 
     type = models.CharField(

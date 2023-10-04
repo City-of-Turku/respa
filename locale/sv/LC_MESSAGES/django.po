@@ -241,6 +241,13 @@ msgstr "Bokningskommentar skapad"
 msgid "Catering order comment created"
 msgstr "Catering beställning komment skapad"
 
+#: notifications/models.py:98
+msgid "Reservation bulk created"
+msgstr "Reservationssats skapad"
+
+msgid "Reservation reminder"
+msgstr "Påminnelse om reservation"
+
 msgid "Type"
 msgstr "Typ"
 
