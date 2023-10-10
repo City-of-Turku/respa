@@ -87,6 +87,15 @@ def test_unit4():
             disallow_overlapping_reservations=True
         )
 
+@pytest.mark.django_db
+@pytest.fixture
+def test_unit_with_reminders_enabled():
+    return Unit.objects.create(
+        name="unit",
+        time_zone='Europe/Helsinki',
+        sms_reminder=True,
+        sms_reminder_delay=24
+    )
 
 @pytest.fixture
 def generic_terms():
@@ -251,6 +260,16 @@ def strong_resource(resource_with_opening_hours):
     resource_with_opening_hours.authentication = "strong"
     resource_with_opening_hours.save()
     return resource_with_opening_hours
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_with_reservation_reminders(
+    resource_with_opening_hours, 
+    test_unit_with_reminders_enabled):
+    resource_with_opening_hours.unit = test_unit_with_reminders_enabled
+    resource_with_opening_hours.save()
+    return resource_with_opening_hours
+
 
 
 @pytest.mark.django_db
