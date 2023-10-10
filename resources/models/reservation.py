@@ -783,7 +783,7 @@ class Reservation(ModifiableModel):
             if self.resource.unit.sms_reminder and self.reminder:
                 self.update_sms_reminder(notification_type, user, action_by_official)
 
-            if self.resource.send_sms_notification:
+            if self.resource.send_sms_notification and not staff_email: # Don't send sms when notifying staff.
                 send_respa_sms(self.reserver_phone_number,
                     rendered_notification['subject'], rendered_notification['short_message'])
         
