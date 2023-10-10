@@ -734,27 +734,10 @@ class Reservation(ModifiableModel):
             return self.reserver_email_address
         elif user:
             return user.email
-    
-    def update_sms_reminder(self, notification_type, user, action_by_official):
-        # Only allow certain notification types as reminders e.g. exclude reservation_access_code_created
-        allowed_reminder_notification_types = (
-            NotificationType.RESERVATION_REMINDER,
-            NotificationType.RESERVATION_CONFIRMED,
-            NotificationType.RESERVATION_CREATED,
-            NotificationType.RESERVATION_CREATED_BY_OFFICIAL,
-            NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE,
-            NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE_BY_OFFICIAL,
-        )
-
-        if notification_type in allowed_reminder_notification_types:
-            self.reminder.notification_type = self.reminder.notification_type if self.reminder.notification_type else notification_type
-            self.reminder.user = self.reminder.user if self.reminder.user else user
-            self.reminder.action_by_official = self.reminder.action_by_official if self.reminder.action_by_official else action_by_official
-            self.reminder.save()
-
+        
     def send_reservation_mail(self, notification_type, 
                               user=None, attachments=None, 
-                              action_by_official=False, staff_email=None,
+                              staff_email=None,
                               extra_context={}, is_reminder = False):
         notification_template = self.get_notification_template(notification_type)
         if self.user and not user: # If user isn't given use self.user.
@@ -779,9 +762,6 @@ class Reservation(ModifiableModel):
             if is_reminder:
                 return send_respa_sms(self.reserver_phone_number, 
                     rendered_notification['subject'], rendered_notification['short_message'])
-
-            if self.resource.unit.sms_reminder and self.reminder:
-                self.update_sms_reminder(notification_type, user, action_by_official)
 
             if self.resource.send_sms_notification and not staff_email: # Don't send sms when notifying staff.
                 send_respa_sms(self.reserver_phone_number,
@@ -816,7 +796,7 @@ class Reservation(ModifiableModel):
     def send_reservation_modified_mail(self, action_by_official=False):
         notification = NotificationType.RESERVATION_MODIFIED_BY_OFFICIAL \
             if action_by_official else NotificationType.RESERVATION_MODIFIED
-        self.send_reservation_mail(notification, action_by_official=action_by_official)
+        self.send_reservation_mail(notification)
         if action_by_official: # staff should also get notification with the updated reservations details.
             self.notify_staff_about_reservation(NotificationType.RESERVATION_MODIFIED_OFFICIAL)
 
@@ -831,21 +811,21 @@ class Reservation(ModifiableModel):
     def send_reservation_cancelled_mail(self, action_by_official=False):
         notification = NotificationType.RESERVATION_CANCELLED_BY_OFFICIAL \
             if action_by_official else NotificationType.RESERVATION_CANCELLED
-        self.send_reservation_mail(notification, action_by_official=action_by_official)
+        self.send_reservation_mail(notification)
 
     def send_reservation_created_mail(self, action_by_official=False):
         attachment = 'reservation.ics', build_reservations_ical_file([self]), 'text/calendar'
         notification = NotificationType.RESERVATION_CREATED_BY_OFFICIAL \
             if action_by_official else NotificationType.RESERVATION_CREATED
         self.send_reservation_mail(notification,
-                                   attachments=[attachment], action_by_official=action_by_official)
+                                   attachments=[attachment])
 
     def send_reservation_created_with_access_code_mail(self, action_by_official=False):
         attachment = 'reservation.ics', build_reservations_ical_file([self]), 'text/calendar'
         notification = NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE_OFFICIAL_BY_OFFICIAL \
             if action_by_official else NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE
         self.send_reservation_mail(notification,
-                                   attachments=[attachment], action_by_official=action_by_official)
+                                   attachments=[attachment])
 
     def send_reservation_waiting_for_payment_mail(self):
         self.send_reservation_mail(NotificationType.RESERVATION_WAITING_FOR_PAYMENT,
@@ -1003,11 +983,6 @@ class ReservationReminder(models.Model):
                                  on_delete=models.CASCADE)
     reminder_date = models.DateTimeField(verbose_name=_('Reminder Date'))
 
-    notification_type = models.CharField(verbose_name=_('Notification type'), max_length=32, null=True, blank=True)
-    user = models.ForeignKey('users.User', verbose_name=_('User'), related_name='Users',
-                                 on_delete=models.CASCADE, null=True, blank=True)
-    action_by_official = models.BooleanField(verbose_name=_('Action by official'), null=True, blank=True)
-
 
     objects = ReservationReminderQuerySet.as_manager()
 
@@ -1020,8 +995,7 @@ class ReservationReminder(models.Model):
     def remind(self):
         self.reservation.send_reservation_mail(
             notification_type = NotificationType.RESERVATION_REMINDER,
-            user = self.user,
-            action_by_official = self.action_by_official,
+            user = self.reservation.user,
             is_reminder = True
         )
 

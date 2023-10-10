@@ -967,7 +967,6 @@ class ReservationBulkViewSet(viewsets.ModelViewSet, ReservationCacheMixin):
             attachment = ('reservation.ics', ical_file, 'text/calendar')
             res.send_reservation_mail(
                 NotificationType.RESERVATION_BULK_CREATED,
-                action_by_official=res.user.is_staff,
                 attachments=[attachment],
                 extra_context=reservation_dates_context
             )
