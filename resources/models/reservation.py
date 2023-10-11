@@ -514,7 +514,8 @@ class Reservation(ModifiableModel):
                 'require_workstation': self.require_workstation,
                 'private_event': self.private_event,
                 'extra_question': self.reservation_extra_questions,
-                'home_municipality_id': reserver_home_municipality
+                'home_municipality_id': reserver_home_municipality,
+                'takes_place_virtually': self.takes_place_virtually
             }
             directly_included_fields = (
                 'number_of_participants',
@@ -543,6 +544,9 @@ class Reservation(ModifiableModel):
 
             if self.user and self.user.is_staff:
                 context['staff_name'] = self.user.get_display_name()
+            
+            if self.virtual_address:
+                context['virtual_address'] = self.virtual_address
 
             # Comments should only be added to notifications that are sent to staff.
             if notification_type in [NotificationType.RESERVATION_CREATED_OFFICIAL] and self.comments:

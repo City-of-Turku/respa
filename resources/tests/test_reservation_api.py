@@ -3281,8 +3281,6 @@ def test_reservation_reminder_create(
     resource_with_reservation_reminders):
     api_client.force_authenticate(user=user)
     reservation_data['resource'] = resource_with_reservation_reminders.pk
-    reservation_data['begin'] = '2115-04-04T09:00:00+02:00'
-    reservation_data['end'] = '2115-04-04T10:00:00+02:00'
     reservation_data['reserver_name'] = 'Nordea Demo'
     reservation_data['reserver_email_address'] = 'jey@example.com'
     reservation_data['reserver_phone_number'] = '+358404040404'
