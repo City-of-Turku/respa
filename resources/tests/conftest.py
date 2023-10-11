@@ -265,8 +265,10 @@ def strong_resource(resource_with_opening_hours):
 @pytest.fixture
 def resource_with_reservation_reminders(
     resource_with_opening_hours, 
+    metadataset_1,
     test_unit_with_reminders_enabled):
     resource_with_opening_hours.unit = test_unit_with_reminders_enabled
+    resource_with_opening_hours.reservation_metadata_set = metadataset_1
     resource_with_opening_hours.save()
     return resource_with_opening_hours
 
