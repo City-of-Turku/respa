@@ -2,7 +2,13 @@ from django.conf import settings
 from django.utils import timezone
 import django_filters
 from modeltranslation.translator import NotRegistered, translator
-from rest_framework import serializers, fields as drf
+from rest_framework import (
+    serializers, status, 
+    permissions, views,
+    exceptions,
+    fields as drf
+)
+from rest_framework.response import Response
 from django.db.models import Q
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import gettext_lazy as _
@@ -10,6 +16,10 @@ from django.contrib.gis.geos import Point
 from resources.models.availability import Period, Day
 from resources.models.resource import Resource
 from resources.models.unit import Unit
+from resources.models.reservation import Reservation
+
+from drf_yasg.utils import swagger_auto_schema
+
 
 all_views = []
 
@@ -298,3 +308,64 @@ class LocationField(serializers.DictField):
 
 
         return super().validate_empty_values(data)
+    
+
+class CancelReservationPermission(permissions.BasePermission):
+    def __init__(self, instance):
+        self.instance = instance
+
+    def has_permission(self, request, view):
+        user = request.user
+        return super().has_permission(request, view) and self.instance.is_manager(user)
+
+
+class CancelReservationsSerializer(serializers.Serializer):
+    begin = serializers.DateField(required=True)
+    end = serializers.DateField(required=True)
+
+    def validate(self, attrs):
+        begin = attrs['begin']
+        end = attrs['end']
+        if begin > end:
+            raise serializers.ValidationError({
+                'begin': _('Cannot be greater than end')
+            })
+        return super().validate(attrs)
+
+class CancelReservationsView(views.APIView):
+    http_method_names = ('delete', )
+    serializer_class = CancelReservationsSerializer
+
+    def get_reservation_queryset(self, begin, end):
+        raise NotImplementedError("Not implemented in base class")
+
+    def get_serializer(self, *args, **kwargs):
+        return self.serializer_class(*args, **kwargs)
+
+    def get_object(self):
+        try:
+            return self.Meta.model.objects.get(pk=self.kwargs['pk'])
+        except self.Meta.model.DoesNotExist:
+            raise exceptions.NotFound(
+                serializers.PrimaryKeyRelatedField.default_error_messages.get('does_not_exist').format(pk_value=self.kwargs['pk'])
+            )
+
+    def get_permissions(self):
+        return (CancelReservationPermission(self.get_object()), )
+
+    @swagger_auto_schema(
+        responses=None,
+        tags=['v1']
+    )
+    def delete(self, request, **kwargs):
+        user = request.user
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        reservations = self.get_reservation_queryset(
+            validated_data['begin'], validated_data['end']).exclude(state=Reservation.CANCELLED)
+
+        if reservations.exists():
+            reservations.cancel(user)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

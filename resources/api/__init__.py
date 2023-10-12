@@ -3,10 +3,10 @@ from users.api import all_views as users_views
 from .resource import (
     ResourceListViewSet, ResourceViewSet, PurposeViewSet, 
     ResourceCreateView, ResourceUpdateView, ResourceCreateProductView,
-    ResourceDeleteView, ResourceRestoreView
+    ResourceDeleteView, ResourceRestoreView, ResourceCancelReservationsView
 )
 from .reservation import ReservationViewSet
-from .unit import UnitViewSet
+from .unit import UnitViewSet, UnitCancelReservationsView
 from .search import TypeaheadViewSet
 from .equipment import EquipmentViewSet
 

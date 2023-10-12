@@ -56,7 +56,7 @@ from .accessibility import ResourceAccessibilitySerializer
 from .base import (
     ExtraDataMixin, TranslatedModelSerializer, register_view,
     DRFFilterBooleanWidget, PeriodSerializer, DaySerializer, Period,
-    LocationField, get_translated_field_help_text
+    LocationField, get_translated_field_help_text, CancelReservationsView
 )
 from .reservation import ReservationSerializer
 from .unit import UnitSerializer
@@ -1870,6 +1870,17 @@ class ResourceUpdateSerializer(ResourceCreateSerializer):
         log_entry(instance, user, is_edit=True, message='Edited through API: %s' % ', '.join([k for k in validated_data]))
         return instance
     
+
+class ResourceCancelReservationsView(CancelReservationsView):
+    queryset = Resource.objects.all()
+    class Meta:
+        model = Resource
+
+
+    def get_reservation_queryset(self, begin, end):
+        query = Q(begin__gte=begin, end__lte=end, resource=self.get_object())
+        return Reservation.objects.filter(query)
+
 
 class ResourceCreateView(generics.CreateAPIView):
     queryset = Resource.objects.select_related(
