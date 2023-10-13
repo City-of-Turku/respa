@@ -316,7 +316,7 @@ class CancelReservationPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        return super().has_permission(request, view) and self.instance.is_manager(user)
+        return super().has_permission(request, view) and self.instance.is_admin(user)
 
 
 class CancelReservationsSerializer(serializers.Serializer):
