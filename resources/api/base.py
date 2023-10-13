@@ -19,6 +19,7 @@ from resources.models.unit import Unit
 from resources.models.reservation import Reservation
 
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 all_views = []
@@ -354,6 +355,14 @@ class CancelReservationsView(views.APIView):
         return (CancelReservationPermission(self.get_object()), )
 
     @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['begin', 'end'],
+            properties={ 
+                'begin': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                'end':openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME)
+            },
+        ),
         responses=None,
         tags=['v1']
     )
