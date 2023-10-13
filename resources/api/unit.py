@@ -6,6 +6,7 @@ from resources.auth import (
 )
 from rest_framework import serializers, viewsets
 from django.contrib.auth.models import AnonymousUser
+from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 import django_filters
 from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly

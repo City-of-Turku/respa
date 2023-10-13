@@ -320,8 +320,8 @@ class CancelReservationPermission(permissions.BasePermission):
 
 
 class CancelReservationsSerializer(serializers.Serializer):
-    begin = serializers.DateField(required=True)
-    end = serializers.DateField(required=True)
+    begin = serializers.DateTimeField(required=True)
+    end = serializers.DateTimeField(required=True)
 
     def validate(self, attrs):
         begin = attrs['begin']
