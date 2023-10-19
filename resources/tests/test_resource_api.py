@@ -1303,9 +1303,9 @@ def test_user_permissions_in_resource_endpoint_during_maintenance_mode(
 @pytest.mark.django_db
 def test_resource_mass_cancel_reservation_forbidden_for_regular_user(
     api_client, user,
-    resource_in_unit):
+    resource_with_active_reservations):
     api_client.force_authenticate(user=user)
-    url = f"{reverse('resource-detail', kwargs={'pk': resource_in_unit.pk})[:-1]}/cancel_reservations/"
+    url = f"{reverse('resource-detail', kwargs={'pk': resource_with_active_reservations.pk})[:-1]}/cancel_reservations/"
     payload = {
         'begin': '2115-04-04T00:00:00+02:00',
         'end': '2115-04-04T23:59:59+02:00'
@@ -1313,7 +1313,8 @@ def test_resource_mass_cancel_reservation_forbidden_for_regular_user(
 
     response = api_client.delete(url, data=payload, HTTP_ACCEPT_LANGUAGE='en')
     assert response.status_code == 403
-    assert response.data['code'] == 'permission_denied'
+    error_detail = response.data['detail']
+    assert error_detail.code == 'permission_denied'
 
 @pytest.mark.django_db
 def test_resource_mass_cancel_reservation_permitted_for_admin_user(
