@@ -91,7 +91,9 @@ class ReservationQuerySet(models.QuerySet):
     def cancel(self, user):
         for reservation in self:
             reservation.set_state(Reservation.CANCELLED, user)
-
+            if reservation.has_order():
+                order = reservation.get_order()
+                order.set_state('cancelled', 'Order reservation was cancelled.')
 class ReservationBulkQuerySet(models.QuerySet):
     def current(self):
         return self
