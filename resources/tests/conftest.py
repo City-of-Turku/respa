@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient, APIRequestFactory
 
 from resources.enums import UnitAuthorizationLevel
-from resources.models import Resource, ResourceType, Unit, Purpose, Day, Period
+from resources.models import Resource, ResourceType, Unit, Purpose, Day, Period, Reservation
 from resources.models import Equipment, EquipmentAlias, ResourceEquipment, EquipmentCategory, TermsOfUse, ResourceGroup
 from resources.models import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility, UnitAccessibility
 from resources.models import ResourceUniversalFormOption, ResourceUniversalField, UniversalFormFieldType
@@ -657,3 +657,15 @@ def resource_universal_field_with_options(resource_universal_field_no_options):
         )
 
     return resource_universal_field_no_options
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_with_active_reservations(resource_in_unit):
+    Reservation.objects.bulk_create(
+        [Reservation(
+            resource=resource_in_unit,
+            begin=datetime.datetime(year=2115, month=4, day=4, hour=i, minute=0, second=0),
+            end=datetime.datetime(year=2115, month=4, day=4, hour=i+1, minute=0, second=0)) \
+                for i in range(1,11)
+        ])
+    return resource_in_unit

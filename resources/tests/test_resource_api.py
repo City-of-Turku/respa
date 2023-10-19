@@ -1298,3 +1298,37 @@ def test_user_permissions_in_resource_endpoint_during_maintenance_mode(
     response = staff_api_client.get(url)
     assert response.status_code == 200
     assert response.data['user_permissions'] == expected
+
+
+@pytest.mark.django_db
+def test_resource_mass_cancel_reservation_forbidden_for_regular_user(
+    api_client, user,
+    resource_in_unit):
+    api_client.force_authenticate(user=user)
+    url = f"{reverse('resource-detail', kwargs={'pk': resource_in_unit.pk})[:-1]}/cancel_reservations/"
+    payload = {
+        'begin': '2115-04-04T00:00:00+02:00',
+        'end': '2115-04-04T23:59:59+02:00'
+    }
+
+    response = api_client.delete(url, data=payload, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == 403
+    assert response.data['code'] == 'permission_denied'
+
+@pytest.mark.django_db
+def test_resource_mass_cancel_reservation_permitted_for_admin_user(
+    staff_api_client, staff_user,
+    resource_with_active_reservations):
+    resource_with_active_reservations.unit.create_authorization(staff_user, 'admin')
+    url = f"{reverse('resource-detail', kwargs={'pk': resource_with_active_reservations.pk})[:-1]}/cancel_reservations/"
+    staff_api_client.force_authenticate(user=staff_user)
+
+    assert resource_with_active_reservations.reservations.current().count() == 10
+    payload = {
+        'begin': '2115-04-04T00:00:00+02:00',
+        'end': '2115-04-04T23:59:59+02:00'
+    }
+
+    response = staff_api_client.delete(url, data=payload, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == 204
+    assert resource_with_active_reservations.reservations.current().count() == 0
