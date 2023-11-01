@@ -808,7 +808,8 @@ class Order(models.Model):
 
     def set_state(
             self, new_state: str, log_message: str = None,
-            save: bool = True, update_reservation_state: bool = True
+            save: bool = True, update_reservation_state: bool = True,
+            **kwargs
         ) -> None:
         assert new_state in (Order.WAITING, Order.CONFIRMED, Order.REJECTED, Order.EXPIRED, Order.CANCELLED)
 
@@ -843,9 +844,9 @@ class Order(models.Model):
 
                 if update_reservation_state:
                     if new_state == Order.CONFIRMED:
-                        self.reservation.set_state(Reservation.CONFIRMED, None)
+                        self.reservation.set_state(Reservation.CONFIRMED, kwargs.get('user', self.reservation.user))
                     elif new_state in (Order.REJECTED, Order.EXPIRED, Order.CANCELLED):
-                        self.reservation.set_state(Reservation.CANCELLED, None)
+                        self.reservation.set_state(Reservation.CANCELLED, kwargs.get('user', self.reservation.user))
 
                 if save:
                     self.save()

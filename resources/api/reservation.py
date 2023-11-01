@@ -1126,7 +1126,7 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         instance.set_state(Reservation.CANCELLED, self.request.user)
         if instance.has_order():
             order = instance.get_order()
-            order.set_state(Order.CANCELLED, 'Order reservation was cancelled.')
+            order.set_state(Order.CANCELLED, 'Order reservation was cancelled.', user = self.request.user)
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
