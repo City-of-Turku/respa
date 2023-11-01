@@ -73,6 +73,7 @@ more-itertools
 ntlm-auth
 oauthlib
 packaging
+paramiko
 phonenumbers
 Pillow>7.0.0
 pluggy
