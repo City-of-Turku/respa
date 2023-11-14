@@ -201,6 +201,11 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             if is_staff_event and resource.can_create_staff_event(request.user):
                 required = {'reserver_name', 'event_description'}
 
+            # reservations of type blocked don't require any fields
+            is_blocked_type = data.get('type') == Reservation.TYPE_BLOCKED
+            if is_blocked_type and resource.can_create_special_type_reservation(request.user):
+                required = []
+
             # we don't need to remove a field here if it isn't supported, as it will be read-only and will be more
             # easily removed in to_representation()
             for field_name in supported:

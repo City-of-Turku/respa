@@ -16,7 +16,7 @@ from caterings.models import CateringOrder, CateringProvider
 
 from resources.enums import UnitAuthorizationLevel
 from resources.models import (
-    Period, Day, Reservation, 
+    Period, Day, Reservation,
     Resource, ResourceGroup, ReservationMetadataField,
     ReservationMetadataSet, UnitAuthorization, ReservationReminder
 )
@@ -2503,6 +2503,33 @@ def test_reservation_block_type_manager(resource_in_unit, reservation_data, api_
 
 
 @pytest.mark.django_db
+def test_reservation_block_type_no_required_fields(resource_in_unit, reservation_data, api_client, unit_manager_user):
+    """
+    It should be possible to create blocked type reservations without filling in any required fields
+    when the user has permission to create blocked reservations
+    """
+    field_1 = ReservationMetadataField.objects.get(field_name='reserver_name')
+    field_2 = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    field_3 = ReservationMetadataField.objects.get(field_name='reserver_email_address')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='updated_metadata',
+    )
+    metadata_set.supported_fields.set([field_1, field_2, field_3])
+    metadata_set.required_fields.set([field_1, field_2, field_3])
+    resource_in_unit.reservation_metadata_set = ReservationMetadataSet.objects.get(name='updated_metadata')
+    resource_in_unit.save()
+
+    api_client.force_authenticate(unit_manager_user)
+    list_url = reverse('reservation-list')
+    reservation_data['type'] = Reservation.TYPE_BLOCKED
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+    assert response.data['type'] == Reservation.TYPE_BLOCKED
+    reservation_obj = Reservation.objects.get(id=response.data['id'])
+    assert reservation_obj.type == Reservation.TYPE_BLOCKED
+
+
+@pytest.mark.django_db
 def test_reservation_cannot_add_bogus_type(resource_in_unit, reservation_data, api_client, unit_manager_user):
     """ User should not be able to add a non-supported type to reservation """
     api_client.force_authenticate(unit_manager_user)
@@ -3277,7 +3304,7 @@ def test_reservation_not_allowed_during_maintenance_mode(
 
 @pytest.mark.django_db
 def test_reservation_reminder_create(
-    api_client, user, list_url, reservation_data, 
+    api_client, user, list_url, reservation_data,
     resource_with_reservation_reminders):
     api_client.force_authenticate(user=user)
     reservation_data['resource'] = resource_with_reservation_reminders.pk
