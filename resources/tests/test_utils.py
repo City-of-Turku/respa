@@ -2,8 +2,9 @@ import datetime
 import pytest
 from django.conf import settings
 from django.test.utils import override_settings
-from resources.models.utils import get_payment_requested_waiting_time, is_reservation_metadata_or_times_different
-
+from resources.models.utils import (
+    get_payment_requested_waiting_time, is_reservation_metadata_or_times_different, format_dt_range_alt
+)
 from resources.models import Reservation, Resource, Unit
 from payments.models import Product, Order
 from payments.factories import OrderFactory
@@ -246,3 +247,45 @@ def test_is_reservation_metadata_or_times_different_when_no_changes(resource_wit
     reservation_a = Reservation.objects.create(resource=resource_with_metadata, **get_reservation_extradata)
     reservation_b = Reservation.objects.create(resource=resource_with_metadata, **get_reservation_extradata)
     assert is_reservation_metadata_or_times_different(reservation_a, reservation_b) == False
+
+
+@pytest.mark.django_db
+def test_format_dt_range_alt_same_day(reservation_basic):
+    '''
+    Tests that the function returns the expected time range when begin and end times are on the same day.
+    '''
+    reservation = Reservation.objects.get(id=reservation_basic.id)
+    tz = reservation.resource.unit.get_tz()
+    begin = reservation.begin.astimezone(tz)
+    end = reservation.end.astimezone(tz)
+
+    return_value = format_dt_range_alt('fi', begin, end)
+    expected_value = '2.2.2022 klo 12.00–14.00'
+    assert return_value == expected_value
+    return_value = format_dt_range_alt('sv', begin, end)
+    expected_value = '2.2.2022 kl 12.00–14.00'
+    assert return_value == expected_value
+    return_value = format_dt_range_alt('en', begin, end)
+    expected_value = '2.2.2022 12:00–14:00'
+    assert return_value == expected_value
+
+
+@pytest.mark.django_db
+def test_format_dt_range_alt_different_day(reservation_basic):
+    '''
+    Tests that the function returns the expected time range when begin and end times are on different day.
+    '''
+    reservation = Reservation.objects.get(id=reservation_basic.id)
+    tz = reservation.resource.unit.get_tz()
+    begin = reservation.begin.astimezone(tz)
+    end = reservation.end.astimezone(tz) + datetime.timedelta(days=1)
+
+    return_value = format_dt_range_alt('fi', begin, end)
+    expected_value = '2.2.2022 klo 12.00 – 3.2.2022 klo 14.00'
+    assert return_value == expected_value
+    return_value = format_dt_range_alt('sv', begin, end)
+    expected_value = '2.2.2022 kl 12.00 – 3.2.2022 kl 14.00'
+    assert return_value == expected_value
+    return_value = format_dt_range_alt('en', begin, end)
+    expected_value = '2.2.2022 12:00 – 3.2.2022 14:00'
+    assert return_value == expected_value

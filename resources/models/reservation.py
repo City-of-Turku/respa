@@ -24,7 +24,7 @@ from .resource import generate_access_code, validate_access_code
 from .resource import Resource
 from .utils import (
     get_dt, save_dt, is_valid_time_slot, humanize_duration, send_respa_mail, send_respa_sms,
-    DEFAULT_LANG, localize_datetime, format_dt_range, build_reservations_ical_file,
+    DEFAULT_LANG, localize_datetime, format_dt_range, format_dt_range_alt, build_reservations_ical_file,
     get_order_quantity, get_order_tax_price, get_order_pretax_price, get_payment_requested_waiting_time,
     calculate_final_product_sums, calculate_final_order_sums
 )
@@ -393,6 +393,12 @@ class Reservation(ModifiableModel):
         end = self.end.astimezone(tz)
         return format_dt_range(translation.get_language(), begin, end)
 
+    def format_time_alt(self):
+        tz = self.resource.unit.get_tz()
+        begin = self.begin.astimezone(tz)
+        end = self.end.astimezone(tz)
+        return format_dt_range_alt(translation.get_language(), begin, end)
+
     def create_reminder(self):
         r_date = self.begin - datetime.timedelta(hours=int(self.resource.unit.sms_reminder_delay))
         reminder = ReservationReminder()
@@ -514,6 +520,7 @@ class Reservation(ModifiableModel):
                 'begin_dt': self.begin,
                 'end_dt': self.end,
                 'time_range': self.format_time(),
+                'time_range_alt': self.format_time_alt(),
                 'reserver_name': reserver_name,
                 'reserver_email_address': reserver_email_address,
                 'require_assistance': self.require_assistance,
@@ -550,7 +557,7 @@ class Reservation(ModifiableModel):
 
             if self.user and self.user.is_staff:
                 context['staff_name'] = self.user.get_display_name()
-            
+
             if self.virtual_address:
                 context['virtual_address'] = self.virtual_address
 
@@ -714,7 +721,7 @@ class Reservation(ModifiableModel):
                 }
             })
         return context
-    
+
     def get_notification_template(self, notification_type):
         try: # Search fallback for the default template of this type.
             fallback_template = NotificationTemplate.objects.get(type=notification_type, groups=None, is_default_template=True)
@@ -732,8 +739,8 @@ class Reservation(ModifiableModel):
                 logger.error(f"Template group: {unit_template_group.name} contains multiple templates of type: {notification_type}.")
                 return fallback_template
         return fallback_template
-        
-    
+
+
     def get_email_address(self, user=None):
         """
         Stuff common to all reservation related mails.
@@ -744,9 +751,9 @@ class Reservation(ModifiableModel):
             return self.reserver_email_address
         elif user:
             return user.email
-        
-    def send_reservation_mail(self, notification_type, 
-                              user=None, attachments=None, 
+
+    def send_reservation_mail(self, notification_type,
+                              user=None, attachments=None,
                               staff_email=None,
                               extra_context={}, is_reminder = False):
         notification_template = self.get_notification_template(notification_type)
@@ -770,17 +777,17 @@ class Reservation(ModifiableModel):
 
         if self.reserver_phone_number:
             if is_reminder:
-                return send_respa_sms(self.reserver_phone_number, 
+                return send_respa_sms(self.reserver_phone_number,
                     rendered_notification['subject'], rendered_notification['short_message'])
 
             if self.resource.send_sms_notification and not staff_email: # Don't send sms when notifying staff.
                 send_respa_sms(self.reserver_phone_number,
                     rendered_notification['subject'], rendered_notification['short_message'])
-        
+
         # Use staff email if given, else get the provided email address
         email_address = staff_email if staff_email \
             else self.get_email_address(user)
-        
+
         if email_address:
             send_respa_mail(email_address, rendered_notification['subject'],
                 rendered_notification['body'], rendered_notification['html_body'], attachments)

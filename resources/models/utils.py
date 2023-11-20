@@ -372,6 +372,45 @@ def format_dt_range(language, begin, end):
     return res
 
 
+def format_dt_range_alt(language: str, begin, end) -> str:
+    if language == 'fi':
+        # 1.11.2023 klo 12.00-13.00
+        begin_format = r'j.n.Y \k\l\o G.i'
+        if begin.date() == end.date():
+            end_format = 'G.i'
+            sep = '–'
+        else:
+            end_format = begin_format
+            sep = ' – '
+
+        res = sep.join([formats.date_format(begin, begin_format), formats.date_format(end, end_format)])
+    elif language == 'sv':
+        # 1.11.2023 kl 12.00-13.00
+        begin_format = r'j.n.Y \k\l G.i'
+        if begin.date() == end.date():
+            end_format = 'G.i'
+            sep = '–'
+        else:
+            end_format = begin_format
+            sep = ' – '
+
+        res = sep.join([formats.date_format(begin, begin_format), formats.date_format(end, end_format)])
+    else:
+        # default to English
+        # 1.11.2023 12:00-13:00
+        begin_format = r'j.n.Y G:i'
+        if begin.date() == end.date():
+            end_format = 'G:i'
+            sep = '–'
+        else:
+            end_format = begin_format
+            sep = ' – '
+
+        res = sep.join([formats.date_format(begin, begin_format), formats.date_format(end, end_format)])
+
+    return res
+
+
 def build_reservations_ical_file(reservations):
     """
     Return iCalendar file containing given reservations
