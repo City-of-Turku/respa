@@ -1,3 +1,3 @@
-__version__ = 'tku-v1.8'
+__version__ = 'tku-v1.9'
 
 VERSION = __version__
