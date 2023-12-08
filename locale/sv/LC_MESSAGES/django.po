@@ -2134,3 +2134,6 @@ msgstr "Visa förhandsgranskning"
 
 msgid "Hide Preview"
 msgstr "Dölj förhandsgranskningen"
+
+msgid "Filter by permission"
+msgstr "Filtrera efter behörighet"

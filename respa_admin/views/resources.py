@@ -206,6 +206,7 @@ class ManageUserPermissionsListView(ExtraContextMixin, ListView):
     def get(self, request, *args, **kwargs):
         get_params = request.GET
         self.selected_unit = get_params.get('selected_unit')
+        self.selected_unit_permissions = get_params.getlist('unit_permission')
         return super().get(request, *args, **kwargs)
 
     def dispatch(self, request, *args, **kwargs):
@@ -233,7 +234,6 @@ class ManageUserPermissionsListView(ExtraContextMixin, ListView):
         qs = self.get_all_available_units()
         if self.selected_unit:
             qs = qs.filter(id=self.selected_unit)
-
         return qs
 
     def get_context_data(self, **kwargs):
@@ -241,6 +241,13 @@ class ManageUserPermissionsListView(ExtraContextMixin, ListView):
         context['selected_unit'] = self.selected_unit or ''
         context['all_available_units'] = self.get_all_available_units()
         context['user_list_template_name'] = self.user_list_template_name
+        context['SELECTED_UNIT_PERMISSIONS'] = self.selected_unit_permissions or []
+        context['UNIT_PERMISSION_LEVELS'] = {
+            _('Admin'): 'admin',
+            _('Manager'): 'manager',
+            _('Viewer'): 'viewer',
+            _('Can approve reservations') : 'unit:can_approve_reservations',
+        }
         return context
 
 

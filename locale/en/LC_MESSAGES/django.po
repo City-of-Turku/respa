@@ -2812,3 +2812,6 @@ msgstr ""
 
 msgid "Hide Preview"
 msgstr ""
+
+msgid "Filter by permission"
+msgstr ""

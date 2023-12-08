@@ -239,6 +239,17 @@ class UnitAuthorizationQuerySet(models.QuerySet):
             for user in self.values_list('authorized', flat=True).distinct()
         ])
 
+
+    def can_approve_reservations(self, unit):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        users = [user.id for user in User.objects.all() if user.has_perm('unit:can_approve_reservation', unit)]
+        return self.filter(id__in=[
+            max(self.filter(authorized=user)).id
+            for user in self.filter(authorized__id__in=users).values_list('authorized', flat=True).distinct()
+        ])
+
 class UnitAuthorization(models.Model):
     subject = models.ForeignKey(
         Unit, on_delete=models.CASCADE, related_name='authorizations',

@@ -2193,3 +2193,6 @@ msgstr "Näytä esikatselu"
 
 msgid "Hide Preview"
 msgstr "Piilota esikatselu"
+
+msgid "Filter by permission"
+msgstr "Suodata käyttöoikeuden mukaan"

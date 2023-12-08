@@ -99,3 +99,28 @@
     color: dimgray;
   }
 }
+
+.collapse-btn {
+  display:flex;
+  align-items: center; 
+  justify-content: space-between;
+  min-width: 210px;
+}
+
+
+.permission-collapse-container {
+  :first-child {
+    margin-top: 5px;
+  }
+  border-right: 1px solid black;
+  border-bottom: 1px solid black;
+}
+
+
+.unit-user-filter-container {
+  width: 100%; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  margin-top: 10px;
+}
