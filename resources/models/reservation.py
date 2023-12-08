@@ -756,6 +756,9 @@ class Reservation(ModifiableModel):
                               user=None, attachments=None,
                               staff_email=None,
                               extra_context={}, is_reminder = False):
+        if self.type == Reservation.TYPE_BLOCKED:
+            return
+
         notification_template = self.get_notification_template(notification_type)
         if self.user and not user: # If user isn't given use self.user.
             user = self.user
