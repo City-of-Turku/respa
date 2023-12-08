@@ -69,3 +69,7 @@ def unit_authorization_highest_per_user(unit, permissions = []):
 @register.simple_tag
 def get_query_params(request, key):
     return request.GET.getlist(key)
+
+@register.filter
+def replace(string, value):
+    return string.replace(*value.split('|'))

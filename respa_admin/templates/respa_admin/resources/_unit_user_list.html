@@ -7,42 +7,52 @@
     <div class='container'>
         <div class='filter-bar container-fluid'>
             <h2 class="pull-left">{% trans 'unit authorizations'|capfirst %}</h2>
-            <div class='filter pull-right' style="display: flex; flex-direction: row;">
-                <form name="filter-collapse" method="get">
-                    <button
-                        id="collapseButton"
-                        class="collapse-btn btn btn-primary inverse"
-                        type="button" 
-                        data-bs-toggle="collapse" data-bs-target="#permissionCollapse" 
-                        aria-expanded="false" aria-controls="permissionCollapse">
-                        {% trans "Filter by permission" %}
-                        <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
-                    </button>
-                    <div class="collapse permission-collapse-container" id="permissionCollapse">
-                        {% for name, permission in UNIT_PERMISSION_LEVELS.items %}
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="{{ permission }}" id="flexCheckDefault" name="unit_permission" onchange="this.form.submit()" {% if permission in SELECTED_UNIT_PERMISSIONS %} checked {% endif %}>
-                            <label class="form-check-label" for="flexCheckDefault">
-                              {{ name }}
-                            </label>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </form>
-                <form name="filter-dropdowns" method="get">
-                    <div class='select-dropdown btn btn-primary'>
-                        <select id="place-dropdown" name="selected_unit" onchange="this.form.submit();">
-                            <option {% if not selected_unit %} selected="selected" {% endif %} value="">
-                                {% trans "Filter by unit" %}...
-                            </option>
-                            {% for unit in all_available_units %}
-                            <option {% if unit.id == selected_unit %} selected="selected" {% endif %}
-                                value="{{ unit.id }}">
-                                {{ unit.name }}
-                            </option>
+            <div class='filter pull-right'>
+                <form name="filter-options" method="get" style="display: flex; flex-direction: row;">
+                    <div name="filter-collapse">
+                        <button
+                            id="collapseButton"
+                            class="collapse-btn btn btn-primary inverse"
+                            type="button" 
+                            data-bs-toggle="collapse" data-bs-target="#permissionCollapse" 
+                            aria-expanded="false" aria-controls="permissionCollapse">
+                            {% trans "Filter by permission" %}
+                            <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+                        </button>
+                        <div class="collapse permission-collapse-container" id="permissionCollapse">
+                            {% for name, permission in UNIT_PERMISSION_LEVELS.items %}
+                            <div class="form-check">
+                                <input 
+                                    class="form-check-input" 
+                                    type="checkbox" 
+                                    value="{{ permission }}" 
+                                    id="perm-filter-{{ permission|replace:':|_' }}"
+                                    name="unit_permission" 
+                                    onchange="this.form.submit()" {% if permission in SELECTED_UNIT_PERMISSIONS %} checked {% endif %}>
+                                <label 
+                                    class="form-check-label" 
+                                    for="perm-filter-{{ permission|replace:':|_' }}">
+                                {{ name }}
+                                </label>
+                            </div>
                             {% endfor %}
-                        </select>
-                        <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                    <div name="filter-dropdowns">
+                        <div class='select-dropdown btn btn-primary'>
+                            <select id="place-dropdown" name="selected_unit" onchange="this.form.submit();">
+                                <option {% if not selected_unit %} selected="selected" {% endif %} value="">
+                                    {% trans "Filter by unit" %}...
+                                </option>
+                                {% for unit in all_available_units %}
+                                <option {% if unit.id == selected_unit %} selected="selected" {% endif %}
+                                    value="{{ unit.id }}">
+                                    {{ unit.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+                        </div>
                     </div>
                 </form>
             </div>
