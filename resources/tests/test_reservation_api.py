@@ -226,6 +226,16 @@ def reservation_created_notification():
             body='Normal reservation created body.',
         )
 
+@pytest.fixture
+def reservation_created_by_official_notification():
+    with translation.override('fi'): # Staff user preferred language is always fallback. (fi)
+        return NotificationTemplate.objects.create(
+            type=NotificationType.RESERVATION_CREATED_BY_OFFICIAL,
+            is_default_template=True,
+            short_message = 'Virkailija on luonut varauksen lyhyt viesti.',
+            subject = 'Virkailija on luonut varauksen aihe.',
+            body = 'Virkailija on luonut varauksen viesti.'
+        )
 
 @pytest.fixture
 def reservation_modified_by_official_notification():
@@ -3314,3 +3324,21 @@ def test_reservation_reminder_create(
     response = api_client.post(list_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
     assert response.status_code == 201
     assert ReservationReminder.objects.count() == 1
+
+
+@override_settings(RESPA_MAILS_ENABLED=True)
+@pytest.mark.django_db
+def test_no_notification_on_reservation_type_blocked(
+    resource_in_unit, reservation_data, 
+    staff_api_client, staff_user, list_url,
+    reservation_created_by_official_notification):
+    UnitAuthorization.objects.create(subject=resource_in_unit.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    
+    reservation_data['resource'] = resource_in_unit.pk
+    reservation_data['reserver_name'] = 'Staff reservation normal'
+    reservation_data['type'] = Reservation.TYPE_BLOCKED
+
+    response = staff_api_client.post(list_url, data=reservation_data, format='json')
+    assert response.status_code == 201
+    assert len(mail.outbox) == 0
