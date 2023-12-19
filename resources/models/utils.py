@@ -266,8 +266,7 @@ def generate_reservation_xlsx(reservations, **kwargs):
     if normal_reservations:
         set_title(gettext('Normal reservations'))
         for row, reservation in enumerate(normal_reservations, row_cursor):
-            for key in reservation:
-                reservation[key] = clean(reservation[key])
+            for key in reservation: reservation[key] = clean(reservation[key])
             obj = Reservation.objects.get(pk=reservation['id'])
             usage_info = resource_usage_info.get(obj.resource, None)
             begin = localtime(reservation['begin']).replace(tzinfo=None)
@@ -305,8 +304,7 @@ def generate_reservation_xlsx(reservations, **kwargs):
     if block_reservations:
         set_title(gettext('Block reservations'))
         for row, reservation in enumerate(block_reservations, row_cursor):
-            for key in reservation:
-                reservation[key] = clean(reservation[key])
+            for key in reservation: reservation[key] = clean(reservation[key])
             obj = Reservation.objects.get(pk=reservation['id'])
             usage_info = resource_usage_info.get(obj.resource, None)
             begin = localtime(reservation['begin']).replace(tzinfo=None)
@@ -362,10 +360,10 @@ def generate_reservation_xlsx(reservations, **kwargs):
 
     for row, resource_info in enumerate(resource_usage_info.items(), row_cursor):
         resource, info = resource_info
+        resource_utilization = float((info.get('total_normal_reservation_hours') / info.get('total_opening_hours')) * 100)
         worksheet.write(row, 0, resource.unit.name) # Column: Unit
         worksheet.write(row, 1, resource.name) # Column: Resource
-        worksheet.write(row, 2, "%.2f%%" % float(
-        (info.get('total_normal_reservation_hours') / info.get('total_opening_hours')) * 100)) # Column: Resource utilization
+        worksheet.write(row, 2, "%.2f%%" % resource_utilization) # Column: Resource utilization
         worksheet.write(row, 3, "%sh" % info.get('total_opening_hours')) # Column: Opening hours total
         worksheet.write(row, 4, "%sh" % info.get('total_normal_reservation_hours')) # Column: Normal reservation hours total
         worksheet.write(row, 5, "%sh" % info.get('total_block_reservation_hours')) # Column: Block reservation hours total
