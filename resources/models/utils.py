@@ -170,6 +170,7 @@ def generate_reservation_xlsx(reservations, **kwargs):
 
     request = kwargs.get('request', None)
     weekdays = kwargs.get('weekdays', None)
+    include_block_reservations = kwargs.get('include_block_reservations', False)
     output = io.BytesIO()
     workbook = xlsxwriter.Workbook(output)
     sheet_name = format_lazy('{} {}', _('Reservation'), _('Reports'))
@@ -301,7 +302,7 @@ def generate_reservation_xlsx(reservations, **kwargs):
         worksheet.write(row_cursor, 1, gettext('%(hours)s hours') % ({'hours': int((total_normal_reservation_hours / 60) / 60)}), col_format)
         row_cursor += 2
 
-    if block_reservations:
+    if block_reservations and include_block_reservations:
         set_title(gettext('Block reservations'))
         for row, reservation in enumerate(block_reservations, row_cursor):
             for key in reservation: reservation[key] = clean(reservation[key])

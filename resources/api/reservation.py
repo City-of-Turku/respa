@@ -777,12 +777,13 @@ class ReservationExcelRenderer(renderers.BaseRenderer):
         elif renderer_context['view'].action == 'list':
             weekdays = request.GET.get('weekdays', '').split(',')
             weekdays = [int(day) for day in weekdays if day]
+            include_block_reservations = bool(int(request.GET.get('include_block_reservations', '0')))
             reservations = data['results']
             for reservation in reservations.copy():
                 begin = reservation['begin']
                 if weekdays and begin.weekday() not in weekdays:
                     reservations.remove(reservation)
-            return generate_reservation_xlsx(reservations, request=request, weekdays=weekdays)
+            return generate_reservation_xlsx(reservations, request=request, weekdays=weekdays, include_block_reservations=include_block_reservations)
         else:
             return NotAcceptable()
 
