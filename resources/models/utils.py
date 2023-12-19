@@ -188,7 +188,7 @@ def generate_reservation_xlsx(reservations, **kwargs):
         global row_cursor
         if not headers: # Default header values.
             headers = [
-                ('Unit', 42), ('Resource', 35),
+                ('Unit', 45), ('Resource', 35),
                 ('Begin time', 25), ('End time', 25),
                 ('Created at', 45), ('User', 45),
                 ('Comments', 30), ('Staff event', 25),
@@ -344,7 +344,7 @@ def generate_reservation_xlsx(reservations, **kwargs):
 
     row_cursor += 2
     headers = [
-        ('Unit', 40),
+        ('Unit', 45),
         ('Resource', 40),
         ('Resource utilization', 25),
         ('Opening hours total', 25),
