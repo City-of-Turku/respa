@@ -2815,3 +2815,15 @@ msgstr ""
 
 msgid "Filter by permission"
 msgstr ""
+
+msgid "Normal reservation hours total"
+msgstr ""
+
+msgid "Block reservation hours total"
+msgstr ""
+
+msgid "Normal reservations"
+msgstr ""
+
+msgid "Block reservations"
+msgstr ""

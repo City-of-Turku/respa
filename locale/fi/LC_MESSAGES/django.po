@@ -2196,3 +2196,15 @@ msgstr "Piilota esikatselu"
 
 msgid "Filter by permission"
 msgstr "Suodata käyttöoikeuden mukaan"
+
+msgid "Normal reservation hours total"
+msgstr "Tavallisten varausten tuntimäärä yhteensä"
+
+msgid "Block reservation hours total"
+msgstr "Blokkivarausten tuntimäärä yhteensä"
+
+msgid "Normal reservations"
+msgstr "Tavalliset varaukset"
+
+msgid "Block reservations"
+msgstr "Blokkivaraukset"

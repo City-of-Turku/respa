@@ -2137,3 +2137,15 @@ msgstr "Dölj förhandsgranskningen"
 
 msgid "Filter by permission"
 msgstr "Filtrera efter behörighet"
+
+msgid "Normal reservation hours total"
+msgstr "Tavallisten varausten tuntimäärä yhteensä"
+
+msgid "Block reservation hours total"
+msgstr "Totalt antal timmar för blockerade bokningar"
+
+msgid "Normal reservations"
+msgstr "Normal bokning"
+
+msgid "Block reservations"
+msgstr "Blockerade bokningar"
