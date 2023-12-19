@@ -752,6 +752,53 @@ def test_reserver_can_update_reservation_that_has_virtual_data(
 
 
 @pytest.mark.django_db
+def test_superusers_can_see_created_at(api_client, reservation, staff_user):
+    """Tests that superusers can see reservation created at"""
+
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+
+    staff_user.is_superuser = True
+    staff_user.save()
+    api_client.force_authenticate(user=staff_user)
+    response = api_client.get(detail_url)
+    assert 'created_at' in response.data
+    assert response.data['created_at'] == reservation.created_at
+
+
+@pytest.mark.parametrize('unit_perm', ['admin', 'manager', 'viewer'])
+@pytest.mark.django_db
+def test_unit_staff_can_see_created_at(
+        api_client, reservation, staff_user, resource_in_unit, unit_perm):
+    """Tests that unit staff can see reservation created at"""
+
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+
+    UnitAuthorization.objects.create(
+        subject=resource_in_unit.unit, level=UnitAuthorizationLevel[unit_perm], authorized=staff_user)
+    api_client.force_authenticate(user=staff_user)
+    response = api_client.get(detail_url)
+    assert 'created_at' in response.data
+    assert response.data['created_at'] == reservation.created_at
+
+
+@pytest.mark.django_db
+def test_anon_and_regular_users_cannot_see_created_at(api_client, reservation, user, user2):
+    """Tests that anon and regular users cannot see created at"""
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+
+    response = api_client.get(detail_url)
+    assert 'created_at' not in response.data
+
+    api_client.force_authenticate(user=user)
+    response = api_client.get(detail_url)
+    assert 'created_at' not in response.data
+
+    api_client.force_authenticate(user=user2)
+    response = api_client.get(detail_url)
+    assert 'created_at' not in response.data
+
+
+@pytest.mark.django_db
 def test_user_data_correct_and_only_for_admins(
         api_client, reservation, user, general_admin):
     """
@@ -3329,12 +3376,12 @@ def test_reservation_reminder_create(
 @override_settings(RESPA_MAILS_ENABLED=True)
 @pytest.mark.django_db
 def test_no_notification_on_reservation_type_blocked(
-    resource_in_unit, reservation_data, 
+    resource_in_unit, reservation_data,
     staff_api_client, staff_user, list_url,
     reservation_created_by_official_notification):
     UnitAuthorization.objects.create(subject=resource_in_unit.unit,
                                      level=UnitAuthorizationLevel.manager, authorized=staff_user)
-    
+
     reservation_data['resource'] = resource_in_unit.pk
     reservation_data['reserver_name'] = 'Staff reservation normal'
     reservation_data['type'] = Reservation.TYPE_BLOCKED

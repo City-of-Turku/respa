@@ -488,6 +488,11 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             if any(insufficient_rights):
                 del data['comments']
 
+        # staff should be able to see reservation creation time
+        if user.is_superuser or resource.is_admin(user) or resource.is_manager(user) or resource.is_viewer(user):
+            tz = resource.unit.get_tz()
+            data.update(**{'created_at': instance.created_at.astimezone(tz)})
+
         if not resource.can_view_reservation_user(user):
             del data['user']
 
