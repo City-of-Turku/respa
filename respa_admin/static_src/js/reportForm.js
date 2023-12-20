@@ -173,8 +173,8 @@ function bindGenerateButton() {
                         let dl = document.createElement('a');
                         dl.href = url;
                         dl.download = {
-                            'fi': `Varaus raportti ${begin} - ${end}.xlsx`,
-                            'sv': `Bokning rapport ${begin} - ${end}.xlsx`,
+                            'fi': `Varausraportti ${begin} - ${end}.xlsx`,
+                            'sv': `Bokningsrapport ${begin} - ${end}.xlsx`,
                             'en': `Reservations report ${begin} - ${end}.xlsx`
                         }[SELECTED_LANGUAGE];
                         dl.click();
