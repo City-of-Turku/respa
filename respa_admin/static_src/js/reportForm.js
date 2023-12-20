@@ -175,7 +175,7 @@ function bindGenerateButton() {
                         dl.download = {
                             'fi': `Varausraportti ${begin} - ${end}.xlsx`,
                             'sv': `Bokningsrapport ${begin} - ${end}.xlsx`,
-                            'en': `Reservations report ${begin} - ${end}.xlsx`
+                            'en': `Reservation report ${begin} - ${end}.xlsx`
                         }[SELECTED_LANGUAGE];
                         dl.click();
                         $("body").css("cursor", "default");
