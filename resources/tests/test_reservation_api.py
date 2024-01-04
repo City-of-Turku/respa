@@ -2170,6 +2170,54 @@ def test_admins_can_make_reservations_despite_delay(
     assert response.status_code == 201, msg.format(201, response.status_code, response.data)
 
 
+@freeze_time('2115-04-02')
+@pytest.mark.django_db
+def test_reservation_reservable_before_payment_update(user_api_client, reservation, resource_in_unit):
+    """
+    Tests that when reservation state is ready for payment and update has no changing data i.e. user is trying to
+    pay the reservation, update can be made even if reservable before would normally prevent it
+    """
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+
+    field_1 = ReservationMetadataField.objects.get(field_name='reserver_name')
+    metadata_set = ReservationMetadataSet.objects.create(name='test_set',)
+    metadata_set.supported_fields.set([field_1])
+    reservation.resource.reservation_metadata_set = metadata_set
+    reservation.resource.save(update_fields=('reservation_metadata_set',))
+
+    resource_in_unit.reservable_max_days_in_advance = 5
+    resource_in_unit.need_manual_confirmation = True
+    resource_in_unit.save()
+
+    reservation.begin = timezone.now().replace(hour=12, minute=0, second=0) + datetime.timedelta(days=9)
+    reservation.end = timezone.now().replace(hour=13, minute=0, second=0) + datetime.timedelta(days=9)
+    reservation.state = Reservation.READY_FOR_PAYMENT
+    reservation.save()
+
+    reservation_data = {
+        'resource': resource_in_unit.id,
+        'begin': reservation.begin,
+        'end': reservation.end,
+        'state': Reservation.READY_FOR_PAYMENT,
+        'reserver_name': 'Test Updater'
+    }
+
+    # attempt to modify reservation, not pay
+    response = user_api_client.put(detail_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == 400
+    assert_non_field_errors_contain(response, 'The resource is reservable only before')
+
+    # attempt to only update/pay reservation
+    reservation_data = {
+        'resource': resource_in_unit.id,
+        'begin': reservation.begin,
+        'end': reservation.end,
+        'state': Reservation.READY_FOR_PAYMENT
+    }
+    response = user_api_client.put(detail_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == 200
+
+
 @pytest.mark.django_db
 def test_reservation_metadata_set(user_api_client, reservation, list_url, reservation_data):
     detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})

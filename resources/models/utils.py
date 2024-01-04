@@ -206,7 +206,7 @@ def generate_reservation_xlsx(reservations, **kwargs):
             else:
                 worksheet.write(row_cursor, col, title, title_format)
             worksheet.set_column(col, col, header[1])
-            
+
         row_cursor += 1
         header_format = workbook.add_format({'bold': True})
         for column, header in enumerate(headers):
@@ -761,5 +761,20 @@ def is_reservation_metadata_or_times_different(old_reservation, new_reservation)
 
     if old_reservation.end != new_reservation.end or old_reservation.begin != new_reservation.begin:
         return True
+
+    return False
+
+
+def has_reservation_data_changed(data, instance) -> bool:
+    """
+    Returns True when given data has changes compared to reservation instance
+    and False when not.
+    """
+    if instance == None:
+        return False
+
+    for field, value in data.items():
+        if getattr(instance, field) != value:
+            return True
 
     return False

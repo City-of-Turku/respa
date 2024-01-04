@@ -50,7 +50,7 @@ from .base import (
     ExtraDataMixin
 )
 
-from ..models.utils import dateparser, is_reservation_metadata_or_times_different
+from ..models.utils import dateparser, has_reservation_data_changed, is_reservation_metadata_or_times_different
 from respa.renderers import ResourcesBrowsableAPIRenderer
 from payments.utils import is_free, get_price
 
@@ -317,14 +317,17 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
                 request_user.save()
 
         if not resource.can_ignore_opening_hours(request_user):
-            reservable_before = resource.get_reservable_before()
-            if reservable_before and data['begin'] >= reservable_before:
-                raise ValidationError(_('The resource is reservable only before %(datetime)s' %
-                                        {'datetime': reservable_before}))
-            reservable_after = resource.get_reservable_after()
-            if reservable_after and data['begin'] < reservable_after:
-                raise ValidationError(_('The resource is reservable only after %(datetime)s' %
-                                        {'datetime': reservable_after}))
+            # Customers can update to pay their reservation and can skip this rule check to do so
+            # When paying occurs like this, data does not change and state is waiting for payment
+            if data.get('state') != Reservation.READY_FOR_PAYMENT or has_reservation_data_changed(data, reservation):
+                reservable_before = resource.get_reservable_before()
+                if reservable_before and data['begin'] >= reservable_before:
+                    raise ValidationError(_('The resource is reservable only before %(datetime)s' %
+                                            {'datetime': reservable_before}))
+                reservable_after = resource.get_reservable_after()
+                if reservable_after and data['begin'] < reservable_after:
+                    raise ValidationError(_('The resource is reservable only after %(datetime)s' %
+                                            {'datetime': reservable_after}))
 
         # Check given home municipality is included in resource's home municipality set
         if 'home_municipality' in data:
