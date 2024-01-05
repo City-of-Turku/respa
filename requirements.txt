@@ -332,7 +332,7 @@ pycparser==2.21
     # via
     #   -r requirements.in
     #   cffi
-pycryptodomex==3.17
+pycryptodomex==3.19.1
     # via
     #   -r requirements.in
     #   pyjwkest
