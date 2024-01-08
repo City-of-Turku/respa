@@ -1583,11 +1583,13 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
     description = serializers.DictField(required=True)
     responsible_contact_info = serializers.DictField(
         required=False,
-        help_text=get_translated_field_help_text('responsible_contact_info')
+        help_text=get_translated_field_help_text('responsible_contact_info'),
+        allow_null=True
     )
     specific_terms = serializers.DictField(
         required=False,
-        help_text=get_translated_field_help_text('specific_terms')
+        help_text=get_translated_field_help_text('specific_terms'),
+        allow_null=True
     )
     need_manual_confirmation = serializers.BooleanField(required=True)
     authentication = serializers.ChoiceField(choices=Resource.AUTHENTICATION_TYPES, required=True)
@@ -1597,9 +1599,9 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
     slot_size = serializers.DurationField(required=True)
     reservation_info = serializers.DictField(required=True)
 
-    reservation_confirmed_notification_extra = serializers.DictField(required=False)
-    reservation_requested_notification_extra = serializers.DictField(required=False)
-    reservation_additional_information = serializers.DictField(required=False)
+    reservation_confirmed_notification_extra = serializers.DictField(required=False, allow_null=True)
+    reservation_requested_notification_extra = serializers.DictField(required=False, allow_null=True)
+    reservation_additional_information = serializers.DictField(required=False, allow_null=True)
 
     resource_staff_emails = ResourceStaffEmailsField(required=False, allow_empty=True)
 

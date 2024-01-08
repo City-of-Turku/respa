@@ -101,6 +101,12 @@ class TranslatedModelSerializer(serializers.ModelSerializer):
         fields = [(key, data[key]) for key in data if key in self.translated_fields]
         for field, value in fields:
             for lang in [x[0] for x in settings.LANGUAGES]:
+                if value is None and self.fields[field].allow_null:
+                    data.update({
+                        '%s_%s' % (field, lang): None
+                    })
+                    continue
+
                 if (not lang in value or not value[lang]) and '%s_%s' % (field, lang) in self.Meta.required_translations:
                     raise ValidationError({
                         field: [
@@ -119,10 +125,10 @@ class TranslatedModelSerializer(serializers.ModelSerializer):
         return data
 
     def validate(self, attrs):
-      attrs = super().validate(attrs)
-      if getattr(self.Meta, 'required_translations', None):
-        self.validate_translation(attrs)
-      return attrs
+        attrs = super().validate(attrs)
+        if getattr(self.Meta, 'required_translations', None):
+            self.validate_translation(attrs)
+        return attrs
 
 
 class NullableTimeField(serializers.TimeField):
