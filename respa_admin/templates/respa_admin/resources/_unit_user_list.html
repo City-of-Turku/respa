@@ -97,12 +97,12 @@
                     <div class="col-md-4 text-nowrap">
                         <div class="col-md-4">
                             <div>
-                                <span class="{% if unit_user.is_staff %}shape-success{% else %}shape-danger{% endif %}"></span>
-                                <span>{% trans 'Staff' %}</span>
-                            </div>
-                            <div>
                                 <span class="{% if authorization.level == authorization.level.admin %}shape-success{% else %}shape-danger{% endif %}"></span>
                                 <span>{% trans 'Admin' %}</span>
+                            </div>
+                            <div>
+                                <span class="{% if authorization.level >= authorization.level.manager %}shape-success{% else %}shape-danger{% endif %}"></span>
+                                <span>{% trans 'Manager' %}</span>
                             </div>
                             <div>
                                 <span class="{% if authorization.level >= authorization.level.viewer %}shape-success{% else %}shape-danger{% endif %}"></span>
@@ -111,8 +111,8 @@
                         </div>
                         <div class="col-md-8">
                             <div>
-                                <span class="{% if authorization.level >= authorization.level.manager %}shape-success{% else %}shape-danger{% endif %}"></span>
-                                <span>{% trans 'Manager' %}</span>
+                                <span class="{% if unit_user.is_staff %}shape-success{% else %}shape-danger{% endif %}"></span>
+                                <span>{% trans 'Staff' %}</span>
                             </div>
                             <div>
                                 <span class="{% if user_can_approve %}shape-success{% else %}shape-danger{% endif %}"></span>
@@ -141,6 +141,8 @@
                     {% endif %}
                 </div>
                 {% endwith %}
+                {% empty %}
+                <span class="help-text">{% trans 'No results' %}</span>
                 {% endfor %}
                 </li>
                 </div>
