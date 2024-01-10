@@ -120,7 +120,12 @@ class QualityToolManager():
         begin = date.replace(hour=0, minute=0, second=0, microsecond=0)
         end = date.replace(hour=23, minute=59, second=59, microsecond=0)
     
-        query = models.Q(reservations__created_at__gte=begin, reservations__created_at__lte=end)
+        query = models.Q(
+            reservations__created_at__gte=begin,
+            reservations__created_at__lte=end,
+            reservations__type=Reservation.TYPE_NORMAL # Include only normal reservations
+        )
+        
         if qualitytool.emails:
             query &= models.Q(
                 models.Q(reservations__user__email__in=qualitytool.emails) |
