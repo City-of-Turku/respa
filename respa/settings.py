@@ -78,7 +78,7 @@ env = environ.Env(
     MACHINE_TO_MACHINE_AUTH_ENABLED=(bool, False),
     JWT_AUTH_HEADER_PREFIX=(str, "JWT"),
     JWT_LEEWAY=(int, 30), # seconds
-    JWT_LIFETIME=(int, 3600), # generated jwt token expires after this many seconds
+    JWT_LIFETIME=(int, 900), # generated jwt token expires after this many seconds
     JWT_PAYLOAD_HANDLER=(str, 'respa.machine_to_machine_auth.utils.jwt_payload_handler'), # generates jwt token payload
     ENABLE_RESOURCE_TOKEN_AUTH=(bool, False),
     DISABLE_SERVER_SIDE_CURSORS=(bool, False),
@@ -425,13 +425,11 @@ OIDC_AUTH = {
 }
 
 SIMPLE_JWT = {
-    'AUTH_HEADER_TYPES': ('JWT', ),
+    'AUTH_HEADER_TYPES': env('JWT_AUTH_HEADER_PREFIX'),
     'LEEWAY': env('JWT_LEEWAY'),
     'AUDIENCE': env('TOKEN_AUTH_ACCEPTED_AUDIENCE'),
     'SIGNING_KEY': env('TOKEN_AUTH_SHARED_SECRET'),
-    'AUTH_HEADER_PREFIX': env('JWT_AUTH_HEADER_PREFIX'),
-    'EXPIRATION_DELTA': datetime.timedelta(seconds=env('JWT_LIFETIME')),
-    'PAYLOAD_HANDLER': env('JWT_PAYLOAD_HANDLER')
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(seconds=env('JWT_LIFETIME')),
 }
 
 # toggles auth token api endpoint url
