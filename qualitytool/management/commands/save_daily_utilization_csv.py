@@ -16,6 +16,7 @@ class Command(BaseCommand):
     help = "Saves daily utilization to a CSV file."
 
     def add_arguments(self, parser):
+        parser.add_argument('path')
         parser.add_argument('--date', action='store')
 
     def handle(self, *args, **options):
