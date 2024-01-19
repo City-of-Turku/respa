@@ -2827,3 +2827,6 @@ msgstr ""
 
 msgid "Block reservations"
 msgstr ""
+
+msgid "Give feedback"
+msgstr ""

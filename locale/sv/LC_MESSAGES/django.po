@@ -2149,3 +2149,6 @@ msgstr "Normal bokning"
 
 msgid "Block reservations"
 msgstr "Blockerade bokningar"
+
+msgid "Give feedback"
+msgstr "Ge feedback"
