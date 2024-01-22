@@ -2211,3 +2211,6 @@ msgstr "Blokkivaraukset"
 
 msgid "Give feedback"
 msgstr "Anna palautetta"
+
+msgid "Navigation"
+msgstr "Navigaatio"

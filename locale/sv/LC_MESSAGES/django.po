@@ -2152,3 +2152,6 @@ msgstr "Blockerade bokningar"
 
 msgid "Give feedback"
 msgstr "Ge feedback"
+
+msgid "Navigation"
+msgstr "Navigering"

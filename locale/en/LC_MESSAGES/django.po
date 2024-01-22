@@ -2830,3 +2830,6 @@ msgstr ""
 
 msgid "Give feedback"
 msgstr ""
+
+msgid "Navigation"
+msgstr ""
