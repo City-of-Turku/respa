@@ -8,7 +8,7 @@ from .reservation import (
 from .resource import (
     Purpose, Resource, ResourceType, ResourceImage, ResourceEquipment, ResourceGroup,
     ResourceDailyOpeningHours, TermsOfUse, ResourceTag, ResourceUniversalField,
-    ResourceUniversalFormOption
+    ResourceUniversalFormOption, ResourcePublishDate
 )
 from .equipment import Equipment, EquipmentAlias, EquipmentCategory
 from .unit import Unit, UnitAuthorization, UnitIdentifier
@@ -55,4 +55,5 @@ __all__ = [
     'UniversalFormFieldType',
     'ResourceUniversalField',
     'ResourceUniversalFormOption',
+    'ResourcePublishDate',
 ]

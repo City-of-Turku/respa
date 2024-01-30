@@ -1,18 +1,19 @@
 import logging
 from io import StringIO
 from contextlib import redirect_stdout
+from django.conf import settings
 from django.conf.urls import re_path
 from django.contrib import admin
 from django.contrib.admin import site as admin_site
 from django.contrib.admin.utils import unquote
 from django.contrib.admin.widgets import FilteredSelectMultiple
-from django.contrib.admin.options import InlineModelAdmin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.gis.admin import OSMGeoAdmin
 from django.core.management import call_command
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.http.request import HttpRequest
 from django.utils.translation import gettext_lazy as _
 from django import forms
 from django.template.response import TemplateResponse
@@ -30,7 +31,7 @@ from ..models import (
     ReservationHomeMunicipalityField, ReservationHomeMunicipalitySet, Resource, ResourceTag, ResourceAccessibility,
     ResourceEquipment, ResourceGroup, ResourceImage, ResourceType, TermsOfUse,
     Unit, UnitAuthorization, UnitIdentifier, UnitGroup, UnitGroupAuthorization,
-    UniversalFormFieldType, ResourceUniversalField, ResourceUniversalFormOption
+    UniversalFormFieldType, ResourceUniversalField, ResourceUniversalFormOption, ResourcePublishDate
 )
 from ..models.utils import generate_id
 from munigeo.models import Municipality
@@ -120,6 +121,15 @@ class ResourceTagInline(admin.TabularInline):
     verbose_name_plural = _('Keywords')
     extra = 0
 
+
+class ResourcePublishDateInline(admin.TabularInline):
+    model = ResourcePublishDate
+    fields = ('begin', 'end', 'reservable')
+    verbose_name = _('Publish date')
+    verbose_name_plural = _('Publish dates')
+    extra = 0
+    max_num = 1
+
 def restore_resources(modeladmin, request, queryset):
     queryset.restore()
 restore_resources.short_description = _('Restore selected resources')
@@ -128,17 +138,25 @@ def delete_resources(modeladmin, request, queryset):
     queryset.delete()
 delete_resources.short_description = _('Delete selected resources')
 
+if settings.DEBUG:
+    def hard_delete_resources(modeladmin, request, queryset):
+        queryset.delete(hard_delete=True)
+    hard_delete_resources.short_description = _('Hard delete selected resources')
 
-class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin, HttpsFriendlyGeoAdmin):
+
+class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, 
+                    TranslationAdmin, HttpsFriendlyGeoAdmin):
     default_lon = 2478871  # Central Railway Station in EPSG:3857
     default_lat = 8501259
     default_zoom = 12
 
-    list_display = ('name', 'unit', 'public', 'reservable', 'soft_deleted')
-    list_filter = ('unit', 'public', 'reservable', 'soft_deleted')
+    list_display = ('name', 'unit', '_public', 'reservable', 'soft_deleted')
+    list_filter = ('unit', '_public', 'reservable', 'soft_deleted')
     list_select_related = ('unit',)
     ordering = ('unit', 'name',)
     actions = [delete_resources, restore_resources]
+    if settings.DEBUG:
+        actions.append(hard_delete_resources)
 
     fieldsets = (
         (None, {
@@ -150,7 +168,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
         (_('Resource Information'), {
             'fields': (
                 'is_external',
-                'public', 'reservable',
+                '_public', 'reservable',
                 'reservable_by_all_staff',
                 'name', 'description',
                 'authentication',
@@ -218,10 +236,13 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.is_external:
             return [field.name for field in self.model._meta.fields if field.name != 'is_external'] + [ 'tags', 'purposes' ]
+        if obj and obj.publish_date:
+            return ['_public', 'reservable']
         return super().get_readonly_fields(request, obj)
 
     def _get_inlines(self, obj):
         return [] if obj and obj.is_external else [
+            ResourcePublishDateInline,
             PeriodInline,
             ResourceEquipmentInline,
             ResourceGroupInline,

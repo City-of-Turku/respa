@@ -21,12 +21,10 @@ from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from six import BytesIO
 from django.utils.text import format_lazy
-from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
+from django.utils.translation import pgettext_lazy, gettext_lazy as _
 from django.contrib.postgres.fields import HStoreField, DateTimeRangeField
 from multi_email_field.fields import MultiEmailField
 from .gistindex import GistIndex
-from psycopg2.extras import DateTimeTZRange
 from image_cropping import ImageRatioField
 from PIL import Image
 from guardian.shortcuts import get_objects_for_user, get_users_with_perms
@@ -36,11 +34,19 @@ from guardian.core import ObjectPermissionChecker
 from taggit.managers import TaggableManager
 from taggit.models import CommonGenericTaggedItemBase, TaggedItemBase
 
-from ..auth import is_authenticated_user, is_general_admin, is_superuser, is_underage, is_overage
+from ..auth import (
+    is_authenticated_user, is_general_admin,
+    is_underage, is_overage
+)
 from ..errors import InvalidImage
-from ..fields import EquipmentField
-from .accessibility import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility
-from .base import AutoIdentifiedModel, NameIdentifiedModel, ModifiableModel, ValidatedIdentifier
+from ..fields import (
+    EquipmentField, 
+    TranslatedCharField, TranslatedTextField
+)
+from .base import (
+    AutoIdentifiedModel, NameIdentifiedModel,
+    ModifiableModel, ValidatedIdentifier
+)
 from .utils import create_datetime_days_from_now, generate_id, get_translated, get_translated_name, humanize_duration
 from .equipment import Equipment
 from .resource_field import UniversalFormFieldType
@@ -168,7 +174,7 @@ class ResourceQuerySet(models.QuerySet):
         if is_general_admin(user):
             return self
         is_in_managed_units = Q(unit__in=Unit.objects.managed_by(user))
-        is_public = Q(public=True)
+        is_public = Q(_public=True)
         return self.filter(is_in_managed_units | is_public)
 
     def modifiable_by(self, user):
@@ -195,17 +201,35 @@ class ResourceQuerySet(models.QuerySet):
     def external(self):
         return self.filter(is_external=True)
 
-    
     def delete(self, *args, **kwargs):
+        hard_delete = kwargs.pop('hard_delete', False)
+        if hard_delete:
+            return super().delete(*args, **kwargs)
         self.update(
             soft_deleted=True,
-            public=False,
+            _public=False,
             reservable=False
         )
+        for publish_date in self.get_publish_dates():
+            publish_date.delete()
 
     def restore(self):
         self.update(soft_deleted=False)
 
+    def _refresh_publish_date_states(self):
+        """Set resource public / reservable field according to publish_date value"""
+        try:
+            for resource in self:
+                if resource.publish_date:
+                    resource.publish_date._update_states()
+        except:
+            pass
+        return self
+
+    def get_publish_dates(self) -> list:
+        return [resource.publish_date 
+                for resource in self 
+                if resource.publish_date]
 
 class CleanResourceID(CommonGenericTaggedItemBase, TaggedItemBase):
     object_id = models.CharField(max_length=100, verbose_name=_('Object id'), db_index=True)
@@ -215,8 +239,10 @@ class ResourceManager(models.Manager):
     def get_queryset(self, **kwargs):
         if getattr(self, '_include_soft_deleted', False):
             setattr(self, '_include_soft_deleted', False)
-            return super().get_queryset()
-        return super().get_queryset().exclude(soft_deleted=True)
+            return super().get_queryset() \
+                    ._refresh_publish_date_states()
+        return super().get_queryset().exclude(soft_deleted=True) \
+            ._refresh_publish_date_states()
     
     @property
     def with_soft_deleted(self):
@@ -251,14 +277,15 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         (PRICE_TYPE_FIXED, _('Fixed')),
     )
     id = models.CharField(primary_key=True, max_length=100)
-    public = models.BooleanField(default=True, verbose_name=_('Public'))
+    _public = models.BooleanField(default=True, verbose_name=_('Public'))
+    
     unit = models.ForeignKey('Unit', verbose_name=_('Unit'), db_index=True, null=True, blank=True,
                              related_name="resources", on_delete=models.PROTECT)
     type = models.ForeignKey(ResourceType, verbose_name=_('Resource type'), db_index=True,
                              on_delete=models.PROTECT)
     purposes = models.ManyToManyField(Purpose, verbose_name=_('Purposes'))
-    name = models.CharField(verbose_name=_('Name'), max_length=200)
-    description = models.TextField(verbose_name=_('Description'), null=True, blank=True)
+    name = TranslatedCharField(verbose_name=_('Name'), max_length=200)
+    description = TranslatedTextField(verbose_name=_('Description'), null=True, blank=True)
 
     tags = TaggableManager(through=CleanResourceID, blank=True)
 
@@ -291,18 +318,18 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
     max_reservations_per_user = models.PositiveIntegerField(verbose_name=_('Maximum number of active reservations per user'),
                                                             null=True, blank=True)
     reservable = models.BooleanField(verbose_name=_('Reservable'), default=False)
-    reservation_info = models.TextField(verbose_name=_('Reservation info'), null=True, blank=True)
-    responsible_contact_info = models.TextField(verbose_name=_('Responsible contact info'), blank=True)
+    reservation_info = TranslatedTextField(verbose_name=_('Reservation info'), null=True, blank=True)
+    responsible_contact_info = TranslatedTextField(verbose_name=_('Responsible contact info'), blank=True)
     generic_terms = models.ForeignKey(TermsOfUse, verbose_name=_('Generic terms'), null=True, blank=True,
                                       on_delete=models.SET_NULL, related_name='resources_where_generic_terms')
     payment_terms = models.ForeignKey(TermsOfUse, verbose_name=_('Payment terms'), null=True, blank=True,
                                       on_delete=models.SET_NULL, related_name='resources_where_payment_terms')
-    specific_terms = models.TextField(verbose_name=_('Specific terms'), blank=True)
-    reservation_requested_notification_extra = models.TextField(verbose_name=_(
+    specific_terms = TranslatedTextField(verbose_name=_('Specific terms'), blank=True)
+    reservation_requested_notification_extra = TranslatedTextField(verbose_name=_(
         'Extra content to "reservation requested" notification'), blank=True)
-    reservation_confirmed_notification_extra = models.TextField(verbose_name=_(
+    reservation_confirmed_notification_extra = TranslatedTextField(verbose_name=_(
         'Extra content to "reservation confirmed" notification'), blank=True)
-    reservation_additional_information = models.TextField(verbose_name=_('Reservation additional information'), blank=True)
+    reservation_additional_information = TranslatedTextField(verbose_name=_('Reservation additional information'), blank=True)
 
 
     min_price = models.DecimalField(verbose_name=_('Min price'), max_digits=8, decimal_places=2,
@@ -386,6 +413,21 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
 
     def __str__(self):
         return "%s (%s)/%s" % (get_translated(self, 'name'), self.id, self.unit)
+    
+    @property
+    def public(self):
+        if self.publish_date:
+            return self.publish_date.public
+        return self._public
+    
+    @public.setter
+    def public(self, value):
+        if not isinstance(value, bool):
+            raise TypeError(f"Invalid type: {type(value)} passed to {str(self.__class__.__name__)}.public")
+        
+        self._public = value
+        if self.pk:
+            self.save()
 
     @cached_property
     def main_image(self):
@@ -953,6 +995,10 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
     def has_outlook_link(self):
         return getattr(self, 'outlookcalendarlink', False)
 
+    @property
+    def publish_date(self):
+        return getattr(self, '_publish_date', None)
+    
     def delete(self, *args, **kwargs):
         self.soft_deleted = True
         self.public = False
@@ -966,6 +1012,108 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         self.soft_deleted = False
         return self.save()
     
+class ResourcePublishDate(models.Model):
+    begin = models.DateTimeField(
+        verbose_name=_('Begin time'),
+        help_text=_('Resource will be public after this date'), 
+        null=True, blank=True
+    )
+    end = models.DateTimeField(
+        verbose_name=_('End time'),
+        help_text=_('Resource will be hidden after this date'),
+        null=True, blank=True
+    )
+    reservable = models.BooleanField(
+        verbose_name=_('Reservable'),
+        help_text=_('Allow reservations'),
+        default=False
+    )
+    resource = models.OneToOneField(
+        Resource, verbose_name=_('Resource'),
+        db_index=True, related_name='_publish_date',
+        on_delete=models.CASCADE
+    )
+
+
+    def clean(self):
+        if not self.begin and not self.end:
+            raise ValidationError({
+                'begin': _('This field must be set if {field} is empty').format(field=_('Begin time')).capitalize(),
+                'end': _('This field must be set if {field} is empty').format(field=_('End time')).capitalize(),
+            })
+
+
+    def _get_public(self):
+        if self.begin and self.end:
+            is_public = self.begin < timezone.now() < self.end
+        elif self.begin and not self.end:
+            is_public = timezone.now() > self.begin
+        elif self.end and not self.begin:
+            is_public = timezone.now() < self.end
+        else:
+            return self.resource._public
+        return is_public
+
+    @property
+    def public(self):
+        self._update_states()
+        return self._get_public()
+    
+
+    def _update_states(self):
+        self.resource.public = self._get_public()
+        self.resource.reservable = self.reservable
+        self.resource.save()
+
+    def __str__(self):
+        return f'{self.resource.name}: {self.format_begin_end()}'
+    
+    def format_begin_end(self):
+        begin = timezone.localtime(self.begin) if self.begin else ''
+        end = timezone.localtime(self.end) if self.end else ''
+        fmt = f'{begin}{" - " if begin and end else ""}{end}'
+        return f'{self._get_fmt_title()} {fmt}'
+    
+    def _get_fmt_title(self):
+        if self.begin and self.end:
+            return _('Public between')
+        elif self.begin and not self.end:
+            if timezone.now() > self.begin:
+                return _('Published since')
+            else:
+                return _('Public after')
+        elif self.end and not self.begin:
+            if timezone.now() < self.end:
+                return _('Public until')
+            else:
+                return _('Hidden since')
+        else:
+            return super(ResourcePublishDate, self).__str__()
+    
+    def _get_fmt_icon(self):
+        if self.resource.public:
+            return 'shape-success'
+        else:
+            return 'shape-warning'
+
+    def format_html(self):
+        from django.utils.safestring import mark_safe
+        begin = timezone.localtime(self.begin).strftime('%d.%m.%y %H:%M') \
+            if self.begin else ''
+        end = timezone.localtime(self.end).strftime('%d.%m.%y %H:%M') \
+            if self.end else ''
+        return mark_safe(
+            f"""
+            <div style="display: flex; flex-direction: row; align-items: center;">
+                <div style="display: flex; flex-direction: column;">
+                    <h6><i class="glyphicon glyphicon-time" style="margin-right: 5px;"></i>{self._get_fmt_title()}</h6>
+                    {f"<span>{begin}{' - ' if begin and end else ''}</span>" if begin else ""}
+                    {f"<span>{end}</span>" if end else ""}
+                </div>
+            </div>
+            """
+        )
+
 class ResourceImage(ModifiableModel):
     TYPES = (
         ('main', _('Main photo')),

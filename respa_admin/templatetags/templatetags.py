@@ -73,3 +73,8 @@ def get_query_params(request, key):
 @register.filter
 def replace(string, value):
     return string.replace(*value.split('|'))
+
+@register.filter
+def disabled(form):
+    form.field.widget.attrs.update({'disabled': True})
+    return form

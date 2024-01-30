@@ -26,6 +26,7 @@ from resources.models import (
     TermsOfUse,
     ResourceUniversalField,
     ResourceUniversalFormOption,
+    ResourcePublishDate
 )
 
 from users.models import User
@@ -245,11 +246,22 @@ class ResourceForm(forms.ModelForm):
         label=_('E-mail addresses for client correspondence')
     )
 
+    public = forms.BooleanField(
+        widget=forms.Select(
+            choices=((False, _('Hidden')), (True, _('Published')))
+        ),
+        label=_('Public'),
+        required=False
+    )
+
     def __init__(self, *args, **kwargs):
         super(ResourceForm, self).__init__(*args, **kwargs)
         self.fields['generic_terms'].queryset = TermsOfUse.objects.filter(terms_type=TermsOfUse.TERMS_TYPE_GENERIC)
         self.fields['payment_terms'].queryset = TermsOfUse.objects.filter(terms_type=TermsOfUse.TERMS_TYPE_PAYMENT)
         if self.instance:
+            if self.instance.publish_date:
+                self.fields['public'].widget.choices = (((None), _('Scheduled publish')), )
+
             df_set = self.instance.get_disabled_fields()
             if df_set:
                 for field in set(df_set) - set(['groups', 'periods', 'images', 'free_of_charge']):
@@ -340,9 +352,6 @@ class ResourceForm(forms.ModelForm):
             'need_manual_confirmation': RespaRadioSelect(
                 choices=((True, _('Yes')), (False, _('No')))
             ),
-            'public': forms.Select(
-                choices=((False, _('Hidden')), (True, _('Published')))
-            ),
             'reservable': forms.Select(
                 choices=((False, _('Can not be reserved')), (True, _('Bookable')))
             ),
@@ -362,6 +371,8 @@ class ResourceForm(forms.ModelForm):
     def get_initial_for_field(self, field, field_name):
         if field_name == 'resource_tags' and self.instance.pk:
             self.initial['resource_tags'] = self.get_resource_tags()
+        elif field_name == 'public':
+            self.initial['public'] = self.instance.public
         return super().get_initial_for_field(field, field_name)
 
     def save(self, commit=True):
@@ -522,6 +533,45 @@ def get_period_formset(request=None, extra=1, instance=None, parent_class=Resour
     else:
         return period_formset_with_days(data=request.POST, instance=instance)
 
+
+class ResourcePublishDateForm(forms.ModelForm):
+    class Meta:
+        model = ResourcePublishDate
+        fields = ('begin', 'end', 'reservable')
+
+        widgets = {
+            'begin':  forms.DateTimeInput(
+                attrs={
+                    'type': 'datetime-local'
+                }),
+            'end':  forms.DateTimeInput(
+                attrs={
+                    'type': 'datetime-local'
+                }),
+            'reservable': RespaRadioSelect(
+                choices=((True, _('Yes')), (False, _('No')))
+            ),
+        }
+    
+
+def get_resource_publish_date_formset(request=None, instance=None, **kwargs):
+    publish_date_formset = inlineformset_factory(
+        Resource,
+        ResourcePublishDate,
+        fk_name=Resource._meta.model_name,
+        form=ResourcePublishDateForm,
+        extra=1,
+        can_delete=True,
+        can_delete_extra=True,
+        max_num=1
+    )
+
+    if not request:
+        return publish_date_formset(instance=instance)
+    if request.method == 'GET':
+        return publish_date_formset(instance=instance)
+    else:
+        return publish_date_formset(data=request.POST, instance=instance)
 
 class UniversalFieldForm(forms.ModelForm):
     class Meta:

@@ -1,4 +1,4 @@
-<div class="custom-checkbox checkbox-inline">
+<div class="custom-checkbox checkbox-inline" {% if extra_style %} style="{{ extra_style }}" {% endif %}>
     {{ field }}
     <label
         {% if field.id_for_label %} for="{{ field.id_for_label }}"{% endif %}

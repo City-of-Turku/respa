@@ -600,7 +600,7 @@ def test_comments_can_be_updated_by_correct_people_when_resource_sets_is_reserva
 
     response = api_client.post(list_url, data=reservation_data)
     assert response.status_code == expected_status_post
-    if response.status_code is 201:
+    if response.status_code == 201:
         reservation = Reservation.objects.filter(user=test_user).first()
         updated_comment = 'updated comment text'
         # update comment

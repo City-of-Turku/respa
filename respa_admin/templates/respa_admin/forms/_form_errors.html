@@ -56,6 +56,13 @@
                 {% endfor %}
             {% endif %}
             
-            
+            {% if publish_date_formset.errors|is_truthy %}
+            <div>
+                <strong>{% trans "Scheduled publish"|capfirst %}</strong>
+            </div>
+                {% for error in publish_date_formset.errors|remove_empty %}
+                    {{ error }}
+                {% endfor %}
+            {% endif %}
     </div>
 {% endif %}

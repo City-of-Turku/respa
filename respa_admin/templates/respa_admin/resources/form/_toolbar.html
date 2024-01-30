@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load templatetags %}
 
 <div class="panel panel-default form-toolbar-wrapper">
     <div class='container form-toolbar'>
@@ -9,7 +10,12 @@
             select-dropdown
             {% endif %} 
             btn btn-primary">
-            <div id='public-dropdown-icon'></div> {{ form.public }}
+            <div id='public-dropdown-icon'></div>
+            {% if public_is_disabled %}
+            {{ form.public|disabled }}
+            {% else %}
+            {{ form.public }}
+            {% endif %}
             <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
         </div>
         <div class="{% if reservable_is_disabled %} 
@@ -18,7 +24,12 @@
                 select-dropdown
                 {% endif %} 
                 btn btn-primary">
-            <div id='reservable-dropdown-icon'></div> {{ form.reservable }}
+            <div id='reservable-dropdown-icon'></div>
+            {% if reservable_is_disabled %}
+            {{ form.reservable|disabled }}
+            {% else %}
+            {{ form.reservable }}
+            {% endif %}
             <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
         </div>
         {% if not all_fields_disabled %}

@@ -1,0 +1,62 @@
+{% load i18n %}
+
+<div id="scheduled-publishing">
+    <div class="form-container" style="border-bottom:1px solid lightgray; padding: 0;">
+        <div class="form-section-header">
+            <h2>{% trans "Scheduled publishing" %}</h2>
+        </div>
+        {{ formset.management_form }}
+        {% for form in formset %}
+        {% with forloop.counter0 as id %}
+        {% for hidden in form.hidden_fields %}
+        {{ hidden }}
+        {% endfor %}
+        {% if not resource_has_scheduled_publishing %}
+        <div 
+            class="custom-checkbox checkbox-inline"
+            style="padding: 6px 12px;">
+            <input 
+                class="checkbox-custom"
+                type="checkbox"
+                id="add-new-scheduled-publish-date"
+                style="width: 25px; height: 25px;">
+            <label
+                for="add-new-scheduled-publish-date"
+                class="checkbox-custom-label"
+                style="background: transparent; font-size: 24px; font-weight: 600; line-height: 1.1; padding-left: 28px;">
+                {% trans "Use scheduled publish date" %}
+            </label>
+        </div>
+        {% endif %}
+        <div 
+            id="field-groups"
+            {% if not resource_has_scheduled_publishing %} hidden {% endif %}>
+            <div class="field-group-item">
+                <p>
+                    {% trans "If enabled, resource will be automatically set to public or hidden with given dates. Manual setting for public and hiding will be blocked" %}
+                </p>
+                <div style="display: flex; flex-direction: row; justify-content: space-between; width: 100%;">
+                    <div class="input-row">
+                        {% include "respa_admin/forms/_input.html" with field=form.begin %}
+                    </div>
+                    {% if resource_has_scheduled_publishing %}
+                    {% include "respa_admin/forms/_checkbox.html" with field=form.DELETE extra_style="display: flex; align-self: center; justify-content: flex-end;" %}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="field-group-item">
+                <div class="input-row">
+                    {% include "respa_admin/forms/_input.html" with field=form.end %}
+                </div>
+            </div>
+            <div
+                id="publish-date-reservable" 
+                class="field-group-item">
+                <label for="{{ form.reservable.id_for_label }}" class="control-label input-label">{{ form.reservable.label }}</label>
+                {{ form.reservable }}
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+</div>
