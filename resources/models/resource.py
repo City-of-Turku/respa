@@ -22,7 +22,7 @@ from django.utils.functional import cached_property
 from six import BytesIO
 from django.utils.text import format_lazy
 from django.utils.translation import pgettext_lazy, gettext_lazy as _
-from django.contrib.postgres.fields import HStoreField, DateTimeRangeField
+from django.contrib.postgres.fields import DateTimeRangeField
 from multi_email_field.fields import MultiEmailField
 from .gistindex import GistIndex
 from image_cropping import ImageRatioField
@@ -1227,7 +1227,7 @@ class ResourceEquipment(ModifiableModel):
     """
     resource = models.ForeignKey(Resource, related_name='resource_equipment', on_delete=models.CASCADE)
     equipment = models.ForeignKey(Equipment, related_name='resource_equipment', on_delete=models.CASCADE)
-    data = HStoreField(null=True, blank=True)
+    data = models.JSONField(verbose_name=_('Data'), null=True, blank=True)
     description = models.TextField(blank=True)
 
     class Meta:
