@@ -2187,4 +2187,13 @@ msgid "This field must be set if {field} is empty"
 msgstr "Detta fält måste vara inställt om {field} är tomt"
 
 msgid "Scheduled"
-msgstr ""
+msgstr "Planerad"
+
+msgid "Give feedback"
+msgstr "Ge feedback"
+
+msgid "Navigation"
+msgstr "Navigering"
+
+msgid "Select language"
+msgstr "Välj språk"

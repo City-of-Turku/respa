@@ -2247,3 +2247,12 @@ msgstr "Tällä kentällä pitää olla arvo jos {field} on tyhjä"
 
 msgid "Scheduled"
 msgstr "Ajastettu"
+
+msgid "Give feedback"
+msgstr "Anna palautetta"
+
+msgid "Navigation"
+msgstr "Navigaatio"
+
+msgid "Select language"
+msgstr "Valitse kieli"

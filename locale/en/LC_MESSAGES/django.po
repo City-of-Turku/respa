@@ -2866,3 +2866,12 @@ msgstr ""
 
 msgid "Scheduled"
 msgstr ""
+
+msgid "Give feedback"
+msgstr ""
+
+msgid "Navigation"
+msgstr ""
+
+msgid "Select language"
+msgstr ""
