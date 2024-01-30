@@ -2214,3 +2214,6 @@ msgstr "Anna palautetta"
 
 msgid "Navigation"
 msgstr "Navigaatio"
+
+msgid "Select language"
+msgstr "Valitse kieli"

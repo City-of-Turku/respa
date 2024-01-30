@@ -2833,3 +2833,6 @@ msgstr ""
 
 msgid "Navigation"
 msgstr ""
+
+msgid "Select language"
+msgstr ""

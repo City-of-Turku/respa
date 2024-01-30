@@ -2155,3 +2155,6 @@ msgstr "Ge feedback"
 
 msgid "Navigation"
 msgstr "Navigering"
+
+msgid "Select language"
+msgstr "Välj språk"
