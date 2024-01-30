@@ -1227,7 +1227,7 @@ class ResourceEquipment(ModifiableModel):
     """
     resource = models.ForeignKey(Resource, related_name='resource_equipment', on_delete=models.CASCADE)
     equipment = models.ForeignKey(Equipment, related_name='resource_equipment', on_delete=models.CASCADE)
-    data = HStoreField(null=True, blank=True)
+    data = HStoreField(blank=True, default=dict)
     description = models.TextField(blank=True)
 
     class Meta:
