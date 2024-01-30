@@ -299,7 +299,7 @@ packaging==23.0
     #   deprecation
     #   drf-yasg
     #   pytest
-paramiko==3.3.1
+paramiko==3.4.0
     # via -r requirements.in
 phonenumbers==8.13.6
     # via -r requirements.in

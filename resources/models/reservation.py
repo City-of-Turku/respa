@@ -333,7 +333,9 @@ class Reservation(ModifiableModel):
             order = self.get_order()
             if order:
                 order.set_confirmed_by_staff()
-                self.send_reservation_waiting_for_payment_mail()
+                # dont resend mail if already ready for payment e.g. when adding comments
+                if old_state != Reservation.READY_FOR_PAYMENT:
+                    self.send_reservation_waiting_for_payment_mail()
 
 
     def can_modify(self, user):

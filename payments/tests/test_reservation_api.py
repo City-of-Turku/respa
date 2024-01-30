@@ -2,6 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, create_autospec, patch
 from urllib.parse import urlencode
+from django.core import mail
 from django.utils import translation
 from django.test import override_settings
 import pytest
@@ -64,6 +65,18 @@ def reservation_confirmed_notification():
             body='Reservation confirmed body. \n' + get_body_with_all_template_vars()
         )
 
+
+@pytest.fixture(autouse=True)
+def reservation_waiting_for_payment_notification():
+    NotificationTemplate.objects.filter(type=NotificationType.RESERVATION_WAITING_FOR_PAYMENT).delete()
+    with translation.override('fi'):
+        return NotificationTemplate.objects.create(
+            type=NotificationType.RESERVATION_WAITING_FOR_PAYMENT,
+            is_default_template=True,
+            short_message='Reservation waiting for payment short message.',
+            subject='Reservation waiting for payment subject.',
+            body='Reservation waiting for payment body.',
+        )
 
 
 def get_detail_url(reservation):
@@ -931,3 +944,53 @@ def test_reservation_does_not_raise_validation_error_when_prods_have_only_restri
     api_client.force_authenticate(user=user)
     response = api_client.post(LIST_URL, data=reservation_data)
     assert response.status_code == 201
+
+
+@override_settings(RESPA_MAILS_ENABLED=True)
+@pytest.mark.django_db
+def test_reservation_waiting_for_payment_sent_only_once(resource_with_manual_confirmation, api_client, user, unit_manager_api_client,
+                                                        product_extra_manual_confirmation, reservation_waiting_for_payment_notification,
+                                                        reservation_requested_notification, reservation_confirmed_notification,
+                                                        customer_group):
+    """Tests that reserver receives waiting for payment notification only once even if staff modifies the reservation"""
+    # client user makes a reservation with order which also requires manual confirmation
+    reservation_data = build_reservation_data(resource_with_manual_confirmation)
+    reservation_data['reserver_name'] = 'Nordea Demo'
+    reservation_data['reserver_email_address'] = 'test@tester.com'
+    reservation_data['billing_email_address'] = 'test@tester.com'
+    reservation_data['preferred_language'] = 'fi'
+    order_data = build_order_data(product_extra_manual_confirmation, customer_group=customer_group.id)
+    reservation_data['order'] = order_data
+
+    api_client.force_authenticate(user=user)
+    response = api_client.post(LIST_URL, data=reservation_data)
+
+    assert response.status_code == 201
+    assert response.data['state'] == Reservation.REQUESTED
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].subject == 'Reservation requested subject.'
+
+    # staff approves reservation
+    reservation_data['state'] = Reservation.CONFIRMED
+    mail.outbox = []
+    new_reservation = Reservation.objects.last()
+    response = unit_manager_api_client.put(get_detail_url(new_reservation), data=reservation_data, format='json')
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.READY_FOR_PAYMENT
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].subject == 'Reservation waiting for payment subject.'
+
+    # staff writes comments
+    reservation_data['comments'] = 'test comment'
+    reservation_data['state'] = Reservation.READY_FOR_PAYMENT
+    mail.outbox = []
+    response = unit_manager_api_client.put(get_detail_url(new_reservation), data=reservation_data, format='json')
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.READY_FOR_PAYMENT
+    assert len(mail.outbox) == 0
+
+    reservation_data['comments'] = 'other test comment'
+    response = unit_manager_api_client.put(get_detail_url(new_reservation), data=reservation_data, format='json')
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.READY_FOR_PAYMENT
+    assert len(mail.outbox) == 0

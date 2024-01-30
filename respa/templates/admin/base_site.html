@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% load i18n grp_tags %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_available_languages as LANGUAGES %}
+
+{% block extrastyle %}
+<style>
+    #grp-user-tools li.grp-user-options-container a {
+        text-align: center !important;
+    }
+    #grp-user-tools form.grp-form-set-lang button {
+        display: block;
+        width: 50%;
+        background: none;
+        border: none;
+        color: #4fb2d3;
+        margin: 10px;
+        font-weight: bold;
+        &:hover {
+            color: white;
+        }
+    }
+    #grp-user-tools form.grp-form-set-lang {
+        display: flex;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block userlinks %}
+<li class="grp-collapse grp-closed">
+    <a href="#" class="grp-collapse-handler">
+        {% trans 'Select language' %}
+    </a>
+    <ul class="">
+        {% for code, language in LANGUAGES %}
+            <li class="">
+                <form class="grp-form-set-lang" action="{% url 'set_language' %}" method="post">
+                    <input name="next" type="hidden" value="{{ redirect_to }}">
+                    {% csrf_token %}
+                    <button name="language" value="{{ code }}" href="#">
+                        {{ language }}
+                    </button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+</li>
+{{ block.super }}
+{% endblock %}
