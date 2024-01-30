@@ -472,6 +472,7 @@ register_view(ResourceUniversalFieldViewSet, 'resource_universal_field')
 
 class ResourceEquipmentSerializer(TranslatedModelSerializer):
     equipment = EquipmentSerializer()
+    data = serializers.JSONField()
 
     class Meta:
         model = ResourceEquipment
