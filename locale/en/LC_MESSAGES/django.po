@@ -2875,3 +2875,6 @@ msgstr ""
 
 msgid "Select language"
 msgstr ""
+
+msgid "End time cannot be in the past"
+msgstr ""

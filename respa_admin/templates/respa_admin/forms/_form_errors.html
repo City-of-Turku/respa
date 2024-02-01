@@ -1,7 +1,7 @@
 {% load i18n %}
 {% load templatetags %}
 
-{% if form.errors or resource_image_formset.errors or period_formset_with_days.errors or resource_options_formset.errors or resource_universal_formset.errors %}
+{% if form.errors or resource_image_formset.errors or period_formset_with_days.errors or resource_options_formset.errors or resource_universal_formset.errors  or publish_date_formset.errors %}
     <div class="alert alert-danger">
         <strong>{% trans "Check the following errors" %}:</strong>
             {% if form.errors|is_truthy %}

@@ -21,7 +21,8 @@ from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
-from django.core.exceptions import ValidationError, ObjectDoesNotExist, PermissionDenied
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from payments.api.reservation import PaymentsReservationSerializer
 from resources.timmi import TimmiManager
@@ -603,13 +604,24 @@ class ResourcePublishDateSerializer(serializers.ModelSerializer):
 
         if not begin and not end:
             raise serializers.ValidationError({
-                'begin': _('This field must be set if {field} is empty').format(field=_('Begin time')).capitalize(),
-                'end': _('This field must be set if {field} is empty').format(field=_('End time')).capitalize(),
+                'begin': _('This field must be set if {field} is empty').format(field=_('End time')).capitalize(),
+                'end': _('This field must be set if {field} is empty').format(field=_('Begin time')).capitalize(),
             })
+        elif begin and end:
+            if attr['begin'] > attr['end']:
+                raise serializers.ValidationError({
+                    'begin': _('Begin time must be before end time')
+                })
+            
         if begin:
             attr['begin'] = begin.replace(microsecond=0, second=0)
         if end:
+            if timezone.now() > attr['end']:
+                raise serializers.ValidationError({
+                    'end': _('End time cannot be in the past')
+                })
             attr['end'] = end.replace(microsecond=0, second=0)
+            
         return attr
 
     def _create_new_publish(self, resource, validated_data) -> ResourcePublishDate:

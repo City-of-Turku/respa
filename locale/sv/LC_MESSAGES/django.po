@@ -2197,3 +2197,6 @@ msgstr "Navigering"
 
 msgid "Select language"
 msgstr "Välj språk"
+
+msgid "End time cannot be in the past"
+msgstr "Sluttiden kan inte vara i det förflutna"

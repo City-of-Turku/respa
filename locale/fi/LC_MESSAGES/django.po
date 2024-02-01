@@ -2256,3 +2256,6 @@ msgstr "Navigaatio"
 
 msgid "Select language"
 msgstr "Valitse kieli"
+
+msgid "End time cannot be in the past"
+msgstr "Päättymisaika ei voi olla menneisyydessä"

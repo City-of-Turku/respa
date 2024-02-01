@@ -1038,9 +1038,23 @@ class ResourcePublishDate(models.Model):
     def clean(self):
         if not self.begin and not self.end:
             raise ValidationError({
-                'begin': _('This field must be set if {field} is empty').format(field=_('Begin time')).capitalize(),
-                'end': _('This field must be set if {field} is empty').format(field=_('End time')).capitalize(),
+                'begin': _('This field must be set if {field} is empty').format(field=_('End time')).capitalize(),
+                'end': _('This field must be set if {field} is empty').format(field=_('Begin time')).capitalize(),
             })
+        elif self.begin and self.end:
+            if self.begin > self.end:
+                raise ValidationError({
+                    'begin': _('Begin time must be before end time')
+                })
+            
+        if self.begin:
+            self.begin = self.begin.replace(microsecond=0, second=0)
+        if self.end:
+            if timezone.now() > self.end:
+                raise ValidationError({
+                    'end': _('End time cannot be in the past')
+                })
+            self.end = self.end.replace(microsecond=0, second=0)
 
 
     def _get_public(self):
