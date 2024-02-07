@@ -97,7 +97,7 @@ deprecation==2.1.0
     # via django-helusers-turku
 dill==0.3.6
     # via pylint
-django==3.2.23
+django==3.2.24
     # via
     #   -r requirements.in
     #   django-admin-json-editor
