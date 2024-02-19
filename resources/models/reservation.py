@@ -780,23 +780,24 @@ class Reservation(ModifiableModel):
         except NotificationTemplateException as exc:
             return logger.error(exc, exc_info=True, extra={ 'user': user.uuid if user else None })
 
+        if is_reminder:
+            return send_respa_sms(self.reserver_phone_number,
+                rendered_notification['subject'], rendered_notification['short_message'])
 
-        if self.reserver_phone_number:
-            if is_reminder:
-                return send_respa_sms(self.reserver_phone_number,
-                    rendered_notification['subject'], rendered_notification['short_message'])
-
-            if self.resource.send_sms_notification and not staff_email: # Don't send sms when notifying staff.
-                send_respa_sms(self.reserver_phone_number,
-                    rendered_notification['subject'], rendered_notification['short_message'])
 
         # Use staff email if given, else get the provided email address
         email_address = staff_email if staff_email \
             else self.get_email_address(user)
 
         if email_address:
-            send_respa_mail(email_address, rendered_notification['subject'],
+            return send_respa_mail(email_address, rendered_notification['subject'],
                 rendered_notification['body'], rendered_notification['html_body'], attachments)
+
+        if self.reserver_phone_number:
+            if self.resource.send_sms_notification and not staff_email: # Don't send sms when notifying staff.
+                send_respa_sms(self.reserver_phone_number,
+                    rendered_notification['subject'], rendered_notification['short_message'])
+
 
 
     def notify_staff_about_reservation(self, notification):

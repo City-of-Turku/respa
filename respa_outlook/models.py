@@ -130,12 +130,11 @@ class RespaOutlookConfiguration(models.Model):
             )
             reservation.clean()
             reservation.save()
-            ret = send_respa_mail(
+            send_respa_mail(
                 email_address=email,
                 subject="Reservation created",
                 body="Reservation via outlook created"
             )
-            print(ret[0], ret[1])
 
         RespaOutlookReservation(
             name = '%s (%s)' % (reservation.reserver_email_address, self.resource.name),
