@@ -16,7 +16,7 @@ from caterings.models import CateringOrder, CateringProvider
 
 from resources.enums import UnitAuthorizationLevel
 from resources.models import (
-    Period, Day, Reservation,
+    Period, Day, Reservation, ReservationBulk,
     Resource, ResourceGroup, ReservationMetadataField,
     ReservationMetadataSet, UnitAuthorization, ReservationReminder
 )
@@ -49,6 +49,9 @@ def list_url():
 def detail_url(reservation):
     return reverse('reservation-detail', kwargs={'pk': reservation.pk})
 
+@pytest.fixture
+def recurring_url():
+    return reverse('reservationbulk-list')
 
 @pytest.mark.django_db
 @pytest.fixture(autouse=True)
@@ -94,6 +97,28 @@ def reservation_data_extra(reservation_data):
     })
     return extra_data
 
+@pytest.mark.django_db
+@pytest.fixture
+def recurring_reservation_data(resource_in_unit4_1):
+    return {
+        'resource': resource_in_unit4_1.pk,
+        'reserver_name': 'Test Reserver',
+        'reserver_email_address': 'test.reserver@test.com',
+        'reserver_phone_number': '0700555555',
+        'reserver_address_street': 'Mansikkatie 11',
+        'reserver_address_zip': '20180',
+        'reserver_address_city': 'Turku',
+        'reservation_stack': [{
+            'begin': '2115-04-04T11:00:00+02:00',
+             'end': '2115-04-04T12:00:00+02:00',
+        },{
+            'begin': '2115-04-05T11:00:00+02:00',
+            'end': '2115-04-05T12:00:00+02:00',
+        },{
+            'begin': '2115-04-06T11:00:00+02:00',
+            'end': '2115-04-06T12:00:00+02:00'
+        }]
+    }
 
 @pytest.mark.django_db
 @pytest.fixture
@@ -3437,3 +3462,23 @@ def test_no_notification_on_reservation_type_blocked(
     response = staff_api_client.post(list_url, data=reservation_data, format='json')
     assert response.status_code == 201
     assert len(mail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_recurring_reservation(
+    resource_in_unit4_1, recurring_reservation_data,
+    staff_api_client, staff_user, recurring_url):
+    UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    
+    recurring_reservation_data['reserver_name'] = 'Recurring reservation'
+    assert ReservationBulk.objects.count() == 0
+    assert Reservation.objects.count() == 0
+
+    response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
+    assert response.status_code == 201
+    assert ReservationBulk.objects.count() == 1
+    
+    reservation_bulk = ReservationBulk.objects.first()
+    assert reservation_bulk.reservations.count() == 3
+
