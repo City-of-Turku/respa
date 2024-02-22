@@ -26,6 +26,11 @@ from modeltranslation.translator import NotRegistered, translator
 import xlsxwriter
 
 
+class RespaNotificationAction:
+    EMAIL = 'EMAIL'
+    SMS = 'SMS'
+    NONE = None
+
 DEFAULT_LANG = settings.LANGUAGES[0][0]
 
 
@@ -108,7 +113,7 @@ def humanize_duration(duration):
 notification_logger = logging.getLogger('respa.notifications')
 
 
-def send_respa_mail(email_address, subject, body, html_body=None, attachments=None):
+def send_respa_mail(email_address, subject, body, html_body=None, attachments=None) -> RespaNotificationAction:
     if not getattr(settings, 'RESPA_MAILS_ENABLED', False):
         notification_logger.info('Respa mail is not enabled.')
     try:
@@ -120,11 +125,12 @@ def send_respa_mail(email_address, subject, body, html_body=None, attachments=No
         if html_body:
             msg.attach_alternative(html_body, 'text/html')
         msg.send()
+        return RespaNotificationAction.EMAIL
     except Exception as exc:
         notification_logger.error('Respa mail error %s', exc)
 
 
-def send_respa_sms(phone_number, subject, short_message):
+def send_respa_sms(phone_number, subject, short_message) -> RespaNotificationAction:
     if not getattr(settings, 'RESPA_SMS_ENABLED', False):
         notification_logger.info('Respa SMS is not enabled.')
     try:
@@ -132,6 +138,7 @@ def send_respa_sms(phone_number, subject, short_message):
                         'noreply@%s' % Site.objects.get_current().domain)
         sms = EmailMultiAlternatives(subject, short_message, from_address, [f'{phone_number}@{settings.GSM_NOTIFICATION_ADDRESS}'])
         sms.send()
+        return RespaNotificationAction.SMS
     except Exception as exc:
         notification_logger.error('Respa SMS error %s', exc)
 

@@ -20,6 +20,7 @@ from resources.models import (
     Resource, ResourceGroup, ReservationMetadataField,
     ReservationMetadataSet, UnitAuthorization, ReservationReminder
 )
+from resources.models.utils import build_reservations_ical_file, RespaNotificationAction
 from notifications.models import NotificationTemplate, NotificationType
 from notifications.tests.utils import check_received_mail_exists
 from .utils import (
@@ -1801,6 +1802,44 @@ def test_reservation_created_mail(user_api_client, resource_in_unit, list_url, r
         user.email,
         'Normal reservation created body.'
     )
+
+@override_settings(RESPA_MAILS_ENABLED=True, RESPA_SMS_ENABLED=True)
+@pytest.mark.django_db
+@pytest.mark.parametrize('reserver_email_address,reserver_phone_number,expected_return_type', [
+        ('customer@example.org', None, RespaNotificationAction.EMAIL),
+        (None, '+358404040404', RespaNotificationAction.SMS),
+        ('customer@example.org', '+358404040404', RespaNotificationAction.EMAIL),
+        (None, None, RespaNotificationAction.EMAIL)
+])
+def test_send_reservation_mail_return_type(
+    resource_in_unit, reserver_phone_number, reserver_email_address,
+    staff_api_client, list_url, reservation_data, expected_return_type,
+    user, reservation_created_by_official_notification):
+    if reserver_email_address:
+        reservation_data['reserver_email_address'] = reserver_email_address
+    if reserver_phone_number:
+        reservation_data['reserver_phone_number'] = reserver_phone_number
+
+    meta_field = ReservationMetadataField.objects.get(field_name='reserver_email_address')
+    meta_field2 = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='updated_metadata',
+    )
+    metadata_set.supported_fields.set([meta_field, meta_field2])
+    resource_in_unit.reservation_metadata_set = metadata_set
+    resource_in_unit.send_sms_notification = True
+    resource_in_unit.save()
+
+
+    response = staff_api_client.post(list_url, data=reservation_data, format='json')
+    assert response.status_code == 201
+    reservation = Reservation.objects.get(pk=response.json()['id'])
+    attachment = 'reservation.ics', build_reservations_ical_file([reservation]), 'text/calendar'
+    kwargs = {'attachments': [attachment]}
+    if not reserver_email_address and not reserver_phone_number:
+        kwargs['user'] = user
+    return_type = reservation.send_reservation_mail(NotificationType.RESERVATION_CREATED_BY_OFFICIAL, **kwargs)
+    assert return_type == expected_return_type
 
 
 @override_settings(RESPA_MAILS_ENABLED=True)

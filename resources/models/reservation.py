@@ -752,7 +752,7 @@ class Reservation(ModifiableModel):
             return self.billing_email_address
         elif self.reserver_email_address:
             return self.reserver_email_address
-        elif user:
+        elif user and not user.is_staff:
             return user.email
 
     def send_reservation_mail(self, notification_type,
@@ -795,7 +795,7 @@ class Reservation(ModifiableModel):
 
         if self.reserver_phone_number:
             if self.resource.send_sms_notification and not staff_email: # Don't send sms when notifying staff.
-                send_respa_sms(self.reserver_phone_number,
+                return send_respa_sms(self.reserver_phone_number,
                     rendered_notification['subject'], rendered_notification['short_message'])
 
 
