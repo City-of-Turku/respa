@@ -16,7 +16,8 @@ from django.contrib.gis.geos import Point
 from resources.models.availability import Period, Day
 from resources.models.resource import Resource
 from resources.models.unit import Unit
-from resources.models.reservation import Reservation
+from resources.models.reservation import Reservation, RESERVATION_BILLING_FIELDS
+from payments.utils import is_free, get_price
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -157,6 +158,53 @@ class DRFFilterBooleanWidget(django_filters.widgets.BooleanWidget):
     """
     def render(self, *args, **kwargs):
         return None
+
+class ReservationCreateMixin():
+    def handle_reservation_modify_request(self, request, resource):
+        # handle removing order from data when updating reservation without paying
+        if self.instance and resource.has_products() and 'order' in request.data:
+            state = request.data.get('state')
+            # states where reservation updates can be made
+            if state in (
+                    Reservation.CONFIRMED, Reservation.CANCELLED, Reservation.DENIED,
+                    Reservation.REQUESTED, Reservation.READY_FOR_PAYMENT, Reservation.WAITING_FOR_CASH_PAYMENT):
+                has_staff_perms = resource.is_manager(request.user) or resource.is_admin(request.user)
+                user_can_modify = self.instance.can_modify(request.user)
+                # staff members never pay after reservation creation and their order can be removed safely here
+                # non staff members i.e. clients must include order when state is ready for payment
+                if has_staff_perms or (user_can_modify and state != Reservation.READY_FOR_PAYMENT):
+                    del request.data['order']
+    
+    def set_supported_and_required_fields(self, request, resource, data):
+            cache = self.context.get('reservation_metadata_set_cache')
+            supported = resource.get_supported_reservation_extra_field_names(cache=cache)
+            required = resource.get_required_reservation_extra_field_names(cache=cache)
+
+            # reservations without an order don't require billing fields
+            self.handle_reservation_modify_request(request, resource)
+            order = request.data.get('order')
+
+            begin, end = (request.data.get('begin', None), request.data.get('end', None))
+            if not order or isinstance(order, str) or (order and is_free(get_price(order, begin=begin, end=end))):
+                required = [field for field in required if field not in RESERVATION_BILLING_FIELDS]
+
+            # staff events have less requirements
+            is_staff_event = data.get('staff_event', False)
+
+            if is_staff_event and resource.can_create_staff_event(request.user):
+                required = {'reserver_name', 'event_description'}
+
+            # reservations of type blocked don't require any fields
+            is_blocked_type = data.get('type') == Reservation.TYPE_BLOCKED
+            if is_blocked_type and resource.can_create_special_type_reservation(request.user):
+                required = []
+            # we don't need to remove a field here if it isn't supported, as it will be read-only and will be more
+            # easily removed in to_representation()
+            for field_name in supported:
+                self.fields[field_name].read_only = False
+
+            for field_name in required:
+                self.fields[field_name].required = True
 
 
 class ExtraDataMixin():
