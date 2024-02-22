@@ -99,11 +99,14 @@ class ReservationBulkQuerySet(models.QuerySet):
         return self
 
 class ReservationBulk(ModifiableModel):
-    bucket = models.ManyToManyField('Reservation', related_name='reservationbulks', db_index=True)
     objects = ReservationBulkQuerySet.as_manager()
 
+    class Meta:
+        verbose_name = _('Recurring reservation')
+        verbose_name_plural = _('Recurring reservations')
+
     def __str__(self):
-        return "Reservation Bulk"
+        return f"{_('Recurring reservation')} <{self.created_by}>"
 
 class Reservation(ModifiableModel):
     CREATED = 'created'
@@ -202,6 +205,10 @@ class Reservation(ModifiableModel):
 
     timmi_id = models.PositiveIntegerField(verbose_name=_('Timmi ID'), null=True, blank=True)
     timmi_receipt = models.TextField(verbose_name=_('Timmi receipt'), null=True, blank=True, max_length=2000)
+
+    bulk = models.ForeignKey(ReservationBulk, 
+        related_name='reservations', 
+        on_delete=models.CASCADE, null=True, blank=True)
 
     objects = ReservationQuerySet.as_manager()
 

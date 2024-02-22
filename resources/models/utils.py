@@ -520,17 +520,6 @@ def build_ical_feed_url(ical_token, request):
     url = reverse('ical-feed', kwargs={'ical_token': ical_token}, request=request)
     return url[:url.find('?')]
 
-def dateparser(first, iter) -> str:
-    """
-    Return parsed time format `%d-%m-%Y` `%H:%M:%S` from `%Y-%m-%d` `%H:%M:%S`+`%z`
-    """
-    try:
-        time = '%s %s' % (str(iter).split(' ')[0], str(first).split(' ')[1])
-        time = time.split('+')[0]
-        time = datetime.datetime.strptime(time, '%Y-%m-%d %H:%M:%S').strftime('%d-%m-%Y %H:%M:%S')
-        return time
-    except:
-        return ""
 
 def get_municipality_help_options():
     try:

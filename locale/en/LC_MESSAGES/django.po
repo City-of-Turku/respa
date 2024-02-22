@@ -2878,3 +2878,9 @@ msgstr ""
 
 msgid "End time cannot be in the past"
 msgstr ""
+
+msgid "Recurring reservation"
+msgstr ""
+
+msgid "Recurring reservations"
+msgstr ""

@@ -11,15 +11,12 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import (
     PermissionDenied, ValidationError as DjangoValidationError
 )
-from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime
 from django_filters.rest_framework import DjangoFilterBackend
-from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.auth.models import AnonymousUser
 from notifications.models import NotificationType
-from rest_framework import viewsets, serializers, filters, exceptions, permissions
+from rest_framework import viewsets, serializers, filters, exceptions, permissions, mixins
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 from rest_framework.fields import BooleanField, IntegerField
 from rest_framework import renderers
@@ -50,7 +47,7 @@ from .base import (
     ExtraDataMixin
 )
 
-from ..models.utils import dateparser, has_reservation_data_changed, is_reservation_metadata_or_times_different
+from ..models.utils import has_reservation_data_changed, is_reservation_metadata_or_times_different
 from respa.renderers import ResourcesBrowsableAPIRenderer
 from payments.utils import is_free, get_price
 
@@ -90,27 +87,83 @@ class UserSerializer(TranslatedModelSerializer):
         fields = ('id', 'display_name', 'email')
         ref_name = 'ReservationUserSerializer'
 
+class ReservationStackSerializer(serializers.Serializer):
+    begin = NullableDateTimeField()
+    end = NullableDateTimeField()
 
-class ReservationBulkSerializer(ExtraDataMixin, TranslatedModelSerializer):
-    bucket = serializers.SerializerMethodField()
+class ReservationBulkSerializer(serializers.Serializer):
+    preferred_language = serializers.CharField(required=False)
+    reserver_email_address = serializers.EmailField(required=False)
+    reserver_name = serializers.CharField(required=False)
+    reserver_phone_number = serializers.CharField(required=False)
+    resource = serializers.PrimaryKeyRelatedField(queryset=Resource.objects.all())
+    type = serializers.ChoiceField(choices=Reservation.TYPE_CHOICES)
+    reservation_stack = ReservationStackSerializer(many=True)
+    comments = serializers.CharField(required=False)
 
     class Meta:
-        model = ReservationBulk
-        fields = [
-            'bucket'
-        ]
+        fields = (
+            'preferred_language', 'reserver_email_address',
+            'reserver_name', 'reserver_phone_number',
+            'resource', 'type', 'reservation_stack',
+            'comments'
+        )
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        data = self.get_initial()
+        resource = Resource.objects.get(pk=data['resource'])
+        cache = self.context.get('reservation_metadata_set_cache', None)
+        required = resource.get_required_reservation_extra_field_names(cache=cache)
+        for field_name in required:
+            self.fields[field_name].required = True
+    
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
 
-    def get_bucket(self, obj):
-        data = []
-        for res in obj.bucket.all():
-            data.append(
-                (res.begin, res.end)
-            )
+        resource = attrs['resource']
+        _cattrs = attrs.copy()
+        reservation_stack = _cattrs.pop('reservation_stack')
+        for data in reservation_stack:
+            reservation = Reservation(**_cattrs, **data)
+            reservation.clean()
+            if resource.validate_reservation_period(reservation, reservation.user):
+                return JsonResponse({
+                    'status': 'false',
+                    'recurring_validation_error': _('Reservation failed. Make sure reservation period is correct.')
+                }, status=400)
+            if resource.validate_max_reservations_per_user(reservation.user):
+                return JsonResponse({
+                    'status': 'false',
+                    'recurring_validation_error': _('Reservation failed. Too many reservations at once.')
+                }, status=400)
 
+        return attrs
+    
+    def validate_reserver_phone_number(self, value):
+        if value.startswith('+'):
+            if not region_code_for_country_code(phonenumbers.parse(value).country_code):
+                raise ValidationError(dict(reserver_phone_number=_('Invalid country code')))
+        return value
 
+    def create(self, validated_data):
+        reservation_stack = validated_data.pop('reservation_stack')
+        reservations = []
+        for reservation_data in reservation_stack:
+            reservation = Reservation(state=Reservation.CONFIRMED, **validated_data, **reservation_data)
+            reservation.save()
+            reservations.append(reservation)
+        
+        instance = ReservationBulk.objects.create(created_by=validated_data['user'])
+        instance.reservations.add(*reservations)
+        
+        return instance
+    
+    def to_representation(self, instance):
+        return ReservationSerializer(
+            context=self.context
+        ).to_representation(instance.reservations.first())
 class HomeMunicipalitySerializer(TranslatedModelSerializer):
     class Meta:
         model = ReservationHomeMunicipalityField
@@ -826,176 +879,44 @@ class ReservationCacheMixin:
         return context
 
 
-class ReservationBulkViewSet(viewsets.ModelViewSet, ReservationCacheMixin):
+class ReservationBulkViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = ReservationBulk.objects.all()
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly, ReservationPermission, permissions.IsAdminUser,)
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly, 
+        ReservationPermission, permissions.IsAdminUser,
+    )
+    serializer_class = ReservationBulkSerializer
 
-    def get_serializer_class(self):
-        return ReservationBulkSerializer
+    def _strftime(self, dt):
+        return timezone.localtime(dt).strftime('%d.%m.%Y %H.%M')
 
-    def get_serializer(self, *args, **kwargs):
-        return super().get_serializer(*args, **kwargs)
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        return queryset
-
-    """
-    {
-    "reservation_stack": [{
-        "begin": "2019-11-26T13:00:00+02:00",
-        "end": "2019-11-26T14:00:00+02:00",
-        "resource": "awmdvkth2vea"
-    }, {
-        "begin": "2019-11-27T11:00:00.000Z",
-        "end": "2019-11-27T12:00:00.000Z"
-    }, {
-        "begin": "2019-11-28T11:00:00.000Z",
-        "end": "2019-11-28T12:00:00.000Z"
-    }, {
-        "begin": "2019-11-29T11:00:00.000Z",
-        "end": "2019-11-29T12:00:00.000Z"
-    }],
-    "reserver_name": "nimi",
-    "reserver_phone_number": "2092393939",
-    "reserver_email_address": "asd@ewq.com",
-    "preferred_language": "fi",
-    "resource": "awmdvkth2vea"
-    }
-    """
-    @transaction.atomic
-    def create(self, request):
-        stack = request.data.pop('reservation_stack')
-        if 'resource' in stack[0]:
-            stack[0].pop('resource')
-        if len(stack) > 100:
-            return JsonResponse({
-                'status': 'false',
-                'recurring_validation_error': _('Reservation failed. Too many reservations at once.'),
-            }, status=400
-            )
-        data = {
-            **request.data
+    def get_notification_context(self, reservations):
+        return {
+            'first_reservation': {
+                'begin': self._strftime(reservations.first().begin),
+                'end': self._strftime(reservations.first().end)
+            },
+            'last_reservation': {
+                'begin': self._strftime(reservations.last().begin),
+                'end': self._strftime(reservations.last().end)
+            },
+            'dates': [
+                {'begin': self._strftime(reservation.begin),
+                'end': self._strftime(reservation.end)}
+                for reservation in reservations.all()
+            ]
         }
-        data.update({
-            'user': request.user
-        })
-        resource_id = data.get('resource')
-        try:
-            for key in stack:
-                begin = key.get('begin')
-                end = key.get('end')
-                if begin is None or end is None:
-                    return JsonResponse({
-                        'status': 'false',
-                        'recurring_validation_error': _('Reservation failed. Begin or end time is missing.')
-                    }, status=400
-                    )
-            reservations = []
-            for key in stack:
-                begin = parse_datetime(key.get('begin'))
-                end = parse_datetime(key.get('end'))
-                try:
-                    resource = Resource.objects.get(id=resource_id)
-                except:
-                    raise
-                data['resource'] = resource
-                res = Reservation(
-                    **data
-                )
-                res.begin = begin
-                res.end = end
-                if resource.validate_reservation_period(res, res.user):
-                    return JsonResponse({
-                        'status': 'false',
-                        'recurring_validation_error': _('Reservation failed. Make sure reservation period is correct.')
-                    }, status=400
-                    )
-                if resource.validate_max_reservations_per_user(res.user):
-                    return JsonResponse({
-                        'status': 'false',
-                        'recurring_validation_error': _('Reservation failed. Too many reservations at once.')
-                    }, status=400
-                    )
-                if resource.check_reservation_collision(begin, end, res):
-                    return JsonResponse({
-                        'status': 'false',
-                        'recurring_validation_error': _('Reservation failed. Overlap with existing reservations.')
-                    }, status=400
-                    )
-                reservations.append(res)
-            reservation_dates_context = {'dates': []}
 
-            """
-            {% if bulk_email_context is defined %}
-                {% for date in bulk_email_context['dates'] %}
-                    Alku: {{ date.get('begin') }}
-                    Loppu {{ date.get('end') }}
-                {% endfor %}
-            {% endif %}
-            """
-            for res in reservations:
-                res.state = 'confirmed'
-                if resource.validate_reservation_period(res, res.user):
-                    return JsonResponse({
-                        'status': 'false',
-                        'recurring_validation_error': _('Reservation failed. Make sure reservation period is correct.')
-                    }, status=400
-                    )
-                if resource.validate_max_reservations_per_user(res.user):
-                    return JsonResponse({
-                        'status': 'false',
-                        'recurring_validation_error': _('Reservation failed. Too many reservations at once.')
-                    }, status=400
-                    )
-                if resource.check_reservation_collision(begin, end, res):
-                    return JsonResponse({
-                        'status': 'false',
-                        'recurring_validation_error': _('Reservation failed. Overlap with existing reservations.')
-                    }, status=400
-                    )
-                res.save()
-                reservation_dates_context['dates'].append(
-                    {
-                        'begin': dateparser(reservations[0].begin, res.begin),
-                        'end': dateparser(reservations[0].end, res.end)
-                    }
-                )
+    def perform_create(self, serializer):
+        instance = serializer.save(user=self.request.user)
 
-            reservation_dates_context.update({
-                'first_reservation': {
-                    'begin': dateparser(reservations[0].begin, reservations[0].begin),
-                    'end': dateparser(reservations[0].end, reservations[0].end)
-                }
-            })
-            reservation_dates_context.update({
-                'last_reservation': {
-                    'begin': dateparser(reservations[0].begin, reservations[len(reservations) - 1].begin),
-                    'end': dateparser(reservations[0].end, reservations[len(reservations) - 1].end)
-                }
-            })
-            res = reservations[0]
-            url = ''.join([request.is_secure() and 'https' or 'http', get_current_site(
-                request).domain, '/v1/', 'reservation/', str(res.id), '/'])
-            ical_file = build_reservations_ical_file(reservations)
-            attachment = ('reservation.ics', ical_file, 'text/calendar')
-            res.send_reservation_mail(
-                NotificationType.RESERVATION_BULK_CREATED,
-                attachments=[attachment],
-                extra_context=reservation_dates_context
-            )
-            return JsonResponse(
-                data={
-                    **ReservationSerializer(context={'request': self.request if self.request else request}).to_representation(res)},
-                status=200)
-        except Exception as ex:
-            return JsonResponse(
-                {
-                    'status': 'false',
-                    'recurring_validation_error': 'Reservation failed. Try again later.'
-                }, status=500
-            )
-
+        ical_file = build_reservations_ical_file(instance.reservations.all())
+        attachment = ('reservation.ics', ical_file, 'text/calendar')
+        instance.reservations.first().send_reservation_mail(
+            NotificationType.RESERVATION_BULK_CREATED,
+            attachments=[attachment],
+            extra_context=self.get_notification_context(instance.reservations)
+        )
 
 class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, ReservationCacheMixin):
     queryset = Reservation.objects.select_related('user', 'resource', 'resource__unit')\

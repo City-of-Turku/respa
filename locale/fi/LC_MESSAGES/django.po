@@ -2259,3 +2259,9 @@ msgstr "Valitse kieli"
 
 msgid "End time cannot be in the past"
 msgstr "Päättymisaika ei voi olla menneisyydessä"
+
+msgid "Recurring reservation"
+msgstr "Toistuva varaus"
+
+msgid "Recurring reservations"
+msgstr "Toistuvat varaukset"
