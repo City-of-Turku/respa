@@ -835,9 +835,6 @@ class ReservationBulkViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         permissions.IsAuthenticatedOrReadOnly, 
         ReservationPermission, permissions.IsAdminUser,
     )
-    permission_classes = (
-        permissions.AllowAny, 
-    )
     serializer_class = ReservationBulkSerializer
 
     def _strftime(self, dt):
