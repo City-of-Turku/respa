@@ -537,8 +537,27 @@ class ReservationMetadataFieldAdmin(admin.ModelAdmin):
             ]
         return super().formfield_for_dbfield(db_field, **kwargs)
 
+
+class ReservationInline(admin.StackedInline):
+    model = Reservation
+    fields = ('resource', 'begin', 'end', )
+    readonly_fields = ('resource', 'begin', 'end', )
+    show_change_link = True
+    extra = 0
+
+    def __init__(self, *args, **kwargs):
+        super(ReservationInline, self).__init__(*args, **kwargs)
+        for perm in ('change', 'add'):
+            setattr(self, 'has_%s_permission' % perm, lambda *args, **kwargs: False)
+
 class ReservationBulkAdmin(admin.ModelAdmin):
-    pass
+    inlines = [
+        ReservationInline
+    ]
+    readonly_fields = (
+        'created_by', 'created_at',
+        'modified_by', 'modified_at',
+    )
 
 class ReservationReminderAdmin(admin.ModelAdmin):
     extra_readonly_fields_on_update = ('reservation_type',)

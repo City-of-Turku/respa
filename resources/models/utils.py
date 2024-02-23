@@ -26,6 +26,11 @@ from modeltranslation.translator import NotRegistered, translator
 import xlsxwriter
 
 
+class RespaNotificationAction:
+    EMAIL = 'EMAIL'
+    SMS = 'SMS'
+    NONE = None
+
 DEFAULT_LANG = settings.LANGUAGES[0][0]
 
 
@@ -108,7 +113,7 @@ def humanize_duration(duration):
 notification_logger = logging.getLogger('respa.notifications')
 
 
-def send_respa_mail(email_address, subject, body, html_body=None, attachments=None):
+def send_respa_mail(email_address, subject, body, html_body=None, attachments=None) -> RespaNotificationAction:
     if not getattr(settings, 'RESPA_MAILS_ENABLED', False):
         notification_logger.info('Respa mail is not enabled.')
     try:
@@ -120,11 +125,12 @@ def send_respa_mail(email_address, subject, body, html_body=None, attachments=No
         if html_body:
             msg.attach_alternative(html_body, 'text/html')
         msg.send()
+        return RespaNotificationAction.EMAIL
     except Exception as exc:
         notification_logger.error('Respa mail error %s', exc)
 
 
-def send_respa_sms(phone_number, subject, short_message):
+def send_respa_sms(phone_number, subject, short_message) -> RespaNotificationAction:
     if not getattr(settings, 'RESPA_SMS_ENABLED', False):
         notification_logger.info('Respa SMS is not enabled.')
     try:
@@ -132,6 +138,7 @@ def send_respa_sms(phone_number, subject, short_message):
                         'noreply@%s' % Site.objects.get_current().domain)
         sms = EmailMultiAlternatives(subject, short_message, from_address, [f'{phone_number}@{settings.GSM_NOTIFICATION_ADDRESS}'])
         sms.send()
+        return RespaNotificationAction.SMS
     except Exception as exc:
         notification_logger.error('Respa SMS error %s', exc)
 
@@ -520,17 +527,6 @@ def build_ical_feed_url(ical_token, request):
     url = reverse('ical-feed', kwargs={'ical_token': ical_token}, request=request)
     return url[:url.find('?')]
 
-def dateparser(first, iter) -> str:
-    """
-    Return parsed time format `%d-%m-%Y` `%H:%M:%S` from `%Y-%m-%d` `%H:%M:%S`+`%z`
-    """
-    try:
-        time = '%s %s' % (str(iter).split(' ')[0], str(first).split(' ')[1])
-        time = time.split('+')[0]
-        time = datetime.datetime.strptime(time, '%Y-%m-%d %H:%M:%S').strftime('%d-%m-%Y %H:%M:%S')
-        return time
-    except:
-        return ""
 
 def get_municipality_help_options():
     try:
