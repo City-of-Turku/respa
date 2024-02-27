@@ -994,3 +994,55 @@ def test_reservation_waiting_for_payment_sent_only_once(resource_with_manual_con
     assert response.status_code == 200
     assert response.data['state'] == Reservation.READY_FOR_PAYMENT
     assert len(mail.outbox) == 0
+
+
+@override_settings(RESPA_MAILS_ENABLED=True)
+@pytest.mark.django_db
+def test_reservation_waiting_for_cash_comments_dont_trigger_notification(resource_with_manual_confirmation, api_client, user, unit_manager_api_client,
+                                                        product_extra_manual_confirmation, reservation_waiting_for_payment_notification,
+                                                        reservation_requested_notification, reservation_confirmed_notification,
+                                                        customer_group):
+    """Tests that commenting to reservation waiting for cash payment does not trigger new reservation confirmed notifications for client"""
+    resource_with_manual_confirmation.cash_payments_allowed = True
+    resource_with_manual_confirmation.save()
+    # client user makes a reservation with order which also requires manual confirmation
+    reservation_data = build_reservation_data(resource_with_manual_confirmation)
+    reservation_data['reserver_name'] = 'Nordea Demo'
+    reservation_data['reserver_email_address'] = 'test@tester.com'
+    reservation_data['billing_email_address'] = 'test@tester.com'
+    reservation_data['preferred_language'] = 'fi'
+    order_data = build_order_data(product_extra_manual_confirmation, customer_group=customer_group.id)
+    order_data['payment_method'] = Order.CASH
+    reservation_data['order'] = order_data
+
+    api_client.force_authenticate(user=user)
+    response = api_client.post(LIST_URL, data=reservation_data)
+    assert response.status_code == 201
+    assert response.data['state'] == Reservation.REQUESTED
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].subject == 'Reservation requested subject.'
+
+    # staff approves reservation
+    reservation_data['state'] = Reservation.CONFIRMED
+    mail.outbox = []
+    new_reservation = Reservation.objects.last()
+    response = unit_manager_api_client.put(get_detail_url(new_reservation), data=reservation_data, format='json')
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.WAITING_FOR_CASH_PAYMENT
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].subject == 'Reservation confirmed subject.'
+
+    # staff writes comments
+    reservation_data['comments'] = 'test comment'
+    reservation_data['state'] = Reservation.WAITING_FOR_CASH_PAYMENT
+    mail.outbox = []
+    response = unit_manager_api_client.put(get_detail_url(new_reservation), data=reservation_data, format='json')
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.WAITING_FOR_CASH_PAYMENT
+    assert len(mail.outbox) == 0
+
+    reservation_data['comments'] = 'other test comment'
+    response = unit_manager_api_client.put(get_detail_url(new_reservation), data=reservation_data, format='json')
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.WAITING_FOR_CASH_PAYMENT
+    assert len(mail.outbox) == 0

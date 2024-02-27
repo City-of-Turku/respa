@@ -206,8 +206,8 @@ class Reservation(ModifiableModel):
     timmi_id = models.PositiveIntegerField(verbose_name=_('Timmi ID'), null=True, blank=True)
     timmi_receipt = models.TextField(verbose_name=_('Timmi receipt'), null=True, blank=True, max_length=2000)
 
-    bulk = models.ForeignKey(ReservationBulk, 
-        related_name='reservations', 
+    bulk = models.ForeignKey(ReservationBulk,
+        related_name='reservations',
         on_delete=models.CASCADE, null=True, blank=True)
 
     objects = ReservationQuerySet.as_manager()
@@ -319,7 +319,9 @@ class Reservation(ModifiableModel):
                 self.notify_staff_about_reservation(NotificationType.RESERVATION_REQUESTED_OFFICIAL)
         elif reservation_is_confirmed or state == Reservation.WAITING_FOR_CASH_PAYMENT:
             if self.need_manual_confirmation():
-                self.send_reservation_confirmed_mail()
+                # dont resend mail if already ready for cash payment e.g. when adding comments
+                if old_state != Reservation.WAITING_FOR_CASH_PAYMENT:
+                    self.send_reservation_confirmed_mail()
             elif self.access_code:
                 self.send_reservation_created_with_access_code_mail(action_by_official=action_by_official)
                 if not action_by_official:
