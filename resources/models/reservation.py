@@ -99,11 +99,14 @@ class ReservationBulkQuerySet(models.QuerySet):
         return self
 
 class ReservationBulk(ModifiableModel):
-    bucket = models.ManyToManyField('Reservation', related_name='reservationbulks', db_index=True)
     objects = ReservationBulkQuerySet.as_manager()
 
+    class Meta:
+        verbose_name = _('Recurring reservation')
+        verbose_name_plural = _('Recurring reservations')
+
     def __str__(self):
-        return "Reservation Bulk"
+        return f"{_('Recurring reservation')} <{self.created_by}>"
 
 class Reservation(ModifiableModel):
     CREATED = 'created'
@@ -202,6 +205,10 @@ class Reservation(ModifiableModel):
 
     timmi_id = models.PositiveIntegerField(verbose_name=_('Timmi ID'), null=True, blank=True)
     timmi_receipt = models.TextField(verbose_name=_('Timmi receipt'), null=True, blank=True, max_length=2000)
+
+    bulk = models.ForeignKey(ReservationBulk, 
+        related_name='reservations', 
+        on_delete=models.CASCADE, null=True, blank=True)
 
     objects = ReservationQuerySet.as_manager()
 
@@ -752,7 +759,7 @@ class Reservation(ModifiableModel):
             return self.billing_email_address
         elif self.reserver_email_address:
             return self.reserver_email_address
-        elif user:
+        elif user and not user.is_staff:
             return user.email
 
     def send_reservation_mail(self, notification_type,
@@ -780,23 +787,24 @@ class Reservation(ModifiableModel):
         except NotificationTemplateException as exc:
             return logger.error(exc, exc_info=True, extra={ 'user': user.uuid if user else None })
 
+        if is_reminder:
+            return send_respa_sms(self.reserver_phone_number,
+                rendered_notification['subject'], rendered_notification['short_message'])
 
-        if self.reserver_phone_number:
-            if is_reminder:
-                return send_respa_sms(self.reserver_phone_number,
-                    rendered_notification['subject'], rendered_notification['short_message'])
-
-            if self.resource.send_sms_notification and not staff_email: # Don't send sms when notifying staff.
-                send_respa_sms(self.reserver_phone_number,
-                    rendered_notification['subject'], rendered_notification['short_message'])
 
         # Use staff email if given, else get the provided email address
         email_address = staff_email if staff_email \
             else self.get_email_address(user)
 
         if email_address:
-            send_respa_mail(email_address, rendered_notification['subject'],
+            return send_respa_mail(email_address, rendered_notification['subject'],
                 rendered_notification['body'], rendered_notification['html_body'], attachments)
+
+        if self.reserver_phone_number:
+            if self.resource.send_sms_notification and not staff_email: # Don't send sms when notifying staff.
+                return send_respa_sms(self.reserver_phone_number,
+                    rendered_notification['subject'], rendered_notification['short_message'])
+
 
 
     def notify_staff_about_reservation(self, notification):

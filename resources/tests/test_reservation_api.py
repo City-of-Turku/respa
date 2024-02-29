@@ -16,10 +16,11 @@ from caterings.models import CateringOrder, CateringProvider
 
 from resources.enums import UnitAuthorizationLevel
 from resources.models import (
-    Period, Day, Reservation,
+    Period, Day, Reservation, ReservationBulk,
     Resource, ResourceGroup, ReservationMetadataField,
     ReservationMetadataSet, UnitAuthorization, ReservationReminder
 )
+from resources.models.utils import build_reservations_ical_file, RespaNotificationAction
 from notifications.models import NotificationTemplate, NotificationType
 from notifications.tests.utils import check_received_mail_exists
 from .utils import (
@@ -49,6 +50,9 @@ def list_url():
 def detail_url(reservation):
     return reverse('reservation-detail', kwargs={'pk': reservation.pk})
 
+@pytest.fixture
+def recurring_url():
+    return reverse('reservationbulk-list')
 
 @pytest.mark.django_db
 @pytest.fixture(autouse=True)
@@ -94,6 +98,28 @@ def reservation_data_extra(reservation_data):
     })
     return extra_data
 
+@pytest.mark.django_db
+@pytest.fixture
+def recurring_reservation_data(resource_in_unit4_1):
+    return {
+        'resource': resource_in_unit4_1.pk,
+        'reserver_name': 'Test Reserver',
+        'reserver_email_address': 'test.reserver@test.com',
+        'reserver_phone_number': '0700555555',
+        'reserver_address_street': 'Mansikkatie 11',
+        'reserver_address_zip': '20180',
+        'reserver_address_city': 'Turku',
+        'reservation_stack': [{
+            'begin': '2115-04-04T11:00:00+02:00',
+             'end': '2115-04-04T12:00:00+02:00',
+        },{
+            'begin': '2115-04-05T11:00:00+02:00',
+            'end': '2115-04-05T12:00:00+02:00',
+        },{
+            'begin': '2115-04-06T11:00:00+02:00',
+            'end': '2115-04-06T12:00:00+02:00'
+        }]
+    }
 
 @pytest.mark.django_db
 @pytest.fixture
@@ -1802,6 +1828,44 @@ def test_reservation_created_mail(user_api_client, resource_in_unit, list_url, r
         'Normal reservation created body.'
     )
 
+@override_settings(RESPA_MAILS_ENABLED=True, RESPA_SMS_ENABLED=True)
+@pytest.mark.django_db
+@pytest.mark.parametrize('reserver_email_address,reserver_phone_number,expected_return_type', [
+        ('customer@example.org', None, RespaNotificationAction.EMAIL),
+        (None, '+358404040404', RespaNotificationAction.SMS),
+        ('customer@example.org', '+358404040404', RespaNotificationAction.EMAIL),
+        (None, None, RespaNotificationAction.EMAIL)
+])
+def test_send_reservation_mail_return_type(
+    resource_in_unit, reserver_phone_number, reserver_email_address,
+    staff_api_client, list_url, reservation_data, expected_return_type,
+    user, reservation_created_by_official_notification):
+    if reserver_email_address:
+        reservation_data['reserver_email_address'] = reserver_email_address
+    if reserver_phone_number:
+        reservation_data['reserver_phone_number'] = reserver_phone_number
+
+    meta_field = ReservationMetadataField.objects.get(field_name='reserver_email_address')
+    meta_field2 = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='updated_metadata',
+    )
+    metadata_set.supported_fields.set([meta_field, meta_field2])
+    resource_in_unit.reservation_metadata_set = metadata_set
+    resource_in_unit.send_sms_notification = True
+    resource_in_unit.save()
+
+
+    response = staff_api_client.post(list_url, data=reservation_data, format='json')
+    assert response.status_code == 201
+    reservation = Reservation.objects.get(pk=response.json()['id'])
+    attachment = 'reservation.ics', build_reservations_ical_file([reservation]), 'text/calendar'
+    kwargs = {'attachments': [attachment]}
+    if not reserver_email_address and not reserver_phone_number:
+        kwargs['user'] = user
+    return_type = reservation.send_reservation_mail(NotificationType.RESERVATION_CREATED_BY_OFFICIAL, **kwargs)
+    assert return_type == expected_return_type
+
 
 @override_settings(RESPA_MAILS_ENABLED=True)
 @pytest.mark.django_db
@@ -3437,3 +3501,23 @@ def test_no_notification_on_reservation_type_blocked(
     response = staff_api_client.post(list_url, data=reservation_data, format='json')
     assert response.status_code == 201
     assert len(mail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_recurring_reservation(
+    resource_in_unit4_1, recurring_reservation_data,
+    staff_api_client, staff_user, recurring_url):
+    UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    
+    recurring_reservation_data['reserver_name'] = 'Recurring reservation'
+    assert ReservationBulk.objects.count() == 0
+    assert Reservation.objects.count() == 0
+
+    response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
+    assert response.status_code == 201
+    assert ReservationBulk.objects.count() == 1
+    
+    reservation_bulk = ReservationBulk.objects.first()
+    assert reservation_bulk.reservations.count() == 3
+
