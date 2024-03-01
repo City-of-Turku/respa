@@ -246,7 +246,7 @@ msgid "Reservation bulk created"
 msgstr "Reservationssats skapad"
 
 msgid "Reservation reminder"
-msgstr "Påminnelse om reservation"
+msgstr "Bokningspåminnelse"
 
 msgid "Type"
 msgstr "Typ"
@@ -2206,3 +2206,9 @@ msgstr "Återkommande bokning"
 
 msgid "Recurring reservations"
 msgstr "Återkommande bokningar"
+
+msgid "Reservation reminders"
+msgstr "Bokningspåminnelser"
+
+msgid "Reminder date"
+msgstr "Påminnelsedatum"

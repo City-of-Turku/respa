@@ -369,9 +369,23 @@ class EquipmentAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transl
 class ResourceEquipmentAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin):
     fields = ('resource', 'equipment', 'description', 'data')
 
+class ReservationReminderInline(admin.StackedInline):
+    model = ReservationReminder
+    fields = ('reminder_date', )
+    readonly_fields = ('reminder_date', )
+    show_change_link = True
+    extra = 0
+
+    def __init__(self, *args, **kwargs):
+        super(ReservationReminderInline, self).__init__(*args, **kwargs)
+        for perm in ('change', 'add'):
+            setattr(self, 'has_%s_permission' % perm, lambda *args, **kwargs: False)
 
 class ReservationAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, ExtraReadonlyFieldsOnUpdateMixin,
                        admin.ModelAdmin):
+    inlines = [
+        ReservationReminderInline,
+    ]
     list_display = ('__str__', 'type')
     list_filter = ('type',)
     extra_readonly_fields_on_update = ('access_code',)

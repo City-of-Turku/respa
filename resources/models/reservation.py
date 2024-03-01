@@ -1012,10 +1012,14 @@ class ReservationReminderQuerySet(models.QuerySet):
 class ReservationReminder(models.Model):
     reservation = models.ForeignKey('Reservation', verbose_name=_('Reservation'), db_index=True, related_name='Reservations',
                                  on_delete=models.CASCADE)
-    reminder_date = models.DateTimeField(verbose_name=_('Reminder Date'))
+    reminder_date = models.DateTimeField(verbose_name=_('Reminder date'))
 
 
     objects = ReservationReminderQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = _('Reservation reminder')
+        verbose_name_plural = _('Reservation reminders')
 
     def get_unix_timestamp(self):
         unix_epoch = datetime.datetime(year=1970, month=1, day=1, hour=0, minute=0, second=0)

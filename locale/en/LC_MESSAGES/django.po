@@ -1250,10 +1250,6 @@ msgstr ""
 msgid "Reservation metadata sets"
 msgstr ""
 
-#: resources/models/reservation.py:674
-msgid "Reminder Date"
-msgstr ""
-
 #: resources/models/reservation.py:676
 msgid "Notification type"
 msgstr ""
@@ -2883,4 +2879,10 @@ msgid "Recurring reservation"
 msgstr ""
 
 msgid "Recurring reservations"
+msgstr ""
+
+msgid "Reservation reminders"
+msgstr ""
+
+msgid "Reminder date"
 msgstr ""
