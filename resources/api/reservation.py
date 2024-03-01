@@ -46,6 +46,7 @@ from .base import (
     NullableDateTimeField, TranslatedModelSerializer, register_view, DRFFilterBooleanWidget,
     ExtraDataMixin, ReservationCreateMixin
 )
+from resources.signals import reservation_confirmed
 
 from ..models.utils import has_reservation_data_changed, is_reservation_metadata_or_times_different
 from respa.renderers import ResourcesBrowsableAPIRenderer
@@ -509,19 +510,15 @@ class ReservationBulkSerializer(ReservationCreateMixin, serializers.Serializer):
         resource = attrs['resource']
         _cattrs = attrs.copy()
         reservation_stack = _cattrs.pop('reservation_stack')
+        if len(reservation_stack) > 100:
+            raise NotAcceptable({
+                'reservation_stack': _('Reservation failed. Too many reservations at once.')
+            })
         for data in reservation_stack:
             reservation = Reservation(**_cattrs, **data)
             reservation.clean()
-            if resource.validate_reservation_period(reservation, reservation.user):
-                return serializers.ValidationError({
-                    'status': False,
-                    'recurring_validation_error': _('Reservation failed. Make sure reservation period is correct.')
-                })
-            if resource.validate_max_reservations_per_user(reservation.user):
-                return  serializers.ValidationError({
-                    'status': False,
-                    'recurring_validation_error': _('Reservation failed. Too many reservations at once.')
-                })
+            resource.validate_reservation_period(reservation, reservation.user)
+            resource.validate_max_reservations_per_user(reservation.user)
 
         return attrs
     
@@ -534,14 +531,19 @@ class ReservationBulkSerializer(ReservationCreateMixin, serializers.Serializer):
     def create(self, validated_data):
         reservation_stack = validated_data.pop('reservation_stack')
         reservations = []
+        user = validated_data['user']
         for reservation_data in reservation_stack:
-            reservation = Reservation(state=Reservation.CONFIRMED, **validated_data, **reservation_data)
+            reservation = Reservation.objects.create(state=Reservation.CONFIRMED, 
+                                      approver=user, **validated_data, **reservation_data)
+            reservation_confirmed.send(
+                sender=self.__class__, 
+                instance=reservation, user=user)
             reservation.save()
             reservations.append(reservation)
         
-        instance = ReservationBulk.objects.create(created_by=validated_data['user'])
+        instance = ReservationBulk.objects.create(created_by=user)
         instance.reservations.add(*reservations)
-        
+
         return instance
     
     def to_representation(self, instance):

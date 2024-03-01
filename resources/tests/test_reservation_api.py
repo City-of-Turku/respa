@@ -3521,3 +3521,62 @@ def test_recurring_reservation(
     reservation_bulk = ReservationBulk.objects.first()
     assert reservation_bulk.reservations.count() == 3
 
+
+@pytest.mark.django_db
+def test_recurring_reservation_too_many_reservations_at_once(
+    resource_in_unit4_1, recurring_reservation_data,
+    staff_api_client, staff_user, recurring_url):
+    UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    
+    recurring_reservation_data['reserver_name'] = 'Recurring reservation'
+
+    first_reservation = recurring_reservation_data['reservation_stack'][0]
+    for _ in range(0,101): recurring_reservation_data['reservation_stack'].append(first_reservation)
+    response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
+    assert response.status_code == 406
+
+
+@pytest.mark.django_db
+def test_recurring_reservation_bad_period(
+    resource_in_unit4_1, recurring_reservation_data,
+    staff_api_client, staff_user, recurring_url):
+    UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    
+    recurring_reservation_data['reserver_name'] = 'Recurring reservation'
+
+    recurring_reservation_data['reservation_stack'] = [{
+        'begin': '2115-04-04T11:00:00+02:00',
+        'end': '2115-04-05T12:00:00+02:00',
+    }]
+    response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
+    assert response.status_code == 400
+
+@pytest.mark.django_db
+def test_recurring_reservation_reminders(
+    resource_in_unit4_1, recurring_reservation_data,
+    staff_api_client, staff_user, recurring_url):
+    UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    resource_in_unit4_1.unit.sms_reminder = True
+    resource_in_unit4_1.unit.save()
+
+    meta_field = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='metadata_with_reserver_phone_number',
+    )
+    metadata_set.supported_fields.set([meta_field])
+    metadata_set.required_fields.set([meta_field])
+    resource_in_unit4_1.reservation_metadata_set = metadata_set
+    resource_in_unit4_1.save()
+    response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
+    assert response.status_code == 201
+    assert ReservationBulk.objects.count() == 1
+    
+    reservation_bulk = ReservationBulk.objects.first()
+    assert reservation_bulk.reservations.count() == 3
+
+    for reservation in reservation_bulk.reservations.all():
+        assert reservation.reminder is not None
+
