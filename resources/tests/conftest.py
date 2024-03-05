@@ -274,7 +274,13 @@ def resource_with_reservation_reminders(
     resource_with_opening_hours.save()
     return resource_with_opening_hours
 
-
+@pytest.mark.django_db
+@pytest.fixture
+def resource_with_cooldown(resource_with_opening_hours) -> Resource:
+    resource_with_opening_hours.cooldown='04:00:00'
+    resource_with_opening_hours.max_reservations_per_user = 10
+    resource_with_opening_hours.save()
+    return resource_with_opening_hours
 
 @pytest.mark.django_db
 @pytest.fixture

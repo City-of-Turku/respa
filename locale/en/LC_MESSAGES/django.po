@@ -2884,3 +2884,6 @@ msgstr ""
 
 msgid "Recurring reservations"
 msgstr ""
+
+msgid "Cannot be reserved during cooldown"
+msgstr ""

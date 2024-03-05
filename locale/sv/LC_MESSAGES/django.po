@@ -2206,3 +2206,6 @@ msgstr "Återkommande bokning"
 
 msgid "Recurring reservations"
 msgstr "Återkommande bokningar"
+
+msgid "Cannot be reserved during cooldown"
+msgstr "Bokning kan inte göras under bokningsuppehåll"

@@ -489,6 +489,9 @@ class Reservation(ModifiableModel):
         original_reservation = self if self.pk else kwargs.get('original_reservation', None)
         if self.resource.check_reservation_collision(self.begin, self.end, original_reservation):
             raise ValidationError({'period': _("The resource is already reserved for some of the period")}, code='invalid_period_range')
+        
+        if self.resource.check_cooldown_collision(self.begin, self.end):
+            raise ValidationError({ 'cooldown': _("Cannot be reserved during cooldown") }, code='cooldown_collision')
 
         if not user_is_admin:
             if (self.end - self.begin) < self.resource.min_period:
