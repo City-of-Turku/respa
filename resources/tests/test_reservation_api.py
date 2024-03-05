@@ -3527,15 +3527,16 @@ def test_recurring_reservation(
 def test_reservation_cooldown(
         resource_with_cooldown, reservation_data,
         api_client, user, list_url):
-    reservation_data['resource'] = resource_with_cooldown.pk
-    api_client.force_authenticate(user=user)
-    response = api_client.post(list_url, data=reservation_data)
-    assert response.status_code == 201, response.json()
+    with translation.override('en'):
+        reservation_data['resource'] = resource_with_cooldown.pk
+        api_client.force_authenticate(user=user)
+        response = api_client.post(list_url, data=reservation_data)
+        assert response.status_code == 201, response.json()
 
-    reservation_data['begin'] = '2115-04-04T12:00:00+02:00'
-    reservation_data['end'] = '2115-04-04T13:00:00+02:00'
-    response = api_client.post(list_url, data=reservation_data)
-    assert response.status_code == 400
-    response_data = response.json()
-    assert response_data['cooldown'][0] == 'Cannot be reserved during cooldown'
+        reservation_data['begin'] = '2115-04-04T12:00:00+02:00'
+        reservation_data['end'] = '2115-04-04T13:00:00+02:00'
+        response = api_client.post(list_url, data=reservation_data)
+        assert response.status_code == 400
+        response_data = response.json()
+        assert response_data['cooldown'][0] == 'Cannot be reserved during cooldown'
 
