@@ -2200,3 +2200,9 @@ msgstr "Välj språk"
 
 msgid "End time cannot be in the past"
 msgstr "Sluttiden kan inte vara i det förflutna"
+
+msgid "Recurring reservation"
+msgstr "Återkommande bokning"
+
+msgid "Recurring reservations"
+msgstr "Återkommande bokningar"
