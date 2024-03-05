@@ -70,7 +70,7 @@ coverage[toml]==7.2.0
     # via
     #   -r requirements.in
     #   pytest-cov
-cryptography==42.0.0
+cryptography==42.0.4
     # via
     #   -r requirements.in
     #   djangorestframework-simplejwt
