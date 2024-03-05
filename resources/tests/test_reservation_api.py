@@ -3538,3 +3538,4 @@ def test_reservation_cooldown(
     assert response.status_code == 400
     response_data = response.json()
     assert response_data['cooldown'][0] == 'Cannot be reserved during cooldown'
+
