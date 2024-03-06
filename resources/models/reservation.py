@@ -496,7 +496,7 @@ class Reservation(ModifiableModel):
         is_at_least_viewer = user_unit_auth_level >= UnitAuthorizationLevel.viewer if user_unit_auth_level else None
         
         if self.resource.cooldown:
-            if not is_at_least_viewer and self.resource.check_cooldown_collision(self.begin, self.end):
+            if not is_at_least_viewer and self.resource.check_cooldown_collision(self.begin, self.end, original_reservation):
                 raise ValidationError({ 'cooldown': _("Cannot be reserved during cooldown") }, code='cooldown_collision')
 
         if not user_is_admin:
