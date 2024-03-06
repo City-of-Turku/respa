@@ -536,7 +536,8 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
 
     def check_cooldown_collision(self, begin, end, reservation):
         cooldown_collisions = self.reservations.filter(
-            Q(begin__range=[begin - self.cooldown, begin]) | Q(end__range=[end, end + self.cooldown])).active()
+            Q(begin__range=[begin - self.cooldown, begin + self.cooldown]) | Q(end__range=[end - self.cooldown, end + self.cooldown])).active()
+        
         if reservation:
             cooldown_collisions = cooldown_collisions.exclude(pk=reservation.pk)
         return cooldown_collisions.exists()
