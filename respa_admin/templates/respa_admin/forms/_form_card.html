@@ -4,7 +4,11 @@
 {% get_current_language as LANGUAGE_CODE %}
 
 {% if form_action == "remove" %}
-<form class="card-item" id="{{ outlook_link.id }}" action="{{ form_action }}" data-paginator-item="true">
+<form class="card-item" 
+    id="{{ outlook_link.id }}" 
+    action="{{ form_action }}" 
+    data-paginator-item="true" 
+    data-paginator-filter-value="{{ resource.name }} {{ user.first_name }} {{ user.last_name }} {{ user.email }}">
     {% csrf_token %}
     <img
     class="card-img-center"
@@ -26,7 +30,11 @@
     </div>
 </form>
 {% else %}
-<form class="card-item" id="{{ resource.id }}" action="{{ form_action }}" data-paginator-item="true">
+<form class="card-item" 
+    id="{{ resource.id }}" 
+    action="{{ form_action }}" 
+    data-paginator-item="true" 
+    data-paginator-filter-value="{{ resource.name }} {{ user.first_name }} {{ user.last_name }} {{ user.email }}">
     {% csrf_token %}
     <img
     class="card-img-center"

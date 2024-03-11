@@ -143,9 +143,9 @@ export class Paginate {
         page = page < 0 ? 0 : page;
         this.paginatedItems = this.getPaginatedItems(
             this.items.filter((val) => {
-                let labelString = $(val).find('label')
-                    .text().trim().toLowerCase();
-                if (labelString.indexOf(string.toLowerCase()) > -1) {
+                let filterString = $(val).data('paginator-filter-value')
+                    .trim().toLowerCase();
+                if (filterString.indexOf(string.toLowerCase()) > -1) {
                     return val;
                 }
             })

@@ -212,6 +212,15 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
         unit_auth = self.authorizations.create(authorized=user, level=level)
         unit_auth._ensure_lower_auth()
         return unit_auth
+    
+    def get_highest_authorization_level_for_user(self, user):
+        if not user or \
+            not user.is_authenticated or user.is_anonymous:
+            return None
+        if user.is_superuser:
+            return UnitAuthorizationLevel.admin
+        unit_auths = self.authorizations.filter(authorized=user)
+        return max(unit_auths).level if unit_auths else None
 
 
 class UnitAuthorizationQuerySet(models.QuerySet):
@@ -237,6 +246,17 @@ class UnitAuthorizationQuerySet(models.QuerySet):
         return self.filter(id__in=[
             max(self.filter(authorized=user)).id
             for user in self.values_list('authorized', flat=True).distinct()
+        ])
+
+
+    def can_approve_reservations(self, unit):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        users = [user.id for user in User.objects.all() if user.has_perm('unit:can_approve_reservation', unit)]
+        return self.filter(id__in=[
+            max(self.filter(authorized=user)).id
+            for user in self.filter(authorized__id__in=users).values_list('authorized', flat=True).distinct()
         ])
 
 class UnitAuthorization(models.Model):

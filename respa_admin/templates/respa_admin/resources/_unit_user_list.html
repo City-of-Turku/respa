@@ -2,46 +2,92 @@
 {% load thumbnail %}
 {% load templatetags %}
 
-<section class='resources'>
+
+<section class='users'>
     <div class='container'>
-
         <div class='filter-bar container-fluid'>
-            <h2 class="pull-left">{% trans 'Unit management' %}</h2>
+            <h2 class="pull-left">{% trans 'unit authorizations'|capfirst %}</h2>
             <div class='filter pull-right'>
-
-                <form name="filter-dropdowns" method="get">
-
-                    <div class='select-dropdown btn btn-primary'>
-                        <select id="place-dropdown" name="selected_unit" onchange="this.form.submit();">
-                            <option {% if not selected_unit %} selected="selected" {% endif %} value="">
-                                {% trans "Filter by unit" %}...
-                            </option>
-                            {% for unit in all_available_units %}
-                            <option {% if unit.id == selected_unit %} selected="selected" {% endif %}
-                                value="{{ unit.id }}">
-                                {{ unit.name }}
-                            </option>
+                <form name="filter-options" method="get" style="display: flex; flex-direction: row;">
+                    <div name="filter-collapse">
+                        <button
+                            id="collapseButton"
+                            class="collapse-btn btn btn-primary inverse"
+                            type="button" 
+                            data-bs-toggle="collapse" data-bs-target="#permissionCollapse" 
+                            aria-expanded="false" aria-controls="permissionCollapse">
+                            {% trans "Filter by permission" %}
+                            <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+                        </button>
+                        <div class="collapse permission-collapse-container" id="permissionCollapse">
+                            {% for name, permission in UNIT_PERMISSION_LEVELS.items %}
+                            <div class="form-check">
+                                <input 
+                                    class="form-check-input" 
+                                    type="checkbox" 
+                                    value="{{ permission }}" 
+                                    id="perm-filter-{{ permission|replace:':|_' }}"
+                                    name="unit_permission" 
+                                    onchange="this.form.submit()" {% if permission in SELECTED_UNIT_PERMISSIONS %} checked {% endif %}>
+                                <label 
+                                    class="form-check-label" 
+                                    for="perm-filter-{{ permission|replace:':|_' }}">
+                                {{ name }}
+                                </label>
+                            </div>
                             {% endfor %}
-                        </select>
-                        <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                    <div name="filter-dropdowns">
+                        <div class='select-dropdown btn btn-primary'>
+                            <select id="place-dropdown" name="selected_unit" onchange="this.form.submit();">
+                                <option {% if not selected_unit %} selected="selected" {% endif %} value="">
+                                    {% trans "Filter by unit" %}...
+                                </option>
+                                {% for unit in all_available_units %}
+                                <option {% if unit.id == selected_unit %} selected="selected" {% endif %}
+                                    value="{{ unit.id }}">
+                                    {{ unit.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
-
-        <div class='container-fluid'>
+        <div class='user-list container-fluid'>
+            <ul class='list-group'>
             {% for unit in units %}
-            <span class="sub-header">{{ unit.name }}</span>
-                {% with unit.authorizations.highest_per_user as unit_auths %}
+            {% get_query_params request 'unit_permission' as unit_permissions %}
+            {% unit_authorization_highest_per_user unit unit_permissions as unit_auths %}
+                <div class="unit-user-filter-container">
+                    <span class="sub-header">{{ unit.name }}</span>
+                    {% if unit_auths|length > 10 %}
+                    <div class="filter flex-end">
+                        <div class="form-group listing-search">
+                            <div class="input-group">
+                                <span class="input-group-addon">{% trans 'Search' %}</span>
+                                <input type="text" class="form-control text-input" id="user-filter-{{ unit.id }}" data-paginator-id="{{ unit.id }}">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
                 <div
                     data-paginate="true"
                     data-paginator-id="{{ unit.id }}"
                     data-paginator-per-page="10"
                     {% if unit_auths|length > 6 %}style="min-height: 690px;"{% endif %}>
+                <li class="list-group-item">
                 {% for authorization in unit_auths %}
                 {% with authorization.authorized as unit_user %}
                 {% user_has_permission unit_user 'unit:can_approve_reservation' unit as user_can_approve %}
-                <div class="row panel management-list list-item" data-paginator-item="true">
+                <div 
+                    class="row panel management-list list-item"
+                    data-paginator-item="true"
+                    data-paginator-filter-value="{{ unit_user.first_name }} {{ unit_user.last_name }} {{ unit_user.email }}">
                     <div class="col-md-2">
                         <span>{{ unit_user.first_name }} {{ unit_user.last_name }}</span>
                     </div>
@@ -51,12 +97,12 @@
                     <div class="col-md-4 text-nowrap">
                         <div class="col-md-4">
                             <div>
-                                <span class="{% if unit_user.is_staff %}shape-success{% else %}shape-danger{% endif %}"></span>
-                                <span>{% trans 'Staff' %}</span>
-                            </div>
-                            <div>
                                 <span class="{% if authorization.level == authorization.level.admin %}shape-success{% else %}shape-danger{% endif %}"></span>
                                 <span>{% trans 'Admin' %}</span>
+                            </div>
+                            <div>
+                                <span class="{% if authorization.level >= authorization.level.manager %}shape-success{% else %}shape-danger{% endif %}"></span>
+                                <span>{% trans 'Manager' %}</span>
                             </div>
                             <div>
                                 <span class="{% if authorization.level >= authorization.level.viewer %}shape-success{% else %}shape-danger{% endif %}"></span>
@@ -65,8 +111,8 @@
                         </div>
                         <div class="col-md-8">
                             <div>
-                                <span class="{% if authorization.level >= authorization.level.manager %}shape-success{% else %}shape-danger{% endif %}"></span>
-                                <span>{% trans 'Manager' %}</span>
+                                <span class="{% if unit_user.is_staff %}shape-success{% else %}shape-danger{% endif %}"></span>
+                                <span>{% trans 'Staff' %}</span>
                             </div>
                             <div>
                                 <span class="{% if user_can_approve %}shape-success{% else %}shape-danger{% endif %}"></span>
@@ -95,14 +141,17 @@
                     {% endif %}
                 </div>
                 {% endwith %}
+                {% empty %}
+                <span class="help-text">{% trans 'No results' %}</span>
                 {% endfor %}
-                {% endwith %}
+                </li>
                 </div>
                 <div
                     id="paginator-page-container"
                     data-paginator-id="{{ unit.id }}">
                 </div>
             {% endfor %}
+            </ul>
 
             <div class="page-navigation">
                 <nav aria-label="page-navigation">

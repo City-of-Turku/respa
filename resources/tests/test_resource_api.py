@@ -1,18 +1,18 @@
 import datetime
 import pytest
-import base64
 from copy import deepcopy
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.gis.geos import Point
-from django.utils import timezone
+from django.utils import timezone, dateparse
+from rest_framework.test import APIClient
 from freezegun import freeze_time
 from guardian.shortcuts import assign_perm, remove_perm
 
 from resources.models.resource import (
-    Resource, ResourceImage, InvalidImage
+    Resource, InvalidImage
 )
 from ..enums import UnitAuthorizationLevel, UnitGroupAuthorizationLevel
 
@@ -1406,3 +1406,77 @@ def test_resource_update_optional_fields_to_null(
     response = staff_api_client.patch(url, data=optional_fields)
 
     assert response.status_code == 200
+
+
+@freeze_time('2100-06-15', 2)
+@pytest.mark.django_db
+@pytest.mark.parametrize('begin, end, reservable', (
+    ('2100-06-15T00:00:00+02:00', '2100-06-16T00:00:00+02:00', True),
+    ('2100-06-15T00:00:00+02:00', '2100-06-16T00:00:00+02:00', False),
+
+    (None, '2100-06-16T00:00:00+02:00', True),
+    (None, '2100-06-16T00:00:00+02:00', False),
+
+
+    ('2100-06-15T00:00:00+02:00', None, True),
+    ('2100-06-15T00:00:00+02:00', None, False),
+
+
+    (None, None, False),
+))
+def test_api_resource_publish_date_update(
+    staff_api_client, staff_user,
+    detail_url, resource_in_unit,
+    begin, end, reservable):
+    url = f'{detail_url[:-1]}/update/'
+    assign_perm('resources.change_resource', staff_user)
+    staff_api_client.force_authenticate(user=staff_user)
+    resource_in_unit.unit.create_authorization(staff_user, 'manager')
+
+    publish_date_data = { 'reservable': reservable }
+    if begin:
+        publish_date_data['begin'] = begin
+    if end:
+        publish_date_data['end'] = end
+
+    response = staff_api_client.patch(url, data={ 'publish_date': {**publish_date_data}})
+
+    if not begin and not end:
+        assert response.status_code == 400
+    else:
+        assert response.status_code == 200, (response.json(), publish_date_data)
+        response_data = response.json()
+        resource = Resource.objects.get(pk=response_data['id'])
+        assert resource.publish_date.reservable == publish_date_data['reservable']
+        if begin:
+            assert resource.publish_date.begin == dateparse.parse_datetime(publish_date_data['begin'])
+        if end:
+            assert resource.publish_date.end == dateparse.parse_datetime(publish_date_data['end'])
+
+
+@freeze_time('2100-12-12T08:00:00')
+@pytest.mark.django_db
+def test_api_resource_publish_date_is_public(
+    resource_with_reservable_publish_date : Resource,
+    api_client : APIClient
+):
+    url = get_detail_url(resource_with_reservable_publish_date)
+
+    response = api_client.get(url)
+    assert response.status_code == 200
+    response_data = response.json()
+    assert response_data['public']
+
+
+@freeze_time('2100-12-14T08:00:00')
+@pytest.mark.django_db
+def test_api_resource_publish_date_not_public(
+    resource_with_reservable_publish_date : Resource,
+    api_client : APIClient
+):
+    url = get_detail_url(resource_with_reservable_publish_date)
+
+    response = api_client.get(url)
+    assert response.status_code == 200
+    response_data = response.json()
+    assert not response_data['public']

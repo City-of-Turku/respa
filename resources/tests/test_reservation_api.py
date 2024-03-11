@@ -16,15 +16,16 @@ from caterings.models import CateringOrder, CateringProvider
 
 from resources.enums import UnitAuthorizationLevel
 from resources.models import (
-    Period, Day, Reservation, 
+    Period, Day, Reservation, ReservationBulk,
     Resource, ResourceGroup, ReservationMetadataField,
     ReservationMetadataSet, UnitAuthorization, ReservationReminder
 )
+from resources.models.utils import build_reservations_ical_file, RespaNotificationAction
 from notifications.models import NotificationTemplate, NotificationType
 from notifications.tests.utils import check_received_mail_exists
 from .utils import (
     check_disallowed_methods, assert_non_field_errors_contain,
-    assert_response_objects, MAX_QUERIES
+    assert_response_objects, MAX_QUERIES, assert_translated_response_contains
 )
 
 
@@ -49,6 +50,9 @@ def list_url():
 def detail_url(reservation):
     return reverse('reservation-detail', kwargs={'pk': reservation.pk})
 
+@pytest.fixture
+def recurring_url():
+    return reverse('reservationbulk-list')
 
 @pytest.mark.django_db
 @pytest.fixture(autouse=True)
@@ -94,6 +98,28 @@ def reservation_data_extra(reservation_data):
     })
     return extra_data
 
+@pytest.mark.django_db
+@pytest.fixture
+def recurring_reservation_data(resource_in_unit4_1):
+    return {
+        'resource': resource_in_unit4_1.pk,
+        'reserver_name': 'Test Reserver',
+        'reserver_email_address': 'test.reserver@test.com',
+        'reserver_phone_number': '0700555555',
+        'reserver_address_street': 'Mansikkatie 11',
+        'reserver_address_zip': '20180',
+        'reserver_address_city': 'Turku',
+        'reservation_stack': [{
+            'begin': '2115-04-04T11:00:00+02:00',
+             'end': '2115-04-04T12:00:00+02:00',
+        },{
+            'begin': '2115-04-05T11:00:00+02:00',
+            'end': '2115-04-05T12:00:00+02:00',
+        },{
+            'begin': '2115-04-06T11:00:00+02:00',
+            'end': '2115-04-06T12:00:00+02:00'
+        }]
+    }
 
 @pytest.mark.django_db
 @pytest.fixture
@@ -226,6 +252,16 @@ def reservation_created_notification():
             body='Normal reservation created body.',
         )
 
+@pytest.fixture
+def reservation_created_by_official_notification():
+    with translation.override('fi'): # Staff user preferred language is always fallback. (fi)
+        return NotificationTemplate.objects.create(
+            type=NotificationType.RESERVATION_CREATED_BY_OFFICIAL,
+            is_default_template=True,
+            short_message = 'Virkailija on luonut varauksen lyhyt viesti.',
+            subject = 'Virkailija on luonut varauksen aihe.',
+            body = 'Virkailija on luonut varauksen viesti.'
+        )
 
 @pytest.fixture
 def reservation_modified_by_official_notification():
@@ -590,7 +626,7 @@ def test_comments_can_be_updated_by_correct_people_when_resource_sets_is_reserva
 
     response = api_client.post(list_url, data=reservation_data)
     assert response.status_code == expected_status_post
-    if response.status_code is 201:
+    if response.status_code == 201:
         reservation = Reservation.objects.filter(user=test_user).first()
         updated_comment = 'updated comment text'
         # update comment
@@ -739,6 +775,53 @@ def test_reserver_can_update_reservation_that_has_virtual_data(
     api_client.force_authenticate(user=user)
     response = api_client.put(detail_url, reservation_data)
     assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_superusers_can_see_created_at(api_client, reservation, staff_user):
+    """Tests that superusers can see reservation created at"""
+
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+
+    staff_user.is_superuser = True
+    staff_user.save()
+    api_client.force_authenticate(user=staff_user)
+    response = api_client.get(detail_url)
+    assert 'created_at' in response.data
+    assert response.data['created_at'] == reservation.created_at
+
+
+@pytest.mark.parametrize('unit_perm', ['admin', 'manager', 'viewer'])
+@pytest.mark.django_db
+def test_unit_staff_can_see_created_at(
+        api_client, reservation, staff_user, resource_in_unit, unit_perm):
+    """Tests that unit staff can see reservation created at"""
+
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+
+    UnitAuthorization.objects.create(
+        subject=resource_in_unit.unit, level=UnitAuthorizationLevel[unit_perm], authorized=staff_user)
+    api_client.force_authenticate(user=staff_user)
+    response = api_client.get(detail_url)
+    assert 'created_at' in response.data
+    assert response.data['created_at'] == reservation.created_at
+
+
+@pytest.mark.django_db
+def test_anon_and_regular_users_cannot_see_created_at(api_client, reservation, user, user2):
+    """Tests that anon and regular users cannot see created at"""
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+
+    response = api_client.get(detail_url)
+    assert 'created_at' not in response.data
+
+    api_client.force_authenticate(user=user)
+    response = api_client.get(detail_url)
+    assert 'created_at' not in response.data
+
+    api_client.force_authenticate(user=user2)
+    response = api_client.get(detail_url)
+    assert 'created_at' not in response.data
 
 
 @pytest.mark.django_db
@@ -1745,6 +1828,44 @@ def test_reservation_created_mail(user_api_client, resource_in_unit, list_url, r
         'Normal reservation created body.'
     )
 
+@override_settings(RESPA_MAILS_ENABLED=True, RESPA_SMS_ENABLED=True)
+@pytest.mark.django_db
+@pytest.mark.parametrize('reserver_email_address,reserver_phone_number,expected_return_type', [
+        ('customer@example.org', None, RespaNotificationAction.EMAIL),
+        (None, '+358404040404', RespaNotificationAction.SMS),
+        ('customer@example.org', '+358404040404', RespaNotificationAction.EMAIL),
+        (None, None, RespaNotificationAction.EMAIL)
+])
+def test_send_reservation_mail_return_type(
+    resource_in_unit, reserver_phone_number, reserver_email_address,
+    staff_api_client, list_url, reservation_data, expected_return_type,
+    user, reservation_created_by_official_notification):
+    if reserver_email_address:
+        reservation_data['reserver_email_address'] = reserver_email_address
+    if reserver_phone_number:
+        reservation_data['reserver_phone_number'] = reserver_phone_number
+
+    meta_field = ReservationMetadataField.objects.get(field_name='reserver_email_address')
+    meta_field2 = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='updated_metadata',
+    )
+    metadata_set.supported_fields.set([meta_field, meta_field2])
+    resource_in_unit.reservation_metadata_set = metadata_set
+    resource_in_unit.send_sms_notification = True
+    resource_in_unit.save()
+
+
+    response = staff_api_client.post(list_url, data=reservation_data, format='json')
+    assert response.status_code == 201
+    reservation = Reservation.objects.get(pk=response.json()['id'])
+    attachment = 'reservation.ics', build_reservations_ical_file([reservation]), 'text/calendar'
+    kwargs = {'attachments': [attachment]}
+    if not reserver_email_address and not reserver_phone_number:
+        kwargs['user'] = user
+    return_type = reservation.send_reservation_mail(NotificationType.RESERVATION_CREATED_BY_OFFICIAL, **kwargs)
+    assert return_type == expected_return_type
+
 
 @override_settings(RESPA_MAILS_ENABLED=True)
 @pytest.mark.django_db
@@ -2111,6 +2232,54 @@ def test_admins_can_make_reservations_despite_delay(
     msg = 'expected status_code {}, received {} with message "{}"'
 
     assert response.status_code == 201, msg.format(201, response.status_code, response.data)
+
+
+@freeze_time('2115-04-02')
+@pytest.mark.django_db
+def test_reservation_reservable_before_payment_update(user_api_client, reservation, resource_in_unit):
+    """
+    Tests that when reservation state is ready for payment and update has no changing data i.e. user is trying to
+    pay the reservation, update can be made even if reservable before would normally prevent it
+    """
+    detail_url = reverse('reservation-detail', kwargs={'pk': reservation.pk})
+
+    field_1 = ReservationMetadataField.objects.get(field_name='reserver_name')
+    metadata_set = ReservationMetadataSet.objects.create(name='test_set',)
+    metadata_set.supported_fields.set([field_1])
+    reservation.resource.reservation_metadata_set = metadata_set
+    reservation.resource.save(update_fields=('reservation_metadata_set',))
+
+    resource_in_unit.reservable_max_days_in_advance = 5
+    resource_in_unit.need_manual_confirmation = True
+    resource_in_unit.save()
+
+    reservation.begin = timezone.now().replace(hour=12, minute=0, second=0) + datetime.timedelta(days=9)
+    reservation.end = timezone.now().replace(hour=13, minute=0, second=0) + datetime.timedelta(days=9)
+    reservation.state = Reservation.READY_FOR_PAYMENT
+    reservation.save()
+
+    reservation_data = {
+        'resource': resource_in_unit.id,
+        'begin': reservation.begin,
+        'end': reservation.end,
+        'state': Reservation.READY_FOR_PAYMENT,
+        'reserver_name': 'Test Updater'
+    }
+
+    # attempt to modify reservation, not pay
+    response = user_api_client.put(detail_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == 400
+    assert_non_field_errors_contain(response, 'The resource is reservable only before')
+
+    # attempt to only update/pay reservation
+    reservation_data = {
+        'resource': resource_in_unit.id,
+        'begin': reservation.begin,
+        'end': reservation.end,
+        'state': Reservation.READY_FOR_PAYMENT
+    }
+    response = user_api_client.put(detail_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == 200
 
 
 @pytest.mark.django_db
@@ -2492,6 +2661,33 @@ def test_reservation_block_type_normal_user(resource_in_unit, reservation_data, 
 @pytest.mark.django_db
 def test_reservation_block_type_manager(resource_in_unit, reservation_data, api_client, unit_manager_user):
     """ Unit manager user should be able to create a BLOCKED type reservation """
+    api_client.force_authenticate(unit_manager_user)
+    list_url = reverse('reservation-list')
+    reservation_data['type'] = Reservation.TYPE_BLOCKED
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+    assert response.data['type'] == Reservation.TYPE_BLOCKED
+    reservation_obj = Reservation.objects.get(id=response.data['id'])
+    assert reservation_obj.type == Reservation.TYPE_BLOCKED
+
+
+@pytest.mark.django_db
+def test_reservation_block_type_no_required_fields(resource_in_unit, reservation_data, api_client, unit_manager_user):
+    """
+    It should be possible to create blocked type reservations without filling in any required fields
+    when the user has permission to create blocked reservations
+    """
+    field_1 = ReservationMetadataField.objects.get(field_name='reserver_name')
+    field_2 = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    field_3 = ReservationMetadataField.objects.get(field_name='reserver_email_address')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='updated_metadata',
+    )
+    metadata_set.supported_fields.set([field_1, field_2, field_3])
+    metadata_set.required_fields.set([field_1, field_2, field_3])
+    resource_in_unit.reservation_metadata_set = ReservationMetadataSet.objects.get(name='updated_metadata')
+    resource_in_unit.save()
+
     api_client.force_authenticate(unit_manager_user)
     list_url = reverse('reservation-list')
     reservation_data['type'] = Reservation.TYPE_BLOCKED
@@ -3277,7 +3473,7 @@ def test_reservation_not_allowed_during_maintenance_mode(
 
 @pytest.mark.django_db
 def test_reservation_reminder_create(
-    api_client, user, list_url, reservation_data, 
+    api_client, user, list_url, reservation_data,
     resource_with_reservation_reminders):
     api_client.force_authenticate(user=user)
     reservation_data['resource'] = resource_with_reservation_reminders.pk
@@ -3287,3 +3483,98 @@ def test_reservation_reminder_create(
     response = api_client.post(list_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
     assert response.status_code == 201
     assert ReservationReminder.objects.count() == 1
+
+
+@override_settings(RESPA_MAILS_ENABLED=True)
+@pytest.mark.django_db
+def test_no_notification_on_reservation_type_blocked(
+    resource_in_unit, reservation_data,
+    staff_api_client, staff_user, list_url,
+    reservation_created_by_official_notification):
+    UnitAuthorization.objects.create(subject=resource_in_unit.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+
+    reservation_data['resource'] = resource_in_unit.pk
+    reservation_data['reserver_name'] = 'Staff reservation normal'
+    reservation_data['type'] = Reservation.TYPE_BLOCKED
+
+    response = staff_api_client.post(list_url, data=reservation_data, format='json')
+    assert response.status_code == 201
+    assert len(mail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_recurring_reservation(
+    resource_in_unit4_1, recurring_reservation_data,
+    staff_api_client, staff_user, recurring_url):
+    UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    
+    recurring_reservation_data['reserver_name'] = 'Recurring reservation'
+    assert ReservationBulk.objects.count() == 0
+    assert Reservation.objects.count() == 0
+
+    response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
+    assert response.status_code == 201
+    assert ReservationBulk.objects.count() == 1
+    
+    reservation_bulk = ReservationBulk.objects.first()
+    assert reservation_bulk.reservations.count() == 3
+
+@pytest.mark.django_db
+@freeze_time('2115-04-04')
+def test_reservation_cooldown_unit_staff(
+    resource_with_cooldown, reservation_data,
+    staff_api_client, staff_user, 
+    api_client, user, list_url):
+    UnitAuthorization.objects.create(subject=resource_with_cooldown.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    reservation_data['resource'] = resource_with_cooldown.pk
+    
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+    reservation_data['begin'] = '2115-04-04T12:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T13:00:00+02:00'
+
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 400
+    assert_translated_response_contains(response, 'cooldown', 'Cannot be reserved during cooldown')
+
+    staff_api_client.force_authenticate(user=staff_user)
+    response = staff_api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+@pytest.mark.django_db
+@freeze_time('2115-04-04')
+def test_reservation_cooldown_after_first_reservation(
+        resource_with_cooldown, reservation_data,
+        api_client, user, list_url):
+    reservation_data['resource'] = resource_with_cooldown.pk
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+    reservation_data['begin'] = '2115-04-04T12:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T13:00:00+02:00'
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 400
+    assert_translated_response_contains(response, 'cooldown', 'Cannot be reserved during cooldown')
+
+@pytest.mark.django_db
+@freeze_time('2115-04-04')
+def test_reservation_cooldown_before_first_reservation(
+        resource_with_cooldown, reservation_data,
+        api_client, user, list_url):
+    reservation_data['resource'] = resource_with_cooldown.pk
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+    reservation_data['begin'] = '2115-04-04T10:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T11:00:00+02:00'
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 400
+    assert_translated_response_contains(response, 'cooldown', 'Cannot be reserved during cooldown')
+

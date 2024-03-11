@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.conf import settings
 
 class EquipmentField(models.ManyToManyField):
     """
@@ -25,3 +25,35 @@ class EquipmentField(models.ManyToManyField):
         for equipment in data:
             if not instance_equipment.filter(pk=equipment).exists():
                 through_model.objects.update_or_create(resource=instance, equipment=equipment)
+
+
+# Since we treat translated CharFields and TextFields as DictFields in API,
+# We have to ensure that the field value isn't a stringified dict.
+class TranslatedCharField(models.CharField):
+    """Ensure CharField value isn't stringified dict"""
+    def to_python(self, value) -> str:
+        if isinstance(value, dict):
+            return super().to_python(value.get(self.get_language(), ''))
+        return super().to_python(value)
+    
+    def get_language(self) -> str:
+        """Returns the language set for the field"""
+        language = self.name.split('_')[-1].lower()
+        if language not in ['fi', 'sv', 'en']:
+            return settings.LANGUAGE_CODE # Fallback
+        return language
+
+    
+class TranslatedTextField(models.TextField):
+    """Ensure TextField value isn't stringified dict"""
+    def to_python(self, value) -> str:
+        if isinstance(value, dict):
+            return super().to_python(value.get(self.get_language(), ''))
+        return super().to_python(value)
+
+    def get_language(self) -> str:
+        """Returns the language set for the field"""
+        language = self.name.split('_')[-1].lower()
+        if language not in ['fi', 'sv', 'en']:
+            return settings.LANGUAGE_CODE # Fallback
+        return language

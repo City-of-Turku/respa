@@ -28,6 +28,7 @@ from .utils import (
     get_order_quantity, get_order_tax_price, get_order_pretax_price, get_payment_requested_waiting_time,
     calculate_final_product_sums, calculate_final_order_sums
 )
+from ..enums import UnitAuthorizationLevel
 
 from random import sample
 
@@ -99,11 +100,14 @@ class ReservationBulkQuerySet(models.QuerySet):
         return self
 
 class ReservationBulk(ModifiableModel):
-    bucket = models.ManyToManyField('Reservation', related_name='reservationbulks', db_index=True)
     objects = ReservationBulkQuerySet.as_manager()
 
+    class Meta:
+        verbose_name = _('Recurring reservation')
+        verbose_name_plural = _('Recurring reservations')
+
     def __str__(self):
-        return "Reservation Bulk"
+        return f"{_('Recurring reservation')} <{self.created_by}>"
 
 class Reservation(ModifiableModel):
     CREATED = 'created'
@@ -202,6 +206,10 @@ class Reservation(ModifiableModel):
 
     timmi_id = models.PositiveIntegerField(verbose_name=_('Timmi ID'), null=True, blank=True)
     timmi_receipt = models.TextField(verbose_name=_('Timmi receipt'), null=True, blank=True, max_length=2000)
+
+    bulk = models.ForeignKey(ReservationBulk, 
+        related_name='reservations', 
+        on_delete=models.CASCADE, null=True, blank=True)
 
     objects = ReservationQuerySet.as_manager()
 
@@ -333,7 +341,9 @@ class Reservation(ModifiableModel):
             order = self.get_order()
             if order:
                 order.set_confirmed_by_staff()
-                self.send_reservation_waiting_for_payment_mail()
+                # dont resend mail if already ready for payment e.g. when adding comments
+                if old_state != Reservation.READY_FOR_PAYMENT:
+                    self.send_reservation_waiting_for_payment_mail()
 
 
     def can_modify(self, user):
@@ -481,6 +491,14 @@ class Reservation(ModifiableModel):
         if self.resource.check_reservation_collision(self.begin, self.end, original_reservation):
             raise ValidationError({'period': _("The resource is already reserved for some of the period")}, code='invalid_period_range')
 
+
+        user_unit_auth_level = self.resource.unit.get_highest_authorization_level_for_user(user)
+        is_at_least_viewer = user_unit_auth_level >= UnitAuthorizationLevel.viewer if user_unit_auth_level else None
+        
+        if self.resource.cooldown:
+            if not is_at_least_viewer and self.resource.check_cooldown_collision(self.begin, self.end, original_reservation):
+                raise ValidationError({ 'cooldown': _("Cannot be reserved during cooldown") }, code='cooldown_collision')
+
         if not user_is_admin:
             if (self.end - self.begin) < self.resource.min_period:
                 raise ValidationError(_("The minimum reservation length is %(min_period)s") %
@@ -551,7 +569,8 @@ class Reservation(ModifiableModel):
                 if self.resource.unit.address_postal_full:
                     context['unit_address'] = self.resource.unit.address_postal_full
                 context['unit_id'] = self.resource.unit.id
-                context['unit_map_service_id'] = self.resource.unit.map_service_id
+                if self.resource.unit.map_service_id:
+                    context['unit_map_service_id'] = self.resource.unit.map_service_id
             if self.can_view_access_code(user) and self.access_code:
                 context['access_code'] = self.access_code
 
@@ -749,13 +768,16 @@ class Reservation(ModifiableModel):
             return self.billing_email_address
         elif self.reserver_email_address:
             return self.reserver_email_address
-        elif user:
+        elif user and not user.is_staff:
             return user.email
 
     def send_reservation_mail(self, notification_type,
                               user=None, attachments=None,
                               staff_email=None,
                               extra_context={}, is_reminder = False):
+        if self.type == Reservation.TYPE_BLOCKED:
+            return
+
         notification_template = self.get_notification_template(notification_type)
         if self.user and not user: # If user isn't given use self.user.
             user = self.user
@@ -774,23 +796,24 @@ class Reservation(ModifiableModel):
         except NotificationTemplateException as exc:
             return logger.error(exc, exc_info=True, extra={ 'user': user.uuid if user else None })
 
+        if is_reminder:
+            return send_respa_sms(self.reserver_phone_number,
+                rendered_notification['subject'], rendered_notification['short_message'])
 
-        if self.reserver_phone_number:
-            if is_reminder:
-                return send_respa_sms(self.reserver_phone_number,
-                    rendered_notification['subject'], rendered_notification['short_message'])
-
-            if self.resource.send_sms_notification and not staff_email: # Don't send sms when notifying staff.
-                send_respa_sms(self.reserver_phone_number,
-                    rendered_notification['subject'], rendered_notification['short_message'])
 
         # Use staff email if given, else get the provided email address
         email_address = staff_email if staff_email \
             else self.get_email_address(user)
 
         if email_address:
-            send_respa_mail(email_address, rendered_notification['subject'],
+            return send_respa_mail(email_address, rendered_notification['subject'],
                 rendered_notification['body'], rendered_notification['html_body'], attachments)
+
+        if self.reserver_phone_number:
+            if self.resource.send_sms_notification and not staff_email: # Don't send sms when notifying staff.
+                return send_respa_sms(self.reserver_phone_number,
+                    rendered_notification['subject'], rendered_notification['short_message'])
+
 
 
     def notify_staff_about_reservation(self, notification):

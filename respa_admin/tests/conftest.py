@@ -109,6 +109,17 @@ EMPTY_RESOURCE_FORM_DATA = {
     'resource_universal_form_option-0-name' : '',
     'resource_universal_form_option-0-sort_order' : '',
     'resource_universal_form_option-0-text_fi' : '',
+
+    '_publish_date-TOTAL_FORMS': ['1'],
+    '_publish_date-INITIAL_FORMS': ['0'],
+    '_publish_date-MIN_NUM_FORMS': ['0'],
+    '_publish_date-MAX_NUM_FORMS': ['1'],
+
+    '_publish_date-0-id': '',
+    '_publish_date-0-resource': '',
+    '_publish_date-0-begin': '',
+    '_publish_date-0-end': '',
+    '_publish_date-0-reservable': ''
 }
 
 
@@ -165,7 +176,8 @@ def empty_period_form_data():
 
 @pytest.fixture
 def valid_resource_form_data(
-    equipment, generic_terms, payment_terms, purpose, space_resource_type, test_unit, empty_resource_form_data
+    equipment, generic_terms, payment_terms, purpose,
+    space_resource_type, test_unit, empty_resource_form_data
 ):
     data = empty_resource_form_data
     data.update({

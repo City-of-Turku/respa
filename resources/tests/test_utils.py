@@ -3,7 +3,7 @@ import pytest
 from django.conf import settings
 from django.test.utils import override_settings
 from resources.models.utils import (
-    get_payment_requested_waiting_time, is_reservation_metadata_or_times_different, format_dt_range_alt
+    get_payment_requested_waiting_time, has_reservation_data_changed, is_reservation_metadata_or_times_different, format_dt_range_alt
 )
 from resources.models import Reservation, Resource, Unit
 from payments.models import Product, Order
@@ -289,3 +289,31 @@ def test_format_dt_range_alt_different_day(reservation_basic):
     return_value = format_dt_range_alt('en', begin, end)
     expected_value = '2.2.2022 12:00 – 3.2.2022 14:00'
     assert return_value == expected_value
+
+
+@pytest.mark.django_db
+def test_has_reservation_data_changed_no_changes(reservation_basic):
+    data = {'reserver_name': reservation_basic.reserver_name}
+    result = has_reservation_data_changed(data, reservation_basic)
+    assert result is False
+
+
+@pytest.mark.django_db
+def test_has_reservation_data_changed_changes(reservation_basic):
+    data = {'reserver_name': 'changed name'}
+    result = has_reservation_data_changed(data, reservation_basic)
+    assert result is True
+
+
+@pytest.mark.django_db
+def test_has_reservation_data_changed_no_instance():
+    data = {'reserver_name': 'changed name'}
+    result = has_reservation_data_changed(data, None)
+    assert result is False
+
+
+@pytest.mark.django_db
+def test_has_reservation_data_changed_empty_data(reservation_basic):
+    data = {}
+    result = has_reservation_data_changed(data, reservation_basic)
+    assert result is False

@@ -35,6 +35,11 @@ span.glyphicon.icon-right {
   @include shape($theme-danger, 10px);
 }
 
+.shape-information {
+  margin-right: 5px;
+  @include shape($theme-info, 10px);
+}
+
 .body {
   padding: 20px;
 }

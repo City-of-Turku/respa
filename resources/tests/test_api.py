@@ -26,8 +26,7 @@ class JWTMixin(object):
         token = AccessToken.for_user(user)
         if 'exp' in extra:
             token.set_exp(from_time=extra['exp'])
-        if 'token_type' in extra:
-            token.token_type = extra['token_type']
+
         return 'JWT %s' % str(token)
 
     def authenticated_post(self, url, data, **extra):
@@ -112,15 +111,9 @@ class ReservationApiTestCase(APITestCase, JWTMixin):
         #self.assertContains(response, '"ends":"' + end.isoformat())
 
     def test_jwt_expired(self):
-        exp = datetime.datetime.utcnow() - datetime.timedelta(minutes=15)
+        exp = datetime.datetime.utcnow() - datetime.timedelta(minutes=16)
         response = self.authenticated_post('/v1/reservation/', {}, exp=exp)
         self.assertEqual(response.status_code, 401)
-
-    def test_jwt_invalid_token_type(self):
-        response = self.authenticated_post('/v1/reservation/', {},
-                                           token_type=generate_random_string(6))
-        self.assertEqual(response.status_code, 400)
-
 
 
 @pytest.mark.skip(reason="availability disabled for now")

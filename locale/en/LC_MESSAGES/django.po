@@ -2812,3 +2812,78 @@ msgstr ""
 
 msgid "Hide Preview"
 msgstr ""
+
+msgid "Filter by permission"
+msgstr ""
+
+msgid "Normal reservation hours total"
+msgstr ""
+
+msgid "Block reservation hours total"
+msgstr ""
+
+msgid "Normal reservations"
+msgstr ""
+
+msgid "Block reservations"
+msgstr ""
+
+msgid "Use scheduled publish date"
+msgstr ""
+
+msgid "Resource will be public after this date"
+msgstr ""
+
+msgid "Resource will be hidden after this date"
+msgstr ""
+
+msgid "Scheduled publishing"
+msgstr ""
+
+msgid "Scheduled publish"
+msgstr ""
+
+msgid "If enabled, resource will be automatically set to public or hidden with given dates. Manual setting for public and hiding will be blocked"
+msgstr ""
+
+msgid "Public between"
+msgstr ""
+
+msgid "Public after"
+msgstr ""
+
+msgid "Public until"
+msgstr ""
+
+msgid "Published since"
+msgstr ""
+
+msgid "Hidden since"
+msgstr ""
+
+msgid "This field must be set if {field} is empty"
+msgstr ""
+
+msgid "Scheduled"
+msgstr ""
+
+msgid "Give feedback"
+msgstr ""
+
+msgid "Navigation"
+msgstr ""
+
+msgid "Select language"
+msgstr ""
+
+msgid "End time cannot be in the past"
+msgstr ""
+
+msgid "Recurring reservation"
+msgstr ""
+
+msgid "Recurring reservations"
+msgstr ""
+
+msgid "Cannot be reserved during cooldown"
+msgstr ""
