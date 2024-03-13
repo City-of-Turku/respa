@@ -534,6 +534,21 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
             overlapping = overlapping.exclude(pk=reservation.pk)
         return overlapping.exists()
 
+    def check_cooldown_collision(self, begin, end, reservation) -> bool:
+        cooldown_start = begin - self.cooldown
+        cooldown_end = end + self.cooldown
+        query = (
+            Q(begin__gt=cooldown_start, begin__lt=cooldown_end) | 
+            Q(end__gt=cooldown_start, end__lt=cooldown_end) |
+            Q(begin__lt=cooldown_start, end__gt=begin) | 
+            Q(begin__lt=end, end__gt=cooldown_end)
+        )
+        
+        if reservation:
+            query &= ~Q(pk=reservation.pk)
+
+        cooldown_collisions = self.reservations.filter(query).active()
+        return cooldown_collisions.exists()
 
     def get_available_hours(self, start=None, end=None, duration=None, reservation=None, during_closing=False):
         """

@@ -25,7 +25,7 @@ from notifications.models import NotificationTemplate, NotificationType
 from notifications.tests.utils import check_received_mail_exists
 from .utils import (
     check_disallowed_methods, assert_non_field_errors_contain,
-    assert_response_objects, MAX_QUERIES
+    assert_response_objects, MAX_QUERIES, assert_translated_response_contains
 )
 
 
@@ -3579,4 +3579,61 @@ def test_recurring_reservation_reminders(
 
     for reservation in reservation_bulk.reservations.all():
         assert reservation.reminder is not None
+        
+@pytest.mark.django_db
+@freeze_time('2115-04-04')
+def test_reservation_cooldown_unit_staff(
+    resource_with_cooldown, reservation_data,
+    staff_api_client, staff_user, 
+    api_client, user, list_url):
+    UnitAuthorization.objects.create(subject=resource_with_cooldown.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    reservation_data['resource'] = resource_with_cooldown.pk
+    
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+    reservation_data['begin'] = '2115-04-04T12:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T13:00:00+02:00'
+
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 400
+    assert_translated_response_contains(response, 'cooldown', 'Cannot be reserved during cooldown')
+
+    staff_api_client.force_authenticate(user=staff_user)
+    response = staff_api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+@pytest.mark.django_db
+@freeze_time('2115-04-04')
+def test_reservation_cooldown_after_first_reservation(
+        resource_with_cooldown, reservation_data,
+        api_client, user, list_url):
+    reservation_data['resource'] = resource_with_cooldown.pk
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+    reservation_data['begin'] = '2115-04-04T12:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T13:00:00+02:00'
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 400
+    assert_translated_response_contains(response, 'cooldown', 'Cannot be reserved during cooldown')
+
+@pytest.mark.django_db
+@freeze_time('2115-04-04')
+def test_reservation_cooldown_before_first_reservation(
+        resource_with_cooldown, reservation_data,
+        api_client, user, list_url):
+    reservation_data['resource'] = resource_with_cooldown.pk
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+    reservation_data['begin'] = '2115-04-04T10:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T11:00:00+02:00'
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 400
+    assert_translated_response_contains(response, 'cooldown', 'Cannot be reserved during cooldown')
 

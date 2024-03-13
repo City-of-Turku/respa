@@ -7,6 +7,7 @@ from django.core.files.base import ContentFile
 from django.test.testcases import SimpleTestCase
 from six import BytesIO
 from django.utils.encoding import force_str
+from django.utils.translation import gettext
 from dateutil import parser
 from PIL import Image
 
@@ -131,6 +132,10 @@ def check_disallowed_methods(api_client, urls, disallowed_methods):
 def check_only_safe_methods_allowed(api_client, urls):
     check_disallowed_methods(api_client, urls, UNSAFE_METHODS)
 
+
+def assert_translated_response_contains(response, key, text):
+    response_data = response.json()
+    assert response_data[key][0] == gettext(text)
 
 def assert_non_field_errors_contain(response, text):
     """

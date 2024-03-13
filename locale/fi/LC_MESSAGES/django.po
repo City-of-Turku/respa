@@ -2271,3 +2271,6 @@ msgstr "Varausmuistutukset"
 
 msgid "Reminder date"
 msgstr "Muistutuksen päivämäärä"
+
+msgid "Cannot be reserved during cooldown"
+msgstr "Varausta ei voi tehdä varaustauon aikana"

@@ -28,6 +28,7 @@ from .utils import (
     get_order_quantity, get_order_tax_price, get_order_pretax_price, get_payment_requested_waiting_time,
     calculate_final_product_sums, calculate_final_order_sums
 )
+from ..enums import UnitAuthorizationLevel
 
 from random import sample
 
@@ -489,6 +490,14 @@ class Reservation(ModifiableModel):
         original_reservation = self if self.pk else kwargs.get('original_reservation', None)
         if self.resource.check_reservation_collision(self.begin, self.end, original_reservation):
             raise ValidationError({'period': _("The resource is already reserved for some of the period")}, code='invalid_period_range')
+
+
+        user_unit_auth_level = self.resource.unit.get_highest_authorization_level_for_user(user)
+        is_at_least_viewer = user_unit_auth_level >= UnitAuthorizationLevel.viewer if user_unit_auth_level else None
+        
+        if self.resource.cooldown:
+            if not is_at_least_viewer and self.resource.check_cooldown_collision(self.begin, self.end, original_reservation):
+                raise ValidationError({ 'cooldown': _("Cannot be reserved during cooldown") }, code='cooldown_collision')
 
         if not user_is_admin:
             if (self.end - self.begin) < self.resource.min_period:

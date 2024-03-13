@@ -212,6 +212,15 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
         unit_auth = self.authorizations.create(authorized=user, level=level)
         unit_auth._ensure_lower_auth()
         return unit_auth
+    
+    def get_highest_authorization_level_for_user(self, user):
+        if not user or \
+            not user.is_authenticated or user.is_anonymous:
+            return None
+        if user.is_superuser:
+            return UnitAuthorizationLevel.admin
+        unit_auths = self.authorizations.filter(authorized=user)
+        return max(unit_auths).level if unit_auths else None
 
 
 class UnitAuthorizationQuerySet(models.QuerySet):

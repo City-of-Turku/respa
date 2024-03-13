@@ -2886,3 +2886,6 @@ msgstr ""
 
 msgid "Reminder date"
 msgstr ""
+
+msgid "Cannot be reserved during cooldown"
+msgstr ""

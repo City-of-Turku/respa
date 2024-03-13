@@ -2212,3 +2212,6 @@ msgstr "Bokningspåminnelser"
 
 msgid "Reminder date"
 msgstr "Påminnelsedatum"
+
+msgid "Cannot be reserved during cooldown"
+msgstr "Bokning kan inte göras under bokningsuppehåll"
