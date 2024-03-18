@@ -61,7 +61,7 @@ function buildUrl(resources, start, end, selectedDays, page_size = 50000, format
     return `${window.location.origin}/v1/reservation/` +
         `?format=${format}&resource=${resources.join()}` +
         `&start=${start}&end=${end}&page_size=${page_size}` +
-        `&weekdays=${selectedDays.join()}&state=confirmed`;
+        `&weekdays=${selectedDays.join()}&state=confirmed&include_block_reservations=1`;
 }
 
 
@@ -172,7 +172,11 @@ function bindGenerateButton() {
                         var url = window.URL.createObjectURL(http.response);
                         let dl = document.createElement('a');
                         dl.href = url;
-                        dl.download = 'report.xlsx';
+                        dl.download = {
+                            'fi': `Varausraportti ${begin} - ${end}.xlsx`,
+                            'sv': `Bokningsrapport ${begin} - ${end}.xlsx`,
+                            'en': `Reservation report ${begin} - ${end}.xlsx`
+                        }[SELECTED_LANGUAGE];
                         dl.click();
                         $("body").css("cursor", "default");
                         removeLoader($(btn).parent());

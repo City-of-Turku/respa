@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from collections import OrderedDict
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from accessibility.models import ServicePoint, ServiceShortage, ServiceRequirement, ServiceEntrance, ServiceSentence, Sentence, SentenceGroup
 from django.core.exceptions import ValidationError
 from resources.api.base import TranslatedModelSerializer

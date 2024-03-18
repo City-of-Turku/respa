@@ -129,3 +129,20 @@ def test_other_than_waiting_order_wont_get_expired(two_hour_reservation, order_s
     order.refresh_from_db()
     assert two_hour_reservation.state == reservation_state
     assert order.state == order_state
+
+
+@pytest.mark.parametrize('is_requested_order', (True, False))
+def test_waiting_for_cash_payment_reservations_dont_get_expired(order_with_products, is_requested_order):
+    """Tests that reservations that are waiting for cash payment dont get expired"""
+    order_with_products.is_requested_order = is_requested_order
+    order_with_products.payment_method = Order.CASH
+    order_with_products.reservation.state = Reservation.WAITING_FOR_CASH_PAYMENT
+    set_order_last_modified_at(order_with_products, get_order_expired_time())
+    order_with_products.save()
+    order_with_products.reservation.save()
+
+    management.call_command(COMMAND_NAME)
+
+    order_with_products.refresh_from_db()
+    assert order_with_products.state == Order.WAITING
+    assert order_with_products.reservation.state == Reservation.WAITING_FOR_CASH_PAYMENT

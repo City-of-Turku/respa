@@ -10,6 +10,7 @@ from resources.views.images import ResourceImageView
 from resources.views.ical import ICalFeedView
 
 import accessibility.api
+import maintenance.api
 
 if getattr(settings, 'RESPA_COMMENTS_ENABLED', False):
     import comments.api
@@ -82,7 +83,7 @@ if settings.USE_SWAGGER_OPENAPI_VIEW:
     ])
     
 if settings.MACHINE_TO_MACHINE_AUTH_ENABLED:
-    from rest_framework_jwt.views import obtain_jwt_token
+    from respa.machine_to_machine_auth.views import obtain_jwt_token
     urlpatterns.extend([
         path('api-token-auth/', obtain_jwt_token),
     ])

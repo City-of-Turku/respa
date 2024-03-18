@@ -10,13 +10,25 @@ export function toggleLanguage(language) {
   let $languageButtons = $('[name$="language-' + language + '"]');
 
   $languageInputs.each(
-    (i, input) =>
-      (input.classList.contains('hidden')) ? input.classList.remove('hidden') : input.classList.add('hidden')
+    (i, input) => {
+      if (input.classList.contains('hidden')) {
+        input.classList.remove('hidden')
+      }
+      else if (!input.classList.contains('always-show')) {
+        input.classList.add('hidden')
+      }
+    }
   );
 
   $languageLabels.each(
-    (i, input) =>
-      (input.classList.contains('hidden')) ? input.classList.remove('hidden') : input.classList.add('hidden')
+    (i, input) => {
+      if (input.classList.contains('hidden')) {
+        input.classList.remove('hidden')
+      }
+      else if (!input.classList.contains('always-show')) {
+        input.classList.add('hidden')
+      }
+    }
   );
 
   $languageButtons.each(
@@ -61,7 +73,7 @@ export function calculateTranslatedFields() {
     const $languageButton = $('[name="language-' + language + '"]');
     const currentCountForLanguage = $languageButton.find('span').text();
     const UNICODE_CHECKMARK = '\u2713'
-    if(currentCountForLanguage - languageCount === 0) {
+    if (currentCountForLanguage - languageCount === 0) {
       $languageButton.find('span').css('background-color', '#23a000').text(UNICODE_CHECKMARK);
     }
     else {
@@ -87,8 +99,16 @@ function hideLanguage(language, input = null) {
     $languageLabels = $('[for$="_' + language + '"]');
   }
 
-  $languageInputs.each((i, input) => input.classList.add('hidden'));
-  $languageLabels.each((i, input) => input.classList.add('hidden'));
+  $languageInputs.each((i, input) => {
+    if (!input.classList.contains('always-show')) {
+      input.classList.add('hidden');
+    }
+  });
+  $languageLabels.each((i, input) => {
+    if (!input.classList.contains('always-show')) {
+      input.classList.add('hidden');
+    }
+  });
 }
 
 

@@ -6,15 +6,17 @@ from resources.auth import (
 )
 from rest_framework import serializers, viewsets
 from django.contrib.auth.models import AnonymousUser
+from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 import django_filters
 from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
 from resources.api.base import (
     NullableDateTimeField, TranslatedModelSerializer,
-    register_view, DRFFilterBooleanWidget
+    register_view, DRFFilterBooleanWidget, CancelReservationsView
 )
 from resources.models import Unit
 from resources.models.resource import Resource
+from resources.models.reservation import Reservation
 from resources.enums import UNIT_AUTH_MAP
 from .accessibility import UnitAccessibilitySerializer
 from .base import ExtraDataMixin, LocationField, PeriodSerializer
@@ -22,6 +24,18 @@ from resources.models.utils import log_entry
 
 from users.models import User
 
+
+
+class UnitCancelReservationsView(CancelReservationsView):
+    queryset = Unit.objects.all()
+    class Meta:
+        model = Unit
+
+        
+    def get_reservation_queryset(self, begin, end):
+        query = Q(begin__gte=begin, end__lte=end, resource__unit=self.get_object())
+        return Reservation.objects.filter(query)
+    
 
 class UnitFilterSet(django_filters.FilterSet):
     resource_group = django_filters.Filter(field_name='resources__groups__identifier', lookup_expr='in',
@@ -146,7 +160,6 @@ class UnitSerializer(ExtraDataMixin, TranslatedModelSerializer):
                     not has_permission(user, 'resources.view_unit')):
                         del ret['created_by']
                         del ret['modified_by']
-
         return ret
 
     

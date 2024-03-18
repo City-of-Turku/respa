@@ -1,7 +1,6 @@
-[![Travis CI](https://travis-ci.com/codepointtku/respaTku.svg?branch=master)](https://travis-ci.com/codepointtku/respa)
-[![GitHub Actions](https://github.com/codepointtku/respa/actions/workflows/respa.yml/badge.svg?branch=develop)](https://github.com/codepointtku/respa/actions/workflows/respa.yml)
+[![GitHub Actions](https://github.com/city-of-turku/respa/actions/workflows/respa.yml/badge.svg?branch=develop)](https://github.com/city-of-turku/respa/actions/workflows/respa.yml)
+[![CodeQL](https://github.com/City-of-Turku/respa/actions/workflows/codeql-analysis.yml/badge.svg?branch=develop)](https://github.com/City-of-Turku/respa/actions/workflows/codeql-analysis.yml)
 [![codecov](https://codecov.io/gh/codepointtku/respa/branch/develop/graph/badge.svg)](https://codecov.io/gh/codepointtku/respa)
-[![Requirements Status](https://requires.io/github/codepointtku/respa/requirements.svg?branch=develop)](https://requires.io/github/codepointtku/respa/requirements/?branch=develop)
 
 Respa – Resource reservation and management service
 ===================
@@ -46,7 +45,7 @@ Our main issue tracking is on [Github](https://github.com/codepointtku/respa/iss
 - [The Libraries of Lapland](https://varaamo-api.lapinkirjasto.fi/v1) - for [Varaamo UI](https://varaamo.lapinkirjasto.fi/)
 - [City of Tampere](https://respa.tampere.fi/v1/) - for [Varaamo UI](https://varaamo.tampere.fi/) - [GitHub repo](https://github.com/Tampere/respa)
 - [City of Lappeenranta](https://varaamo.lappeenranta.fi/respa/v1/) - for [Varaamo UI](https://varaamo.lappeenranta.fi/) - [GitHub repo](https://github.com/City-of-Lappeenranta/Respa)
-     
+
 FAQ
 ------------
 
@@ -89,7 +88,7 @@ psql -U postgres --dbname=respa -c "create extension postgis;"
 
 ### Build Respa Admin static resources
 
-Make sure you have Node 14 and npm installed.
+Make sure you have Node 18 and npm installed.
 
 ```shell
 ./build-resources

@@ -122,7 +122,8 @@ main {
 
   section.qualitytool,
   section.resources,
-  section.units {
+  section.units,
+  section.users {
 
     .container {
       padding: 32px 0 100px;
@@ -143,21 +144,29 @@ main {
     .filter {
       height: 100%;
 
+      &.flex-end {
+        display: flex;
+        justify-content: flex-end;
+      }
+
       span.dropdowns-label {
         padding-right: 10px;
         font-size: $font-size-small;
       }
     }
 
-    /* Unit list has only two columns */
+    /* Unit and user list has only two columns */
     .unit-list ul li div.panel div.panel-body,
-    .unit-list ul li.list-group-item.sort-bar {
+    .unit-list ul li.list-group-item.sort-bar,
+    .user-list ul li div.panel div.panel-body,
+    .user-list ul li.list-group-item.sort-bar {
       grid-template-columns: 0px 7fr 3fr 2fr;
     }
 
     .resource-list ul li,
     .qualitytool-list ul li,
-    .unit-list ul li {
+    .unit-list ul li,
+    .user-list ul li {
       $list-item-height: 100px;
       $table-template: $list-item-height 4fr 3fr 3fr 2fr;
 

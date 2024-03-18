@@ -3,7 +3,7 @@ import json
 
 import pytest
 from django.utils.crypto import get_random_string
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from resources.api.search import TypeaheadViewSet
 from resources.models import Resource, Unit
@@ -85,7 +85,7 @@ def test_typeahead_api_unit_only(rf, typeahead_test_objects, typeahead_view):
 def test_typeahead_api_full_response(rf, typeahead_test_objects, typeahead_view):
     response = typeahead_view(request=rf.get("/", {"input": "testi", "full": "1"}))
     response.render()
-    response_data = json.loads(force_text(response.content))
+    response_data = json.loads(force_str(response.content))
     # Check that we get more data than with the non-full mode for resources:
     assert all(key in response_data["resource"][0] for key in ("id", "type", "name", "unit"))
     assert all(key in response_data["unit"][0] for key in ("id", "time_zone", "name", "phone"))

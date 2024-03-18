@@ -1,7 +1,7 @@
 <div class="form-group">
     <div class="textarea-wrapper">
         <label
-            class="control-label input-label"
+            class="control-label input-label{% if always_show %} always-show{% endif %}"
             for="{{ field.id_for_label }}"
         >
             {{ field.label }}{% if field.field.required %}*{% endif %}
@@ -9,7 +9,7 @@
         <div class="textarea-with-toolbar">
             <textarea
                 id="{{ field.id_for_label }}"
-                class="form-control"
+                class="form-control{% if always_show %} always-show{% endif %}"
                 rows="5"
                 name="{{ field.html_name }}"
                 {% if field.field.disabled %} disabled="disabled" {% endif %}

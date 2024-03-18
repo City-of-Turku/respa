@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from respa_outlook.manager import store, ToEWSDateTime
 
@@ -130,12 +130,11 @@ class RespaOutlookConfiguration(models.Model):
             )
             reservation.clean()
             reservation.save()
-            ret = send_respa_mail(
+            send_respa_mail(
                 email_address=email,
                 subject="Reservation created",
                 body="Reservation via outlook created"
             )
-            print(ret[0], ret[1])
 
         RespaOutlookReservation(
             name = '%s (%s)' % (reservation.reserver_email_address, self.resource.name),

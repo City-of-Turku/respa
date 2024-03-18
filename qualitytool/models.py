@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
+from django_jsonform.models.fields import ArrayField
 from django.utils.functional import lazy
 from solo.models import SingletonModel
 from qualitytool.manager import qt_manager
@@ -20,6 +21,10 @@ class ResourceQualityTool(models.Model):
     name = models.CharField(verbose_name=_('Name'), max_length=255)
     target_id = models.UUIDField(verbose_name=_('Target ID'), unique=True, primary_key=True)
     resources = models.ManyToManyField('resources.Resource', verbose_name=_('Resources'), related_name='qualitytool')
+    emails = ArrayField(
+        models.EmailField(verbose_name=_('Email'), max_length=255),
+        null=True, blank=True
+    )
     objects = ResourceQualityToolQuerySet.as_manager()
 
     class Meta:

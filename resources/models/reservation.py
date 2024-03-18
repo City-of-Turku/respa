@@ -6,10 +6,11 @@ import pytz
 from django.utils import timezone
 import django.contrib.postgres.fields as pgfields
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.gis.db import models
 from django.utils import translation
 from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.models import Q
 from psycopg2.extras import DateTimeTZRange
@@ -22,11 +23,12 @@ from .base import ModifiableModel, NameIdentifiedModel
 from .resource import generate_access_code, validate_access_code
 from .resource import Resource
 from .utils import (
-    get_dt, save_dt, is_valid_time_slot, humanize_duration, send_respa_mail,
-    DEFAULT_LANG, localize_datetime, format_dt_range, build_reservations_ical_file,
+    get_dt, save_dt, is_valid_time_slot, humanize_duration, send_respa_mail, send_respa_sms,
+    DEFAULT_LANG, localize_datetime, format_dt_range, format_dt_range_alt, build_reservations_ical_file,
     get_order_quantity, get_order_tax_price, get_order_pretax_price, get_payment_requested_waiting_time,
     calculate_final_product_sums, calculate_final_order_sums
 )
+from ..enums import UnitAuthorizationLevel
 
 from random import sample
 
@@ -41,7 +43,7 @@ RESERVATION_BILLING_FIELDS = ('billing_first_name', 'billing_last_name', 'billin
 RESERVATION_EXTRA_FIELDS = ('reserver_name', 'reserver_phone_number', 'reserver_address_street', 'reserver_address_zip',
                             'reserver_address_city', 'company', 'event_description', 'event_subject', 'reserver_id',
                             'number_of_participants', 'participants', 'reserver_email_address', 'require_assistance',
-                            'require_workstation', 'host_name', 'reservation_extra_questions', 'home_municipality'
+                            'require_workstation', 'private_event', 'host_name', 'reservation_extra_questions', 'home_municipality'
                             ) + RESERVATION_BILLING_FIELDS
 
 
@@ -87,16 +89,25 @@ class ReservationQuerySet(models.QuerySet):
         allowed_resources = Resource.objects.with_perm('can_view_reservation_catering_orders', user)
         return self.filter(Q(user=user) | Q(resource__in=allowed_resources))
 
+    def cancel(self, user):
+        for reservation in self:
+            reservation.set_state(Reservation.CANCELLED, user)
+            if reservation.has_order():
+                order = reservation.get_order()
+                order.set_state('cancelled', 'Order reservation was cancelled.')
 class ReservationBulkQuerySet(models.QuerySet):
     def current(self):
         return self
 
 class ReservationBulk(ModifiableModel):
-    bucket = models.ManyToManyField('Reservation', related_name='reservationbulks', db_index=True)
     objects = ReservationBulkQuerySet.as_manager()
 
+    class Meta:
+        verbose_name = _('Recurring reservation')
+        verbose_name_plural = _('Recurring reservations')
+
     def __str__(self):
-        return "Reservation Bulk"
+        return f"{_('Recurring reservation')} <{self.created_by}>"
 
 class Reservation(ModifiableModel):
     CREATED = 'created'
@@ -162,13 +173,14 @@ class Reservation(ModifiableModel):
     host_name = models.CharField(verbose_name=_('Host name'), max_length=100, blank=True)
     require_assistance = models.BooleanField(verbose_name=_('Require assistance'), default=False)
     require_workstation = models.BooleanField(verbose_name=_('Require workstation'), default=False)
+    private_event = models.BooleanField(verbose_name=_('Private event'), default=False)
     home_municipality = models.ForeignKey('ReservationHomeMunicipalityField', verbose_name=_('Home municipality'),
                                             null=True, blank=True, on_delete=models.SET_NULL)
-    universal_data = pgfields.JSONField(verbose_name=_('Data'), null=True, blank=True)
+    universal_data = models.JSONField(verbose_name=_('Data'), null=True, blank=True)
     # extra detail fields for manually confirmed reservations
 
     reserver_name = models.CharField(verbose_name=_('Reserver name'), max_length=100, blank=True)
-    reserver_id = models.CharField(verbose_name=_('Reserver ID (business or person)'), max_length=30, blank=True)
+    reserver_id = models.CharField(verbose_name=_('Reserver ID (business)'), max_length=30, blank=True)
     reserver_email_address = models.EmailField(verbose_name=_('Reserver email address'), blank=True)
     reserver_phone_number = models.CharField(verbose_name=_('Reserver phone number'), max_length=30, blank=True)
     reserver_address_street = models.CharField(verbose_name=_('Reserver address street'), max_length=100, blank=True)
@@ -194,6 +206,10 @@ class Reservation(ModifiableModel):
 
     timmi_id = models.PositiveIntegerField(verbose_name=_('Timmi ID'), null=True, blank=True)
     timmi_receipt = models.TextField(verbose_name=_('Timmi receipt'), null=True, blank=True, max_length=2000)
+
+    bulk = models.ForeignKey(ReservationBulk,
+        related_name='reservations',
+        on_delete=models.CASCADE, null=True, blank=True)
 
     objects = ReservationQuerySet.as_manager()
 
@@ -304,7 +320,9 @@ class Reservation(ModifiableModel):
                 self.notify_staff_about_reservation(NotificationType.RESERVATION_REQUESTED_OFFICIAL)
         elif reservation_is_confirmed or state == Reservation.WAITING_FOR_CASH_PAYMENT:
             if self.need_manual_confirmation():
-                self.send_reservation_confirmed_mail()
+                # dont resend mail if already ready for cash payment e.g. when adding comments
+                if old_state != Reservation.WAITING_FOR_CASH_PAYMENT:
+                    self.send_reservation_confirmed_mail()
             elif self.access_code:
                 self.send_reservation_created_with_access_code_mail(action_by_official=action_by_official)
                 if not action_by_official:
@@ -325,7 +343,9 @@ class Reservation(ModifiableModel):
             order = self.get_order()
             if order:
                 order.set_confirmed_by_staff()
-                self.send_reservation_waiting_for_payment_mail()
+                # dont resend mail if already ready for payment e.g. when adding comments
+                if old_state != Reservation.READY_FOR_PAYMENT:
+                    self.send_reservation_waiting_for_payment_mail()
 
 
     def can_modify(self, user):
@@ -385,6 +405,12 @@ class Reservation(ModifiableModel):
         end = self.end.astimezone(tz)
         return format_dt_range(translation.get_language(), begin, end)
 
+    def format_time_alt(self):
+        tz = self.resource.unit.get_tz()
+        begin = self.begin.astimezone(tz)
+        end = self.end.astimezone(tz)
+        return format_dt_range_alt(translation.get_language(), begin, end)
+
     def create_reminder(self):
         r_date = self.begin - datetime.timedelta(hours=int(self.resource.unit.sms_reminder_delay))
         reminder = ReservationReminder()
@@ -437,17 +463,24 @@ class Reservation(ModifiableModel):
         # Check if Unit has disallow_overlapping_reservations value of True
         if (
             self.resource.unit.disallow_overlapping_reservations and not
-            self.resource.can_create_overlapping_reservations(user)
+            self.resource.can_create_overlapping_reservations(user) and not
+            isinstance(user, AnonymousUser)
         ):
             if self.resource.unit.disallow_overlapping_reservations_per_user:
                 reservations_for_same_unit = Reservation.objects.filter(user=user, resource__unit=self.resource.unit)
             else:
                 reservations_for_same_unit = Reservation.objects.filter(resource__unit=self.resource.unit)
+
+            original = kwargs.get('original_reservation', None)
+            if original:
+                reservations_for_same_unit = reservations_for_same_unit.exclude(id=original.id)
+
             valid_reservations_for_same_unit = reservations_for_same_unit.exclude(state=Reservation.CANCELLED)
             user_has_conflicting_reservations = valid_reservations_for_same_unit.filter(
                 Q(begin__gt=self.begin, begin__lt=self.end)
                 | Q(begin__lt=self.begin, end__gt=self.begin)
                 | Q(begin__gte=self.begin, end__lte=self.end)
+                | Q(begin__lte=self.begin, end__gt=self.end)
             )
 
             if user_has_conflicting_reservations:
@@ -459,6 +492,14 @@ class Reservation(ModifiableModel):
         original_reservation = self if self.pk else kwargs.get('original_reservation', None)
         if self.resource.check_reservation_collision(self.begin, self.end, original_reservation):
             raise ValidationError({'period': _("The resource is already reserved for some of the period")}, code='invalid_period_range')
+
+
+        user_unit_auth_level = self.resource.unit.get_highest_authorization_level_for_user(user)
+        is_at_least_viewer = user_unit_auth_level >= UnitAuthorizationLevel.viewer if user_unit_auth_level else None
+        
+        if self.resource.cooldown:
+            if not is_at_least_viewer and self.resource.check_cooldown_collision(self.begin, self.end, original_reservation):
+                raise ValidationError({ 'cooldown': _("Cannot be reserved during cooldown") }, code='cooldown_collision')
 
         if not user_is_admin:
             if (self.end - self.begin) < self.resource.min_period:
@@ -499,12 +540,15 @@ class Reservation(ModifiableModel):
                 'begin_dt': self.begin,
                 'end_dt': self.end,
                 'time_range': self.format_time(),
+                'time_range_alt': self.format_time_alt(),
                 'reserver_name': reserver_name,
                 'reserver_email_address': reserver_email_address,
                 'require_assistance': self.require_assistance,
                 'require_workstation': self.require_workstation,
+                'private_event': self.private_event,
                 'extra_question': self.reservation_extra_questions,
-                'home_municipality_id': reserver_home_municipality
+                'home_municipality_id': reserver_home_municipality,
+                'takes_place_virtually': self.takes_place_virtually
             }
             directly_included_fields = (
                 'number_of_participants',
@@ -524,14 +568,27 @@ class Reservation(ModifiableModel):
                 context[field] = getattr(self, field)
             if self.resource.unit:
                 context['unit'] = self.resource.unit.name
-                context['unit_address'] = self.resource.unit.address_postal_full
+                if self.resource.unit.address_postal_full:
+                    context['unit_address'] = self.resource.unit.address_postal_full
                 context['unit_id'] = self.resource.unit.id
-                context['unit_map_service_id'] = self.resource.unit.map_service_id
+                if self.resource.unit.map_service_id:
+                    context['unit_map_service_id'] = self.resource.unit.map_service_id
             if self.can_view_access_code(user) and self.access_code:
                 context['access_code'] = self.access_code
 
             if self.user and self.user.is_staff:
                 context['staff_name'] = self.user.get_display_name()
+
+            if self.virtual_address:
+                context['virtual_address'] = self.virtual_address
+
+            # Comments should only be added to notifications that are sent to staff.
+            if notification_type in [NotificationType.RESERVATION_CREATED_OFFICIAL] and self.comments:
+                context['comments'] = self.comments
+
+            # Generic 'additional information' value
+            if self.resource.reservation_additional_information:
+                context['additional_information'] = self.resource.reservation_additional_information
 
             if notification_type in [NotificationType.RESERVATION_CONFIRMED, NotificationType.RESERVATION_CREATED]:
                 if self.resource.reservation_confirmed_notification_extra:
@@ -556,7 +613,7 @@ class Reservation(ModifiableModel):
                 ground_plan_image_url = ground_plan_image.get_full_url()
                 if ground_plan_image_url:
                     context['resource_ground_plan_image_url'] = ground_plan_image_url
-            
+
             universal_data = getattr(self, 'universal_data', None)
             if universal_data:
                 # reservation contains universal_data
@@ -661,7 +718,7 @@ class Reservation(ModifiableModel):
                                 else:
                                     # only 1 of the product
                                     product['product_quantity'] = float(1)
-                                
+
                             values = calculate_final_product_sums(product=item, quantity=conditional_quantity)
                             product['product_taxfree_total'] = values['product_taxfree_total']
                             product['product_tax_total'] = values['product_tax_total']
@@ -686,109 +743,86 @@ class Reservation(ModifiableModel):
             })
         return context
 
-    def send_reservation_mail(self, notification_type, user=None, attachments=None, action_by_official=False, staff_email=None, extra_context={}, is_reminder=False):
+    def get_notification_template(self, notification_type):
+        try: # Search fallback for the default template of this type.
+            fallback_template = NotificationTemplate.objects.get(type=notification_type, groups=None, is_default_template=True)
+        except NotificationTemplate.DoesNotExist:
+            fallback_template = None
+
         # Check if resource's unit has a template group and if that group contains a notification template with correct notification type.
         if self.resource.unit.notification_template_group_id:
-            try:
-                # Check if template group contains a notification template with correct notification type.
+            try: # Check if template group contains a notification template with correct notification type.
                 unit_template_group = NotificationTemplateGroup.objects.get(id=self.resource.unit.notification_template_group_id)
-                notification_template = unit_template_group.templates.get(type=notification_type)
-
-
+                return unit_template_group.templates.get(type=notification_type)
             except (NotificationTemplateGroup.DoesNotExist, NotificationTemplate.DoesNotExist):
-                # Otherwise search all notification templates for the default template of this type.
-                try:
-                    notification_template = NotificationTemplate.objects.get(type=notification_type, groups=None, is_default_template=True)
-                except NotificationTemplate.DoesNotExist:
-                    return
-
+                return fallback_template
             except NotificationTemplate.MultipleObjectsReturned:
-                # Multiple templates found with same type, using default template instead.
                 logger.error(f"Template group: {unit_template_group.name} contains multiple templates of type: {notification_type}.")
-                try:
-                    notification_template = NotificationTemplate.objects.get(type=notification_type, groups=None, is_default_template=True)
-                except NotificationTemplate.DoesNotExist:
-                    return
-
-        # Otherwise search all notification templates for the default template of this type.
-        else:
-            try:
-                notification_template = NotificationTemplate.objects.get(type=notification_type, groups=None, is_default_template=True)
-            except NotificationTemplate.DoesNotExist:
-                return
+                return fallback_template
+        return fallback_template
 
 
-
-        if self.resource.unit.sms_reminder:
-            # only allow certain notification types as reminders e.g. exclude reservation_access_code_created
-            allowed_reminder_notification_types = (
-                NotificationType.RESERVATION_CONFIRMED,
-                NotificationType.RESERVATION_CREATED,
-                NotificationType.RESERVATION_CREATED_BY_OFFICIAL,
-                NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE,
-                NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE_BY_OFFICIAL,
-                )
-
-            if self.reminder and notification_type in allowed_reminder_notification_types:
-                self.reminder.notification_type = self.reminder.notification_type if self.reminder.notification_type else notification_type
-                self.reminder.user = self.reminder.user if self.reminder.user else user
-                self.reminder.action_by_official = self.reminder.action_by_official if self.reminder.action_by_official else action_by_official
-                self.reminder.save()
+    def get_email_address(self, user=None):
         """
         Stuff common to all reservation related mails.
-
-        If user isn't given use self.user.
         """
         if getattr(self, 'order', None) and self.billing_email_address:
-            email_address = self.billing_email_address
-        elif user:
-            email_address = user.email
-        else:
-            if not (self.reserver_email_address or self.user):
-                return
-            if action_by_official:
-                email_address = self.reserver_email_address
-            else:
-                email_address = self.reserver_email_address or self.user.email
+            return self.billing_email_address
+        elif self.reserver_email_address:
+            return self.reserver_email_address
+        elif user and not user.is_staff:
+            return user.email
+
+    def send_reservation_mail(self, notification_type,
+                              user=None, attachments=None,
+                              staff_email=None,
+                              extra_context={}, is_reminder = False):
+        if self.type == Reservation.TYPE_BLOCKED:
+            return
+
+        notification_template = self.get_notification_template(notification_type)
+        if self.user and not user: # If user isn't given use self.user.
             user = self.user
 
-        language = DEFAULT_LANG
-        # use reservation's preferred_language if it exists
-        if getattr(self, 'preferred_language', None):
-            language = self.preferred_language
-        # if user is defined and user.is_staff, use default lang
-        if user and user.is_staff:
-            language = DEFAULT_LANG
+        # Use reservation's preferred_language if it exists
+        # else if user is defined and user.is_staff or staff_email is given, use default lang
+        language = DEFAULT_LANG \
+            if ((user and user.is_staff) or staff_email) \
+                else getattr(self, 'preferred_language', DEFAULT_LANG)
 
         context = self.get_notification_context(language, notification_type=notification_type, extra_context=extra_context)
         try:
-            if staff_email:
-                language = DEFAULT_LANG
+            if not notification_template:
+                raise NotificationTemplateException("Failed to get template from %s" % notification_type)
             rendered_notification = notification_template.render(context, language)
-        except NotificationTemplateException as e:
-            logger.error(e, exc_info=True, extra={'user': user.uuid})
-            return
-
+        except NotificationTemplateException as exc:
+            return logger.error(exc, exc_info=True, extra={ 'user': user.uuid if user else None })
 
         if is_reminder:
-            logger.info(f"Sending SMS notification {rendered_notification['subject']} || LOCALE: {language}")
-            email_address = f'{self.reserver_phone_number}@{settings.GSM_NOTIFICATION_ADDRESS}'
-            success = send_respa_mail(email_address, rendered_notification['subject'], rendered_notification['short_message'])
-            if not success:
-                logger.info('Failed to send SMS notification.')
-            return
+            return send_respa_sms(self.reserver_phone_number,
+                rendered_notification['subject'], rendered_notification['short_message'])
 
-        logger.info(f"Sending automated mail {rendered_notification['subject']} || LOCALE: {language}")
-        email_address = staff_email if staff_email else email_address
-        success = send_respa_mail(email_address, rendered_notification['subject'],
+
+        # Use staff email if given, else get the provided email address
+        email_address = staff_email if staff_email \
+            else self.get_email_address(user)
+
+        if email_address:
+            return send_respa_mail(email_address, rendered_notification['subject'],
                 rendered_notification['body'], rendered_notification['html_body'], attachments)
-        if not success:
-            logger.info('Failed to send automated mail.')
+
+        if self.reserver_phone_number:
+            if self.resource.send_sms_notification and not staff_email: # Don't send sms when notifying staff.
+                return send_respa_sms(self.reserver_phone_number,
+                    rendered_notification['subject'], rendered_notification['short_message'])
+
+
 
     def notify_staff_about_reservation(self, notification):
         if self.resource.resource_staff_emails:
+            attachment = ('reservation.ics', build_reservations_ical_file([self]), 'text/calendar')
             for email in self.resource.resource_staff_emails:
-                self.send_reservation_mail(notification, staff_email=email)
+                self.send_reservation_mail(notification, staff_email=email, attachments=[attachment])
         else:
             notify_users = self.resource.get_users_with_perm('can_approve_reservation')
             if len(notify_users) > 100:
@@ -797,42 +831,43 @@ class Reservation(ModifiableModel):
                 self.send_reservation_mail(notification, user=user, staff_email=user.email)
 
     def send_reservation_requested_mail(self, action_by_official=False):
-        notification = NotificationType.RESERVATION_REQUESTED_BY_OFFICIAL if action_by_official else NotificationType.RESERVATION_REQUESTED
+        notification = NotificationType.RESERVATION_REQUESTED_BY_OFFICIAL \
+            if action_by_official else NotificationType.RESERVATION_REQUESTED
         self.send_reservation_mail(notification)
 
     def send_reservation_modified_mail(self, action_by_official=False):
-        notification = NotificationType.RESERVATION_MODIFIED_BY_OFFICIAL if action_by_official else NotificationType.RESERVATION_MODIFIED
-        self.send_reservation_mail(notification, action_by_official=action_by_official)
+        notification = NotificationType.RESERVATION_MODIFIED_BY_OFFICIAL \
+            if action_by_official else NotificationType.RESERVATION_MODIFIED
+        self.send_reservation_mail(notification)
+        if action_by_official: # staff should also get notification with the updated reservations details.
+            self.notify_staff_about_reservation(NotificationType.RESERVATION_MODIFIED_OFFICIAL)
 
     def send_reservation_denied_mail(self):
         self.send_reservation_mail(NotificationType.RESERVATION_DENIED)
 
     def send_reservation_confirmed_mail(self):
-        reservations = [self]
-        ical_file = build_reservations_ical_file(reservations)
-        attachment = ('reservation.ics', ical_file, 'text/calendar')
+        attachment = 'reservation.ics', build_reservations_ical_file([self]), 'text/calendar'
         self.send_reservation_mail(NotificationType.RESERVATION_CONFIRMED,
                                    attachments=[attachment])
 
     def send_reservation_cancelled_mail(self, action_by_official=False):
-        notification = NotificationType.RESERVATION_CANCELLED_BY_OFFICIAL if action_by_official else NotificationType.RESERVATION_CANCELLED
-        self.send_reservation_mail(notification, action_by_official=action_by_official)
+        notification = NotificationType.RESERVATION_CANCELLED_BY_OFFICIAL \
+            if action_by_official else NotificationType.RESERVATION_CANCELLED
+        self.send_reservation_mail(notification)
 
     def send_reservation_created_mail(self, action_by_official=False):
-        reservations = [self]
-        ical_file = build_reservations_ical_file(reservations)
-        attachment = 'reservation.ics', ical_file, 'text/calendar'
-        notification = NotificationType.RESERVATION_CREATED_BY_OFFICIAL if action_by_official else NotificationType.RESERVATION_CREATED
+        attachment = 'reservation.ics', build_reservations_ical_file([self]), 'text/calendar'
+        notification = NotificationType.RESERVATION_CREATED_BY_OFFICIAL \
+            if action_by_official else NotificationType.RESERVATION_CREATED
         self.send_reservation_mail(notification,
-                                   attachments=[attachment], action_by_official=action_by_official)
+                                   attachments=[attachment])
 
     def send_reservation_created_with_access_code_mail(self, action_by_official=False):
-        reservations = [self]
-        ical_file = build_reservations_ical_file(reservations)
-        attachment = 'reservation.ics', ical_file, 'text/calendar'
-        notification = NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE_OFFICIAL_BY_OFFICIAL if action_by_official else NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE
+        attachment = 'reservation.ics', build_reservations_ical_file([self]), 'text/calendar'
+        notification = NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE_OFFICIAL_BY_OFFICIAL \
+            if action_by_official else NotificationType.RESERVATION_CREATED_WITH_ACCESS_CODE
         self.send_reservation_mail(notification,
-                                   attachments=[attachment], action_by_official=action_by_official)
+                                   attachments=[attachment])
 
     def send_reservation_waiting_for_payment_mail(self):
         self.send_reservation_mail(NotificationType.RESERVATION_WAITING_FOR_PAYMENT,
@@ -988,26 +1023,26 @@ class ReservationReminderQuerySet(models.QuerySet):
 class ReservationReminder(models.Model):
     reservation = models.ForeignKey('Reservation', verbose_name=_('Reservation'), db_index=True, related_name='Reservations',
                                  on_delete=models.CASCADE)
-    reminder_date = models.DateTimeField(verbose_name=_('Reminder Date'))
-
-    notification_type = models.CharField(verbose_name=_('Notification type'), max_length=32, null=True, blank=True)
-    user = models.ForeignKey('users.User', verbose_name=_('User'), related_name='Users',
-                                 on_delete=models.CASCADE, null=True, blank=True)
-    action_by_official = models.BooleanField(verbose_name=_('Action by official'), null=True, blank=True)
+    reminder_date = models.DateTimeField(verbose_name=_('Reminder date'))
 
 
     objects = ReservationReminderQuerySet.as_manager()
 
+    class Meta:
+        verbose_name = _('Reservation reminder')
+        verbose_name_plural = _('Reservation reminders')
+
     def get_unix_timestamp(self):
-        return int((self.reminder_date.replace(tzinfo=pytz.timezone('Europe/Helsinki')) - datetime.datetime(year=1970, month=1, day=1, hour=0, minute=0, second=0).replace(tzinfo=pytz.timezone('Europe/Helsinki'))).total_seconds())
+        unix_epoch = datetime.datetime(year=1970, month=1, day=1, hour=0, minute=0, second=0)
+        time_diff = self.reminder_date.replace(tzinfo=pytz.timezone('Europe/Helsinki')) - unix_epoch.replace(tzinfo=pytz.timezone('Europe/Helsinki'))
+        return int(time_diff.total_seconds())
 
 
     def remind(self):
         self.reservation.send_reservation_mail(
-            notification_type=self.notification_type,
-            user = self.user,
-            action_by_official=self.action_by_official,
-            is_reminder=True
+            notification_type = NotificationType.RESERVATION_REMINDER,
+            user = self.reservation.user,
+            is_reminder = True
         )
 
     def __str__(self):

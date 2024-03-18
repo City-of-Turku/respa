@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from django import forms
 from django.contrib.admin.options import InlineModelAdmin
-from django.utils.translation import ugettext_lazy
+from django.utils.translation import gettext_lazy
 from resources.models import Day, Period, Resource, Unit
 
 DAYS_OF_WEEK_MAP = dict(Day.DAYS_OF_WEEK)
@@ -35,7 +35,7 @@ class PeriodModelFormDayHelper(object):
             field_tuple[1].label = "%s: %s" % (self.name, field_tuple[1].label)
             if isinstance(field_tuple[1], forms.TimeField):  # pragma: no branch
                 # (remove the no-branch above if adding new fields to the formlet)
-                field_tuple[1].widget.attrs["placeholder"] = ugettext_lazy("HH:mm")
+                field_tuple[1].widget.attrs["placeholder"] = gettext_lazy("HH:mm")
         self.initial = dict((prefix_weekday(weekday, key), value) for (key, value) in formlet.initial.items())
         self.fields = dict(fields)
         self.prefix = prefix_weekday(weekday, "")

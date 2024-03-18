@@ -3,15 +3,12 @@ import uuid
 
 from calendar import timegm
 from datetime import datetime
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.settings import api_settings
 
-from rest_framework_jwt.compat import get_username
-from rest_framework_jwt.compat import get_username_field
-from rest_framework_jwt.settings import api_settings
-
-# extends original rest_framework_jwt payload handler by adding sub field to payload
 def jwt_payload_handler(user):
-    username_field = get_username_field()
-    username = get_username(user)
+    username_field = get_user_model().USERNAME_FIELD
+    username = getattr(user, 'get_username', lambda: user.username)()
 
     warnings.warn(
         'The following fields will be removed in the future: '
@@ -23,7 +20,7 @@ def jwt_payload_handler(user):
         'user_id': user.pk,
         'sub': str(user.uuid), # addition to original payload
         'username': username,
-        'exp': datetime.utcnow() + api_settings.JWT_EXPIRATION_DELTA
+        'exp': datetime.utcnow() + api_settings.EXPIRATION_DELTA
     }
     if hasattr(user, 'email'):
         payload['email'] = user.email
@@ -34,15 +31,15 @@ def jwt_payload_handler(user):
 
     # Include original issued at time for a brand new token,
     # to allow token refresh
-    if api_settings.JWT_ALLOW_REFRESH:
+    if api_settings.ALLOW_REFRESH:
         payload['orig_iat'] = timegm(
             datetime.utcnow().utctimetuple()
         )
 
-    if api_settings.JWT_AUDIENCE is not None:
-        payload['aud'] = api_settings.JWT_AUDIENCE
+    if api_settings.AUDIENCE is not None:
+        payload['aud'] = api_settings.AUDIENCE
 
-    if api_settings.JWT_ISSUER is not None:
-        payload['iss'] = api_settings.JWT_ISSUER
+    if api_settings.ISSUER is not None:
+        payload['iss'] = api_settings.ISSUER
 
     return payload

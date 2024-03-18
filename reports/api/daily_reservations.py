@@ -3,7 +3,7 @@ import io
 import pytz
 from docx.shared import Pt, Cm
 
-from django.utils.translation import get_language, ugettext_lazy as _
+from django.utils.translation import get_language, gettext_lazy as _
 from django.utils import formats
 from django.utils.timezone import localtime
 from django.conf import settings

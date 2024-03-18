@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.gis.db import models
 from django.db.models import Q
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from enumfields import EnumField
 
 from ..auth import is_authenticated_user, is_general_admin, is_unit_admin, is_unit_manager, is_unit_viewer, is_superuser
@@ -117,6 +117,7 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
     )
     disallow_overlapping_reservations_per_user = models.BooleanField(
         verbose_name=_('Disallow overlapping reservations in this unit only for the same user.'),
+        help_text=_('This rule does not apply for unauthenticated users'),
         default=False,
     )
 
@@ -212,6 +213,15 @@ class Unit(ModifiableModel, AutoIdentifiedModel):
         unit_auth._ensure_lower_auth()
         return unit_auth
     
+    def get_highest_authorization_level_for_user(self, user):
+        if not user or \
+            not user.is_authenticated or user.is_anonymous:
+            return None
+        if user.is_superuser:
+            return UnitAuthorizationLevel.admin
+        unit_auths = self.authorizations.filter(authorized=user)
+        return max(unit_auths).level if unit_auths else None
+
 
 class UnitAuthorizationQuerySet(models.QuerySet):
     def for_user(self, user):
@@ -231,11 +241,22 @@ class UnitAuthorizationQuerySet(models.QuerySet):
             UnitAuthorizationLevel.admin,
             UnitAuthorizationLevel.manager,
         })
-    
+
     def highest_per_user(self):
         return self.filter(id__in=[
-            max(self.filter(authorized=user)).id 
+            max(self.filter(authorized=user)).id
             for user in self.values_list('authorized', flat=True).distinct()
+        ])
+
+
+    def can_approve_reservations(self, unit):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        users = [user.id for user in User.objects.all() if user.has_perm('unit:can_approve_reservation', unit)]
+        return self.filter(id__in=[
+            max(self.filter(authorized=user)).id
+            for user in self.filter(authorized__id__in=users).values_list('authorized', flat=True).distinct()
         ])
 
 class UnitAuthorization(models.Model):
@@ -274,7 +295,7 @@ class UnitAuthorization(models.Model):
     def __le__(self, other):
         return self.level <= other.level
 
-    
+
     def _ensure_lower_auth(self):
         """
         Ensure that the user also has permission levels lower than the given one.
@@ -288,7 +309,7 @@ class UnitAuthorization(models.Model):
             highest = max(auths)
             for level in highest.level.below():
                 UnitAuthorization.objects.get_or_create(authorized=self.authorized, subject=self.subject, level=level)
-            
+
 
 
 class UnitIdentifier(models.Model):

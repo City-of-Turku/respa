@@ -1,0 +1,68 @@
+{% extends "admin/parler/change_form.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block extrahead %}
+<script type="text/javascript">
+    (function ($) {
+        $(document).ready(function () {
+            $("#preview-show-button").click(function() {
+                $(this).siblings(".preview-field").show();
+                $("#preview-hide-button").show();
+                $(this).hide();
+                $('#html-preview-iframe').height( $('#html-preview-iframe').contents().outerHeight() );
+            });
+            $("#preview-hide-button").click(function() {
+                $(this).siblings(".preview-field").hide();
+                $("#preview-show-button").show();
+                $(this).hide();
+            });
+            $("#id_html_body").on('input', function() {
+                $('#html-preview-iframe').attr('srcdoc', ($("#id_html_body").val()))
+                $('#html-preview-iframe').height( $('#html-preview-iframe').contents().outerHeight() );
+            });
+            $('#html-preview-iframe').attr('srcdoc', ($("#id_html_body").val()))
+        });
+    })(grp.jQuery);
+</script>
+<style>
+    #preview-hide-button {
+        display: none;
+    }
+    .preview-field {
+        display: none;
+    }
+    .preview-button {
+        margin: 4px 0 4px 0;
+        padding: 8px;
+        width: initial;
+        height: initial;
+        background-color: #257894;
+    }
+    #html-preview-container {
+        outline: lightgrey dotted 1px;
+    }
+    #html-preview-iframe {
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block after_field_sets %}{{ block.super }}
+<div>
+    <h2>{% trans 'HTML Preview' %}</h2>
+    <button type="button" id="preview-show-button" class="preview-button">{% trans 'Show Preview' %}</button>
+    <button type="button" id="preview-hide-button" class="preview-button">{% trans 'Hide Preview' %}</button>
+    <div class="form-row preview-field">
+        <div id="html-preview-container">
+            <iframe
+                id="html-preview-iframe"
+                sandbox="allow-same-origin allow-scripts"
+                srcdoc="{{ original.html_body|safe }}"
+                title="{% trans 'HTML Preview' %}">
+            </iframe>
+        </div>
+    </div>
+</div>
+{% for item in original.items_set.all %} {{ item }} {% endfor %}
+{% endblock %}

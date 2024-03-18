@@ -4,7 +4,7 @@ from django.core.validators import MinValueValidator
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models import Q
 from django.utils import formats, translation
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 import reversion

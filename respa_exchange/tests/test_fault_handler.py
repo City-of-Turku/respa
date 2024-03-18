@@ -1,5 +1,5 @@
 import pytest
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from lxml.builder import E
 
 from respa_exchange.downloader import sync_from_exchange
@@ -34,5 +34,5 @@ def test_fault_handling(settings, space_resource, exchange):
     assert ei.type == SoapFault
     assert ei.value.code == EverythingFails.code
     assert ei.value.text == EverythingFails.text
-    assert EverythingFails.code in force_text(ei.value)
-    assert EverythingFails.text in force_text(ei.value)
+    assert EverythingFails.code in force_str(ei.value)
+    assert EverythingFails.text in force_str(ei.value)

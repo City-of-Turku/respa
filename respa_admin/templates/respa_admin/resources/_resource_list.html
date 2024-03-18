@@ -128,10 +128,14 @@
                                 </div>
 
                                 <div class="col-4">
+                                    {% if resource.publish_date %}
+                                    {{ resource.publish_date.format_html }}
+                                    {% else %}
                                     {% if resource.public %}
                                         <h6> <div class='shape-success'></div> {% trans 'Published' %}</h6>
                                     {% else %}
                                         <h6> <div class='shape-warning'></div> {% trans 'Hidden' %}</h6>
+                                    {% endif %}
                                     {% endif %}
                                 </div>
 

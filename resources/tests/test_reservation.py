@@ -190,10 +190,37 @@ def test_admin_may_bypass_min_period(resource_with_opening_hours, user):
 
 @pytest.mark.django_db
 def test_reservation_home_municipality_field_str():
-        home_municipality_field = ReservationHomeMunicipalityField.objects.create(name='test municipality')
-        assert str(home_municipality_field) == 'test municipality'
+    home_municipality_field = ReservationHomeMunicipalityField.objects.create(name='test municipality')
+    assert str(home_municipality_field) == 'test municipality'
 
 @pytest.mark.django_db
 def test_reservation_home_municipality_set_str():
-        home_municipality_set = ReservationHomeMunicipalitySet.objects.create(name='test municipality set')
-        assert str(home_municipality_set) == 'test municipality set'
+    home_municipality_set = ReservationHomeMunicipalitySet.objects.create(name='test municipality set')
+    assert str(home_municipality_set) == 'test municipality set'
+
+
+
+@pytest.mark.parametrize('virtual_address', (
+    None,
+    'jokin://linkki/jonnekkin'
+))
+@pytest.mark.django_db
+def test_reservation_notification_template_takes_place_virtually(resource_in_unit, virtual_address):
+
+    tz = timezone.get_current_timezone()
+    begin = tz.localize(datetime.datetime(2115, 6, 1, 8, 0, 0))
+    end = begin + datetime.timedelta(hours=0, minutes=30)
+
+    reservation = Reservation(
+        resource=resource_in_unit,
+        takes_place_virtually=True,
+        virtual_address=virtual_address,
+        begin=begin,
+        end=end
+    )
+    context = reservation.get_notification_context('fi')
+    assert 'takes_place_virtually' in context
+    if virtual_address:
+        assert 'virtual_address' in context
+    else:
+        assert 'virtual_address' not in context

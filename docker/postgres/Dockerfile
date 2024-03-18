@@ -1,4 +1,4 @@
-FROM postgis/postgis:14-master
+FROM postgis/postgis:14-3.4
 
 ENV APP_NAME respa-postgres-db
 

@@ -1,5 +1,5 @@
 from django.utils.duration import duration_string
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from payments.api.product import ProductCustomerGroupSerializer, TimeSlotPriceSerializer
 
@@ -73,6 +73,10 @@ class OrderLineSerializer(serializers.ModelSerializer):
         for x in detailed_prices:
             temp = detailed_prices[x]['tax_total'] + detailed_prices[x]['taxfree_price_total']
             price += temp
+
+        # quantity needs to be handled separately for per period products
+        if obj.product.price_type != Product.PRICE_FIXED:
+            price *= obj.quantity
         return '{:.2f}'.format(price)
 
     def to_representation(self, instance):

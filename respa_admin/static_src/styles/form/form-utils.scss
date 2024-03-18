@@ -52,10 +52,10 @@ $input-height-default: 50px;
 
   &:hover, &:active {
     background-color: #e5e5e5;
-    cursor: not-allowed;
   }
 
   span, select {
+    cursor: not-allowed;
     color: #999898;
   }
 }

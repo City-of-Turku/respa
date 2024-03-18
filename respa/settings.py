@@ -8,7 +8,7 @@ import environ
 import raven
 import datetime
 from sys import platform
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -31,6 +31,7 @@ env = environ.Env(
     SENTRY_ENVIRONMENT=(str, ''),
     COOKIE_PREFIX=(str, 'respa'),
     INTERNAL_IPS=(list, []),
+    SMS_ENABLED=(bool, False),
     MAIL_ENABLED=(bool, False),
     MAIL_DEFAULT_FROM=(str, ''),
     MAIL_MAILGUN_KEY=(str, ''),
@@ -69,7 +70,7 @@ env = environ.Env(
     OUTLOOK_POLLING_RATE=(float, 5.0),
     HELUSERS_PROVIDER=(str, 'helusers.providers.helsinki'),
     HELUSERS_SOCIALACCOUNT_ADAPTER=(str, 'helusers.adapter.SocialAccountAdapter'),
-    AUTHENTICATION_CLASSES=(list, ['helusers.jwt.JWTAuthentication']),
+    AUTHENTICATION_CLASSES=(list, ['respa.providers.turku_oidc.jwt.JWTAuthentication']),
     HELUSERS_AUTHENTICATION_BACKEND=(str, 'helusers.tunnistamo_oidc.TunnistamoOIDCAuth'),
     USE_SWAGGER_OPENAPI_VIEW=(bool, False),
     USE_RESPA_EXCHANGE=(bool, False),
@@ -77,7 +78,7 @@ env = environ.Env(
     MACHINE_TO_MACHINE_AUTH_ENABLED=(bool, False),
     JWT_AUTH_HEADER_PREFIX=(str, "JWT"),
     JWT_LEEWAY=(int, 30), # seconds
-    JWT_LIFETIME=(int, 3600), # generated jwt token expires after this many seconds
+    JWT_LIFETIME=(int, 900), # generated jwt token expires after this many seconds
     JWT_PAYLOAD_HANDLER=(str, 'respa.machine_to_machine_auth.utils.jwt_payload_handler'), # generates jwt token payload
     ENABLE_RESOURCE_TOKEN_AUTH=(bool, False),
     DISABLE_SERVER_SIDE_CURSORS=(bool, False),
@@ -105,6 +106,10 @@ env = environ.Env(
     QUALITYTOOL_PASSWORD=(str, ''),
     QUALITYTOOL_API_BASE=(str, ''),
     QUALITYTOOL_ENABLED=(bool, False),
+    QUALITYTOOL_SFTP_HOST=(str, ''),
+    QUALITYTOOL_SFTP_PORT=(int, 22),
+    QUALITYTOOL_SFTP_USERNAME=(str, ''),
+    QUALITYTOOL_SFTP_PASSWORD=(str, '')
 )
 environ.Env.read_env()
 # used for generating links to images, when no request context is available
@@ -170,6 +175,11 @@ QUALITYTOOL_PASSWORD = env('QUALITYTOOL_PASSWORD')
 QUALITYTOOL_API_BASE = env('QUALITYTOOL_API_BASE')
 QUALITYTOOL_ENABLED = env('QUALITYTOOL_ENABLED')
 
+QUALITYTOOL_SFTP_HOST = env('QUALITYTOOL_SFTP_HOST')
+QUALITYTOOL_SFTP_PORT = env('QUALITYTOOL_SFTP_PORT')
+QUALITYTOOL_SFTP_USERNAME = env('QUALITYTOOL_SFTP_USERNAME')
+QUALITYTOOL_SFTP_PASSWORD = env('QUALITYTOOL_SFTP_PASSWORD')
+
 # Application definition
 INSTALLED_APPS = [
     'helusers',
@@ -187,9 +197,10 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'django.contrib.postgres',
     'rest_framework',
-    'rest_framework_jwt',
+    'rest_framework_simplejwt',
     'rest_framework.authtoken',
     'django_filters',
+    'django_jsonform',
     'corsheaders',
     'easy_thumbnails',
     'image_cropping',
@@ -221,6 +232,7 @@ INSTALLED_APPS = [
     'respa_outlook',
     'respa_o365',
     'respa_admin',
+    'maintenance',
 
     'sanitized_dump',
     'drf_yasg',
@@ -272,7 +284,7 @@ TEMPLATES = [
     },
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [root],
+        'DIRS': ['', 'respa/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -280,7 +292,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'helusers.context_processors.settings'
+                'helusers.context_processors.settings',
+                'django.template.context_processors.i18n',
             ],
         },
     },
@@ -361,6 +374,7 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = env('DJANGO_ADMIN_LOGOUT_REDIRECT_URL')
 RESPA_ADMIN_LOGOUT_REDIRECT_URL = env('RESPA_ADMIN_LOGOUT_REDIRECT_URL')
 ACCOUNT_LOGOUT_ON_GET = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_ADAPTER = env('HELUSERS_SOCIALACCOUNT_ADAPTER')
 HELUSERS_PROVIDER = env('HELUSERS_PROVIDER')
 
@@ -411,14 +425,12 @@ OIDC_AUTH = {
     'OIDC_LEEWAY': env('OIDC_LEEWAY')
 }
 
-JWT_AUTH = {
-    'JWT_PAYLOAD_GET_USER_ID_HANDLER': 'helusers.jwt.get_user_id_from_payload_handler',
-    'JWT_AUDIENCE': env('TOKEN_AUTH_ACCEPTED_AUDIENCE'),
-    'JWT_SECRET_KEY': env('TOKEN_AUTH_SHARED_SECRET'),
-    'JWT_AUTH_HEADER_PREFIX': env('JWT_AUTH_HEADER_PREFIX'),
-    'JWT_LEEWAY': env('JWT_LEEWAY'),
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=env('JWT_LIFETIME')),
-    'JWT_PAYLOAD_HANDLER': env('JWT_PAYLOAD_HANDLER')
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': env('JWT_AUTH_HEADER_PREFIX'),
+    'LEEWAY': env('JWT_LEEWAY'),
+    'AUDIENCE': env('TOKEN_AUTH_ACCEPTED_AUDIENCE'),
+    'SIGNING_KEY': env('TOKEN_AUTH_SHARED_SECRET'),
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(seconds=env('JWT_LIFETIME')),
 }
 
 # toggles auth token api endpoint url
@@ -444,12 +456,15 @@ O365_CALENDAR_RESERVATION_EVENT_PREFIX=env('O365_CALENDAR_RESERVATION_EVENT_PREF
 O365_CALENDAR_RESERVER_INFO_MARK=env('O365_CALENDAR_RESERVER_INFO_MARK')
 O365_CALENDAR_COMMENTS_MARK=env('O365_CALENDAR_COMMENTS_MARK')
 
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 from easy_thumbnails.conf import Settings as thumbnail_settings  # noqa
 THUMBNAIL_PROCESSORS = (
     'image_cropping.thumbnail_processors.crop_corners',
 ) + thumbnail_settings.THUMBNAIL_PROCESSORS
 
 
+RESPA_SMS_ENABLED = env('SMS_ENABLED')
 RESPA_MAILS_ENABLED = env('MAIL_ENABLED')
 RESPA_MAILS_FROM_ADDRESS = env('MAIL_DEFAULT_FROM')
 RESPA_CATERINGS_ENABLED = False
@@ -535,16 +550,20 @@ if os.path.exists(local_settings_path):
 
 # If a secret key was not supplied from elsewhere, generate a random one
 # and store it into a file called .django_secret.
+
+def get_random_string():
+    import random
+    system_random = random.SystemRandom()
+    return ''.join([system_random.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(64)])
+
 if 'SECRET_KEY' not in locals():
     secret_file = os.path.join(BASE_DIR, '.django_secret')
     try:
         with open(secret_file) as f:
             SECRET_KEY = f.read().strip()
     except IOError:
-        import random
-        system_random = random.SystemRandom()
         try:
-            SECRET_KEY = ''.join([system_random.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(64)])
+            SECRET_KEY = get_random_string()
             secret = open(secret_file, 'w')
             os.chmod(secret_file, 0o0600)
             secret.write(SECRET_KEY)

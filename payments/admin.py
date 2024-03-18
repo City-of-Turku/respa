@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.forms.models import BaseInlineFormSet
 from django.utils.safestring import mark_safe
 from django.utils.timezone import localtime
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from modeltranslation.admin import TranslationAdmin
 
 from payments.utils import get_price_period_display, round_price
@@ -125,7 +125,10 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['resources'] = forms.ModelMultipleChoiceField(queryset=Resource.objects.order_by('name'))
+        self.fields['resources'] = forms.ModelMultipleChoiceField(
+            queryset=Resource.objects.order_by('name'), 
+            widget=admin.widgets.FilteredSelectMultiple(_('resources'), False)
+        )
 
     def clean(self):
         super().clean()
@@ -176,6 +179,7 @@ class ProductAdmin(TranslationAdmin):
         'max_quantity', 'get_resources', 'get_created_at', 'get_modified_at', 'price_tax_free'
     )
     readonly_fields = ('product_id',)
+    filter_horizontal = ('resources',)
     fieldsets = (
         (None, {
             'fields': ('sku', 'type', 'name', 'description', 'max_quantity')

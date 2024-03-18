@@ -127,3 +127,35 @@ def test_get_pretax_price_for_reservation_success(product_1, two_hour_reservatio
     not_rounded = product_1.get_pretax_price_for_reservation(two_hour_reservation, rounded=False)
     assert rounded == Decimal('20.66')
     assert not_rounded.quantize(Decimal('0.00001')) == Decimal('20.66129')
+
+
+def test_get_detailed_price_for_time_range_per_period_timeslots_quantity(product_with_pcgs_and_time_slot_prices):
+    """Test quantity is added correctly to detailed pricing with per period products with timeslots"""
+    begin = datetime.datetime(2119, 5, 5, 10, 0, 0, tzinfo=UTC)
+    end = datetime.datetime(2119, 5, 5, 12, 0, 0, tzinfo=UTC)
+
+    result = product_with_pcgs_and_time_slot_prices.get_detailed_price_for_time_range(begin, end, quantity=0)
+    assert 'quantity' not in result['default']
+
+    result = product_with_pcgs_and_time_slot_prices.get_detailed_price_for_time_range(begin, end, quantity=1)
+    assert 'quantity' not in result['default']
+
+    result = product_with_pcgs_and_time_slot_prices.get_detailed_price_for_time_range(begin, end, quantity=2)
+    assert 'quantity' in result['default']
+    assert result['default']['quantity'] == 2
+
+
+def test_get_detailed_price_for_time_range_per_period_no_timeslots_quantity(product_with_no_price_product_cg):
+    """Test quantity is added correctly to detailed pricing with per period products without timeslots"""
+    begin = datetime.datetime(2119, 5, 5, 10, 0, 0, tzinfo=UTC)
+    end = datetime.datetime(2119, 5, 5, 12, 0, 0, tzinfo=UTC)
+
+    result = product_with_no_price_product_cg.get_detailed_price_for_time_range(begin, end, quantity=0)
+    assert 'quantity' not in result['default']
+
+    result = product_with_no_price_product_cg.get_detailed_price_for_time_range(begin, end, quantity=1)
+    assert 'quantity' not in result['default']
+
+    result = product_with_no_price_product_cg.get_detailed_price_for_time_range(begin, end, quantity=2)
+    assert 'quantity' in result['default']
+    assert result['default']['quantity'] == 2

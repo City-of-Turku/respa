@@ -10,7 +10,9 @@
     data-paginator-per-page="{{ per_page }}"
     style="min-height: 500px;">
     {% for resource in resources %}
-        <div class="resource-card" data-paginator-item="true">
+        <div class="resource-card" 
+            data-paginator-item="true"
+            data-paginator-filter-value="{{ resource.name }}">
             <div class="card">
                 <img
                     class="img-rounded pull-left"

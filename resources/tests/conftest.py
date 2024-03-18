@@ -1,21 +1,24 @@
 # -*- coding: utf-8 -*-
 import pytest
 import datetime
+import base64
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.utils import timezone
 from rest_framework.test import APIClient, APIRequestFactory
 
 from resources.enums import UnitAuthorizationLevel
-from resources.models import Resource, ResourceType, Unit, Purpose, Day, Period
+from resources.models import Resource, ResourceType, Unit, Purpose, Day, Period, Reservation, ResourcePublishDate
 from resources.models import Equipment, EquipmentAlias, ResourceEquipment, EquipmentCategory, TermsOfUse, ResourceGroup
-from resources.models import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility, UnitAccessibility, MaintenanceMessage
+from resources.models import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility, UnitAccessibility
 from resources.models import ResourceUniversalFormOption, ResourceUniversalField, UniversalFormFieldType
+from resources.models import ReservationMetadataSet, ReservationMetadataField
 from munigeo.models import Municipality
-
+from maintenance.models import MaintenanceMessage, MaintenanceMode
+from .utils import get_test_image_data, get_test_image_payload
 
 @pytest.fixture
-def api_client():
+def api_client() -> APIClient:
     return APIClient()
 
 
@@ -59,24 +62,42 @@ def space_resource_type():
 
 @pytest.mark.django_db
 @pytest.fixture
-def space_resource(space_resource_type):
+def space_resource(space_resource_type) -> Resource:
     return Resource.objects.create(type=space_resource_type, authentication="none", name="resource")
 
 @pytest.mark.django_db
 @pytest.fixture
-def test_unit():
+def test_unit() -> Unit:
     return Unit.objects.create(name="unit", time_zone='Europe/Helsinki')
 
 
 @pytest.fixture
-def test_unit2():
+def test_unit2() -> Unit:
     return Unit.objects.create(name="unit 2", time_zone='Europe/Helsinki')
 
 
 @pytest.fixture
-def test_unit3():
+def test_unit3() -> Unit:
     return Unit.objects.create(name="unit 3", time_zone='Europe/Helsinki')
 
+
+@pytest.fixture
+def test_unit4() -> Unit:
+    return Unit.objects.create(
+            name="unit 4",
+            time_zone='Europe/Helsinki',
+            disallow_overlapping_reservations=True
+        )
+
+@pytest.mark.django_db
+@pytest.fixture
+def test_unit_with_reminders_enabled() -> Unit:
+    return Unit.objects.create(
+        name="unit",
+        time_zone='Europe/Helsinki',
+        sms_reminder=True,
+        sms_reminder_delay=24
+    )
 
 @pytest.fixture
 def generic_terms():
@@ -98,10 +119,34 @@ def payment_terms():
         terms_type=TermsOfUse.TERMS_TYPE_PAYMENT
     )
 
+@pytest.fixture
+def metadataset_1():
+    name_field = ReservationMetadataField.objects.get(field_name='reserver_name')
+    email_field = ReservationMetadataField.objects.get(field_name='reserver_email_address')
+    phone_field = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='test_metadataset_1',
+        )
+    metadata_set.supported_fields.set([name_field, email_field, phone_field])
+    return metadata_set
+
 
 @pytest.mark.django_db
 @pytest.fixture
-def resource_in_unit(space_resource_type, test_unit, generic_terms, payment_terms):
+def resource_with_metadata(space_resource_type, metadataset_1, test_unit) -> Resource:
+    return Resource.objects.create(
+        type=space_resource_type,
+        authentication="none",
+        name="resource with metadata",
+        reservation_metadata_set=metadataset_1,
+        unit=test_unit,
+        reservable=True,
+    )
+
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_in_unit(space_resource_type, test_unit, generic_terms, payment_terms) -> Resource:
     return Resource.objects.create(
         type=space_resource_type,
         authentication="none",
@@ -120,7 +165,7 @@ def resource_in_unit(space_resource_type, test_unit, generic_terms, payment_term
 
 @pytest.mark.django_db
 @pytest.fixture
-def resource_in_unit2(space_resource_type, test_unit2):
+def resource_in_unit2(space_resource_type, test_unit2) -> Resource:
     return Resource.objects.create(
         type=space_resource_type,
         authentication="none",
@@ -134,7 +179,7 @@ def resource_in_unit2(space_resource_type, test_unit2):
 
 @pytest.mark.django_db
 @pytest.fixture
-def resource_in_unit3(space_resource_type, test_unit3):
+def resource_in_unit3(space_resource_type, test_unit3) -> Resource:
     return Resource.objects.create(
         type=space_resource_type,
         authentication="none",
@@ -145,9 +190,56 @@ def resource_in_unit3(space_resource_type, test_unit3):
         reservable=True,
     )
 
+
 @pytest.mark.django_db
 @pytest.fixture
-def resource_with_opening_hours(resource_in_unit):
+def resource_in_unit4_1(space_resource_type, test_unit4) -> Resource:
+    resource = Resource.objects.create(
+        type=space_resource_type,
+        authentication="none",
+        name="resource in unit 4 first",
+        unit=test_unit4,
+        max_reservations_per_user=5,
+        max_period=datetime.timedelta(hours=4),
+        reservable=True,
+    )
+    p1 = Period.objects.create(start=datetime.date(2115, 1, 1),
+                               end=datetime.date(2115, 12, 31),
+                               resource=resource, name='regular hours')
+    for weekday in range(0, 7):
+        Day.objects.create(period=p1, weekday=weekday,
+                           opens=datetime.time(8, 0),
+                           closes=datetime.time(18, 0))
+    resource.update_opening_hours()
+    return resource
+
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_in_unit4_2(space_resource_type, test_unit4) -> Resource:
+    resource = Resource.objects.create(
+        type=space_resource_type,
+        authentication="none",
+        name="resource in unit 4 second",
+        unit=test_unit4,
+        max_reservations_per_user=5,
+        max_period=datetime.timedelta(hours=4),
+        reservable=True,
+    )
+    p1 = Period.objects.create(start=datetime.date(2115, 1, 1),
+                               end=datetime.date(2115, 12, 31),
+                               resource=resource, name='regular hours')
+    for weekday in range(0, 7):
+        Day.objects.create(period=p1, weekday=weekday,
+                           opens=datetime.time(8, 0),
+                           closes=datetime.time(18, 0))
+    resource.update_opening_hours()
+    return resource
+
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_with_opening_hours(resource_in_unit) -> Resource:
     p1 = Period.objects.create(start=datetime.date(2115, 1, 1),
                                end=datetime.date(2115, 12, 31),
                                resource=resource_in_unit, name='regular hours')
@@ -159,18 +251,36 @@ def resource_with_opening_hours(resource_in_unit):
     return resource_in_unit
 
 @pytest.fixture
-def resource_with_manual_confirmation(resource_with_opening_hours):
+def resource_with_manual_confirmation(resource_with_opening_hours) -> Resource:
     resource_with_opening_hours.need_manual_confirmation = True
     resource_with_opening_hours.save()
     return resource_with_opening_hours
 
 @pytest.mark.django_db
 @pytest.fixture
-def strong_resource(resource_with_opening_hours):
+def strong_resource(resource_with_opening_hours) -> Resource:
     resource_with_opening_hours.authentication = "strong"
     resource_with_opening_hours.save()
     return resource_with_opening_hours
 
+@pytest.mark.django_db
+@pytest.fixture
+def resource_with_reservation_reminders(
+    resource_with_opening_hours, 
+    metadataset_1,
+    test_unit_with_reminders_enabled) -> Resource:
+    resource_with_opening_hours.unit = test_unit_with_reminders_enabled
+    resource_with_opening_hours.reservation_metadata_set = metadataset_1
+    resource_with_opening_hours.save()
+    return resource_with_opening_hours
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_with_cooldown(resource_with_opening_hours) -> Resource:
+    resource_with_opening_hours.cooldown='04:00:00'
+    resource_with_opening_hours.max_reservations_per_user = 10
+    resource_with_opening_hours.save()
+    return resource_with_opening_hours
 
 @pytest.mark.django_db
 @pytest.fixture
@@ -304,6 +414,22 @@ def unit_manager_user(resource_in_unit):
     )
     user.unit_authorizations.create(subject=resource_in_unit.unit, level=UnitAuthorizationLevel.manager)
     return user
+
+
+@pytest.mark.django_db
+@pytest.fixture
+def unit4_manager_user(resource_in_unit4_1):
+    user = get_user_model().objects.create(
+        username='test_manager_user',
+        first_name='Inspector',
+        last_name='Lestrade',
+        email='lestrade@scotlandyard.co.uk',
+        is_staff=True,
+        preferred_language='en'
+    )
+    user.unit_authorizations.create(subject=resource_in_unit4_1.unit, level=UnitAuthorizationLevel.manager)
+    return user
+
 
 @pytest.mark.django_db
 @pytest.fixture
@@ -489,6 +615,13 @@ def maintenance_message():
         message_sv='Detta är ett meddelande'
     )
 
+@pytest.fixture
+def maintenance_mode(maintenance_message):
+    return MaintenanceMode.objects.create(
+        start=timezone.now(), end=timezone.now() + datetime.timedelta(minutes=20),
+        maintenance_message=maintenance_message
+    )
+
 @pytest.mark.django_db
 @pytest.fixture
 def universal_form_field_type():
@@ -532,3 +665,75 @@ def resource_universal_field_with_options(resource_universal_field_no_options):
         )
 
     return resource_universal_field_no_options
+
+@pytest.mark.django_db
+@pytest.fixture
+def resource_with_active_reservations(resource_in_unit):
+    Reservation.objects.bulk_create(
+        [Reservation(
+            resource=resource_in_unit,
+            begin=datetime.datetime(year=2115, month=4, day=4, hour=i, minute=0, second=0),
+            end=datetime.datetime(year=2115, month=4, day=4, hour=i+1, minute=0, second=0)) \
+                for i in range(1,11)
+        ])
+    return resource_in_unit
+
+
+@pytest.fixture
+def resource_create_data(
+    purpose, test_unit,
+    space_resource_type):
+    image = get_test_image_data()
+    return {
+        "public": True,
+        "purposes": [
+            purpose.id
+        ],
+        "name": {
+            "fi": "Test Resource API",
+            "en": "Test Resource API",
+            "sv": "Test Resource API",
+        },
+        "description": {
+            "fi": "Test Resource created through API",
+            "en": "Test Resource created through API",
+            "sv": "Test Resource created through API"
+        },
+        "reservation_info": {
+            "fi": "Test Resource reservation information",
+            "en": "Test Resource reservation information",
+            "sv": "Test Resource reservation information"
+        },
+        "need_manual_confirmation": False,
+        "min_period": "00:30:00",
+        "max_period": "01:00:00",
+        "slot_size": "00:15:00",
+        "authentication": "strong",
+        "people_capacity": "10",
+        "terms_of_use": [],
+        "unit": test_unit.pk,
+        "type": space_resource_type.pk,
+        "images": [get_test_image_payload(image=image)]
+    }
+
+
+@pytest.fixture
+def resource_with_reservable_publish_date(resource_in_unit):
+    ResourcePublishDate.objects.create(
+        begin=datetime.datetime(year=2100, month=12, day=12),
+        end=datetime.datetime(year=2100, month=12, day=13),
+        reservable=True,
+        resource=resource_in_unit
+    )
+    return resource_in_unit
+
+
+@pytest.fixture
+def resource_with_not_reservable_publish_date(resource_in_unit):
+    ResourcePublishDate.objects.create(
+        begin=datetime.datetime(year=2100, month=12, day=12),
+        end=datetime.datetime(year=2100, month=12, day=13),
+        reservable=False,
+        resource=resource_in_unit
+    )
+    return resource_in_unit

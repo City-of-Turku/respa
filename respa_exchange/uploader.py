@@ -3,7 +3,7 @@ Upload Respa reservations into Exchange as calendar events.
 """
 import logging
 
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from resources.models import Reservation
 from respa_exchange.ews.calendar import CreateCalendarItemRequest, DeleteCalendarItemRequest, UpdateCalendarItemRequest
@@ -26,7 +26,7 @@ def _build_subject(res):
         bits.append(res.reserver_name)
     elif res.user_id:
         bits.append(res.user)
-    return " - ".join(force_text(bit) for bit in bits)
+    return " - ".join(force_str(bit) for bit in bits)
 
 
 def _build_body(res):
@@ -80,7 +80,7 @@ def create_on_remote(exres):
         send_notifications = False
 
     ccir = CreateCalendarItemRequest(
-        principal=force_text(exres.principal_email),
+        principal=force_str(exres.principal_email),
         item_props=_get_calendar_item_props(exres),
         send_notifications=send_notifications
     )
@@ -106,7 +106,7 @@ def update_on_remote(exres):
 
     # TODO: Should we try and track the state of the object to avoid sending superfluous updates?
     ucir = UpdateCalendarItemRequest(
-        principal=force_text(exres.principal_email),
+        principal=force_str(exres.principal_email),
         item_id=exres.item_id,
         update_props=_get_calendar_item_props(exres),
         send_notifications=send_notifications

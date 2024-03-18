@@ -9,6 +9,10 @@
         <span class="control-label input-label">{{ form.need_manual_confirmation.label }}</span>
         {{ form.need_manual_confirmation }}
     </div>
+    <div class="official-confirmation">
+        <span class="control-label input-label">{{ form.reservable_by_all_staff.help_text }}</span>
+        {{ form.reservable_by_all_staff }}
+    </div>
     {% trans "Booking form" as metadata_custom_label %}
     {% trans "Reservation home municipality options" as home_municipality_custom_label %}
     {% include "respa_admin/forms/_select.html" with field=form.authentication %}

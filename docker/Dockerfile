@@ -1,5 +1,5 @@
 # Docker image for Respa
-FROM node:14-alpine AS nodebase
+FROM node:18-alpine AS nodebase
 FROM python:3.9-slim-bullseye AS pythonbase
 
 FROM nodebase AS respa_admin_deps

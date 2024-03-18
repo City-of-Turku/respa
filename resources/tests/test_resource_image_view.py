@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pytest
 from django.urls import reverse
-from django.utils.six import BytesIO
+from six import BytesIO
 from PIL import Image
 
 from resources.tests.utils import create_resource_image

@@ -1,4 +1,4 @@
-from django.conf.urls import url
+from django.conf.urls import re_path
 from django.contrib.auth.decorators import user_passes_test
 
 from .permissions import can_login_to_respa_admin
@@ -8,7 +8,7 @@ def admin_url(pattern, view, name):
     """
     Define an URL pattern which requires Respa Admin login.
     """
-    return url(pattern, admin_login_required(view), name=name)
+    return re_path(pattern, admin_login_required(view), name=name)
 
 
 def admin_login_required(function):

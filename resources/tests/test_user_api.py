@@ -56,9 +56,8 @@ def test_user_perms(api_client, list_url, staff_user, user, test_unit):
 
 @pytest.mark.django_db
 def test_inactive_user(api_client, detail_url, user, test_unit):
-    jwt_mixin = JWTMixin()
-    jwt_mixin.jwt_token['sub'] = str(user.uuid)
-    auth = jwt_mixin.get_auth()
+    auth = JWTMixin.get_auth(user)
+
     response = api_client.get(detail_url, HTTP_AUTHORIZATION=auth)
     assert response.status_code == 200
 

@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 import datetime
+import base64
 
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.test.testcases import SimpleTestCase
-from django.utils.six import BytesIO
-from django.utils.encoding import force_text
+from six import BytesIO
+from django.utils.encoding import force_str
+from django.utils.translation import gettext
 from dateutil import parser
 from PIL import Image
 
@@ -131,6 +133,10 @@ def check_only_safe_methods_allowed(api_client, urls):
     check_disallowed_methods(api_client, urls, UNSAFE_METHODS)
 
 
+def assert_translated_response_contains(response, key, text):
+    response_data = response.json()
+    assert response_data[key][0] == gettext(text)
+
 def assert_non_field_errors_contain(response, text):
     """
     Check if any of the response's non field errors contain the given text.
@@ -138,7 +144,7 @@ def assert_non_field_errors_contain(response, text):
     :type response: Response
     :type text: str
     """
-    error_messages = [force_text(error_message) for error_message in response.data['non_field_errors']]
+    error_messages = [force_str(error_message) for error_message in response.data['non_field_errors']]
     assert any(text in error_message for error_message in error_messages)
 
 
@@ -197,3 +203,22 @@ def check_keys(data, expected_keys):
 def is_partial_dict_in_list(partial, dicts):
     partial_items = partial.items()
     return any([partial_items <= d.items() for d in dicts])
+
+
+def get_test_image_payload(
+    image, *,
+    type = "main",
+    caption = "test caption",
+    name = "test_image.jpg"):
+	return {
+		"type": type,
+		"caption": {
+			"fi": caption,
+			"sv": caption,
+			"en": caption
+		},
+		"image": {
+			"name": name,
+			"data": base64.b64encode(image).decode()
+		}
+	}

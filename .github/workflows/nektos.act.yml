@@ -1,0 +1,114 @@
+name: Nektos Act
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Manual tests dispatch'
+
+jobs:
+  setupDb:
+    runs-on: [ ubuntu-20.04 ]
+    services:
+      postgres:
+        image: postgis/postgis:11-2.5
+        env:
+          POSTGRES_USER: respa
+          POSTGRES_PASSWORD: respa
+          POSTGRES_DB: respa
+          DEBUG: true
+          SECRET_KEY: respa_secret
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Setup database for nektos act
+        if: ${{ env.ACT }}
+        run: |
+          sudo apt-get update
+          sudo apt-get -yqq install postgresql postgresql-contrib
+          sudo service postgresql start || true
+          psql -h localhost -U postgres -c "CREATE DATABASE respa WITH OWNER respa" || true
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -yqq install gettext python-dev libpq-dev gdal-bin
+          psql -h localhost -U respa -d template1 -c "CREATE EXTENSION IF NOT EXISTS hstore;"
+          psql -h localhost -U respa -d respa -c "CREATE EXTENSION IF NOT EXISTS hstore;"
+        env:
+          PGPASSWORD: respa
+  runPython38:
+    runs-on: [ ubuntu-20.04 ]
+    strategy:
+      matrix:
+        python-version: [ "3.8" ]
+    needs: setupDb
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get -yqq install gettext python-dev libpq-dev gdal-bin
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Apply migrations
+        env:
+          DATABASE_URL: postgis://respa:respa@localhost/respa
+          DEBUG: true
+          SECRET_KEY: respa_secret
+        run: |
+          python3 manage.py migrate
+      - name: Compile translations
+        run: |
+          python3 manage.py compilemessages --locale en --locale fi --locale sv
+      - name: Run tests
+        env:
+          DATABASE_URL: postgis://respa:respa@localhost/respa
+          DEBUG: true
+          SECRET_KEY: respa_secret
+        run: |
+          pytest --cov . --doctest-modules -x
+  build:
+    runs-on: [ ubuntu-20.04 ]
+    strategy:
+      matrix:
+        python-version: [ "3.9" ]
+    needs: runPython38
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get -yqq install gettext python-dev libpq-dev gdal-bin
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Apply migrations
+        env:
+          DATABASE_URL: postgis://respa:respa@localhost/respa
+          DEBUG: true
+          SECRET_KEY: respa_secret
+        run: |
+          python3 manage.py migrate
+      - name: Compile translations
+        run: |
+          python3 manage.py compilemessages --locale en --locale fi --locale sv
+      - name: Run tests
+        env:
+          DATABASE_URL: postgis://respa:respa@localhost/respa
+          DEBUG: true
+          SECRET_KEY: respa_secret
+        run: |
+          pytest --cov . --doctest-modules -x --reuse-db
+

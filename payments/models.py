@@ -10,7 +10,7 @@ from django.utils import translation
 from django.utils.formats import localize
 from django.utils.functional import cached_property
 from django.utils.timezone import now, utc
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from resources.models import Reservation, Resource
@@ -439,7 +439,7 @@ class Product(models.Model):
 
         price = self.price if not product_cg else product_cg.price
         time_slot_prices = TimeSlotPrice.objects.filter(product=self)
-        tz = self.resources.first().unit.get_tz()
+        tz = self.resources.with_soft_deleted.first().unit.get_tz()
         local_tz_begin = begin.astimezone(tz)
         local_tz_end = end.astimezone(tz)
         if self.price_type == Product.PRICE_FIXED:
@@ -494,7 +494,7 @@ class Product(models.Model):
         price = self.price if not product_cg else product_cg.price
         price_tax_free = self.price_tax_free if not product_cg else product_cg.price_tax_free
         time_slot_prices = TimeSlotPrice.objects.filter(product=self)
-        tz = self.resources.first().unit.get_tz()
+        tz = self.resources.with_soft_deleted.first().unit.get_tz()
         local_tz_begin = begin.astimezone(tz)
         local_tz_end = end.astimezone(tz)
         # dict with keys for each unique price.
@@ -609,6 +609,9 @@ class Product(models.Model):
                         pretax=self.get_pretax_price_context(price, rounded=False),
                         taxfree_price=self.price_tax_free
                     )
+                    if quantity > 1:
+                        # quantity is only defined/>1 if there are multiples of the same product
+                        detailed_pricing['default']['quantity'] = quantity
                 slot_begin += check_interval
 
             detailed_pricing = finalize_price_data(detailed_pricing, self.price_type, self.price_period)
@@ -665,9 +668,11 @@ class OrderQuerySet(models.QuerySet):
     def update_expired(self) -> int:
         earliest_allowed_timestamp = now() - timedelta(minutes=settings.RESPA_PAYMENTS_PAYMENT_WAITING_TIME)
         log_entry_timestamps = OrderLogEntry.objects.filter(order=OuterRef('pk')).order_by('id').values('timestamp')
+        # Expire only online payments. Cash payments should not expire.
         too_old_waiting_orders = self.filter(
             state=Order.WAITING,
-            is_requested_order=False
+            is_requested_order=False,
+            payment_method=Order.ONLINE
         ).annotate(
             created_at=Subquery(
                 log_entry_timestamps[:1]
@@ -801,11 +806,12 @@ class Order(models.Model):
     def get_price(self) -> Decimal:
         total_sum = sum(order_line.get_price() for order_line in self.get_order_lines())
         # The final total is rounded, NO ROUNDING BEFORE THIS.
-        return total_sum.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return Decimal(total_sum).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     def set_state(
             self, new_state: str, log_message: str = None,
-            save: bool = True, update_reservation_state: bool = True
+            save: bool = True, update_reservation_state: bool = True,
+            **kwargs
         ) -> None:
         assert new_state in (Order.WAITING, Order.CONFIRMED, Order.REJECTED, Order.EXPIRED, Order.CANCELLED)
 
@@ -840,9 +846,9 @@ class Order(models.Model):
 
                 if update_reservation_state:
                     if new_state == Order.CONFIRMED:
-                        self.reservation.set_state(Reservation.CONFIRMED, None)
+                        self.reservation.set_state(Reservation.CONFIRMED, kwargs.get('user', self.reservation.user))
                     elif new_state in (Order.REJECTED, Order.EXPIRED, Order.CANCELLED):
-                        self.reservation.set_state(Reservation.CANCELLED, None)
+                        self.reservation.set_state(Reservation.CANCELLED, kwargs.get('user', self.reservation.user))
 
                 if save:
                     self.save()

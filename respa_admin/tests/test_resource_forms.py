@@ -42,7 +42,7 @@ def test_period_formset_with_invalid_days_data(valid_resource_form_data):
         period_formset_with_days = get_period_formset(request)
     assert period_formset_with_days.is_valid() is False
     assert period_formset_with_days.errors == [
-        {'__all__': ['Tarkista aukioloajat.']}
+        {'__all__': ['Tämä kenttä vaaditaan.']}
     ]
     assert period_formset_with_days.forms[0].days.errors == [
         {'weekday': ['Tämä kenttä vaaditaan.']}
@@ -67,7 +67,7 @@ def test_create_resource_with_invalid_data_returns_errors(admin_client, empty_re
         'price_type': ['Tämä kenttä vaaditaan.']
     }
     assert response.context['period_formset_with_days'].errors == [
-        {'__all__': ['Tarkista aukioloajat.']}
+        {'__all__': ['Tämä kenttä vaaditaan.', 'Aloitus- tai sulkemisaika puuttuu']}
     ]
 
 
@@ -181,6 +181,7 @@ def test_editing_resource_via_form_view(admin_client, valid_resource_form_data):
     assert resource.name_sv != edited_resource.name_sv
     assert edited_resource.name_fi == 'Edited name'
     assert resource.name_fi != edited_resource.name_fi
+
 
 @pytest.mark.django_db
 def test_editing_existing_resource_via_form_view(admin_client, resource_in_unit_form_data, resource_in_unit):

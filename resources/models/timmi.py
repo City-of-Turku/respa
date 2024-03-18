@@ -1,7 +1,7 @@
 from django.contrib.gis.db import models
 from base64 import b64encode, b64decode
 from payments.models import Order
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from resources.timmi.exceptions import MissingSapCodeError, MissingSapUnitError
 
 import json

@@ -1,17 +1,20 @@
 import logging
 from io import StringIO
 from contextlib import redirect_stdout
-from django.conf.urls import url
+from django.conf import settings
+from django.conf.urls import re_path
 from django.contrib import admin
 from django.contrib.admin import site as admin_site
 from django.contrib.admin.utils import unquote
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.gis.admin import OSMGeoAdmin
 from django.core.management import call_command
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.utils.translation import ugettext_lazy as _
+from django.http.request import HttpRequest
+from django.utils.translation import gettext_lazy as _
 from django import forms
 from django.template.response import TemplateResponse
 from guardian import admin as guardian_admin
@@ -28,7 +31,7 @@ from ..models import (
     ReservationHomeMunicipalityField, ReservationHomeMunicipalitySet, Resource, ResourceTag, ResourceAccessibility,
     ResourceEquipment, ResourceGroup, ResourceImage, ResourceType, TermsOfUse,
     Unit, UnitAuthorization, UnitIdentifier, UnitGroup, UnitGroupAuthorization,
-    MaintenanceMessage, UniversalFormFieldType, ResourceUniversalField, ResourceUniversalFormOption,
+    UniversalFormFieldType, ResourceUniversalField, ResourceUniversalFormOption, ResourcePublishDate
 )
 from ..models.utils import generate_id
 from munigeo.models import Municipality
@@ -118,6 +121,15 @@ class ResourceTagInline(admin.TabularInline):
     verbose_name_plural = _('Keywords')
     extra = 0
 
+
+class ResourcePublishDateInline(admin.TabularInline):
+    model = ResourcePublishDate
+    fields = ('begin', 'end', 'reservable')
+    verbose_name = _('Publish date')
+    verbose_name_plural = _('Publish dates')
+    extra = 0
+    max_num = 1
+
 def restore_resources(modeladmin, request, queryset):
     queryset.restore()
 restore_resources.short_description = _('Restore selected resources')
@@ -126,17 +138,25 @@ def delete_resources(modeladmin, request, queryset):
     queryset.delete()
 delete_resources.short_description = _('Delete selected resources')
 
+if settings.DEBUG:
+    def hard_delete_resources(modeladmin, request, queryset):
+        queryset.delete(hard_delete=True)
+    hard_delete_resources.short_description = _('Hard delete selected resources')
 
-class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin, HttpsFriendlyGeoAdmin):
+
+class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, 
+                    TranslationAdmin, HttpsFriendlyGeoAdmin):
     default_lon = 2478871  # Central Railway Station in EPSG:3857
     default_lat = 8501259
     default_zoom = 12
 
-    list_display = ('name', 'unit', 'public', 'reservable', 'soft_deleted')
-    list_filter = ('unit', 'public', 'reservable', 'soft_deleted')
+    list_display = ('name', 'unit', '_public', 'reservable', 'soft_deleted')
+    list_filter = ('unit', '_public', 'reservable', 'soft_deleted')
     list_select_related = ('unit',)
     ordering = ('unit', 'name',)
     actions = [delete_resources, restore_resources]
+    if settings.DEBUG:
+        actions.append(hard_delete_resources)
 
     fieldsets = (
         (None, {
@@ -148,7 +168,8 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
         (_('Resource Information'), {
             'fields': (
                 'is_external',
-                'public', 'reservable',
+                '_public', 'reservable',
+                'reservable_by_all_staff',
                 'name', 'description',
                 'authentication',
                 'min_age', 'max_age',
@@ -166,6 +187,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
         (_('Reservation Information'), {
             'fields': (
                 'need_manual_confirmation',
+                'send_sms_notification',
                 'reservation_metadata_set',
                 'reservation_home_municipality_set',
                 'reservable_min_days_in_advance',
@@ -208,16 +230,19 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
         form = super().get_form(request, obj=obj, **kwargs)
         if 'id' in form.base_fields:
             form.base_fields['id'].initial = generate_id()
-        self.inlines = self.get_inlines(obj)
+        self.inlines = self._get_inlines(obj)
         return form
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.is_external:
             return [field.name for field in self.model._meta.fields if field.name != 'is_external'] + [ 'tags', 'purposes' ]
+        if obj and obj.publish_date:
+            return ['_public', 'reservable']
         return super().get_readonly_fields(request, obj)
 
-    def get_inlines(self, obj):
+    def _get_inlines(self, obj):
         return [] if obj and obj.is_external else [
+            ResourcePublishDateInline,
             PeriodInline,
             ResourceEquipmentInline,
             ResourceGroupInline,
@@ -228,7 +253,7 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transla
 
     def has_change_permission(self, request, obj=None):
         return super().has_change_permission(request, obj) and (obj and not obj.soft_deleted)
-    
+
     def has_delete_permission(self, request, obj=None):
         return False
 
@@ -260,9 +285,9 @@ class UnitAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, FixedGuarde
     def get_urls(self):
         urls = super(UnitAdmin, self).get_urls()
         extra_urls = [
-            url(r'^tprek_import/$', self.admin_site.admin_view(self.tprek_import),
+            re_path(r'^tprek_import/$', self.admin_site.admin_view(self.tprek_import),
                 name='tprek_import'),
-            url(r'^libraries_import/$', self.admin_site.admin_view(self.libraries_import),
+            re_path(r'^libraries_import/$', self.admin_site.admin_view(self.libraries_import),
                 name='libraries_import'),
         ]
         return extra_urls + urls
@@ -344,9 +369,23 @@ class EquipmentAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Transl
 class ResourceEquipmentAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin):
     fields = ('resource', 'equipment', 'description', 'data')
 
+class ReservationReminderInline(admin.StackedInline):
+    model = ReservationReminder
+    fields = ('reminder_date', )
+    readonly_fields = ('reminder_date', )
+    show_change_link = True
+    extra = 0
+
+    def __init__(self, *args, **kwargs):
+        super(ReservationReminderInline, self).__init__(*args, **kwargs)
+        for perm in ('change', 'add'):
+            setattr(self, 'has_%s_permission' % perm, lambda *args, **kwargs: False)
 
 class ReservationAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, ExtraReadonlyFieldsOnUpdateMixin,
                        admin.ModelAdmin):
+    inlines = [
+        ReservationReminderInline,
+    ]
     list_display = ('__str__', 'type')
     list_filter = ('type',)
     extra_readonly_fields_on_update = ('access_code',)
@@ -377,13 +416,22 @@ class TermsOfUseAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Trans
 
 
 class ReservationMetadataSetForm(forms.ModelForm):
+    supported_fields = forms.ModelMultipleChoiceField(
+        ReservationMetadataField.objects.all(),
+        widget=FilteredSelectMultiple(_('Supported fields'), False),
+        required=False)
+    required_fields = forms.ModelMultipleChoiceField(
+        ReservationMetadataField.objects.all(),
+        widget=FilteredSelectMultiple(_('Required fields'), False),
+        required=False)
+
     class Meta:
         model = ReservationMetadataSet
         exclude = CommonExcludeMixin.exclude + ('id',)
 
     def clean(self):
-        supported = set(self.cleaned_data.get('supported_fields'))
-        required = set(self.cleaned_data.get('required_fields'))
+        supported = set(self.cleaned_data.get('supported_fields', []))
+        required = set(self.cleaned_data.get('required_fields', []))
         if not required.issubset(supported):
             raise ValidationError(_('Required fields must be a subset of supported fields'))
         return self.cleaned_data
@@ -426,9 +474,9 @@ class MunicipalityAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, adm
     def get_urls(self):
         urls = super(MunicipalityAdmin, self).get_urls()
         extra_urls = [
-            url(r'^municipalities_import/$', self.admin_site.admin_view(self.municipalities_import),
+            re_path(r'^municipalities_import/$', self.admin_site.admin_view(self.municipalities_import),
                 name='municipalities_import'),
-            url(r'^divisions_helsinki_import/$', self.admin_site.admin_view(self.divisions_helsinki_import),
+            re_path(r'^divisions_helsinki_import/$', self.admin_site.admin_view(self.divisions_helsinki_import),
                 name='divisions_helsinki_import'),
         ]
         return extra_urls + urls
@@ -503,8 +551,27 @@ class ReservationMetadataFieldAdmin(admin.ModelAdmin):
             ]
         return super().formfield_for_dbfield(db_field, **kwargs)
 
+
+class ReservationInline(admin.StackedInline):
+    model = Reservation
+    fields = ('resource', 'begin', 'end', )
+    readonly_fields = ('resource', 'begin', 'end', )
+    show_change_link = True
+    extra = 0
+
+    def __init__(self, *args, **kwargs):
+        super(ReservationInline, self).__init__(*args, **kwargs)
+        for perm in ('change', 'add'):
+            setattr(self, 'has_%s_permission' % perm, lambda *args, **kwargs: False)
+
 class ReservationBulkAdmin(admin.ModelAdmin):
-    pass
+    inlines = [
+        ReservationInline
+    ]
+    readonly_fields = (
+        'created_by', 'created_at',
+        'modified_by', 'modified_at',
+    )
 
 class ReservationReminderAdmin(admin.ModelAdmin):
     extra_readonly_fields_on_update = ('reservation_type',)
@@ -518,32 +585,6 @@ class RespaTokenAdmin(admin.ModelAdmin):
     raw_id_fields = ('user',)
 
 
-class MaintenanceMessageAdminForm(forms.ModelForm):
-    class Meta:
-        model = MaintenanceMessage
-        fields = ('start', 'end', 'message', )
-
-    def clean(self):
-        start = self.cleaned_data['start']
-        end = self.cleaned_data['end']
-        query = Q(end__gt=start, start__lt=end)
-        if self.instance and self.instance.pk:
-            query &= ~Q(pk=self.instance.pk)
-        collision = MaintenanceMessage.objects.filter(query)
-        if collision.exists():
-            raise ValidationError(_('maintenance message already exists.'))
-
-class MaintenanceMessageAdmin(TranslationAdmin):
-    form = MaintenanceMessageAdminForm
-    fieldsets = (
-        (_('General'), {
-            'fields': (
-                'start',
-                'end',
-                'message'
-            ),
-        }),
-    )
 
 admin_site.register(ResourceImage, ResourceImageAdmin)
 admin_site.register(Resource, ResourceAdmin)
@@ -573,6 +614,5 @@ admin.site.register(ResourceAccessibility, ResourceAccessibilityAdmin)
 if admin.site.is_registered(Token):
     admin.site.unregister(Token)
 admin_site.register(Token, RespaTokenAdmin)
-admin_site.register(MaintenanceMessage, MaintenanceMessageAdmin)
 admin_site.register(UniversalFormFieldType, UniversalFieldAdmin)
 admin_site.register(ResourceUniversalFormOption, ResourceUniversalFormOptionAdmin)

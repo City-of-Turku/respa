@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.conf.urls import url as unauthorized_url
+from django.conf.urls import re_path as unauthorized_url
 from django.urls import include
 
 from . import views

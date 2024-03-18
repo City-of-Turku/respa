@@ -29,6 +29,7 @@ export function initializeEventHandlers() {
   resourceStaffEmailsHandler();
   resourceTagsHandler();
   bindSoftDelete();
+  setTimeout(bindScheduledPublishBtn, 50);
 }
 
 export function getEmptyImage() {
@@ -403,4 +404,152 @@ function bindSoftDelete() {
       },
   });
   })
+}
+
+function bindScheduledPublishBtn() {
+  let checkbox = $("#add-new-scheduled-publish-date");
+  let manual = {
+    publish: $("#id_public"),
+    reservable: $("#id_reservable")
+  };
+
+  let publishDateReservable = $("#publish-date-reservable");
+
+  let dropDownIcon = {
+    public: {
+      element: $("#public-dropdown-icon"),
+      value: $("#public-dropdown-icon").attr('class')
+    },
+    reservable: {
+      element: $("#reservable-dropdown-icon")
+    }
+  }
+
+  publishDateReservable.find("input[type=radio]").each((_, radio) => {
+    $(radio).on('click', (e) => {
+      manual.reservable
+        .find('option')
+        .removeAttr('selected');
+
+      manual.reservable
+        .find(`option[value=${$(radio).val()}]`)
+        .attr('selected', '')
+        .prop('selected', true);
+
+      if ($(radio).val() === "True") {
+        dropDownIcon.reservable.element
+        .removeAttr('class')
+        .addClass('shape-success');
+      } else {
+        dropDownIcon.reservable.element
+        .removeAttr('class')
+        .addClass('shape-danger');
+      }
+
+      manual.reservable.trigger('change');
+    });
+  });
+
+  let automaticPublishOption = $(`<option value="automatic" selected="">${{
+    'fi': 'Ajastettu julkaisu',
+    'en': 'Scheduled publish',
+    'sv': 'Planerad publicering"'
+  }[SELECTED_LANGUAGE]}</option>`);
+
+  if ($(checkbox).length === 0) {
+    dropDownIcon.public.element
+    .removeAttr('class')
+    .addClass('glyphicon glyphicon-time')
+    .removeAttr('style')
+    .attr('style', 'filter: invert(1);');
+  } else {
+    var selectedOption;
+
+    // Page load
+    if ($(checkbox).is(':checked')) {
+      $("#field-groups").show();
+      dropDownIcon.public.value = dropDownIcon.public.element.attr('class');
+      selectedOption = $(manual.publish).find(':selected');
+
+      dropDownIcon.public.element
+        .removeAttr('class')
+        .addClass('glyphicon glyphicon-time')
+        .removeAttr('style')
+        .attr('style', 'filter: invert(1);');
+      manual.publish
+        .find('option')
+        .removeAttr('selected');
+
+      manual.publish.append(automaticPublishOption);
+
+      Object.values(manual).forEach(input => {
+        input
+          .attr('disabled', '')
+          .parent().attr('disabled', '');
+        input.parent()
+          .addClass('select-dropdown-disabled')
+          .removeClass('select-dropdown');
+      });
+
+      publishDateReservable
+        .find("input[type=radio]:checked").trigger('click');
+    }
+
+    // Click event
+    $(checkbox).on('click', (e) => {
+      let fieldGroupsContainer = $("#field-groups");
+      if (fieldGroupsContainer.is(':visible')) {
+        fieldGroupsContainer.hide();
+        automaticPublishOption.remove();
+        dropDownIcon.public.element
+          .removeAttr('class')
+          .addClass(dropDownIcon.public.value)
+          .removeAttr('style');
+
+        $(selectedOption)
+          .attr('selected', '')
+          .prop('selected', true);
+          
+        manual.publish.trigger('change');
+
+        Object.values(manual).forEach(input => {
+          input
+            .removeAttr('disabled')
+            .parent().removeAttr('disabled');
+          input.parent()
+            .addClass('select-dropdown')
+            .removeClass('select-dropdown-disabled');
+        });
+      } else {
+        fieldGroupsContainer.show();
+        dropDownIcon.public.value = dropDownIcon.public.element.attr('class');
+        selectedOption = $(manual.publish).find(':selected');
+
+        dropDownIcon.public.element
+          .removeAttr('class')
+          .addClass('glyphicon glyphicon-time')
+          .removeAttr('style')
+          .attr('style', 'filter: invert(1);');
+
+        manual.publish
+          .find('option')
+          .removeAttr('selected');
+        manual.publish.append(automaticPublishOption);
+
+
+        Object.values(manual).forEach(input => {
+          input
+            .attr('disabled', '')
+            .parent().attr('disabled', '');
+          input.parent()
+            .addClass('select-dropdown-disabled')
+            .removeClass('select-dropdown');
+        });
+
+        publishDateReservable
+          .find("input[type=radio]:checked")
+          .trigger('click');
+      }
+    });
+  }
 }

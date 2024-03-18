@@ -30,7 +30,7 @@ jobs:
           - 5432:5432
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9"]
+        python-version: [ "3.8", "3.9" ]
     steps:
       - uses: actions/checkout@v2
       - name: Setup Python
@@ -66,3 +66,6 @@ jobs:
           SECRET_KEY: respa_secret
         run: |
           pytest --cov . --doctest-modules
+      - name: Codecov
+        uses: codecov/codecov-action@v3.1.1
+

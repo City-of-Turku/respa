@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import pytest
-import datetime 
+import datetime
 from django.utils import timezone
 from django.urls import reverse
 
@@ -25,3 +25,24 @@ def test_maintenance_message(client, maintenance_message):
     results = response.data['results']
     assert len(results) == 0
 
+
+@pytest.mark.django_db
+def test_maintenance_message_is_maintenance_mode_on_when_on(client, maintenance_message, maintenance_mode):
+    response = client.get(LIST_URL, HTTP_ACCEPT='text/html')
+    assert response.status_code == 200
+    results = response.data['results']
+    assert len(results) == 1
+    message = results[0]
+    assert message != None
+    assert message['is_maintenance_mode_on'] == True
+
+
+@pytest.mark.django_db
+def test_maintenance_message_is_maintenance_mode_on_when_off(client, maintenance_message):
+    response = client.get(LIST_URL, HTTP_ACCEPT='text/html')
+    assert response.status_code == 200
+    results = response.data['results']
+    assert len(results) == 1
+    message = results[0]
+    assert message != None
+    assert message['is_maintenance_mode_on'] == False
