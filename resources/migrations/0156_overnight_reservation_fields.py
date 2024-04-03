@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='resource',
             name='overnight_end_time',
-            field=models.TimeField(blank=True, null=True, verbose_name='Overnight start time'),
+            field=models.TimeField(blank=True, null=True, verbose_name='Overnight end time'),
         ),
         migrations.AddField(
             model_name='resource',

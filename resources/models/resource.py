@@ -393,7 +393,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
                                                                 default=False, blank=False,
                                                                 help_text=_('Allow overnight reservations for this resource'))
     overnight_start_time = models.TimeField(verbose_name=_('Overnight start time'), null=True, blank=True)
-    overnight_end_time = models.TimeField(verbose_name=_('Overnight start time'), null=True, blank=True)
+    overnight_end_time = models.TimeField(verbose_name=_('Overnight end time'), null=True, blank=True)
 
     external_reservation_url = models.URLField(
         verbose_name=_('External reservation URL'),
