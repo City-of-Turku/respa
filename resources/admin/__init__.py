@@ -186,6 +186,9 @@ class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin,
         }),
         (_('Reservation Information'), {
             'fields': (
+                'overnight_reservations',
+                'overnight_start_time',
+                'overnight_end_time',
                 'need_manual_confirmation',
                 'send_sms_notification',
                 'reservation_metadata_set',
