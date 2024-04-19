@@ -3637,3 +3637,40 @@ def test_reservation_cooldown_before_first_reservation(
     assert response.status_code == 400
     assert_translated_response_contains(response, 'cooldown', 'Cannot be reserved during cooldown')
 
+@pytest.mark.django_db
+def test_overnight_reservation(
+    resource_with_overnight_reservations,
+    reservation_data, api_client, user,
+    list_url):
+    reservation_data['begin'] = '2115-04-04T08:00:00+02:00'
+    reservation_data['end'] = '2115-04-05T09:00:00+02:00'
+    reservation_data['resource'] = resource_with_overnight_reservations.pk
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+@pytest.mark.django_db
+def test_overnight_reservation_disabled(
+    resource_with_overnight_reservations,
+    reservation_data, api_client, user,
+    list_url):
+    resource_with_overnight_reservations.overnight_reservations = False
+    resource_with_overnight_reservations.save()
+    reservation_data['begin'] = '2115-04-04T08:00:00+02:00'
+    reservation_data['end'] = '2115-04-05T09:00:00+02:00'
+    reservation_data['resource'] = resource_with_overnight_reservations.pk
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 400
+
+@pytest.mark.django_db
+def test_too_long_overnight_reservation_disallowed(
+    resource_with_overnight_reservations,
+    reservation_data, api_client, user,
+    list_url):
+    reservation_data['begin'] = '2115-04-04T08:00:00+02:00'
+    reservation_data['end'] = '2115-04-06T09:00:00+02:00'
+    reservation_data['resource'] = resource_with_overnight_reservations.pk
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 400
