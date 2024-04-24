@@ -779,7 +779,8 @@ class UnitAuthorizationForm(forms.ModelForm):
         can_approve_initial_value = False
         if self.instance.pk:
             unit = self.instance.subject
-            user_has_unit_auth = self.request.user.unit_authorizations.to_unit(unit).admin_level().exists()
+            user_has_unit_auth = self.request.user.unit_authorizations.to_unit(unit).admin_level().exists() \
+                or self.request.user.is_superuser
             user_has_unit_group_auth = self.request.user.unit_group_authorizations.to_unit(unit).admin_level().exists()
             can_approve_initial_value = permission_checker.has_perm(
                 "unit:can_approve_reservation", self.instance.subject
@@ -795,7 +796,8 @@ class UnitAuthorizationForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         unit = cleaned_data.get('subject')
-        user_has_unit_auth = self.request.user.unit_authorizations.to_unit(unit).admin_level().exists()
+        user_has_unit_auth = self.request.user.unit_authorizations.to_unit(unit).admin_level().exists() \
+            or self.request.user.is_superuser
         user_has_unit_group_auth = self.request.user.unit_group_authorizations.to_unit(unit).admin_level().exists()
         if self.has_changed():
             if not user_has_unit_auth and not user_has_unit_group_auth:
