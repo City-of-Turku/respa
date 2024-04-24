@@ -641,7 +641,7 @@ class Reservation(ModifiableModel):
                 all_products = []
                 # Iterate through each order/product in order_lines.
                 # Each order/product is appended to a list that is then set as the value of context['order'].
-                for item in context["order"]["order_lines"]:
+                for order_line in order.get_order_lines():
                     product = {}
                     product_fields = (
                         'id', 'created_at', 'reservation_name',
@@ -651,55 +651,33 @@ class Reservation(ModifiableModel):
                         'decimal_hours', 'pretax_price', 'pretax_price_num',
                         'tax_price', 'tax_price_num', 'detailed_price'
                     )
-                    '''
-                    product_values
-
-                    These keys are used in the email template to display order/payment information.
-
-                    id                  -   id of this order
-                    created_at          -   creation date of the parent order
-                    reservation_name    -   name of resource
-                    name                -   name of this product
-                    quantity            -   quantity of products, see function comments for explanation.
-                    price               -   single unit price of this product
-                    unit_price          -   total price of this product, string e.g. 75,00
-                    unit_price_num      -   total price of this product, float e.g. 75.00
-                    tax_percentage      -   tax percentage of this product
-                    price_type          -   price type of product, per period / fixed
-                    price_period        -   price period of product if type=per period, e.g. 00:30:00 for 30min
-                    order_number        -   id of parent order
-                    pretax_price        -   price amount without tax, string e.g. 6,05 if total price is 7,5 with 24% vat
-                    pretax_price_num    -   price amount without tax, float e.g. 6.05. See function comments for further explanation.
-                    tax_price           -   tax amount, string e.g. 1,45 if total price is 7,5 with 24% vat
-                    tax_price_num       -   tax amount, float e.g. 1.45. See function comments for further explanation.
-                    detailed price      -   contains detailed price info, timeslot specific prices used etc
-                    '''
                     product_values = {
-                        'id': item["product"]["id"],
+                        'id': order_line.product.id,
                         'created_at': self.created_at.astimezone(self.resource.unit.get_tz()).strftime('%d.%m.%Y %H:%M:%S'),
-                        'reservation_name': context["resource"],
-                        'name': item["product"]["name"],
-                        'quantity': get_order_quantity(item),
-                        'price': item["product"]["price"],
-                        'unit_price': item["unit_price"],
-                        'unit_price_num': float(item["unit_price"].replace(',','.')),
-                        'tax_percentage': item["product"]["tax_percentage"],
-                        'price_type': item["product"]["price_type"],
-                        'price_period': item["product"]["price_period"],
-                        'order_number': context["order"]["id"],
-                        'pretax_price': item["product"]["pretax_price"],
-                        'pretax_price_num': get_order_pretax_price(item),
-                        'tax_price': item["product"]["tax_price"],
-                        'tax_price_num': get_order_tax_price(item),
-                        'detailed_price': item["detailed_price"],
+                        'reservation_name': order.reservation.resource,
+                        'name': order_line.product.name,
+                        'quantity': order_line.quantity,
+                        'price': order_line.product.price,
+                        'unit_price': order_line.get_unit_price(),
+                        'unit_price_num': order_line.get_unit_price(),
+                        'tax_percentage': order_line.product.tax_percentage,
+                        'price_type': order_line.product.price_type,
+                        'price_period': order_line.product.price_period,
+                        'order_number': order.id,
+                        'pretax_price': order_line.product.get_pretax_price(),
+                        'pretax_price_num': order_line.product.get_pretax_price(),
+                        'tax_price': order_line.product.get_tax_price(),
+                        'tax_price_num': order_line.product.get_tax_price(),
+                        'detailed_price': order_line.get_detailed_price()
                     }
+
 
                     for field in product_fields:
                         if field == 'decimal_hours':
                             # price_period is None if price_type is 'fixed'
-                            if item["product"]["price_period"] is not None:
+                            if order_line.product.price_period is not None:
                                 # list of integers based on price_period string values, e.g. string '01:30:00' --> list [1,30,0]
-                                price_unit_time = [int(x) for x in item["product"]["price_period"].split(':')]
+                                price_unit_time = [int(x) for x in order_line.product.fmt_price_period().split(':')]
                                 # calculate decimal time from list integers e.g. based on previous values, ((1*60) + 30) / 60 = 1.5
                                 decimal_hours = ((price_unit_time[0] * 60) + price_unit_time[1]) / 60
                                 product[field] = decimal_hours
@@ -709,17 +687,17 @@ class Reservation(ModifiableModel):
                         elif field == 'detailed_price':
                             product[field] = product_values[field]
                             conditional_quantity = 1
-                            if item['product']['price_type'] == 'per_period':
-                                product_quantity = list(set([x['quantity'] for x in item['detailed_price'].values() if 'quantity' in x]))
+                            if order_line.product.price_type == 'per_period':
+                                product_quantity = order_line.quantity
                                 # product_quantity is only truthy if there are 2 or more of the product.
-                                if len(product_quantity) > 0:
-                                    product['product_quantity'] = float(product_quantity[0])
-                                    conditional_quantity = product_quantity[0]
+                                if product_quantity > 1:
+                                    product['product_quantity'] = order_line.quantity
+                                    conditional_quantity = order_line.quantity
                                 else:
                                     # only 1 of the product
-                                    product['product_quantity'] = float(1)
+                                    product['product_quantity'] = 1
 
-                            values = calculate_final_product_sums(product=item, quantity=conditional_quantity)
+                            values = calculate_final_product_sums(product=order_line.get_detailed_price(), quantity=conditional_quantity)
                             product['product_taxfree_total'] = values['product_taxfree_total']
                             product['product_tax_total'] = values['product_tax_total']
 

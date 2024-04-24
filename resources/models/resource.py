@@ -1004,6 +1004,12 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
             raise ValidationError({
                 'cash_payments_allowed': _('Cash payments are only allowed when reservations need manual confirmation')
             })
+        
+        if self.overnight_reservations:
+            if self.overnight_end_time > self.overnight_start_time:
+                raise ValidationError({
+                    'overnight_reservations': _('Overnight reservation end time cannot be greater than start time')
+                })
 
         if self.timmi_resource and not self.timmi_room_id:
             TimmiManager().get_room_part_id(self)

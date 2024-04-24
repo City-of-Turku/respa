@@ -654,7 +654,7 @@ def calculate_final_product_sums(product: dict, quantity: int = 1):
     '''
     tax_raw = 0
     taxfree_price = 0
-    for x in product['detailed_price'].values():
+    for x in product.values():
         tax_raw += x['tax_total']
         taxfree_price += x['taxfree_price_total']
 
@@ -700,7 +700,7 @@ def calculate_final_order_sums(all_products):
 
         # calculate exact vat value for total taxfree price, 36.30 * 24 / 100
         # this contains all of the decimals.
-        exact_vat_amount_value = (perc_taxfree_total * Decimal(perc.replace(',','.'))) / 100
+        exact_vat_amount_value = (perc_taxfree_total * perc) / 100
 
         # rounded version of the VAT total
         rounded_vat_amount_value = exact_vat_amount_value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
