@@ -1071,7 +1071,7 @@ msgstr ""
 "En URL till ett externt bokningssystem om den här resursen hanteras "
 "annorstädes"
 
-msgid "You cannot make a multi day reservation"
+msgid "You cannot make a multiday reservation"
 msgstr "Du kan inte boka flera dagar"
 
 msgid "You must start and end the reservation during opening hours"
@@ -2215,3 +2215,18 @@ msgstr "Påminnelsedatum"
 
 msgid "Cannot be reserved during cooldown"
 msgstr "Bokning kan inte göras under bokningsuppehåll"
+
+msgid "Overnight reservations"
+msgstr "Övernattning bokningar"
+
+msgid "Allow overnight reservations for this resource"
+msgstr "Tillåt övernattning bokningar för denna resurs"
+
+msgid "Overnight start time"
+msgstr "Starttid för övernattning"
+
+msgid "Overnight end time"
+msgstr "Sluttid för övernattning"
+
+msgid "Overnight reservation end time cannot be greater than start time"
+msgstr "Sluttiden för övernattning kan inte vara senare än starttiden"

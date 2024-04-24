@@ -1064,7 +1064,7 @@ msgid ""
 msgstr ""
 "Ulkoisen varausjärjestelmän osoite jos tätä resurssia hallitaan muualla"
 
-msgid "You cannot make a multi day reservation"
+msgid "You cannot make a multiday reservation"
 msgstr "Varaus ei saa ulottua useammalle päivälle"
 
 msgid "You must start and end the reservation during opening hours"
@@ -2274,3 +2274,18 @@ msgstr "Muistutuksen päivämäärä"
 
 msgid "Cannot be reserved during cooldown"
 msgstr "Varausta ei voi tehdä varaustauon aikana"
+
+msgid "Overnight reservations"
+msgstr "Yön yli varaukset"
+
+msgid "Allow overnight reservations for this resource"
+msgstr "Salli yön yli varaukset tälle resurssille"
+
+msgid "Overnight start time"
+msgstr "Yön yli varauksen aloitusaika"
+
+msgid "Overnight end time"
+msgstr "Yön yli varauksen päättymisaika"
+
+msgid "Overnight reservation end time cannot be greater than start time"
+msgstr "Yön yli varauksen päättymisaika ei voi olla aloitusaikaa pidempi"

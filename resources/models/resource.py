@@ -507,7 +507,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         is_multiday_reservation = begin.date() != end.date()
 
         if is_multiday_reservation and not self.overnight_reservations:
-            raise ValidationError(_("You cannot make a multi day reservation"))
+            raise ValidationError(_("You cannot make a multiday reservation"))
         
 
         if not self.can_ignore_opening_hours(user):
