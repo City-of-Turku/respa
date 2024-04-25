@@ -421,6 +421,11 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
     def __str__(self):
         return "%s (%s)/%s" % (get_translated(self, 'name'), self.id, self.unit)
     
+    def save(self, *args, **kwargs):
+        if getattr(self, '_clean_func_lock', False):
+            return
+        return super().save(*args, **kwargs)
+    
     @property
     def public(self):
         if self.publish_date:
@@ -954,6 +959,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
 
     def clean(self):
         from resources.timmi import TimmiManager
+        setattr(self, '_clean_func_lock', True)
         if self.cooldown is None:
             self.cooldown = datetime.timedelta(0)
         if self.min_price is not None and self.max_price is not None and self.min_price > self.max_price:
@@ -1008,7 +1014,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         if self.overnight_reservations:
             if self.overnight_end_time > self.overnight_start_time:
                 raise ValidationError({
-                    'overnight_reservations': _('Overnight reservation end time cannot be greater than start time')
+                    'overnight_end_time': _('Overnight reservation end time cannot be greater than start time')
                 })
 
         if self.timmi_resource and not self.timmi_room_id:
@@ -1016,6 +1022,8 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
 
         if self.id:
             self.validate_id()
+
+        setattr(self, '_clean_func_lock', False)
 
     def get_products(self):
         return self.products.current()

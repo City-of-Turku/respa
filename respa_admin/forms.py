@@ -331,7 +331,10 @@ class ResourceForm(forms.ModelForm):
             'resource_tags',
             'payment_requested_waiting_time',
             'cash_payments_allowed',
-            'reservable_by_all_staff'
+            'reservable_by_all_staff',
+            'overnight_reservations',
+            'overnight_start_time',
+            'overnight_end_time'
         ] + translated_fields
 
         widgets = {

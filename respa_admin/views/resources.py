@@ -446,7 +446,8 @@ class SaveResourceView(ExtraContextMixin, PeriodMixin, CreateView):
             'public_is_disabled': 'public' in disabled_fields_set or resource_has_scheduled_publishing,
             'reservable_is_disabled': 'reservable' in disabled_fields_set or resource_has_scheduled_publishing,
             'all_fields_disabled': len(disabled_fields_set) == len(ResourceForm.Meta.fields + ['groups', 'periods', 'images', 'free_of_charge']),
-            'resource_has_scheduled_publishing': resource_has_scheduled_publishing
+            'resource_has_scheduled_publishing': resource_has_scheduled_publishing,
+            'resource_has_overnight_reservations': self.object.overnight_reservations
         }
 
     def _get_accessibility_data_link(self, request):

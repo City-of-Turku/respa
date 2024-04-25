@@ -6,19 +6,58 @@
         <span class="pull-right">{% trans "*Mandatory fields" %}</span>
     </div>
     <div class="input-row">
+        <div 
+            class="custom-checkbox checkbox-inline"
+            style="padding: 6px 12px; margin: 0;">
+            <input 
+                class="checkbox-custom"
+                type="checkbox"
+                id="id_overnight_reservations"
+                name="overnight_reservations"
+                {% if resource_has_overnight_reservations %} checked {% endif %}
+            >
+            <label
+                for="id_overnight_reservations"
+                class="checkbox-custom-label"
+                style="background: transparent; padding-left: 28px;">
+                {% trans "Overnight reservations" %}
+            </label>
+            <p>{{ form.overnight_reservations.help_text }}</p>
+        </div>
+    </div>
+    <div
+        id="overnight-reservations-time-fields"
+        class="input-row"
+        style="display: {% if resource_has_overnight_reservations %} flex {% else %} none {% endif %};">
+        {% include "respa_admin/forms/_input.html" with field=form.overnight_start_time inline=True %}
+        {% include "respa_admin/forms/_input.html" with field=form.overnight_end_time inline=True %}
+    </div>
+    <div
+        id="overnight-fields"
+        class="input-row"
+        style="display: {% if resource_has_overnight_reservations %} flex {% else %} none {% endif %};">
+        {% include "respa_admin/forms/_input.html" with field=form.min_period inline=True %}
+        {% include "respa_admin/forms/_input.html" with field=form.max_period inline=True %}
+        {% include "respa_admin/forms/_input.html" with field=form.slot_size inline=True no_help_text=True %}
+        {% include "respa_admin/forms/_input.html" with field=form.cooldown inline=True %}
+    </div>
+    <div
+        id="regular-fields"
+        class="input-row dropdown-row"
+        style="display: {% if not resource_has_overnight_reservations %} flex {% else %} none {% endif %};">
+        {% include "respa_admin/forms/_select.html" with field=form.min_period inline=True %}
+        {% include "respa_admin/forms/_select.html" with field=form.max_period inline=True %}
+        {% include "respa_admin/forms/_select.html" with field=form.slot_size inline=True %}
+        {% include "respa_admin/forms/_select.html" with field=form.cooldown inline=True %}
+    </div>
+    <p>{{ form.slot_size.help_text }}</p>
+    <div class="input-row">
         {% include "respa_admin/forms/_input.html" with field=form.min_age %}
         {% include "respa_admin/forms/_input.html" with field=form.max_age %}
     </div>
     <div class="input-row">
         {% include "respa_admin/forms/_input.html" with field=form.people_capacity %}
         {% include "respa_admin/forms/_input.html" with field=form.area %}
-    </div>
-    <div class="input-row dropdown-row">
-        {% include "respa_admin/forms/_select.html" with field=form.min_period inline=True %}
-        {% include "respa_admin/forms/_select.html" with field=form.max_period inline=True %}
-        {% include "respa_admin/forms/_select.html" with field=form.slot_size inline=True %}
-        <p>{{ form.slot_size.help_text }}</p>
-        {% include "respa_admin/forms/_select.html" with field=form.cooldown inline=True %}
     </div>
     <div class="input-row">
         {% include "respa_admin/forms/_input.html" with field=form.reservable_max_days_in_advance %}

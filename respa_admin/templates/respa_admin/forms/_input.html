@@ -26,7 +26,9 @@
     {% if prefix_icon %}
         <span class="glyphicon glyphicon-{{ prefix_icon }}"></span>
     {% endif %}
+    {% if not no_help_text %}
     <span class="help-text">{{ field.help_text }}</span>
+    {% endif %}
 
     {% include "respa_admin/forms/_errors.html" with field=field %}
 

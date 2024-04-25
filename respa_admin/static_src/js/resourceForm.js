@@ -29,6 +29,7 @@ export function initializeEventHandlers() {
   resourceStaffEmailsHandler();
   resourceTagsHandler();
   bindSoftDelete();
+  bindOvernightReservations();
   setTimeout(bindScheduledPublishBtn, 50);
 }
 
@@ -552,4 +553,23 @@ function bindScheduledPublishBtn() {
       }
     });
   }
+}
+
+function bindOvernightReservations() {
+  let checkbox = $("#id_overnight_reservations");
+  let overnight = $('#overnight-fields');
+  let regular = $('#regular-fields');
+  let overnightTimeFields = $("#overnight-reservations-time-fields");
+
+  $(checkbox).on('click', (_) => {
+    if ($(checkbox).is(':checked')) {
+      $(overnight).show();
+      $(overnightTimeFields).show();
+      $(regular).hide();
+    } else {
+      $(overnight).hide();
+      $(overnightTimeFields).hide();
+      $(regular).show();
+    }
+  });
 }
