@@ -29,7 +29,7 @@ export function initializeEventHandlers() {
   resourceStaffEmailsHandler();
   resourceTagsHandler();
   bindSoftDelete();
-  bindOvernightReservations();
+  setTimeout(bindOvernightReservations, 50);
   setTimeout(bindScheduledPublishBtn, 50);
 }
 
@@ -561,15 +561,21 @@ function bindOvernightReservations() {
   let regular = $('#regular-fields');
   let overnightTimeFields = $("#overnight-reservations-time-fields");
 
-  $(checkbox).on('click', (_) => {
+  const handle = () => {
     if ($(checkbox).is(':checked')) {
       $(overnight).show();
       $(overnightTimeFields).show();
       $(regular).hide();
+      $(regular).find('select').attr('disabled', 'disabled');
+      $(overnight).find('input').removeAttr('disabled');
     } else {
-      $(overnight).hide();
-      $(overnightTimeFields).hide();
       $(regular).show();
+      $(overnightTimeFields).hide();
+      $(overnight).hide();
+      $(overnight).find('input').attr('disabled', 'disabled');
+      $(regular).find('select').removeAttr('disabled');
     }
-  });
+  }
+  handle();
+  $(checkbox).on('click', handle);
 }
