@@ -23,9 +23,8 @@ class ChoiceArrayField(ArrayField):
         })
 
     def validate(self, value, model_instance):
-        if hasattr(self, 'override_choices'):
+        if getattr(self, 'override_choices', None):
             return self.validate_override_choices(value, model_instance)
-        return super().validate(value, model_instance)
     
     def validate_override_choices(self, values, model_instance):
         allowed_choices = [lang for lang, __ in self.override_choices()]
