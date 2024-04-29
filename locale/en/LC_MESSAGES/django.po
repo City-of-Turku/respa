@@ -2904,3 +2904,6 @@ msgstr ""
 
 msgid "Overnight reservation end time cannot be greater than start time"
 msgstr ""
+
+msgid "Search tags"
+msgstr ""

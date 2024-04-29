@@ -2230,3 +2230,6 @@ msgstr "Sluttid för övernattning"
 
 msgid "Overnight reservation end time cannot be greater than start time"
 msgstr "Sluttiden för övernattning kan inte vara senare än starttiden"
+
+msgid "Search tags"
+msgstr "Sök taggar"
