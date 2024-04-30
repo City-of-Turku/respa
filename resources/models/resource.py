@@ -40,7 +40,7 @@ from ..auth import (
 )
 from ..errors import InvalidImage
 from ..fields import (
-    EquipmentField, 
+    EquipmentField,
     TranslatedCharField, TranslatedTextField
 )
 from .base import (
@@ -227,8 +227,8 @@ class ResourceQuerySet(models.QuerySet):
         return self
 
     def get_publish_dates(self) -> list:
-        return [resource.publish_date 
-                for resource in self 
+        return [resource.publish_date
+                for resource in self
                 if resource.publish_date]
 
 class CleanResourceID(CommonGenericTaggedItemBase, TaggedItemBase):
@@ -243,7 +243,7 @@ class ResourceManager(models.Manager):
                     ._refresh_publish_date_states()
         return super().get_queryset().exclude(soft_deleted=True) \
             ._refresh_publish_date_states()
-    
+
     @property
     def with_soft_deleted(self):
         setattr(self, '_include_soft_deleted', True)
@@ -278,7 +278,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
     )
     id = models.CharField(primary_key=True, max_length=100)
     _public = models.BooleanField(default=True, verbose_name=_('Public'))
-    
+
     unit = models.ForeignKey('Unit', verbose_name=_('Unit'), db_index=True, null=True, blank=True,
                              related_name="resources", on_delete=models.PROTECT)
     type = models.ForeignKey(ResourceType, verbose_name=_('Resource type'), db_index=True,
@@ -362,7 +362,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
     )
     reservable_by_all_staff = models.BooleanField(
         verbose_name=_('Resource is reservable by all staff users'),
-        default=False, 
+        default=False,
         help_text=_('All staff users can create reservations on behalf of customers')
     )
     send_sms_notification = models.BooleanField(
@@ -420,23 +420,23 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
 
     def __str__(self):
         return "%s (%s)/%s" % (get_translated(self, 'name'), self.id, self.unit)
-    
+
     def save(self, *args, **kwargs):
         if getattr(self, '_clean_func_lock', False):
             return
         return super().save(*args, **kwargs)
-    
+
     @property
     def public(self):
         if self.publish_date:
             return self.publish_date.public
         return self._public
-    
+
     @public.setter
     def public(self, value):
         if not isinstance(value, bool):
             raise TypeError(f"Invalid type: {type(value)} passed to {str(self.__class__.__name__)}.public")
-        
+
         self._public = value
         if self.pk:
             self.save()
@@ -513,7 +513,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
 
         if is_multiday_reservation and not self.overnight_reservations:
             raise ValidationError(_("You cannot make a multiday reservation"))
-        
+
 
         if not self.can_ignore_opening_hours(user):
             opening_hours = self.get_opening_hours(begin.date(), end.date())
@@ -550,15 +550,18 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
         return overlapping.exists()
 
     def check_cooldown_collision(self, begin, end, reservation) -> bool:
+        from .reservation import Reservation
         cooldown_start = begin - self.cooldown
         cooldown_end = end + self.cooldown
         query = (
-            Q(begin__gt=cooldown_start, begin__lt=cooldown_end) | 
+            Q(begin__gt=cooldown_start, begin__lt=cooldown_end) |
             Q(end__gt=cooldown_start, end__lt=cooldown_end) |
-            Q(begin__lt=cooldown_start, end__gt=begin) | 
+            Q(begin__lt=cooldown_start, end__gt=begin) |
             Q(begin__lt=end, end__gt=cooldown_end)
         )
-        
+
+        query &= ~Q(type=Reservation.TYPE_BLOCKED)
+
         if reservation:
             query &= ~Q(pk=reservation.pk)
 
@@ -1010,7 +1013,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
             raise ValidationError({
                 'cash_payments_allowed': _('Cash payments are only allowed when reservations need manual confirmation')
             })
-        
+
         if self.overnight_reservations:
             if self.overnight_end_time > self.overnight_start_time:
                 raise ValidationError({
@@ -1037,7 +1040,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
     @property
     def publish_date(self):
         return getattr(self, '_publish_date', None)
-    
+
     def delete(self, *args, **kwargs):
         self.soft_deleted = True
         self.public = False
@@ -1050,11 +1053,11 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
             return
         self.soft_deleted = False
         return self.save()
-    
+
 class ResourcePublishDate(models.Model):
     begin = models.DateTimeField(
         verbose_name=_('Begin time'),
-        help_text=_('Resource will be public after this date'), 
+        help_text=_('Resource will be public after this date'),
         null=True, blank=True
     )
     end = models.DateTimeField(
@@ -1085,7 +1088,7 @@ class ResourcePublishDate(models.Model):
                 raise ValidationError({
                     'begin': _('Begin time must be before end time')
                 })
-            
+
         if self.begin:
             self.begin = self.begin.replace(microsecond=0, second=0)
         if self.end:
@@ -1111,7 +1114,7 @@ class ResourcePublishDate(models.Model):
     def public(self):
         self._update_states()
         return self._get_public()
-    
+
 
     def _update_states(self):
         self.resource.public = self._get_public()
@@ -1120,13 +1123,13 @@ class ResourcePublishDate(models.Model):
 
     def __str__(self):
         return f'{self.resource.name}: {self.format_begin_end()}'
-    
+
     def format_begin_end(self):
         begin = timezone.localtime(self.begin) if self.begin else ''
         end = timezone.localtime(self.end) if self.end else ''
         fmt = f'{begin}{" - " if begin and end else ""}{end}'
         return f'{self._get_fmt_title()} {fmt}'
-    
+
     def _get_fmt_title(self):
         if self.begin and self.end:
             return _('Public between')
@@ -1142,7 +1145,7 @@ class ResourcePublishDate(models.Model):
                 return _('Hidden since')
         else:
             return super(ResourcePublishDate, self).__str__()
-    
+
     def _get_fmt_icon(self):
         if self.resource.public:
             return 'shape-success'
@@ -1295,9 +1298,9 @@ class ResourceUniversalField(ModifiableModel):
     name = models.CharField(verbose_name=_('Name'), max_length=100)
     resource = models.ForeignKey(Resource, verbose_name=_('Resource'), related_name='resource_universal_field', on_delete=models.CASCADE)
     field_type = models.ForeignKey(
-        UniversalFormFieldType, 
-        verbose_name=_('Type'), 
-        related_name='resource_universal_field', 
+        UniversalFormFieldType,
+        verbose_name=_('Type'),
+        related_name='resource_universal_field',
         on_delete=models.CASCADE
         )
     data = models.JSONField(verbose_name=_('Data'), null=True, blank=True)
@@ -1311,10 +1314,10 @@ class ResourceUniversalField(ModifiableModel):
     @property
     def options(self):
         return ResourceUniversalFormOption.objects.filter(resource_universal_field=self)
-    
+
     def save(self, *args, **kwargs):
         return super(ResourceUniversalField, self).save(*args, **kwargs)
-    
+
     def __str__(self):
         return "%s / %s / %s" % (self.name, self.field_type, self.resource)
 
