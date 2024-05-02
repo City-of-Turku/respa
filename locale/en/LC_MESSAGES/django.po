@@ -2907,3 +2907,6 @@ msgstr ""
 
 msgid "Search tags"
 msgstr ""
+
+msgid "Reservation start and end must match the given overnight reservation start and end values"
+msgstr ""

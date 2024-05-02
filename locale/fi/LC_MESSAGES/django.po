@@ -2292,3 +2292,6 @@ msgstr "Yön yli varauksen päättymisaika ei voi olla aloitusaikaa pidempi"
 
 msgid "Search tags"
 msgstr "Hakutagit"
+
+msgid "Reservation start and end must match the given overnight reservation start and end values"
+msgstr "Varauksen alkamisajan ja päättymisajan on vastattava annettuja yön yli varauksen alkamisajan ja päättymisajan arvoja"

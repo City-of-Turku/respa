@@ -3674,3 +3674,16 @@ def test_too_long_overnight_reservation_disallowed(
     api_client.force_authenticate(user=user)
     response = api_client.post(list_url, data=reservation_data)
     assert response.status_code == 400
+
+@pytest.mark.django_db
+def test_invalid_overnight_reservation_hours(
+    resource_with_overnight_reservations,
+    reservation_data, api_client, user,
+    list_url):
+    reservation_data['begin'] = '2115-04-04T10:00:00+02:00'
+    reservation_data['end'] = '2115-04-05T13:00:00+02:00'
+    reservation_data['resource'] = resource_with_overnight_reservations.pk
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    assert response.status_code == 400
+    assert_non_field_errors_contain(response, 'Reservation start and end must match the given overnight reservation start and end values')
