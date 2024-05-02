@@ -3643,7 +3643,7 @@ def test_overnight_reservation(
     reservation_data, api_client, user,
     list_url):
     reservation_data['begin'] = '2115-04-04T08:00:00+02:00'
-    reservation_data['end'] = '2115-04-05T09:00:00+02:00'
+    reservation_data['end'] = '2115-04-05T16:00:00+02:00'
     reservation_data['resource'] = resource_with_overnight_reservations.pk
     api_client.force_authenticate(user=user)
     response = api_client.post(list_url, data=reservation_data)
@@ -3657,7 +3657,7 @@ def test_overnight_reservation_disabled(
     resource_with_overnight_reservations.overnight_reservations = False
     resource_with_overnight_reservations.save()
     reservation_data['begin'] = '2115-04-04T08:00:00+02:00'
-    reservation_data['end'] = '2115-04-05T09:00:00+02:00'
+    reservation_data['end'] = '2115-04-05T16:00:00+02:00'
     reservation_data['resource'] = resource_with_overnight_reservations.pk
     api_client.force_authenticate(user=user)
     response = api_client.post(list_url, data=reservation_data)
