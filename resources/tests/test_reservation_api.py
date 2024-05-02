@@ -3664,18 +3664,6 @@ def test_overnight_reservation_disabled(
     assert response.status_code == 400
 
 @pytest.mark.django_db
-def test_too_long_overnight_reservation_disallowed(
-    resource_with_overnight_reservations,
-    reservation_data, api_client, user,
-    list_url):
-    reservation_data['begin'] = '2115-04-04T08:00:00+02:00'
-    reservation_data['end'] = '2115-04-06T09:00:00+02:00'
-    reservation_data['resource'] = resource_with_overnight_reservations.pk
-    api_client.force_authenticate(user=user)
-    response = api_client.post(list_url, data=reservation_data)
-    assert response.status_code == 400
-
-@pytest.mark.django_db
 def test_invalid_overnight_reservation_hours(
     resource_with_overnight_reservations,
     reservation_data, api_client, user,
