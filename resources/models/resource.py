@@ -515,7 +515,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel, ValidatedIdentifier):
             raise ValidationError(_("You cannot make a multiday reservation"))
         
         if self.overnight_reservations:
-            if begin.time() != self.overnight_start_time or end.time() != self.overnight_end_time:
+            if not user.is_superuser and not self.is_manager(user) and (begin.time() != self.overnight_start_time or end.time() != self.overnight_end_time):
                 raise ValidationError(_("Reservation start and end must match the given overnight reservation start and end values"))
 
         if not self.can_ignore_opening_hours(user):
