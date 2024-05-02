@@ -1046,3 +1046,67 @@ def test_reservation_waiting_for_cash_comments_dont_trigger_notification(resourc
     assert response.status_code == 200
     assert response.data['state'] == Reservation.WAITING_FOR_CASH_PAYMENT
     assert len(mail.outbox) == 0
+
+
+@pytest.mark.parametrize('data_state, reservation_state, is_manager, is_superuser, expected', [
+    ('confirmed', 'waiting_for_cash_payment', False, False, 403),
+    ('confirmed', 'waiting_for_cash_payment', True, False, 200),
+    ('confirmed', 'waiting_for_cash_payment', False, True, 200),
+    ('waiting_for_cash_payment', 'waiting_for_cash_payment', True, True, 400),
+    ('denied', 'waiting_for_cash_payment', True, True, 400),
+    ('confirmed', 'confirmed', True, False, 400),
+    ('confirmed', 'requested', True, False, 400),
+])
+@pytest.mark.django_db
+def test_confirm_cash_payment_in_the_past(api_client, user, staff_user, resource_with_manual_confirmation,
+                                          product_extra_manual_confirmation, customer_group, unit_manager_api_client,
+                                          data_state, reservation_state, is_manager, is_superuser, expected):
+    """Tests that confirming cash payments works correctly for reservations in the past"""
+
+    resource_with_manual_confirmation.cash_payments_allowed = True
+    resource_with_manual_confirmation.save()
+    # client user makes a reservation with order which also requires manual confirmation
+    reservation_data = build_reservation_data(resource_with_manual_confirmation)
+    reservation_data['reserver_name'] = 'Nordea Demo'
+    reservation_data['reserver_email_address'] = 'test@tester.com'
+    reservation_data['billing_email_address'] = 'test@tester.com'
+    reservation_data['preferred_language'] = 'fi'
+    order_data = build_order_data(product_extra_manual_confirmation, customer_group=customer_group.id)
+    order_data['payment_method'] = Order.CASH
+    reservation_data['order'] = order_data
+
+    api_client.force_authenticate(user=user)
+    response = api_client.post(LIST_URL, data=reservation_data)
+    assert response.status_code == 201
+    assert response.data['state'] == Reservation.REQUESTED
+
+    # staff approves reservation
+    reservation_data['state'] = Reservation.CONFIRMED
+    new_reservation = Reservation.objects.last()
+    response = unit_manager_api_client.put(get_detail_url(new_reservation), data=reservation_data, format='json')
+    assert response.status_code == 200
+    assert response.data['state'] == Reservation.WAITING_FOR_CASH_PAYMENT
+
+    # set reservation to be in the past and test with given values
+    new_reservation = Reservation.objects.last()
+    new_reservation.begin = '2005-04-04T12:00:00+02:00'
+    new_reservation.end = '2005-04-04T13:00:00+02:00'
+    new_reservation.state = reservation_state
+    new_reservation.save()
+    new_reservation.refresh_from_db()
+    reservation_data['state'] = data_state
+    reservation_data['begin'] = '2005-04-04T12:00:00+02:00'
+    reservation_data['end'] = '2005-04-04T13:00:00+02:00'
+    if is_manager:
+        UnitAuthorization.objects.create(
+            subject=resource_with_manual_confirmation.unit, level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    if is_superuser:
+        staff_user.is_superuser = True
+        staff_user.save()
+    api_client.force_authenticate(user=staff_user)
+    response = api_client.put(get_detail_url(new_reservation), data=reservation_data, format='json')
+    assert response.status_code == expected
+    if expected == 400:
+        assert response.data['non_field_errors'][0] == 'Varauksen teko menneisyyteen ei ole sallittua'
+    if expected == 200:
+        assert response.data['state'] == Reservation.CONFIRMED

@@ -120,8 +120,8 @@ class HomeMunicipalitySerializer(TranslatedModelSerializer):
             return super().to_internal_value(data)
 
 
-class ReservationSerializer(ExtraDataMixin, 
-                            ReservationCreateMixin, 
+class ReservationSerializer(ExtraDataMixin,
+                            ReservationCreateMixin,
                             TranslatedModelSerializer, munigeo_api.GeoModelSerializer):
     begin = NullableDateTimeField()
     end = NullableDateTimeField()
@@ -234,7 +234,10 @@ class ReservationSerializer(ExtraDataMixin,
             raise PermissionDenied(_('You are not allowed to make reservations in this resource.'))
 
         if data['end'] < timezone.now():
-            raise ValidationError(_('You cannot make a reservation in the past'))
+            confirming_cash_payment = reservation and reservation.state == Reservation.WAITING_FOR_CASH_PAYMENT and data['state'] == Reservation.CONFIRMED
+            has_skip_perms = resource.is_manager(request_user) or resource.is_admin(request_user) or request_user.is_superuser
+            if not (confirming_cash_payment and has_skip_perms):
+                raise ValidationError(_('You cannot make a reservation in the past'))
 
         if resource.min_age and is_underage(request_user, resource.min_age):
             raise PermissionDenied(_('You have to be over %s years old to reserve this resource' % (resource.min_age)))
@@ -503,7 +506,7 @@ class ReservationBulkSerializer(ReservationCreateMixin, serializers.Serializer):
         request = self.context['request']
         resource = Resource.objects.get(pk=data['resource'])
         self.set_supported_and_required_fields(request, resource, data)
-    
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
 
@@ -521,7 +524,7 @@ class ReservationBulkSerializer(ReservationCreateMixin, serializers.Serializer):
             resource.validate_max_reservations_per_user(reservation.user)
 
         return attrs
-    
+
     def validate_reserver_phone_number(self, value):
         if value.startswith('+'):
             if not region_code_for_country_code(phonenumbers.parse(value).country_code):
@@ -533,19 +536,19 @@ class ReservationBulkSerializer(ReservationCreateMixin, serializers.Serializer):
         reservations = []
         user = validated_data['user']
         for reservation_data in reservation_stack:
-            reservation = Reservation.objects.create(state=Reservation.CONFIRMED, 
+            reservation = Reservation.objects.create(state=Reservation.CONFIRMED,
                                       approver=user, **validated_data, **reservation_data)
             reservation_confirmed.send(
-                sender=self.__class__, 
+                sender=self.__class__,
                 instance=reservation, user=user)
             reservation.save()
             reservations.append(reservation)
-        
+
         instance = ReservationBulk.objects.create(created_by=user)
         instance.reservations.add(*reservations)
 
         return instance
-    
+
     def to_representation(self, instance):
         return ReservationSerializer(
             context=self.context
@@ -834,7 +837,7 @@ class ReservationCacheMixin:
 class ReservationBulkViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = ReservationBulk.objects.all()
     permission_classes = (
-        permissions.IsAuthenticatedOrReadOnly, 
+        permissions.IsAuthenticatedOrReadOnly,
         ReservationPermission, permissions.IsAdminUser,
     )
     serializer_class = ReservationBulkSerializer
