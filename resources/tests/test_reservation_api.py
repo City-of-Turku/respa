@@ -3509,7 +3509,7 @@ def test_recurring_reservation(
     staff_api_client, staff_user, recurring_url):
     UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
                                      level=UnitAuthorizationLevel.manager, authorized=staff_user)
-    
+
     recurring_reservation_data['reserver_name'] = 'Recurring reservation'
     assert ReservationBulk.objects.count() == 0
     assert Reservation.objects.count() == 0
@@ -3517,7 +3517,7 @@ def test_recurring_reservation(
     response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
     assert response.status_code == 201
     assert ReservationBulk.objects.count() == 1
-    
+
     reservation_bulk = ReservationBulk.objects.first()
     assert reservation_bulk.reservations.count() == 3
 
@@ -3528,7 +3528,7 @@ def test_recurring_reservation_too_many_reservations_at_once(
     staff_api_client, staff_user, recurring_url):
     UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
                                      level=UnitAuthorizationLevel.manager, authorized=staff_user)
-    
+
     recurring_reservation_data['reserver_name'] = 'Recurring reservation'
 
     first_reservation = recurring_reservation_data['reservation_stack'][0]
@@ -3543,7 +3543,7 @@ def test_recurring_reservation_bad_period(
     staff_api_client, staff_user, recurring_url):
     UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
                                      level=UnitAuthorizationLevel.manager, authorized=staff_user)
-    
+
     recurring_reservation_data['reserver_name'] = 'Recurring reservation'
 
     recurring_reservation_data['reservation_stack'] = [{
@@ -3573,23 +3573,23 @@ def test_recurring_reservation_reminders(
     response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
     assert response.status_code == 201
     assert ReservationBulk.objects.count() == 1
-    
+
     reservation_bulk = ReservationBulk.objects.first()
     assert reservation_bulk.reservations.count() == 3
 
     for reservation in reservation_bulk.reservations.all():
         assert reservation.reminder is not None
-        
+
 @pytest.mark.django_db
 @freeze_time('2115-04-04')
 def test_reservation_cooldown_unit_staff(
     resource_with_cooldown, reservation_data,
-    staff_api_client, staff_user, 
+    staff_api_client, staff_user,
     api_client, user, list_url):
     UnitAuthorization.objects.create(subject=resource_with_cooldown.unit,
                                      level=UnitAuthorizationLevel.manager, authorized=staff_user)
     reservation_data['resource'] = resource_with_cooldown.pk
-    
+
     api_client.force_authenticate(user=user)
     response = api_client.post(list_url, data=reservation_data)
     assert response.status_code == 201
@@ -3636,6 +3636,29 @@ def test_reservation_cooldown_before_first_reservation(
     response = api_client.post(list_url, data=reservation_data)
     assert response.status_code == 400
     assert_translated_response_contains(response, 'cooldown', 'Cannot be reserved during cooldown')
+
+
+@pytest.mark.django_db
+@freeze_time('2115-04-04')
+def test_reservation_cooldown_not_in_use_for_type_blocked_reservation(
+        resource_with_cooldown, reservation_data, staff_api_client, staff_user,
+        api_client, user, list_url):
+
+    UnitAuthorization.objects.create(subject=resource_with_cooldown.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    reservation_data['resource'] = resource_with_cooldown.pk
+    reservation_data['type'] = Reservation.TYPE_BLOCKED
+    staff_api_client.force_authenticate(user=staff_user)
+    response = staff_api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+    reservation_data['begin'] = '2115-04-04T10:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T11:00:00+02:00'
+    reservation_data['type'] = Reservation.TYPE_NORMAL
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
 
 @pytest.mark.django_db
 def test_overnight_reservation(
