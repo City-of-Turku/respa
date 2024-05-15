@@ -17,6 +17,31 @@ def is_general_admin(user):
 def is_staff(user):
     return is_authenticated_user(user) and user.is_staff
 
+
+def has_any_auth_equal_or_higher(user, level):
+    if not is_authenticated_user(user):
+        return False
+        
+    authorizations = user.unit_authorizations.all()
+    if not authorizations.exists():
+        return False
+    
+    unit_level = any(auth.level >= level for auth in authorizations)
+    return unit_level
+
+
+def has_any_auth_higher(user, level):
+    if not is_authenticated_user(user):
+        return False
+        
+    authorizations = user.unit_authorizations.all()
+    if not authorizations.exists():
+        return False
+    
+    unit_level = any(auth.level > level for auth in authorizations)
+    return unit_level
+
+
 def has_auth_level(user, level):
     if not is_authenticated_user(user):
         return False

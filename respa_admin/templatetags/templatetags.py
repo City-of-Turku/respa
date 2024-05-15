@@ -1,6 +1,6 @@
 from django import template
 from django.db.models import Q
-
+from django.utils.translation import gettext as _
 
 register = template.Library()
 
@@ -44,6 +44,13 @@ def get_value_from_dict(dict_data, key):
 def user_has_permission(user, permission, obj):
     return user.has_perm(permission, obj)
 
+
+@register.filter
+def label(field, form):
+    try:
+        return _(form.fields[field].label)
+    except:
+        return field
 
 @register.filter
 def is_truthy(collection):

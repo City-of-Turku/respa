@@ -29,6 +29,7 @@ export function initializeEventHandlers() {
   resourceStaffEmailsHandler();
   resourceTagsHandler();
   bindSoftDelete();
+  setTimeout(bindOvernightReservations, 50);
   setTimeout(bindScheduledPublishBtn, 50);
 }
 
@@ -552,4 +553,29 @@ function bindScheduledPublishBtn() {
       }
     });
   }
+}
+
+function bindOvernightReservations() {
+  let checkbox = $("#id_overnight_reservations");
+  let overnight = $('#overnight-fields');
+  let regular = $('#regular-fields');
+  let overnightTimeFields = $("#overnight-reservations-time-fields");
+
+  const handle = () => {
+    if ($(checkbox).is(':checked')) {
+      $(overnight).show();
+      $(overnightTimeFields).show();
+      $(regular).hide();
+      $(regular).find('select').attr('disabled', 'disabled');
+      $(overnight).find('input').removeAttr('disabled');
+    } else {
+      $(regular).show();
+      $(overnightTimeFields).hide();
+      $(overnight).hide();
+      $(overnight).find('input').attr('disabled', 'disabled');
+      $(regular).find('select').removeAttr('disabled');
+    }
+  }
+  handle();
+  $(checkbox).on('click', handle);
 }

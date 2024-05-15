@@ -12,15 +12,20 @@
                 <strong>{% trans "unit"|capfirst %}</strong>
                 {% endif %}
             </div>
-            <ul>
-                {% for error in form.errors|remove_empty %}
-                <li>
-                    {{ error }}
-                </li>
-                {% endfor %}
-                {% endif %}
-            </ul>     
-            {% if resource_image_formset.errors|is_truthy %}
+            <ul class="errorlist">
+            {% for field, errors in form.errors.items %}
+            <li>
+                {{ field|label:form }}
+                <ul class="errorlist">
+                    {% for error in errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </li>
+            {% endfor %}
+            </ul>
+            {% endif %}   
+            {% if resource_image_formset and resource_image_formset.errors|is_truthy %}
             <div>
                 <strong>{% trans "resource image"|capfirst %}</strong>
             </div>
@@ -29,7 +34,7 @@
             {% endfor %}
             {% endif %}
             
-            {% if period_formset_with_days.errors|is_truthy %}
+            {% if period_formset_with_days and period_formset_with_days.errors|is_truthy %}
             <div>
                 <strong>{% trans "Period"|capfirst %}</strong>
             </div>
@@ -38,7 +43,7 @@
             {% endfor %}
             {% endif %}
 
-            {% if resource_universal_formset.errors|is_truthy %}
+            {% if resource_universal_formset and resource_universal_formset.errors|is_truthy %}
             <div>
                 <strong>{% trans "Fields"|capfirst %}</strong>
             </div>
@@ -47,7 +52,7 @@
                 {% endfor %}
             {% endif %}
             
-            {% if resource_options_formset.errors|is_truthy %}
+            {% if resource_options_formset and resource_options_formset.errors|is_truthy %}
             <div>
                 <strong>{% trans "Options"|capfirst %}</strong>
             </div>
@@ -56,7 +61,7 @@
                 {% endfor %}
             {% endif %}
             
-            {% if publish_date_formset.errors|is_truthy %}
+            {% if publish_date_formset and publish_date_formset.errors|is_truthy %}
             <div>
                 <strong>{% trans "Scheduled publish"|capfirst %}</strong>
             </div>

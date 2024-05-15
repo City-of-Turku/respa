@@ -486,29 +486,8 @@ def build_reservations_ical_file(reservations):
         event['dtend'] = vDatetime(end_utc)
         if reservation.created_at:
             event['dtstamp'] = vDatetime(reservation.created_at)
-        unit = reservation.resource.unit
-        event['location'] = vText('{} {} {}'.format(unit.name, unit.street_address, unit.address_zip))
-        if unit.location:
-            event['geo'] = vGeo(unit.location)
-        event['summary'] = vText('{} {}'.format(unit.name, reservation.resource.name))
-        universal_data = getattr(reservation, 'universal_data', None)
-        description_text = None
 
-        if universal_data:
-            # reservation contains universal_data
-            selected_option = universal_data.get('selected_option')
-            universal_field =universal_data.get('field')
-            if selected_option and universal_field:
-                selected_values = [x['text'] for x in universal_field.get('options') if x['id'] == int(selected_option)]
-                description_text = '{}: {}'.format(universal_field.get('label'), selected_values[0])
-
-        if description_text is not None:
-            if reservation.comments:
-                event['description'] = vText('{}, {}, {}'.format(reservation.reserver_name, description_text, reservation.comments))
-            else:
-                event['description'] = vText('{}, {}'.format(reservation.reserver_name, description_text))
-        else:
-            event['description'] = vText('{}'.format(reservation.reserver_name))
+        event['summary'] = vText(reservation.resource.name)
 
         if reservation.reserver_email_address:
             attendee = vCalAddress(f'MAILTO:{reservation.reserver_email_address}')
@@ -675,7 +654,7 @@ def calculate_final_product_sums(product: dict, quantity: int = 1):
     '''
     tax_raw = 0
     taxfree_price = 0
-    for x in product['detailed_price'].values():
+    for x in product.values():
         tax_raw += x['tax_total']
         taxfree_price += x['taxfree_price_total']
 
@@ -721,7 +700,7 @@ def calculate_final_order_sums(all_products):
 
         # calculate exact vat value for total taxfree price, 36.30 * 24 / 100
         # this contains all of the decimals.
-        exact_vat_amount_value = (perc_taxfree_total * Decimal(perc.replace(',','.'))) / 100
+        exact_vat_amount_value = (perc_taxfree_total * perc) / 100
 
         # rounded version of the VAT total
         rounded_vat_amount_value = exact_vat_amount_value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)

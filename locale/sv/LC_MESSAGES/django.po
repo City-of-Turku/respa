@@ -246,7 +246,7 @@ msgid "Reservation bulk created"
 msgstr "Reservationssats skapad"
 
 msgid "Reservation reminder"
-msgstr "Påminnelse om reservation"
+msgstr "Bokningspåminnelse"
 
 msgid "Type"
 msgstr "Typ"
@@ -1071,7 +1071,7 @@ msgstr ""
 "En URL till ett externt bokningssystem om den här resursen hanteras "
 "annorstädes"
 
-msgid "You cannot make a multi day reservation"
+msgid "You cannot make a multiday reservation"
 msgstr "Du kan inte boka flera dagar"
 
 msgid "You must start and end the reservation during opening hours"
@@ -2206,3 +2206,33 @@ msgstr "Återkommande bokning"
 
 msgid "Recurring reservations"
 msgstr "Återkommande bokningar"
+
+msgid "Reservation reminders"
+msgstr "Bokningspåminnelser"
+
+msgid "Reminder date"
+msgstr "Påminnelsedatum"
+
+msgid "Cannot be reserved during cooldown"
+msgstr "Bokning kan inte göras under bokningsuppehåll"
+
+msgid "Overnight reservations"
+msgstr "Övernattning bokningar"
+
+msgid "Allow overnight reservations for this resource"
+msgstr "Tillåt övernattning bokningar för denna resurs"
+
+msgid "Overnight start time"
+msgstr "Starttid för övernattning"
+
+msgid "Overnight end time"
+msgstr "Sluttid för övernattning"
+
+msgid "Overnight reservation end time cannot be greater than start time"
+msgstr "Sluttiden för övernattning kan inte vara senare än starttiden"
+
+msgid "Search tags"
+msgstr "Sök taggar"
+
+msgid "Reservation start and end must match the given overnight reservation start and end values"
+msgstr "Reservationsstart och reservationsslut måste överensstämma med de angivna värdena för start och slut på övernattningen"

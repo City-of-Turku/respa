@@ -1,8 +1,7 @@
 from django.db import models
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 from django_jsonform.models.fields import ArrayField
-from django.utils.functional import lazy
 from solo.models import SingletonModel
 from qualitytool.manager import qt_manager
 from respa_admin.models import ChoiceArrayField
