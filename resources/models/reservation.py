@@ -335,10 +335,10 @@ class Reservation(ModifiableModel):
         elif state == Reservation.CANCELLED and self.user:
             action_by_official = bool(user and user.is_staff and user.email != self.user.email)
             order = self.get_order()
-            cancelled_or_expired = any([
+            order_cancelled_or_expired = any([
                 order and order.state == order.CANCELLED,
                 order and order.state == order.EXPIRED and self.need_manual_confirmation()])
-            if not order or cancelled_or_expired:
+            if not order or order_cancelled_or_expired:
                 self.send_reservation_cancelled_mail(action_by_official=action_by_official)
                 if not action_by_official:
                     self.notify_staff_about_reservation(NotificationType.RESERVATION_CANCELLED_OFFICIAL)
