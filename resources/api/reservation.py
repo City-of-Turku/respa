@@ -870,7 +870,7 @@ class ReservationBulkViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             ical_file = build_reservations_ical_file([reservation])
             begin = self._strftime(reservation.begin)
             end = self._strftime(reservation.end)
-            attachment = ('reservation %s %s.ics' % (begin, end), ical_file, 'text/calendar')
+            attachment = ('reservation %s - %s.ics' % (begin, end), ical_file, 'text/calendar')
             attachments.append(attachment)
         instance.reservations.first().send_reservation_mail(
             NotificationType.RESERVATION_BULK_CREATED,
