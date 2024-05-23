@@ -865,11 +865,16 @@ class ReservationBulkViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     def perform_create(self, serializer):
         instance = serializer.save(user=self.request.user)
 
-        ical_file = build_reservations_ical_file(instance.reservations.all())
-        attachment = ('reservation.ics', ical_file, 'text/calendar')
+        attachments = []
+        for reservation in instance.reservations.all():
+            ical_file = build_reservations_ical_file([reservation])
+            begin = reservation.begin.strftime('%Y-%m-%dT%H:%M:%S')
+            end = reservation.end.strftime('%Y-%m-%dT%H:%M:%S')
+            attachment = ('reservation %s %s.ics' % (begin, end), ical_file, 'text/calendar')
+            attachments.append(attachment)
         instance.reservations.first().send_reservation_mail(
             NotificationType.RESERVATION_BULK_CREATED,
-            attachments=[attachment],
+            attachments=attachments,
             extra_context=self.get_notification_context(instance.reservations)
         )
 

@@ -286,6 +286,30 @@ def reservation_modified_notification():
             body='reservation modified body.',
         )
 
+@pytest.fixture
+def reservation_reservation_bulk_created():
+    with translation.override('en'):
+        return NotificationTemplate.objects.create(
+            type=NotificationType.RESERVATION_BULK_CREATED,
+            is_default_template=True,
+            short_message='reservation bulk created short message.',
+            subject='reservation bulk created subject.',
+            body='reservation bulk created body.'
+        )
+
+
+@pytest.fixture
+def reservation_metadata_set_with_name_number_email():
+    reserver_name = ReservationMetadataField.objects.get(field_name='reserver_name')
+    reserver_phone_number = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    reserver_email_address = ReservationMetadataField.objects.get(field_name='reserver_email_address')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='metadataset with name, phone, email',
+    )
+    metadata_set.supported_fields.set([reserver_name, reserver_phone_number, reserver_email_address])
+    metadata_set.save()
+    return metadata_set
+
 
 @pytest.mark.django_db
 def test_disallowed_methods(all_user_types_api_client, list_url):
@@ -3705,3 +3729,27 @@ def test_invalid_overnight_reservation_hours(
     else:
         assert response.status_code == 400
         assert_non_field_errors_contain(response, 'Reservation start and end must match the given overnight reservation start and end values')
+
+
+@override_settings(RESPA_MAILS_ENABLED=True)
+@pytest.mark.django_db
+def test_recurring_reservation_created_mail_attachments(
+    reservation_reservation_bulk_created,
+    reservation_metadata_set_with_name_number_email,
+    resource_in_unit4_1, recurring_reservation_data,
+    staff_api_client, staff_user, recurring_url):
+    UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    resource_in_unit4_1.reservation_metadata_set = reservation_metadata_set_with_name_number_email
+    resource_in_unit4_1.save()
+    with switch_language(reservation_reservation_bulk_created, 'fi'):
+        reservation_reservation_bulk_created.short_message = 'Sarjavaraus luotu lyhyt viesti.'
+        reservation_reservation_bulk_created.subject = 'Sarjavaraus luotu aihe.'
+        reservation_reservation_bulk_created.body = 'Sarjavaraus luotu keho.'
+        reservation_reservation_bulk_created.save()
+    recurring_reservation_data['preferred_language'] = 'fi'
+    response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
+    ical_files = [ical_file for _, ical_file, _ in mail.outbox[0].attachments]
+    assert response.status_code == 201
+    assert len(ical_files) == 3
+    assert len(mail.outbox) == 1
