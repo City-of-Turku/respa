@@ -867,10 +867,9 @@ class ReservationBulkViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
         attachments = []
         for reservation in instance.reservations.all():
-            unit = reservation.resource.unit
             ical_file = build_reservations_ical_file([reservation])
-            begin = reservation.begin.astimezone(unit.get_tz()).strftime('%d.%m.%YT%H:%M')
-            end = reservation.end.astimezone(unit.get_tz()).strftime('%d.%m.%YT%H:%M')
+            begin = self._strftime(reservation.begin)
+            end = self._strftime(reservation.end)
             attachment = ('reservation %s %s.ics' % (begin, end), ical_file, 'text/calendar')
             attachments.append(attachment)
         instance.reservations.first().send_reservation_mail(
