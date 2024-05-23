@@ -845,6 +845,9 @@ class ReservationBulkViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     def _strftime(self, dt):
         return timezone.localtime(dt).strftime('%d.%m.%Y %H.%M')
 
+    def _to_localtime(self, dt):
+        return timezone.localtime(dt)
+
     def get_notification_context(self, reservations):
         return {
             'first_reservation': {
@@ -869,7 +872,9 @@ class ReservationBulkViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         for reservation in instance.reservations.all():
             ical_file = build_reservations_ical_file([reservation])
             begin = self._strftime(reservation.begin)
-            end = self._strftime(reservation.end)
+            end = self._strftime(reservation.end) \
+                if reservation.begin.date() != reservation.end.date() else self._to_localtime(reservation.end).strftime('%H.%M')
+            
             attachment = ('reservation %s - %s.ics' % (begin, end), ical_file, 'text/calendar')
             attachments.append(attachment)
         instance.reservations.first().send_reservation_mail(
