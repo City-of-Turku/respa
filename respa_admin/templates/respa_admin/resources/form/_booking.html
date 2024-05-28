@@ -33,12 +33,15 @@
             <p>{{ form.overnight_reservations.help_text }}</p>
         </div>
     </div>
-    <div
+    <div 
         id="overnight-reservations-time-fields"
-        class="input-row"
-        style="display: {% if resource_has_overnight_reservations %} flex {% else %} none {% endif %};">
-        {% include "respa_admin/forms/_input.html" with field=form.overnight_start_time inline=True %}
-        {% include "respa_admin/forms/_input.html" with field=form.overnight_end_time inline=True %}
+        style="display: {% if resource_has_overnight_reservations %}flex;flex-direction: column;{% else %} none;{% endif %}">
+        <div
+            class="input-row">
+            {% include "respa_admin/forms/_input.html" with field=form.overnight_start_time inline=True %}
+            {% include "respa_admin/forms/_input.html" with field=form.overnight_end_time inline=True %}
+        </div>
+        <p>{% trans "The booking deadline is the start time. For example, if the start time is 6:00 PM, same-day bookings must be made before 6:00 PM." %}</p>
     </div>
     <div
         id="overnight-fields"
