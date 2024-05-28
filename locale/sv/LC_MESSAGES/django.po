@@ -2237,5 +2237,5 @@ msgstr "Sök taggar"
 msgid "Reservation start and end must match the given overnight reservation start and end values"
 msgstr "Reservationsstart och reservationsslut måste överensstämma med de angivna värdena för start och slut på övernattningen"
 
-msgid "The booking deadline is the start time. For example, if the start time is 6:00 PM, same-day bookings must be made before 6:00 PM."
+msgid "The reservation deadline is the start time. For example, if the start time is 6:00 PM, same-day bookings must be made before 6:00 PM."
 msgstr "Bokningsfristen är starttiden. Till exempel, om starttiden är 18.00, måste bokningar för samma dag göras före 18.00."

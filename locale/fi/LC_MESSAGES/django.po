@@ -2296,5 +2296,5 @@ msgstr "Hakutagit"
 msgid "Reservation start and end must match the given overnight reservation start and end values"
 msgstr "Varauksen alkamisajan ja päättymisajan on vastattava annettuja yön yli varauksen alkamisajan ja päättymisajan arvoja"
 
-msgid "The booking deadline is the start time. For example, if the start time is 6:00 PM, same-day bookings must be made before 6:00 PM."
+msgid "The reservation deadline is the start time. For example, if the start time is 6:00 PM, same-day bookings must be made before 6:00 PM."
 msgstr "Varausten takaraja on aloitusaika. Esim. jos aloitusaika on klo 18.00, saman päivän varaus on tehtävä ennen klo 18.00."

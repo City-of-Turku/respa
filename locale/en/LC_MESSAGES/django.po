@@ -2911,5 +2911,5 @@ msgstr ""
 msgid "Reservation start and end must match the given overnight reservation start and end values"
 msgstr ""
 
-msgid "The booking deadline is the start time. For example, if the start time is 6:00 PM, same-day bookings must be made before 6:00 PM."
+msgid "The reservation deadline is the start time. For example, if the start time is 6:00 PM, same-day bookings must be made before 6:00 PM."
 msgstr ""
