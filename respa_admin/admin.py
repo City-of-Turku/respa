@@ -16,7 +16,7 @@ class DisabledFieldsForm(forms.ModelForm):
         fields = ('name', 'resources', 'units', 'disabled_fields', )
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(DisabledFieldsForm, self).__init__(*args, **kwargs)
         self.fields['disabled_fields'].choices = sorted([(field, field) for field in ResourceForm.Meta.fields + ['groups', 'periods', 'images', 'free_of_charge']])
         self.fields['units'].queryset = self._get_unit_queryset()
 

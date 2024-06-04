@@ -331,7 +331,10 @@ class ResourceForm(forms.ModelForm):
             'resource_tags',
             'payment_requested_waiting_time',
             'cash_payments_allowed',
-            'reservable_by_all_staff'
+            'reservable_by_all_staff',
+            'overnight_reservations',
+            'overnight_start_time',
+            'overnight_end_time'
         ] + translated_fields
 
         widgets = {
@@ -779,7 +782,8 @@ class UnitAuthorizationForm(forms.ModelForm):
         can_approve_initial_value = False
         if self.instance.pk:
             unit = self.instance.subject
-            user_has_unit_auth = self.request.user.unit_authorizations.to_unit(unit).admin_level().exists()
+            user_has_unit_auth = self.request.user.unit_authorizations.to_unit(unit).admin_level().exists() \
+                or self.request.user.is_superuser
             user_has_unit_group_auth = self.request.user.unit_group_authorizations.to_unit(unit).admin_level().exists()
             can_approve_initial_value = permission_checker.has_perm(
                 "unit:can_approve_reservation", self.instance.subject
@@ -795,7 +799,8 @@ class UnitAuthorizationForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         unit = cleaned_data.get('subject')
-        user_has_unit_auth = self.request.user.unit_authorizations.to_unit(unit).admin_level().exists()
+        user_has_unit_auth = self.request.user.unit_authorizations.to_unit(unit).admin_level().exists() \
+            or self.request.user.is_superuser
         user_has_unit_group_auth = self.request.user.unit_group_authorizations.to_unit(unit).admin_level().exists()
         if self.has_changed():
             if not user_has_unit_auth and not user_has_unit_group_auth:

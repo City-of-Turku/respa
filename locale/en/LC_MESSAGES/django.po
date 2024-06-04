@@ -1250,10 +1250,6 @@ msgstr ""
 msgid "Reservation metadata sets"
 msgstr ""
 
-#: resources/models/reservation.py:674
-msgid "Reminder Date"
-msgstr ""
-
 #: resources/models/reservation.py:676
 msgid "Notification type"
 msgstr ""
@@ -1481,7 +1477,7 @@ msgid "Outlook configuration"
 msgstr ""
 
 #: resources/models/resource.py:315
-msgid "You cannot make a multi day reservation"
+msgid "You cannot make a multiday reservation"
 msgstr ""
 
 #: resources/models/resource.py:321
@@ -2885,5 +2881,35 @@ msgstr ""
 msgid "Recurring reservations"
 msgstr ""
 
+msgid "Reservation reminders"
+msgstr ""
+
+msgid "Reminder date"
+msgstr ""
+
 msgid "Cannot be reserved during cooldown"
+msgstr ""
+
+msgid "Overnight reservations"
+msgstr ""
+
+msgid "Allow overnight reservations for this resource"
+msgstr ""
+
+msgid "Overnight start time"
+msgstr ""
+
+msgid "Overnight end time"
+msgstr ""
+
+msgid "Overnight reservation end time cannot be greater than start time"
+msgstr ""
+
+msgid "Search tags"
+msgstr ""
+
+msgid "Reservation start and end must match the given overnight reservation start and end values"
+msgstr ""
+
+msgid "The reservation deadline is the start time. For example, if the start time is 6:00 PM, same-day bookings must be made before 6:00 PM."
 msgstr ""

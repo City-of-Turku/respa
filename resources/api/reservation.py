@@ -46,6 +46,7 @@ from .base import (
     NullableDateTimeField, TranslatedModelSerializer, register_view, DRFFilterBooleanWidget,
     ExtraDataMixin, ReservationCreateMixin
 )
+from resources.signals import reservation_confirmed
 
 from ..models.utils import has_reservation_data_changed, is_reservation_metadata_or_times_different
 from respa.renderers import ResourcesBrowsableAPIRenderer
@@ -119,8 +120,8 @@ class HomeMunicipalitySerializer(TranslatedModelSerializer):
             return super().to_internal_value(data)
 
 
-class ReservationSerializer(ExtraDataMixin, 
-                            ReservationCreateMixin, 
+class ReservationSerializer(ExtraDataMixin,
+                            ReservationCreateMixin,
                             TranslatedModelSerializer, munigeo_api.GeoModelSerializer):
     begin = NullableDateTimeField()
     end = NullableDateTimeField()
@@ -233,7 +234,10 @@ class ReservationSerializer(ExtraDataMixin,
             raise PermissionDenied(_('You are not allowed to make reservations in this resource.'))
 
         if data['end'] < timezone.now():
-            raise ValidationError(_('You cannot make a reservation in the past'))
+            confirming_cash_payment = reservation and reservation.state == Reservation.WAITING_FOR_CASH_PAYMENT and data['state'] == Reservation.CONFIRMED
+            has_skip_perms = resource.is_manager(request_user) or resource.is_admin(request_user) or request_user.is_superuser
+            if not (confirming_cash_payment and has_skip_perms):
+                raise ValidationError(_('You cannot make a reservation in the past'))
 
         if resource.min_age and is_underage(request_user, resource.min_age):
             raise PermissionDenied(_('You have to be over %s years old to reserve this resource' % (resource.min_age)))
@@ -502,29 +506,25 @@ class ReservationBulkSerializer(ReservationCreateMixin, serializers.Serializer):
         request = self.context['request']
         resource = Resource.objects.get(pk=data['resource'])
         self.set_supported_and_required_fields(request, resource, data)
-    
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
 
         resource = attrs['resource']
         _cattrs = attrs.copy()
         reservation_stack = _cattrs.pop('reservation_stack')
+        if len(reservation_stack) > 100:
+            raise NotAcceptable({
+                'reservation_stack': _('Reservation failed. Too many reservations at once.')
+            })
         for data in reservation_stack:
             reservation = Reservation(**_cattrs, **data)
             reservation.clean()
-            if resource.validate_reservation_period(reservation, reservation.user):
-                return serializers.ValidationError({
-                    'status': False,
-                    'recurring_validation_error': _('Reservation failed. Make sure reservation period is correct.')
-                })
-            if resource.validate_max_reservations_per_user(reservation.user):
-                return  serializers.ValidationError({
-                    'status': False,
-                    'recurring_validation_error': _('Reservation failed. Too many reservations at once.')
-                })
+            resource.validate_reservation_period(reservation, reservation.user)
+            resource.validate_max_reservations_per_user(reservation.user)
 
         return attrs
-    
+
     def validate_reserver_phone_number(self, value):
         if value.startswith('+'):
             if not region_code_for_country_code(phonenumbers.parse(value).country_code):
@@ -534,16 +534,21 @@ class ReservationBulkSerializer(ReservationCreateMixin, serializers.Serializer):
     def create(self, validated_data):
         reservation_stack = validated_data.pop('reservation_stack')
         reservations = []
+        user = validated_data['user']
         for reservation_data in reservation_stack:
-            reservation = Reservation(state=Reservation.CONFIRMED, **validated_data, **reservation_data)
+            reservation = Reservation.objects.create(state=Reservation.CONFIRMED,
+                                      approver=user, **validated_data, **reservation_data)
+            reservation_confirmed.send(
+                sender=self.__class__,
+                instance=reservation, user=user)
             reservation.save()
             reservations.append(reservation)
-        
-        instance = ReservationBulk.objects.create(created_by=validated_data['user'])
+
+        instance = ReservationBulk.objects.create(created_by=user)
         instance.reservations.add(*reservations)
-        
+
         return instance
-    
+
     def to_representation(self, instance):
         return ReservationSerializer(
             context=self.context
@@ -832,13 +837,16 @@ class ReservationCacheMixin:
 class ReservationBulkViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = ReservationBulk.objects.all()
     permission_classes = (
-        permissions.IsAuthenticatedOrReadOnly, 
+        permissions.IsAuthenticatedOrReadOnly,
         ReservationPermission, permissions.IsAdminUser,
     )
     serializer_class = ReservationBulkSerializer
 
     def _strftime(self, dt):
         return timezone.localtime(dt).strftime('%d.%m.%Y %H.%M')
+
+    def _to_localtime(self, dt):
+        return timezone.localtime(dt)
 
     def get_notification_context(self, reservations):
         return {
@@ -860,11 +868,18 @@ class ReservationBulkViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     def perform_create(self, serializer):
         instance = serializer.save(user=self.request.user)
 
-        ical_file = build_reservations_ical_file(instance.reservations.all())
-        attachment = ('reservation.ics', ical_file, 'text/calendar')
+        attachments = []
+        for reservation in instance.reservations.all():
+            ical_file = build_reservations_ical_file([reservation])
+            begin = self._strftime(reservation.begin)
+            end = self._strftime(reservation.end) \
+                if reservation.begin.date() != reservation.end.date() else self._to_localtime(reservation.end).strftime('%H.%M')
+            
+            attachment = ('reservation %s - %s.ics' % (begin, end), ical_file, 'text/calendar')
+            attachments.append(attachment)
         instance.reservations.first().send_reservation_mail(
             NotificationType.RESERVATION_BULK_CREATED,
-            attachments=[attachment],
+            attachments=attachments,
             extra_context=self.get_notification_context(instance.reservations)
         )
 

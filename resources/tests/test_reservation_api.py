@@ -286,6 +286,30 @@ def reservation_modified_notification():
             body='reservation modified body.',
         )
 
+@pytest.fixture
+def reservation_reservation_bulk_created():
+    with translation.override('en'):
+        return NotificationTemplate.objects.create(
+            type=NotificationType.RESERVATION_BULK_CREATED,
+            is_default_template=True,
+            short_message='reservation bulk created short message.',
+            subject='reservation bulk created subject.',
+            body='reservation bulk created body.'
+        )
+
+
+@pytest.fixture
+def reservation_metadata_set_with_name_number_email():
+    reserver_name = ReservationMetadataField.objects.get(field_name='reserver_name')
+    reserver_phone_number = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    reserver_email_address = ReservationMetadataField.objects.get(field_name='reserver_email_address')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='metadataset with name, phone, email',
+    )
+    metadata_set.supported_fields.set([reserver_name, reserver_phone_number, reserver_email_address])
+    metadata_set.save()
+    return metadata_set
+
 
 @pytest.mark.django_db
 def test_disallowed_methods(all_user_types_api_client, list_url):
@@ -3509,7 +3533,7 @@ def test_recurring_reservation(
     staff_api_client, staff_user, recurring_url):
     UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
                                      level=UnitAuthorizationLevel.manager, authorized=staff_user)
-    
+
     recurring_reservation_data['reserver_name'] = 'Recurring reservation'
     assert ReservationBulk.objects.count() == 0
     assert Reservation.objects.count() == 0
@@ -3517,20 +3541,79 @@ def test_recurring_reservation(
     response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
     assert response.status_code == 201
     assert ReservationBulk.objects.count() == 1
-    
+
     reservation_bulk = ReservationBulk.objects.first()
     assert reservation_bulk.reservations.count() == 3
+
+
+@pytest.mark.django_db
+def test_recurring_reservation_too_many_reservations_at_once(
+    resource_in_unit4_1, recurring_reservation_data,
+    staff_api_client, staff_user, recurring_url):
+    UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+
+    recurring_reservation_data['reserver_name'] = 'Recurring reservation'
+
+    first_reservation = recurring_reservation_data['reservation_stack'][0]
+    for _ in range(0,101): recurring_reservation_data['reservation_stack'].append(first_reservation)
+    response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
+    assert response.status_code == 406
+
+
+@pytest.mark.django_db
+def test_recurring_reservation_bad_period(
+    resource_in_unit4_1, recurring_reservation_data,
+    staff_api_client, staff_user, recurring_url):
+    UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+
+    recurring_reservation_data['reserver_name'] = 'Recurring reservation'
+
+    recurring_reservation_data['reservation_stack'] = [{
+        'begin': '2115-04-04T11:00:00+02:00',
+        'end': '2115-04-05T12:00:00+02:00',
+    }]
+    response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
+    assert response.status_code == 400
+
+@pytest.mark.django_db
+def test_recurring_reservation_reminders(
+    resource_in_unit4_1, recurring_reservation_data,
+    staff_api_client, staff_user, recurring_url):
+    UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    resource_in_unit4_1.unit.sms_reminder = True
+    resource_in_unit4_1.unit.save()
+
+    meta_field = ReservationMetadataField.objects.get(field_name='reserver_phone_number')
+    metadata_set = ReservationMetadataSet.objects.create(
+        name='metadata_with_reserver_phone_number',
+    )
+    metadata_set.supported_fields.set([meta_field])
+    metadata_set.required_fields.set([meta_field])
+    resource_in_unit4_1.reservation_metadata_set = metadata_set
+    resource_in_unit4_1.save()
+    response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
+    assert response.status_code == 201
+    assert ReservationBulk.objects.count() == 1
+
+    reservation_bulk = ReservationBulk.objects.first()
+    assert reservation_bulk.reservations.count() == 3
+
+    for reservation in reservation_bulk.reservations.all():
+        assert reservation.reminder is not None
 
 @pytest.mark.django_db
 @freeze_time('2115-04-04')
 def test_reservation_cooldown_unit_staff(
     resource_with_cooldown, reservation_data,
-    staff_api_client, staff_user, 
+    staff_api_client, staff_user,
     api_client, user, list_url):
     UnitAuthorization.objects.create(subject=resource_with_cooldown.unit,
                                      level=UnitAuthorizationLevel.manager, authorized=staff_user)
     reservation_data['resource'] = resource_with_cooldown.pk
-    
+
     api_client.force_authenticate(user=user)
     response = api_client.post(list_url, data=reservation_data)
     assert response.status_code == 201
@@ -3578,3 +3661,95 @@ def test_reservation_cooldown_before_first_reservation(
     assert response.status_code == 400
     assert_translated_response_contains(response, 'cooldown', 'Cannot be reserved during cooldown')
 
+
+@pytest.mark.django_db
+@freeze_time('2115-04-04')
+def test_reservation_cooldown_not_in_use_for_type_blocked_reservation(
+        resource_with_cooldown, reservation_data, staff_api_client, staff_user,
+        api_client, user, list_url):
+
+    UnitAuthorization.objects.create(subject=resource_with_cooldown.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    reservation_data['resource'] = resource_with_cooldown.pk
+    reservation_data['type'] = Reservation.TYPE_BLOCKED
+    staff_api_client.force_authenticate(user=staff_user)
+    response = staff_api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+    reservation_data['begin'] = '2115-04-04T10:00:00+02:00'
+    reservation_data['end'] = '2115-04-04T11:00:00+02:00'
+    reservation_data['type'] = Reservation.TYPE_NORMAL
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+
+@pytest.mark.django_db
+def test_overnight_reservation(
+    resource_with_overnight_reservations,
+    reservation_data, api_client, user,
+    list_url):
+    reservation_data['begin'] = '2115-04-04T08:00:00+02:00'
+    reservation_data['end'] = '2115-04-05T16:00:00+02:00'
+    reservation_data['resource'] = resource_with_overnight_reservations.pk
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 201
+
+@pytest.mark.django_db
+def test_overnight_reservation_disabled(
+    resource_with_overnight_reservations,
+    reservation_data, api_client, user,
+    list_url):
+    resource_with_overnight_reservations.overnight_reservations = False
+    resource_with_overnight_reservations.save()
+    reservation_data['begin'] = '2115-04-04T08:00:00+02:00'
+    reservation_data['end'] = '2115-04-05T16:00:00+02:00'
+    reservation_data['resource'] = resource_with_overnight_reservations.pk
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data)
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('is_staff', (True, False))
+def test_invalid_overnight_reservation_hours(
+    resource_with_overnight_reservations,
+    reservation_data, is_staff,
+    api_client, user, list_url):
+    if is_staff:
+        resource_with_overnight_reservations.unit.create_authorization(user, 'manager')
+    reservation_data['begin'] = '2115-04-04T10:00:00+02:00'
+    reservation_data['end'] = '2115-04-05T13:00:00+02:00'
+    reservation_data['resource'] = resource_with_overnight_reservations.pk
+    api_client.force_authenticate(user=user)
+    response = api_client.post(list_url, data=reservation_data, HTTP_ACCEPT_LANGUAGE='en')
+    if is_staff:
+        assert response.status_code == 201
+    else:
+        assert response.status_code == 400
+        assert_non_field_errors_contain(response, 'Reservation start and end must match the given overnight reservation start and end values')
+
+
+@override_settings(RESPA_MAILS_ENABLED=True)
+@pytest.mark.django_db
+def test_recurring_reservation_created_mail_attachments(
+    reservation_reservation_bulk_created,
+    reservation_metadata_set_with_name_number_email,
+    resource_in_unit4_1, recurring_reservation_data,
+    staff_api_client, staff_user, recurring_url):
+    UnitAuthorization.objects.create(subject=resource_in_unit4_1.unit,
+                                     level=UnitAuthorizationLevel.manager, authorized=staff_user)
+    resource_in_unit4_1.reservation_metadata_set = reservation_metadata_set_with_name_number_email
+    resource_in_unit4_1.save()
+    with switch_language(reservation_reservation_bulk_created, 'fi'):
+        reservation_reservation_bulk_created.short_message = 'Sarjavaraus luotu lyhyt viesti.'
+        reservation_reservation_bulk_created.subject = 'Sarjavaraus luotu aihe.'
+        reservation_reservation_bulk_created.body = 'Sarjavaraus luotu keho.'
+        reservation_reservation_bulk_created.save()
+    recurring_reservation_data['preferred_language'] = 'fi'
+    response = staff_api_client.post(recurring_url, data=recurring_reservation_data, format='json')
+    ical_files = [ical_file for _, ical_file, _ in mail.outbox[0].attachments]
+    assert response.status_code == 201
+    assert len(ical_files) == 3
+    assert len(mail.outbox) == 1

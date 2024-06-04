@@ -97,7 +97,7 @@ deprecation==2.1.0
     # via django-helusers-turku
 dill==0.3.6
     # via pylint
-django==3.2.24
+django==3.2.25
     # via
     #   -r requirements.in
     #   django-admin-json-editor
@@ -196,7 +196,7 @@ djangorestframework==3.14.0
     #   drf-yasg
 djangorestframework-simplejwt[crypto]==5.2.2
     # via -r requirements.in
-dnspython==2.3.0
+dnspython==2.6.1
     # via exchangelib
 drf-oidc-auth==0.10.0
     # via -r requirements.in
@@ -234,7 +234,7 @@ humanize==4.6.0
     #   delorean
 icalendar==5.0.4
     # via -r requirements.in
-idna==3.4
+idna==3.7
     # via
     #   -r requirements.in
     #   requests
@@ -256,7 +256,7 @@ itypes==1.2.0
     # via
     #   -r requirements.in
     #   coreapi
-jinja2==3.1.3
+jinja2==3.1.4
     # via
     #   -r requirements.in
     #   coreschema
@@ -303,7 +303,7 @@ paramiko==3.4.0
     # via -r requirements.in
 phonenumbers==8.13.6
     # via -r requirements.in
-pillow==10.2.0
+pillow==10.3.0
     # via
     #   -r requirements.in
     #   easy-thumbnails
@@ -419,7 +419,7 @@ pyyaml==6.0
     #   swagger-spec-validator
 raven==6.10.0
     # via -r requirements.in
-requests==2.31.0
+requests==2.32.0
     # via
     #   -r requirements.in
     #   coreapi
@@ -481,7 +481,7 @@ social-auth-core==4.3.0
     #   social-auth-app-django
 soupsieve==2.4
     # via beautifulsoup4
-sqlparse==0.4.4
+sqlparse==0.5.0
     # via
     #   -r requirements.in
     #   django

@@ -421,6 +421,13 @@ class Product(models.Model):
     def delete(self, *args, **kwargs):
         Product.objects.filter(id=self.id).update(archived_at=now())
 
+    def fmt_price_period(self):
+        total = int(self.price_period.total_seconds())
+        hours = total // 3600
+        minutes = (total % 3600) // 60
+        seconds = total % 60
+        return f"{hours:02}:{minutes:02}:{seconds:02}"
+
     @rounded
     def get_pretax_price(self) -> Decimal:
         return convert_aftertax_to_pretax(self.price, self.tax_percentage)

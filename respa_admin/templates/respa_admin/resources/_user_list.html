@@ -31,7 +31,7 @@
                         <span>{% trans 'Staff' %}</span>
                     </div>
                 </div>
-                {% if user != request.user %}
+                {% if user != request.user or request.user.is_superuser %}
                 <div class="col-md-3">
                     <div class="icon-text-container">
                         <svg class="person-edit-icon" width="28px" height="28px" viewBox="0 0 28 28" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
