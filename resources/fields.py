@@ -57,3 +57,16 @@ class TranslatedTextField(models.TextField):
         if language not in ['fi', 'sv', 'en']:
             return settings.LANGUAGE_CODE # Fallback
         return language
+
+class MultiEmailField(models.TextField):
+    def to_python(self, value):
+        if not value:
+            return []
+        if isinstance(value, list):
+            return value
+        return [val.strip() for val in value.splitlines() if val]
+    
+    def get_db_prep_value(self, value, connection, prepared):
+        if isinstance(value, list):
+            return '\n'.join(value)
+        return value
