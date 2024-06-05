@@ -1,5 +1,6 @@
 from django.conf import settings
 import django.contrib.admin.apps as django_apps
+from django.urls import reverse
 import helusers.admin_site as hel_apps
 
 
