@@ -1,9 +1,12 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from rest_framework import permissions, serializers, generics, mixins, viewsets
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from rest_framework import permissions, serializers, generics, mixins, viewsets, response, status
+from rest_framework.decorators import action
 
 from resources.models.utils import build_ical_feed_url
 from resources.models import Unit
+from users.models import ExtraPrefs
 
 
 all_views = []
@@ -14,6 +17,31 @@ def register_view(klass, name, base_name=None):
     if base_name is not None:
         entry['base_name'] = base_name
     all_views.append(entry)
+
+
+class ResourceOrderSerializer(serializers.Field):
+    def to_representation(self, value):
+        if isinstance(value, list):
+            return value
+        return value.split(',')
+
+    def to_internal_value(self, data):
+        if isinstance(data, str):
+            if not data:
+                return []
+            return data.split(',')
+        elif isinstance(data, list):
+            return data
+        else:
+            raise ValidationError("Value must be a list or a comma-separated string")
+
+
+class ExtraPrefsSerializer(serializers.ModelSerializer):
+    admin_resource_order = ResourceOrderSerializer(required=False)
+
+    class Meta:
+        model = ExtraPrefs
+        fields = ['admin_resource_order']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -86,6 +114,11 @@ class UserSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super(UserSerializer, self).to_representation(instance)
         user = self.context['request'].user
+        try:
+            extra_prefs = ExtraPrefs.objects.get(user=user)
+            data['extra_prefs'] = ExtraPrefsSerializer(extra_prefs).data
+        except ObjectDoesNotExist:
+            data['extra_prefs'] = None
 
         if user.id != instance.id:
             data.pop('birthdate', None)
@@ -110,6 +143,28 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         else:
             obj = self.request.user
         return obj
+
+    def _set_admin_resource_order(self, request):
+        user = self.request.user
+        value = request.data.get('admin_resource_order', None)
+        if isinstance(value, str):
+            value = value.split(',')
+
+        if not isinstance(value, list):
+            return response.Response({'detail': 'Invalid input format. Value must be a list of resource IDs'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if value or value == []:
+            extra_prefs, created = ExtraPrefs.objects.get_or_create(user=user)
+
+            extra_prefs.admin_resource_order = value
+            extra_prefs.save()
+            return response.Response(status=status.HTTP_200_OK)
+
+        return response.Response(status=status.HTTP_304_NOT_MODIFIED)
+
+    @action(detail=False, methods=['post'])
+    def set_admin_resource_order(self, request, pk=None):
+        return self._set_admin_resource_order(request)
 
     permission_classes = [permissions.IsAuthenticated]
     queryset = get_user_model().objects.all()

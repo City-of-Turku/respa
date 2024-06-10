@@ -4,6 +4,7 @@ from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
 from resources.models import Resource
 import datetime
 
@@ -39,7 +40,7 @@ class User(AbstractUser):
             "Designates whether the user is a General Administrator "
             "with special permissions to many objects within Respa. "
             "This is almost as powerful as superuser."))
-    
+
     @property
     def is_strong_auth(self):
         return self.amr in settings.STRONG_AUTH_CLAIMS
@@ -74,3 +75,39 @@ class User(AbstractUser):
 
     def has_outlook_link(self):
         return getattr(self, 'outlookcalendarlink', False)
+
+
+class ResourceOrder(models.TextField):
+    description = "A custom field to store a comma-separated list of resource IDs"
+
+    def to_python(self, value):
+        if not value:
+            return []
+        if isinstance(value, list):
+            return value
+        return value.split(',')
+
+    def from_db_value(self, value, expression, connection):
+        if value is None:
+            return value
+        return self.to_python(value)
+
+    def get_prep_value(self, value):
+        if not value:
+            return ''
+        if isinstance(value, list):
+            return ','.join(map(str, value))
+        raise ValidationError("Value must be a list")
+
+    def validate(self, value, model_instance):
+        if not isinstance(value, list):
+            raise ValidationError("Value must be a list")
+        super().validate(value, model_instance)
+
+
+class ExtraPrefs(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    admin_resource_order = ResourceOrder()
+
+    def __str__(self):
+        return f"{_('Extra preferences')} ({self.id})"
