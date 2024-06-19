@@ -17,7 +17,13 @@
         <div class="form-group">
             <div class="time-input-row range-input">
                 {{ day.opens }}
-                <span class="glyphicon glyphicon-minus"></span>
+                <span
+                    id="span-day-{{ id }}-{{ dayId }}"
+                    class="glyphicon glyphicon-minus"
+                    {% if resource_has_overnight_reservations %}
+                    style="display:none;"
+                    {% endif %}>
+                </span>
                 {{ day.closes }}
             </div>
         </div>

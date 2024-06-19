@@ -1,3 +1,4 @@
+import datetime
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
 from django import forms
@@ -127,6 +128,20 @@ class DaysForm(forms.ModelForm):
         model = Day
         fields = ['weekday', 'opens', 'closes', 'closed']
 
+    def clean_opens(self):
+        opens = self.cleaned_data.get('opens', None)
+        if self.resource and self.resource.overnight_reservations:
+            if self.cleaned_data.get('closed', False):
+                return None
+            return datetime.time(hour=0, minute=0)
+        return opens
+    
+    def clean_closes(self):
+        closes = self.cleaned_data.get('closes', None)
+        if self.resource and self.resource.overnight_reservations:
+            return datetime.time(hour=23, minute=59)
+        return closes
+
     def clean(self):
         cleaned_data = super().clean()
         opens = cleaned_data.get('opens', None)
@@ -141,6 +156,13 @@ class DaysForm(forms.ModelForm):
 
         return cleaned_data
 
+    def set_hidden(self):
+        if self.resource.overnight_reservations:
+            self.fields['opens'].widget.attrs['style'] = 'display: none;'
+            self.fields['closes'].widget.attrs['style'] = 'display: none;'
+    
+    def has_changed(self):
+        return True
 
 class PeriodForm(forms.ModelForm):
     name = forms.CharField(
@@ -460,6 +482,12 @@ class PeriodFormset(forms.BaseInlineFormSet):
             form=DaysForm,
             extra=extra_days,
             validate_max=True
+        )(
+            instance=form.instance,
+            data=form.data if form.is_bound else None,
+            prefix='days-%s' % (
+                form.prefix,
+            ),
         )
 
         if self.instance and self.instance.pk:
@@ -469,13 +497,12 @@ class PeriodFormset(forms.BaseInlineFormSet):
                 if field.disabled:
                     field.required = False
 
-        return days_formset(
-            instance=form.instance,
-            data=form.data if form.is_bound else None,
-            prefix='days-%s' % (
-                form.prefix,
-            ),
-        )
+            for day in days_formset.forms:
+                setattr(day, 'resource', self.instance)
+                day.set_hidden()
+        
+        return days_formset
+
 
     def add_fields(self, form, index):
         super(PeriodFormset, self).add_fields(form, index)

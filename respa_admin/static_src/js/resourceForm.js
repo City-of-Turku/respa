@@ -563,12 +563,24 @@ function bindOvernightReservations() {
 
   const handle = () => {
     if ($(checkbox).is(':checked')) {
+      let periodDays = $("[id^=period-day-]");
+      $(periodDays).each((_, day) => {
+        $(day).find("input[id$=opens").hide();
+        $(day).find("span[id^=span-day-]").hide();
+        $(day).find("input[id$=closes").hide();
+      });
       $(overnight).show();
       $(overnightTimeFields).show();
       $(regular).hide();
       $(regular).find('select').attr('disabled', 'disabled');
       $(overnight).find('input').removeAttr('disabled');
     } else {
+      let periodDays = $("[id^=period-day-]");
+      $(periodDays).each((_, day) => {
+        $(day).find("input[id$=opens").show();
+        $(day).find("span[id^=span-day-]").show();
+        $(day).find("input[id$=closes").show();
+      });
       $(regular).show();
       $(overnightTimeFields).hide();
       $(overnight).hide();
