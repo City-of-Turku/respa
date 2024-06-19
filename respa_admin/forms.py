@@ -128,17 +128,20 @@ class DaysForm(forms.ModelForm):
         model = Day
         fields = ['weekday', 'opens', 'closes', 'closed']
 
+
+    def has_overnight_reservations(self):
+        resource = getattr(self, 'resource', None)
+        return resource and isinstance(resource, Resource) and resource.overnight_reservations
+
     def clean_opens(self):
         opens = self.cleaned_data.get('opens', None)
-        if self.resource and self.resource.overnight_reservations:
-            if self.cleaned_data.get('closed', False):
-                return None
+        if self.has_overnight_reservations():
             return datetime.time(hour=0, minute=0)
         return opens
     
     def clean_closes(self):
         closes = self.cleaned_data.get('closes', None)
-        if self.resource and self.resource.overnight_reservations:
+        if self.has_overnight_reservations():
             return datetime.time(hour=23, minute=59)
         return closes
 
@@ -157,7 +160,7 @@ class DaysForm(forms.ModelForm):
         return cleaned_data
 
     def set_hidden(self):
-        if self.resource.overnight_reservations:
+        if self.has_overnight_reservations():
             self.fields['opens'].widget.attrs['style'] = 'display: none;'
             self.fields['closes'].widget.attrs['style'] = 'display: none;'
     
