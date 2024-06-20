@@ -5,7 +5,7 @@
     (function ($) {
         function changeTaxfreeValue(edit = false) {
             // value of the read-only field that contains tax % when editing a pcg.
-            const percValue = parseInt($(".product_tax_percentage").find("div[class='grp-readonly']").text());
+            const percValue = parseFloat($(".product_tax_percentage").find("div[class='grp-readonly']").text());
             // stop if perc doesn't exist because this only works when editing a pcg.
             if (!percValue) { return; }
 
@@ -22,7 +22,7 @@
         };
         function changePrice(edit = false) {
             // value of the read-only field that contains tax % when editing a pcg.
-            const percValue = parseInt($(".product_tax_percentage").find("div[class='grp-readonly']").text());
+            const percValue = parseFloat($(".product_tax_percentage").find("div[class='grp-readonly']").text());
             // stop if perc doesn't exist because this only works when editing a pcg.
             if (!percValue) { return; }
             // current price value
@@ -52,7 +52,7 @@
             // add event listener to all customergroup timeslot price input elements.
             $(cgTimeslotPriceElements).on("change", function (event) {
                 // current tax %
-                const percValue = parseInt($(".product_tax_percentage").find("div[class='grp-readonly']").text());
+                const percValue = parseFloat($(".product_tax_percentage").find("div[class='grp-readonly']").text());
                 if (!percValue) { return; }
                 // cg time slot price value
                 const priceValue = parseFloat($(this).val());
@@ -68,7 +68,7 @@
                 $(vatFreeInput).val(Math.round(sum * 100) / 100);
             });
             $(cgTimeslotVATfreeElements).on("change", function (event) {
-                const percValue = parseInt($(".product_tax_percentage").find("div[class='grp-readonly']").text());
+                const percValue = parseFloat($(".product_tax_percentage").find("div[class='grp-readonly']").text());
                 if (!percValue) { return; }
                 const taxFreeValue = parseFloat($(this).val());
                 const id = event.target.id;

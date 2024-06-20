@@ -12,7 +12,7 @@
             if (taxFreeValue === 0 || edit) {
                 // value of the id_price input
                 const priceValue = parseFloat($("#id_price").val());
-                // int value of the id_tax_percentage input 
+                // int value of the id_tax_percentage input
                 const percValue = parseInt($("#id_tax_percentage").val());
                 // unrounded taxfree price value.
                 // example with 15e and 24%, 100 * 15 / (100+24) = 12.096774193548388
@@ -28,7 +28,7 @@
             if (taxFreeValue || edit) {
                 // value of the id_price_tax_free input
                 const taxFreeValue = parseFloat($("#id_price_tax_free").val());
-                // int value of the id_tax_percentage input 
+                // int value of the id_tax_percentage input
                 const percValue = parseInt($("#id_tax_percentage").val());
                 // unrounded price value.
                 // example with VAT-free price 15e and 24%, (15*24 / 100) + 15 = 18.6
@@ -46,8 +46,8 @@
             if (!taxfreeIndex && taxfreeIndex !== 0) { return; }
             // find correct taxfree input that corresponds to this input.
             const vatFreeInput = $(root).find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price_tax_free").find("input")[taxfreeIndex];
-            // int value of the id_tax_percentage input 
-            const percValue = parseInt($("#id_tax_percentage").val());
+            // float value of the id_tax_percentage input
+            const percValue = parseFloat($("#id_tax_percentage").val());
             // unrounded taxfree price value.
             const sum = 100 * price / (100 + percValue);
             // set rounded taxfree price to the correct input.
@@ -62,8 +62,8 @@
             if (!priceIndex && priceIndex !== 0) { return; }
             // find correct price input that corresponds to this input.
             const priceInput = $(root).find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price").find("input")[priceIndex];
-            // int value of the id_tax_percentage input 
-            const percValue = parseInt($("#id_tax_percentage").val());
+            // float value of the id_tax_percentage input
+            const percValue = parseFloat($("#id_tax_percentage").val());
             // unrounded price value.
             const sum = (taxFreePrice * percValue / 100) + taxFreePrice;
             // set rounded price to the correct input.
