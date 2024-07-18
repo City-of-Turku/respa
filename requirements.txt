@@ -459,7 +459,7 @@ ruamel-yaml-clib==0.2.7
     # via
     #   -r requirements.in
     #   ruamel-yaml
-sentry-sdk==1.15.0
+sentry-sdk==2.8.0
     # via -r requirements.in
 six==1.16.0
     # via
