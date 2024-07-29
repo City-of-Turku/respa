@@ -5,7 +5,7 @@
     (function ($) {
         function changeTaxfreeValue(edit = false) {
             // value of the read-only field that contains tax % when editing a pcg.
-            const percValue = parseInt($("div[class='grp-readonly']").text());
+            const percValue = parseFloat($("div[class='grp-readonly']").text());
             // stop if percValue doesn't exist because this only works when editing a pcg.
             if (!percValue) { return; }
             // current price_tax_free value
@@ -16,12 +16,12 @@
                 // unrounded taxfree price value.
                 const sum = 100 * priceValue / (100 + percValue);
                 // set price_tax_free input value to a rounded version of sum
-                $("#id_price_tax_free").val(Math.round(sum * 100) / 100);
+                $("#id_price_tax_free").val((Math.round((sum + Number.EPSILON) * 100) / 100).toFixed(2));
             }
         };
         function changePriceValue(edit = false) {
             // value of the read-only field that contains tax % when editing a pcg.
-            const percValue = parseInt($("div[class='grp-readonly']").text());
+            const percValue = parseFloat($("div[class='grp-readonly']").text());
             // stop if percValue doesn't exist because this only works when editing a pcg.
             if (!percValue) { return; }
             // current price_tax_free value
@@ -32,7 +32,7 @@
                 // unrounded taxfree price value.
                 const sum = (taxValue * percValue / 100) + taxValue;
                 // set price_tax_free input value to a rounded version of sum
-                $("#id_price").val(Math.round(sum * 100) / 100);
+                $("#id_price").val((Math.round((sum + Number.EPSILON) * 100) / 100).toFixed(2));
             }
         };
         $(document).ready(function () {
