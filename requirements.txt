@@ -146,7 +146,7 @@ django-grappelli==3.0.4
     # via -r requirements.in
 django-guardian==2.4.0
     # via -r requirements.in
-django-helusers==0.12.0
+django-helusers==0.13.0
     # via -r requirements.in
 django-hstore==1.4.2
     # via -r requirements.in
