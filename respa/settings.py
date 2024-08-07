@@ -324,6 +324,8 @@ USE_L10N = True
 
 USE_TZ = True
 
+USE_DEPRECATED_PYTZ = True
+
 LOCALE_PATHS = (
     os.path.join(BASE_DIR, 'locale'),
 )
