@@ -1,4 +1,5 @@
-from django.urls import include, path
+from django.urls import path
+from django.conf.urls import include
 from rest_framework import routers
 from respa_o365 import views
 from respa_o365.calendar_login import LoginCallBackView, LoginStartView

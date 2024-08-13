@@ -39,12 +39,12 @@ class SubscriptionHandler(object):
         return getattr(T, type)(
             T.TimeStamp(now().isoformat()),
             T.ItemId(
-                Id=get_random_string(),
-                ChangeKey=get_random_string(),
+                Id=get_random_string(8),
+                ChangeKey=get_random_string(8),
             ),
             T.ParentFolderId(
-                Id=get_random_string(),
-                ChangeKey=get_random_string(),
+                Id=get_random_string(8),
+                ChangeKey=get_random_string(8),
             ),
         )
 
@@ -86,7 +86,7 @@ class SubscriptionHandler(object):
 
 @pytest.mark.django_db
 def test_listener(settings, space_resource, exchange, monkeypatch):
-    email = '%s@example.com' % get_random_string()
+    email = '%s@example.com' % get_random_string(8)
     ex_resource = ExchangeResource.objects.create(
         resource=space_resource,
         principal_email=email,

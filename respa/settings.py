@@ -182,7 +182,6 @@ QUALITYTOOL_SFTP_PASSWORD = env('QUALITYTOOL_SFTP_PASSWORD')
 
 # Application definition
 INSTALLED_APPS = [
-    'helusers',
     'resources',
     'modeltranslation',
     'grappelli',
@@ -237,14 +236,17 @@ INSTALLED_APPS = [
     'sanitized_dump',
     'drf_yasg',
 ]
+
 if env('HELUSERS_PROVIDER') == 'respa.providers.turku_oidc':
-    INSTALLED_APPS.append(
-        'respa.providers.turku_oidc.admin_site.AdminConfig'
-    )
+    INSTALLED_APPS.extend([
+        'respa.providers.turku_oidc.admin_site.AdminConfig',
+        'helusers.apps.HelusersConfig'
+    ])
 else:
-    INSTALLED_APPS.append(
-        'helusers.apps.HelusersAdminConfig'
-    )
+    INSTALLED_APPS.extend([
+        "helusers.apps.HelusersConfig",
+        "helusers.apps.HelusersAdminConfig",
+    ])
 
 if env('SENTRY_DSN'):
     RAVEN_CONFIG = {
@@ -321,6 +323,8 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+USE_DEPRECATED_PYTZ = True
 
 LOCALE_PATHS = (
     os.path.join(BASE_DIR, 'locale'),

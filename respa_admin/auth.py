@@ -1,4 +1,4 @@
-from django.conf.urls import re_path
+from django.urls import re_path
 from django.contrib.auth.decorators import user_passes_test
 
 from .permissions import can_login_to_respa_admin

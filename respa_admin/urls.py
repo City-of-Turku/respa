@@ -1,6 +1,6 @@
 from django.conf import settings
-from django.conf.urls import re_path as unauthorized_url
-from django.urls import include
+from django.conf.urls import include
+from django.urls import re_path as unauthorized_url
 
 from . import views
 from .auth import admin_url as url

@@ -1,4 +1,4 @@
-from django.utils.translation import override as translation_override, ugettext as _
+from django.utils.translation import override as translation_override, gettext as _
 from django.views.generic.base import TemplateView
 from resources.models import Unit, UnitAuthorization, Resource, Day
 from resources.auth import is_general_admin

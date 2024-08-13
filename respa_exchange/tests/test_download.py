@@ -13,10 +13,10 @@ from respa_exchange.tests.utils import moments_close_enough
 
 
 def _generate_item_dict():
-    item_id = ItemID(get_random_string(), get_random_string())
+    item_id = ItemID(get_random_string(8), get_random_string(8))
     item_dict = {
         'id': item_id,
-        'subject': get_random_string(),
+        'subject': get_random_string(8),
         'start': now(),
         'end': now() + timedelta(hours=1),
         'organizer_name': 'Bob Dummy'
@@ -30,8 +30,8 @@ def test_download(
     settings, space_resource, exchange,
     sync_enabled
 ):
-    email = "%s@example.com" % get_random_string()
-    other_email = "%s@example.com" % get_random_string()
+    email = "%s@example.com" % get_random_string(8)
+    other_email = "%s@example.com" % get_random_string(8)
     item_dict = _generate_item_dict()
     other_item_dict = _generate_item_dict()
     item_id = item_dict["id"]

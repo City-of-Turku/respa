@@ -33,7 +33,7 @@ def exchange():
     An Exchange configuration for testing
     """
     return ExchangeConfiguration.objects.create(
-        url="https://127.0.0.1:8000/%s.asmx" % get_random_string(),
-        password=get_random_string(),
-        username=get_random_string(),
+        url="https://127.0.0.1:8000/%s.asmx" % get_random_string(14),
+        password=get_random_string(16),
+        username=get_random_string(6),
     )

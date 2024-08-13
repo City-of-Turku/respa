@@ -17,7 +17,7 @@ daemonize
 database-sanitizer>=0.4.0
 defusedxml
 Delorean
-Django==3.2.25
+Django>4
 django-admin-json-editor==0.2.3
 django-allauth
 django-anymail
@@ -28,7 +28,7 @@ django-environ
 django-filter>=2.4.0
 django-grappelli
 django-guardian
-django-helusers-turku
+django-helusers
 django-hstore
 django-image-cropping
 django-jinja
@@ -37,7 +37,7 @@ django-jsonform
 django-modeltranslation
 django-mptt
 django-taggit
-django-multi-email-field
+django-multi-email-field==0.7.0
 django-munigeo-turku==0.3
 django-parler==2.3
 django-parler-rest==2.2
