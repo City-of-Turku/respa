@@ -97,7 +97,7 @@ deprecation==2.1.0
     # via django-helusers
 dill==0.3.6
     # via pylint
-django==4.2.13
+django==4.2.15
     # via
     #   -r requirements.in
     #   django-admin-json-editor
