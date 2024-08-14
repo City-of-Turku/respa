@@ -222,12 +222,10 @@ class TurkuPaymentProviderV3(PaymentProvider):
                 order_line.order._in_memory_customer_group_id = order.customer_group.id
 
             product = order_line.product
-            int_tax = int(product.tax_percentage)
-            assert int_tax == product.tax_percentage
             product_data = {
                 'unitPrice': self.convert_price_to_cents(round_price(order_line.get_unit_price())),
                 'units': str(order_line.quantity),
-                'vatPercentage': str(int_tax),
+                'vatPercentage': str(product.tax_percentage),
                 'productCode': product.sku,
                 'description': product.name,
             }
