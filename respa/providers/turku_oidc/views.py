@@ -9,9 +9,9 @@ from django.conf import settings
 
 class OIDCOAuth2Adapter(OAuth2Adapter):
     provider_id = TurkuOIDCProvider.id
-    access_token_url = '%s/openid/token/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
-    authorize_url = '%s/openid/authorize/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
-    profile_url = '%s/openid/userinfo/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
+    access_token_url = '%s/token/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
+    authorize_url = '%s/authorize/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
+    profile_url = '%s/userinfo/' % getattr(settings, 'OIDC_API_TOKEN_AUTH')['ISSUER']
 
     def complete_login(self, request, app, token, **kwargs):
         headers = {'Authorization': 'Bearer {0}'.format(token.token)}
