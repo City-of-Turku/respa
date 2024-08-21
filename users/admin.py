@@ -1,9 +1,16 @@
 import random
 import uuid
+from .models import LoginMethod
+from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib import admin
+from django.core.files.base import ContentFile
+from django.utils.translation import gettext_lazy as _
+from django.utils.safestring import mark_safe
 from resources.models import Reservation
+from resources.models.utils import generate_id
+from respa_admin.forms import RespaSVGField
 from allauth.socialaccount.models import SocialAccount, EmailAddress
 
 
@@ -110,12 +117,13 @@ def anonymize_user_data(modeladmin, request, queryset):
 
 class UserAdmin(DjangoUserAdmin):
     fieldsets = _add_general_admin_to_fieldsets(DjangoUserAdmin.fieldsets) + (
-        (None, {'fields': ('department_name', 'uuid', 'favorite_resources')}),
+        (None, {'fields': ('amr', 'department_name', 'uuid', 'favorite_resources')}),
     )
     list_display = [
         'uuid', 'username', 'email',
         'first_name', 'last_name',
-        'is_staff', 'is_general_admin', 'is_superuser'
+        'is_staff', 'is_general_admin', 'is_superuser',
+        'get_login_method'
     ]
     list_filter = [
         'is_staff', 'is_general_admin', 'is_superuser',
@@ -124,5 +132,50 @@ class UserAdmin(DjangoUserAdmin):
     ]
     actions = [anonymize_user_data]
 
+    def get_login_method(self, obj):
+        return mark_safe(f'''
+            <img
+                style="max-width:20px;max-height:20px;"
+                title="{obj.amr.name if obj.amr else _('Unknown')}"
+                src="{obj.amr.icon.url if obj.amr else ''}"
+                alt="False">
+            </img>
+        ''')
+    get_login_method.short_description = _('Login method')
+    get_login_method.admin_order_field = 'amr__id'
 
+class LoginMethodAdminForm(forms.ModelForm):
+    icon = RespaSVGField(label=_('Icon'), required=False)
+
+    class Meta:
+        model = LoginMethod
+        fields = '__all__'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        icon = cleaned_data.get('icon')
+        id = cleaned_data.get('id')
+        if icon and isinstance(icon, str):
+            cleaned_data['icon'] = ContentFile(icon, name=f'{id}_{generate_id()}.svg')
+        return cleaned_data
+
+class LoginMethodAdmin(admin.ModelAdmin):
+    form = LoginMethodAdminForm
+    list_display = ('__str__', 'is_strong_auth', )
+    readonly_fields = ('is_strong_auth', )
+    fieldsets = (
+        (_('General'), {
+            'fields': (
+                'id', 'name', 'icon',
+            )
+        }),
+    )
+
+    def is_strong_auth(self, obj):
+        return obj.is_strong_auth
+    is_strong_auth.short_description = _('Strong authentication')
+    is_strong_auth.boolean = True
+           
+
+admin.site.register(LoginMethod, LoginMethodAdmin)
 admin.site.register(User, UserAdmin)

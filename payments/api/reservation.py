@@ -162,7 +162,7 @@ class ReservationEndpointOrderSerializer(OrderSerializerBase):
         customer_group = attrs.get('customer_group', None)
         resource = self.context.get('resource')
 
-        login_method = getattr(request.user, 'amr', None)
+        login_method = request.user.amr.id if request.user.amr else None
         if login_method:
             for order_line in attrs.get('order_lines', []):
                 product = order_line.get('product')

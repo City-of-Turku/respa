@@ -1,8 +1,10 @@
 from helusers.oidc import resolve_user, ApiTokenAuthentication as HelusersApiTokenAuthentication
 from helusers.authz import UserAuthorization
 from helusers.user_utils import _try_create_or_update
+from users.models import LoginMethod
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from django.utils.translation import gettext as _
+from django.utils import timezone
 from django.conf import settings
 from rest_framework import exceptions
 from django.db import transaction, IntegrityError
@@ -28,7 +30,7 @@ class ApiTokenAuthentication(HelusersApiTokenAuthentication):
                 raise AuthenticationFailed(
                     _("Not authorized for API scope \"{api_scope}\"")
                     .format(api_scope=api_scope))
-        user.amr = payload['amr']
+        
         return (user, auth)
 
     def decode_jwt(self, jwt_value):
@@ -54,6 +56,7 @@ class ApiTokenAuthentication(HelusersApiTokenAuthentication):
 
 def get_or_create_user(payload, oidc=False):
     user_id = payload.get('sub')
+    amr = payload.pop('amr')
     if not user_id:
         msg = _('Invalid payload.')
         raise exceptions.AuthenticationFailed(msg)
@@ -64,4 +67,9 @@ def get_or_create_user(payload, oidc=False):
         try_again = True
     if try_again:
         user = _try_create_or_update(user_id, payload, oidc)
+
+    user.amr, _ = LoginMethod.objects.get_or_create(id=amr)
+    user.last_login = timezone.now()
+    user.save()
+
     return user

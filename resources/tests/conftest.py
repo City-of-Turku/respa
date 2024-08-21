@@ -13,6 +13,7 @@ from resources.models import Equipment, EquipmentAlias, ResourceEquipment, Equip
 from resources.models import AccessibilityValue, AccessibilityViewpoint, ResourceAccessibility, UnitAccessibility
 from resources.models import ResourceUniversalFormOption, ResourceUniversalField, UniversalFormFieldType
 from resources.models import ReservationMetadataSet, ReservationMetadataField
+from users.models import LoginMethod
 from munigeo.models import Municipality
 from maintenance.models import MaintenanceMessage, MaintenanceMode
 from .utils import get_test_image_data, get_test_image_payload
@@ -350,15 +351,26 @@ def resource_equipment(resource_in_unit, equipment):
 
 @pytest.mark.django_db
 @pytest.fixture
-def strong_user():
+def strong_auth_login_method():
+    return LoginMethod.objects.create(id='very_strong_auth', name='Very Strong Auth')
+
+@pytest.mark.django_db
+@pytest.fixture
+def weak_auth_login_method():
+    return LoginMethod.objects.create(id='very_weak_auth', name='Very Weak Auth')
+    
+
+@pytest.mark.django_db
+@pytest.fixture
+def strong_user(strong_auth_login_method):
     user = get_user_model().objects.create(
         username='test_user_super_strong',
         first_name='Evert',
         last_name='Bäckström',
         email='cem@kaner.com',
-        preferred_language='en'
+        preferred_language='en',
+        amr=strong_auth_login_method
     )
-    user.amr = 'very_strong_auth'
     return user
 
 @pytest.mark.django_db

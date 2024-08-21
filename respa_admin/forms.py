@@ -3,6 +3,8 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.forms import inlineformset_factory
 from django.forms.formsets import DELETION_FIELD_NAME
 from guardian.core import ObjectPermissionChecker
@@ -12,6 +14,7 @@ from .widgets import (
     RespaCheckboxInput,
     RespaGenericCheckboxInput,
     RespaRadioSelect,
+    RespaSVGWidget
 )
 
 from resources.models import (
@@ -880,3 +883,28 @@ def get_unit_authorization_formset(request=None, extra=1, instance=None):
         return unit_authorization_formset(request=request, instance=instance)
     else:
         return unit_authorization_formset(request=request, data=request.POST, instance=instance)
+
+
+def _validate_svg(value):
+    if isinstance(value, str) and not value.startswith('<svg'):
+        raise ValidationError('Must be correct svg')
+    elif isinstance(value, InMemoryUploadedFile):
+        if not value.read(4).decode().startswith('<svg'):
+            raise ValidationError('Must be correct svg')
+
+    
+
+class RespaSVGField(forms.MultiValueField):
+    def __init__(self, *args, **kwargs):
+        super().__init__([
+            forms.CharField(required=False, validators=[_validate_svg]),
+            forms.FileField(required=False, validators=[FileExtensionValidator(['svg']), _validate_svg])
+        ], widget=RespaSVGWidget(), *args, **kwargs)
+
+    def compress(self, data_list):
+        if data_list:
+            if data_list[1]:
+                return data_list[1]
+            elif data_list[0]:
+                return data_list[0]
+        return None
