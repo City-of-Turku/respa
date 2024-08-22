@@ -900,6 +900,7 @@ class RespaSVGField(forms.MultiValueField):
             forms.CharField(required=False, validators=[_validate_svg]),
             forms.FileField(required=False, validators=[FileExtensionValidator(['svg']), _validate_svg])
         ], widget=RespaSVGWidget(), *args, **kwargs)
+        self.help_text = _('Upload SVG file or paste SVG code.')
 
     def compress(self, data_list):
         if data_list:

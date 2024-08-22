@@ -100,6 +100,7 @@ def get_login_method(user):
                 """)
     return mark_safe(f"""
                     <i
-                    title="{_(user.amr.name or user.amr.id) if user.amr else _('Unknown')}"
-                    class="glyphicon glyphicon-question-sign"></i>   
+                    title="{_(user.amr.name or user.amr.id) if user.amr else _('Unknown login method')}"
+                    class="glyphicon glyphicon-question-sign"
+                    style="max-width: 25px; max-height: 25px"></i>
                     """)

@@ -2926,3 +2926,9 @@ msgstr ""
 
 msgid "Last name"
 msgstr ""
+
+msgid "Unknown login method"
+msgstr ""
+
+msgid "Upload SVG file or paste SVG code."
+msgstr ""

@@ -11,6 +11,7 @@ from django.utils.safestring import mark_safe
 from resources.models import Reservation
 from resources.models.utils import generate_id
 from respa_admin.forms import RespaSVGField
+from respa_admin.templatetags import templatetags
 from allauth.socialaccount.models import SocialAccount, EmailAddress
 
 
@@ -123,7 +124,7 @@ class UserAdmin(DjangoUserAdmin):
         'uuid', 'username', 'email',
         'first_name', 'last_name',
         'is_staff', 'is_general_admin', 'is_superuser',
-        'get_login_method'
+        'login_method'
     ]
     list_filter = [
         'is_staff', 'is_general_admin', 'is_superuser',
@@ -132,17 +133,10 @@ class UserAdmin(DjangoUserAdmin):
     ]
     actions = [anonymize_user_data]
 
-    def get_login_method(self, obj):
-        return mark_safe(f'''
-            <img
-                style="max-width:20px;max-height:20px;"
-                title="{obj.amr.name if obj.amr else _('Unknown')}"
-                src="{obj.amr.icon.url if obj.amr else ''}"
-                alt="False">
-            </img>
-        ''')
-    get_login_method.short_description = _('Login method')
-    get_login_method.admin_order_field = 'amr__id'
+    def login_method(self, obj):
+        return templatetags.get_login_method(obj)
+    login_method.short_description = _('Login method')
+    login_method.admin_order_field = 'amr__id'
 
 class LoginMethodAdminForm(forms.ModelForm):
     icon = RespaSVGField(label=_('Icon'), required=False)

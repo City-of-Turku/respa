@@ -2316,3 +2316,9 @@ msgstr "Etunimi"
 
 msgid "Last name"
 msgstr "Sukunimi"
+
+msgid "Unknown login method"
+msgstr "Tuntematon kirjautumistapa"
+
+msgid "Upload SVG file or paste SVG code."
+msgstr "Lataa SVG-tiedosto tai liitä SVG-koodi."

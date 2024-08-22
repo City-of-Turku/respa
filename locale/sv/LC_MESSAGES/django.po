@@ -2257,3 +2257,9 @@ msgstr "Förnamn"
 
 msgid "Last name"
 msgstr "Efternamn"
+
+msgid "Unknown login method"
+msgstr "Okänd inloggningsmetod"
+
+msgid "Upload SVG file or paste SVG code."
+msgstr "Ladda upp SVG-fil eller klistra in SVG-kod."
