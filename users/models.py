@@ -3,9 +3,27 @@ from helusers.models import AbstractUser
 from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
-from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from resources.models import Resource
 import datetime
+
+class LoginMethod(models.Model):
+    id = models.CharField(verbose_name=_('Id'), unique=True, primary_key=True)
+    name = models.CharField(verbose_name=_('Name'), blank=False, null=False)
+    icon = models.FileField(upload_to='loginmethod_icons', validators=[FileExtensionValidator(['svg'])],
+                            null=True, blank=True)
+    
+    @property
+    def is_strong_auth(self):
+        return self.id in settings.STRONG_AUTH_CLAIMS
+
+    def __str__(self):
+        return f'{self.name} ({self.id})' if self.name else self.id
+    
+    class Meta:
+        verbose_name = _('Login method')
+        verbose_name_plural = _('Login methods')
 
 class User(AbstractUser):
     first_name = models.CharField(verbose_name=_('First name'), max_length=100, null=True, blank=True)
@@ -13,7 +31,9 @@ class User(AbstractUser):
     email = models.CharField(verbose_name=_('Email'), null=True, max_length=100)
     birthdate = models.DateField(null=True, blank=True, verbose_name=_('Birthdate'))
     oid = models.CharField(verbose_name=_('Oid'), max_length=255, null=True, blank=True)
-    amr = None
+    amr = models.ForeignKey(LoginMethod,
+                            on_delete=models.SET_NULL,
+                            verbose_name=_('Login method'), null=True, blank=True)
 
     ical_token = models.SlugField(
         max_length=16, null=True, blank=True, unique=True, db_index=True, verbose_name="iCal token"
@@ -39,10 +59,10 @@ class User(AbstractUser):
             "Designates whether the user is a General Administrator "
             "with special permissions to many objects within Respa. "
             "This is almost as powerful as superuser."))
-    
+
     @property
     def is_strong_auth(self):
-        return self.amr in settings.STRONG_AUTH_CLAIMS
+        return self.amr and self.amr.is_strong_auth
 
     def __str__(self):
         display_name = str('%s %s' % (self.first_name or '', self.last_name or '')).strip()
@@ -54,6 +74,8 @@ class User(AbstractUser):
 
     class Meta:
         ordering = ('id',)
+        verbose_name = _('User')
+        verbose_name_plural = _('Users')
 
     def get_display_name(self):
         return '{0} {1}'.format(self.first_name, self.last_name).strip()
@@ -74,3 +96,39 @@ class User(AbstractUser):
 
     def has_outlook_link(self):
         return getattr(self, 'outlookcalendarlink', False)
+
+
+class ResourceOrder(models.TextField):
+    description = "A custom field to store a comma-separated list of resource IDs"
+
+    def to_python(self, value):
+        if not value:
+            return []
+        if isinstance(value, list):
+            return value
+        return value.split(',')
+
+    def from_db_value(self, value, expression, connection):
+        if value is None:
+            return value
+        return self.to_python(value)
+
+    def get_prep_value(self, value):
+        if not value:
+            return ''
+        if isinstance(value, list):
+            return ','.join(map(str, value))
+        raise ValidationError("Value must be a list")
+
+    def validate(self, value, model_instance):
+        if not isinstance(value, list):
+            raise ValidationError("Value must be a list")
+        super().validate(value, model_instance)
+
+
+class ExtraPrefs(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    admin_resource_order = ResourceOrder()
+
+    def __str__(self):
+        return f"{_('Extra preferences')} ({self.id})"

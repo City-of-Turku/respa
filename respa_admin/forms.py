@@ -1,7 +1,10 @@
+import datetime
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.forms import inlineformset_factory
 from django.forms.formsets import DELETION_FIELD_NAME
 from guardian.core import ObjectPermissionChecker
@@ -11,6 +14,7 @@ from .widgets import (
     RespaCheckboxInput,
     RespaGenericCheckboxInput,
     RespaRadioSelect,
+    RespaSVGWidget
 )
 
 from resources.models import (
@@ -127,6 +131,23 @@ class DaysForm(forms.ModelForm):
         model = Day
         fields = ['weekday', 'opens', 'closes', 'closed']
 
+
+    def has_overnight_reservations(self):
+        resource = getattr(self, 'resource', None)
+        return resource and isinstance(resource, Resource) and resource.overnight_reservations
+
+    def clean_opens(self):
+        opens = self.cleaned_data.get('opens', None)
+        if self.has_overnight_reservations():
+            return datetime.time(hour=0, minute=0)
+        return opens
+    
+    def clean_closes(self):
+        closes = self.cleaned_data.get('closes', None)
+        if self.has_overnight_reservations():
+            return datetime.time(hour=23, minute=59)
+        return closes
+
     def clean(self):
         cleaned_data = super().clean()
         opens = cleaned_data.get('opens', None)
@@ -141,6 +162,13 @@ class DaysForm(forms.ModelForm):
 
         return cleaned_data
 
+    def set_hidden(self):
+        if self.has_overnight_reservations():
+            self.fields['opens'].widget.attrs['style'] = 'display: none;'
+            self.fields['closes'].widget.attrs['style'] = 'display: none;'
+    
+    def has_changed(self):
+        return True
 
 class PeriodForm(forms.ModelForm):
     name = forms.CharField(
@@ -460,6 +488,12 @@ class PeriodFormset(forms.BaseInlineFormSet):
             form=DaysForm,
             extra=extra_days,
             validate_max=True
+        )(
+            instance=form.instance,
+            data=form.data if form.is_bound else None,
+            prefix='days-%s' % (
+                form.prefix,
+            ),
         )
 
         if self.instance and self.instance.pk:
@@ -469,13 +503,12 @@ class PeriodFormset(forms.BaseInlineFormSet):
                 if field.disabled:
                     field.required = False
 
-        return days_formset(
-            instance=form.instance,
-            data=form.data if form.is_bound else None,
-            prefix='days-%s' % (
-                form.prefix,
-            ),
-        )
+            for day in days_formset.forms:
+                setattr(day, 'resource', self.instance)
+                day.set_hidden()
+        
+        return days_formset
+
 
     def add_fields(self, form, index):
         super(PeriodFormset, self).add_fields(form, index)
@@ -850,3 +883,29 @@ def get_unit_authorization_formset(request=None, extra=1, instance=None):
         return unit_authorization_formset(request=request, instance=instance)
     else:
         return unit_authorization_formset(request=request, data=request.POST, instance=instance)
+
+
+def _validate_svg(value):
+    if isinstance(value, str) and not value.startswith('<svg'):
+        raise ValidationError('Must be correct svg')
+    elif isinstance(value, InMemoryUploadedFile):
+        if not value.read(4).decode().startswith('<svg'):
+            raise ValidationError('Must be correct svg')
+
+    
+
+class RespaSVGField(forms.MultiValueField):
+    def __init__(self, *args, **kwargs):
+        super().__init__([
+            forms.CharField(required=False, validators=[_validate_svg]),
+            forms.FileField(required=False, validators=[FileExtensionValidator(['svg']), _validate_svg])
+        ], widget=RespaSVGWidget(), *args, **kwargs)
+        self.help_text = _('Upload SVG file or paste SVG code.')
+
+    def compress(self, data_list):
+        if data_list:
+            if data_list[1]:
+                return data_list[1]
+            elif data_list[0]:
+                return data_list[0]
+        return None

@@ -12,14 +12,13 @@
             if (taxFreeValue === 0 || edit) {
                 // value of the id_price input
                 const priceValue = parseFloat($("#id_price").val());
-                // int value of the id_tax_percentage input 
-                const percValue = parseInt($("#id_tax_percentage").val());
+                // float value of the id_tax_percentage input
+                const percValue = parseFloat($("#id_tax_percentage").val());
                 // unrounded taxfree price value.
                 // example with 15e and 24%, 100 * 15 / (100+24) = 12.096774193548388
                 const sum = 100 * priceValue / (100 + percValue);
                 // set price_tax_free input value to a rounded version of sum
-                // Math.round(12.096774193548388 * 100) / 100 = 12.1
-                $("#id_price_tax_free").val(Math.round(sum * 100) / 100);
+                $("#id_price_tax_free").val((Math.round((sum + Number.EPSILON) * 100) / 100).toFixed(2));
             }
         };
         function changeProductPrice(edit = false) {
@@ -28,13 +27,13 @@
             if (taxFreeValue || edit) {
                 // value of the id_price_tax_free input
                 const taxFreeValue = parseFloat($("#id_price_tax_free").val());
-                // int value of the id_tax_percentage input 
-                const percValue = parseInt($("#id_tax_percentage").val());
+                // float value of the id_tax_percentage input
+                const percValue = parseFloat($("#id_tax_percentage").val());
                 // unrounded price value.
                 // example with VAT-free price 15e and 24%, (15*24 / 100) + 15 = 18.6
                 const sum = (taxFreeValue * percValue / 100) + taxFreeValue;
                 // set price input value to a rounded version of sum
-                $("#id_price").val(Math.round(sum * 100) / 100);
+                $("#id_price").val((Math.round((sum + Number.EPSILON) * 100) / 100).toFixed(2));
             }
         };
         function changeInlineTaxfree(price = 0, root = '', id = '') {
@@ -46,12 +45,12 @@
             if (!taxfreeIndex && taxfreeIndex !== 0) { return; }
             // find correct taxfree input that corresponds to this input.
             const vatFreeInput = $(root).find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price_tax_free").find("input")[taxfreeIndex];
-            // int value of the id_tax_percentage input 
-            const percValue = parseInt($("#id_tax_percentage").val());
+            // float value of the id_tax_percentage input
+            const percValue = parseFloat($("#id_tax_percentage").val());
             // unrounded taxfree price value.
             const sum = 100 * price / (100 + percValue);
             // set rounded taxfree price to the correct input.
-            $(vatFreeInput).val(Math.round(sum * 100) / 100);
+            $(vatFreeInput).val((Math.round((sum + Number.EPSILON) * 100) / 100).toFixed(2));
         };
         function changeInlinePrice(taxFreePrice = 0, root = '', id = '') {
             // for some reason one of the inputs is in a hidden div, immediately return if this is it.
@@ -62,12 +61,12 @@
             if (!priceIndex && priceIndex !== 0) { return; }
             // find correct price input that corresponds to this input.
             const priceInput = $(root).find(".grp-table").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price").find("input")[priceIndex];
-            // int value of the id_tax_percentage input 
-            const percValue = parseInt($("#id_tax_percentage").val());
+            // float value of the id_tax_percentage input
+            const percValue = parseFloat($("#id_tax_percentage").val());
             // unrounded price value.
             const sum = (taxFreePrice * percValue / 100) + taxFreePrice;
             // set rounded price to the correct input.
-            $(priceInput).val(Math.round(sum * 100) / 100);
+            $(priceInput).val((Math.round((sum + Number.EPSILON) * 100) / 100).toFixed(2));
         };
         $(document).ready(function () {
             changeProductTaxfree();

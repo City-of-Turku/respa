@@ -2,7 +2,7 @@ import logging
 from io import StringIO
 from contextlib import redirect_stdout
 from django.conf import settings
-from django.conf.urls import re_path
+from django.urls import re_path
 from django.contrib import admin
 from django.contrib.admin import site as admin_site
 from django.contrib.admin.utils import unquote

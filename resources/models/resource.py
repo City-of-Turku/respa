@@ -23,7 +23,6 @@ from six import BytesIO
 from django.utils.text import format_lazy
 from django.utils.translation import pgettext_lazy, gettext_lazy as _
 from django.contrib.postgres.fields import DateTimeRangeField
-from multi_email_field.fields import MultiEmailField
 from .gistindex import GistIndex
 from image_cropping import ImageRatioField
 from PIL import Image
@@ -41,7 +40,8 @@ from ..auth import (
 from ..errors import InvalidImage
 from ..fields import (
     EquipmentField,
-    TranslatedCharField, TranslatedTextField
+    TranslatedCharField, TranslatedTextField,
+    MultiEmailField
 )
 from .base import (
     AutoIdentifiedModel, NameIdentifiedModel,

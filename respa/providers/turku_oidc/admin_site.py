@@ -1,14 +1,14 @@
 from django.conf import settings
-from django.contrib import admin
-from django.contrib.admin.apps import AdminConfig as DjangoAdminConfig
-from helusers.admin_site import reverse, AdminSite as HelAdminSite
+import django.contrib.admin.apps as django_apps
+from django.urls import reverse
+import helusers.admin_site as hel_apps
 
 
 PROVIDERS = (
     ('respa.providers.turku_oidc', 'turku_oidc_login'),
 )
 
-class AdminSite(HelAdminSite):
+class AdminSite(hel_apps.AdminSite):
     login_template  = 'admin/tku_login.html'
 
     def __init__(self, *args, **kwargs):
@@ -44,5 +44,5 @@ class AdminSite(HelAdminSite):
         return ret
 
 
-class AdminConfig(DjangoAdminConfig):
+class AdminConfig(django_apps.AdminConfig):
     default_site = 'respa.providers.turku_oidc.admin_site.AdminSite'

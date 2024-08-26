@@ -1,6 +1,7 @@
 from django import template
 from django.db.models import Q
 from django.utils.translation import gettext as _
+from django.utils.safestring import mark_safe
 
 register = template.Library()
 
@@ -85,3 +86,21 @@ def replace(string, value):
 def disabled(form):
     form.field.widget.attrs.update({'disabled': True})
     return form
+
+@register.filter
+def get_login_method(user):
+    if user.amr and user.amr.icon:
+            return mark_safe(f"""
+                <img
+                    class="pull-left"
+                    style="max-width: 25px; max-height: 25px"
+                    src="{user.amr.icon.url}"
+                    title="{user.amr.name}">
+                </img>
+                """)
+    return mark_safe(f"""
+                    <i
+                    title="{_(user.amr.name or user.amr.id) if user.amr else _('Unknown login method')}"
+                    class="glyphicon glyphicon-question-sign"
+                    style="max-width: 25px; max-height: 25px"></i>
+                    """)

@@ -39,6 +39,7 @@ TAX_PERCENTAGES = [Decimal(x) for x in (
     '10.00',
     '14.00',
     '24.00',
+    '25.50',
 )]
 
 DEFAULT_TAX_PERCENTAGE = Decimal('24.00')

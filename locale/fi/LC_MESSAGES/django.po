@@ -1725,9 +1725,6 @@ msgstr "Tarvitsee avustusta"
 msgid "Require workstation"
 msgstr "Tarvitsee työaseman"
 
-msgid "Users"
-msgstr "Käyttäjät"
-
 msgid "Turku Users"
 msgstr "Turku käyttäjät"
 
@@ -2298,3 +2295,30 @@ msgstr "Varauksen alkamisajan ja päättymisajan on vastattava annettuja yön yl
 
 msgid "The reservation deadline is the start time. For example, if the start time is 6:00 PM, same-day bookings must be made before 6:00 PM."
 msgstr "Varausten takaraja on aloitusaika. Esim. jos aloitusaika on klo 18.00, saman päivän varaus on tehtävä ennen klo 18.00."
+
+msgid "Users"
+msgstr "Käyttäjät"
+
+msgid "Login method"
+msgstr "Kirjautumistapa"
+
+msgid "Login methods"
+msgstr "Kirjautumistavat"
+
+msgid "Icon"
+msgstr "Kuvake"
+
+msgid "Strong authentication"
+msgstr "Vahva tunnistautuminen"
+
+msgid "First name"
+msgstr "Etunimi"
+
+msgid "Last name"
+msgstr "Sukunimi"
+
+msgid "Unknown login method"
+msgstr "Tuntematon kirjautumistapa"
+
+msgid "Upload SVG file or paste SVG code."
+msgstr "Lataa SVG-tiedosto tai liitä SVG-koodi."

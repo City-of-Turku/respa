@@ -19,8 +19,13 @@
             <span class="sub-header">{{ unit.name }}</span>
 
             <div class="row panel management-list list-item">
-                <div class="col-md-3">
-                    <span>{{ user.first_name }} {{ user.last_name }}</span>
+                <div class="col-md-4 text-nowrap">
+                    <div class="col-md-2">
+                        {{ user|get_login_method }}
+                    </div>
+                    <div class="col-md-2">
+                        <span>{{ user.first_name }} {{ user.last_name }}</span>
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <span>{{ user.email }}</span>

@@ -212,6 +212,10 @@ class Day(models.Model):
 
     def save(self, *args, **kwargs):
         if self.opens and self.closes:
+            resource = getattr(self.period, 'resource', None)
+            if resource and resource.overnight_reservations:
+                self.opens = '00:00'
+                self.closes = '23:59'
             try:
                 opens = int(self.opens.isoformat().replace(":", ""))
                 closes = int(self.closes.isoformat().replace(":", ""))

@@ -5,7 +5,7 @@
     (function ($) {
         function changeTaxfreeValue(edit = false) {
             // value of the read-only field that contains tax % when editing a pcg.
-            const percValue = parseInt($(".product_tax_percentage").find("div[class='grp-readonly']").text());
+            const percValue = parseFloat($(".product_tax_percentage").find("div[class='grp-readonly']").text());
             // stop if perc doesn't exist because this only works when editing a pcg.
             if (!percValue) { return; }
 
@@ -17,12 +17,12 @@
                 // unrounded taxfree price value.
                 const sum = 100 * priceValue / (100 + percValue);
                 // set price_tax_free input value to a rounded version of sum
-                $("#id_price_tax_free").val(Math.round(sum * 100) / 100);
+                $("#id_price_tax_free").val((Math.round((sum + Number.EPSILON) * 100) / 100).toFixed(2));
             }
         };
         function changePrice(edit = false) {
             // value of the read-only field that contains tax % when editing a pcg.
-            const percValue = parseInt($(".product_tax_percentage").find("div[class='grp-readonly']").text());
+            const percValue = parseFloat($(".product_tax_percentage").find("div[class='grp-readonly']").text());
             // stop if perc doesn't exist because this only works when editing a pcg.
             if (!percValue) { return; }
             // current price value
@@ -34,7 +34,7 @@
                 // example with VAT-free price 15e and 24%, (15*24 / 100) + 15 = 18.6
                 const sum = (taxFreeValue * percValue / 100) + taxFreeValue;
                 // set price input value to a rounded version of sum
-                $("#id_price").val(Math.round(sum * 100) / 100);
+                $("#id_price").val((Math.round((sum + Number.EPSILON) * 100) / 100).toFixed(2));
             }
         };
         $(document).ready(function () {
@@ -52,7 +52,7 @@
             // add event listener to all customergroup timeslot price input elements.
             $(cgTimeslotPriceElements).on("change", function (event) {
                 // current tax %
-                const percValue = parseInt($(".product_tax_percentage").find("div[class='grp-readonly']").text());
+                const percValue = parseFloat($(".product_tax_percentage").find("div[class='grp-readonly']").text());
                 if (!percValue) { return; }
                 // cg time slot price value
                 const priceValue = parseFloat($(this).val());
@@ -65,10 +65,10 @@
                 // calculate new unrounded taxfree price value.
                 const sum = 100 * priceValue / (100 + percValue);
                 // set rounded tax free value to the correct taxfree input.
-                $(vatFreeInput).val(Math.round(sum * 100) / 100);
+                $(vatFreeInput).val((Math.round((sum + Number.EPSILON) * 100) / 100).toFixed(2));
             });
             $(cgTimeslotVATfreeElements).on("change", function (event) {
-                const percValue = parseInt($(".product_tax_percentage").find("div[class='grp-readonly']").text());
+                const percValue = parseFloat($(".product_tax_percentage").find("div[class='grp-readonly']").text());
                 if (!percValue) { return; }
                 const taxFreeValue = parseFloat($(this).val());
                 const id = event.target.id;
@@ -78,7 +78,7 @@
                 const priceInput = $("#customer_group_time_slot_prices-group").find("div[id]").find("div[class='grp-tr']").find(".grp-td.price").find("input")[cgIndex];
                 const sum = (taxFreeValue * percValue / 100) + taxFreeValue;
                 // set rounded tax free value to the correct taxfree input.
-                $(priceInput).val(Math.round(sum * 100) / 100);
+                $(priceInput).val((Math.round((sum + Number.EPSILON) * 100) / 100).toFixed(2));
             });
         });
     })(grp.jQuery);

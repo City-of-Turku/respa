@@ -2374,14 +2374,6 @@ msgstr ""
 msgid "Change password: %s"
 msgstr ""
 
-#: users/models.py:11
-msgid "First name"
-msgstr ""
-
-#: users/models.py:12
-msgid "Last name"
-msgstr ""
-
 #: users/models.py:14
 msgid "Birthdate"
 msgstr ""
@@ -2912,4 +2904,31 @@ msgid "Reservation start and end must match the given overnight reservation star
 msgstr ""
 
 msgid "The reservation deadline is the start time. For example, if the start time is 6:00 PM, same-day bookings must be made before 6:00 PM."
+msgstr ""
+
+msgid "Users"
+msgstr ""
+
+msgid "Login method"
+msgstr ""
+
+msgid "Login methods"
+msgstr ""
+
+msgid "Icon"
+msgstr ""
+
+msgid "Strong authentication"
+msgstr ""
+
+msgid "First name"
+msgstr ""
+
+msgid "Last name"
+msgstr ""
+
+msgid "Unknown login method"
+msgstr ""
+
+msgid "Upload SVG file or paste SVG code."
 msgstr ""

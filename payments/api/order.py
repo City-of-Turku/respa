@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from resources.api.base import register_view
 from resources.models import Reservation
+from random import randint
 
 from ..api.base import OrderLineSerializer, OrderSerializerBase
 from ..models import CustomerGroup, Order, OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup
@@ -67,6 +68,7 @@ class OrderViewSet(viewsets.ViewSet):
         end = order_data.pop('end')
         order_data['state'] = 'price_check'
         order = Order(**order_data)
+        order.id = randint(99999999, 999999999)
         order_lines = [OrderLine(order=order, **data) for data in order_lines_data]
 
         # store the OrderLine objects in the Order object so that we can use

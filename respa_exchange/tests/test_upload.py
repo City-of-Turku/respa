@@ -22,9 +22,9 @@ def test_crud_reservation(
 ):
     settings.RESPA_EXCHANGE_ENABLED = master_switch
     delegate = CRUDItemHandlers(
-        item_id=get_random_string(),
-        change_key=get_random_string(),
-        update_change_key=get_random_string(),
+        item_id=get_random_string(8),
+        change_key=get_random_string(8),
+        update_change_key=get_random_string(8),
     )
     SoapSeller.wire(settings, delegate)
     if is_exchange_resource:

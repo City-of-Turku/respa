@@ -2239,3 +2239,27 @@ msgstr "Reservationsstart och reservationsslut måste överensstämma med de ang
 
 msgid "The reservation deadline is the start time. For example, if the start time is 6:00 PM, same-day bookings must be made before 6:00 PM."
 msgstr "Bokningsfristen är starttiden. Till exempel, om starttiden är 18.00, måste bokningar för samma dag göras före 18.00."
+
+msgid "Users"
+msgstr "Användare"
+
+msgid "Login method"
+msgstr "Inloggningsmetod"
+
+msgid "Login methods"
+msgstr "Inloggningsmetoder"
+
+msgid "Icon"
+msgstr "Ikon"
+
+msgid "First name"
+msgstr "Förnamn"
+
+msgid "Last name"
+msgstr "Efternamn"
+
+msgid "Unknown login method"
+msgstr "Okänd inloggningsmetod"
+
+msgid "Upload SVG file or paste SVG code."
+msgstr "Ladda upp SVG-fil eller klistra in SVG-kod."

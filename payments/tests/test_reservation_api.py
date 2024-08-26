@@ -18,6 +18,7 @@ from resources.models.unit import UnitAuthorization
 from resources.models.utils import generate_id, get_translated_fields
 from resources.tests.conftest import resource_in_unit, user_api_client  # noqa
 from resources.tests.test_reservation_api import day_and_period  # noqa
+from users.models import LoginMethod
 
 from ..factories import ProductFactory
 from ..models import CustomerGroup, Order, OrderCustomerGroupData, OrderLine, Product, ProductCustomerGroup
@@ -851,6 +852,7 @@ def test_regular_user_manual_confirmation_reservation_with_product(
 
 def test_reservation_raises_validation_error_when_order_cg_is_not_allowed_for_a_product(
     api_client, user, resource_in_unit, product, product_with_cg_login_restrictions,
+    weak_auth_login_method,
     customer_group_login_method_internals, customer_group_with_login_method_restrictions):
     """
     Tests that a validation error is raised when reservation order product has customer group
@@ -867,7 +869,7 @@ def test_reservation_raises_validation_error_when_order_cg_is_not_allowed_for_a_
         'reserver_name': 'Test Tester',
         'order': order_data
     })
-    user.amr = 'test-wont-work'
+    user.amr = weak_auth_login_method
     user.save()
     api_client.force_authenticate(user=user)
     response = api_client.post(LIST_URL, data=reservation_data)
@@ -877,6 +879,7 @@ def test_reservation_raises_validation_error_when_order_cg_is_not_allowed_for_a_
 
 def test_reservation_does_not_raise_validation_error_when_order_products_do_not_contain_login_method_restrictions(
     api_client, user, resource_in_unit, product, product_with_cg_login_restrictions,
+    weak_auth_login_method,
     customer_group_login_method_internals, customer_group_with_login_method_restrictions):
     """
     Tests that validation errors are not raised when reservation order does not contain products with
@@ -892,7 +895,7 @@ def test_reservation_does_not_raise_validation_error_when_order_products_do_not_
         'reserver_name': 'Test Tester',
         'order': order_data
     })
-    user.amr = 'test-some-other-amr'
+    user.amr = weak_auth_login_method
     user.save()
     api_client.force_authenticate(user=user)
     response = api_client.post(LIST_URL, data=reservation_data)
@@ -916,7 +919,7 @@ def test_reservation_does_not_raise_validation_error_when_order_has_restricted_c
         'reserver_name': 'Test Tester',
         'order': order_data
     })
-    user.amr = customer_group_login_method_internals.login_method_id
+    user.amr, _ = LoginMethod.objects.get_or_create(id=customer_group_login_method_internals.login_method_id, name='Internal AMR')
     user.save()
     api_client.force_authenticate(user=user)
     response = api_client.post(LIST_URL, data=reservation_data)
@@ -924,7 +927,7 @@ def test_reservation_does_not_raise_validation_error_when_order_has_restricted_c
 
 
 def test_reservation_does_not_raise_validation_error_when_prods_have_only_restricted_cgs(
-    api_client, user, resource_in_unit, product_with_cg_login_restrictions):
+    api_client, user, resource_in_unit, product_with_cg_login_restrictions, weak_auth_login_method):
     """
     Tests that validation errors are not raised when reserved resource has only
     restricted products for the user
@@ -939,7 +942,7 @@ def test_reservation_does_not_raise_validation_error_when_prods_have_only_restri
         'reserver_name': 'Test Tester',
         'order': order_data
     })
-    user.amr = 'test-amr-123'
+    user.amr = weak_auth_login_method
     user.save()
     api_client.force_authenticate(user=user)
     response = api_client.post(LIST_URL, data=reservation_data)

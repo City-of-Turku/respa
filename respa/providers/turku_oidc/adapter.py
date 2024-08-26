@@ -1,10 +1,16 @@
 from helusers.adapter import DefaultSocialAccountAdapter
-from helusers.user_utils import update_user
+from helusers.user_utils import update_user as _update_user
 from helusers.utils import username_to_uuid
+from django.utils import timezone
+from users.models import User, LoginMethod
 
-from users.models import User
-
-
+def update_user(user, payload, oidc=False):
+    amr = payload.pop('amr', None)
+    if amr:
+        user.amr, _ = LoginMethod.objects.get_or_create(id=amr)
+    user.last_login = timezone.now()
+    user.save()
+    return _update_user(user, payload, oidc)
 
 class SocialAccountAdapter(DefaultSocialAccountAdapter):
     def pre_social_login(self, request, sociallogin):
