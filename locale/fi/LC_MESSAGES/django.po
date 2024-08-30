@@ -866,7 +866,7 @@ msgid "You must end the reservation after it has begun"
 msgstr "Varauksen loppuaika ei voi olla ennen alkuaikaa"
 
 msgid "Begin and end time must match time slots"
-msgstr "Tarkista aikarajoitteet"
+msgstr "Aloitus- ja lopetusajan on vastattava määritettyjä aikaslotteja"
 
 msgid "This unit does not allow overlapping reservations for its resources"
 msgstr "Tämä toimipiste ei salli päällekkäisiä varauksia resurssien välillä"
