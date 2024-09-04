@@ -119,10 +119,6 @@
                         </div>
                         <div class="col-md-8">
                             <div>
-                                <span class="{% if unit_user.is_staff %}shape-success{% else %}shape-danger{% endif %}"></span>
-                                <span>{% trans 'Staff' %}</span>
-                            </div>
-                            <div>
                                 <span class="{% if user_can_approve %}shape-success{% else %}shape-danger{% endif %}"></span>
                                 <span>{% trans 'Can approve reservations' %}</span>
                             </div>
