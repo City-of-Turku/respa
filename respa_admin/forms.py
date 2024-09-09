@@ -244,6 +244,9 @@ class RespaMultiEmailField(MultiEmailField):
         if isinstance(value, list):
             return value
         return [val.strip() for val in value.splitlines() if val]
+    
+    def prepare_value(self, value):
+        return self.to_python(value)
 
 
 class ResourceForm(forms.ModelForm):
