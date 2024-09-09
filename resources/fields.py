@@ -70,3 +70,6 @@ class MultiEmailField(models.TextField):
         if isinstance(value, list):
             return '\n'.join(value)
         return value
+
+    def from_db_value(self, value, *args, **kwargs):
+        return self.to_python(value)
