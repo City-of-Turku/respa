@@ -131,16 +131,6 @@ class ManageUserPermissionsView(ExtraContextMixin, UpdateView):
         valid_form = form.is_valid()
         valid_unit_authorization_formset = unit_authorization_formset.is_valid()
 
-        if valid_unit_authorization_formset:
-            perms_are_empty_or_marked_for_deletion = all(
-                {"DELETE": True}.items() <= dict.items() or len(dict) == 0
-                for dict in unit_authorization_formset.cleaned_data
-            )
-
-        if not form.cleaned_data['is_staff'] and not perms_are_empty_or_marked_for_deletion:
-            form.add_error(None, _('You can\'t remove staff status from user with existing permissions'))
-            return False
-
         return valid_form and valid_unit_authorization_formset
 
     def get_context_data(self, **kwargs):
@@ -161,6 +151,17 @@ class ManageUserPermissionsView(ExtraContextMixin, UpdateView):
             return self.forms_valid(form, unit_authorization_formset)
         else:
             return self.forms_invalid(form, unit_authorization_formset)
+    
+    def _manage_staff_status(self):
+        if not UnitAuthorization.objects.for_user(self.object).exists():
+            self.object.is_staff = False
+            self.object.save()
+            return
+        
+        if not self.object.is_staff:
+            self.object.is_staff = True
+            self.object.save()
+            return
 
     def forms_valid(self, form, unit_authorization_formset):
         user = self.request.user
@@ -191,7 +192,7 @@ class ManageUserPermissionsView(ExtraContextMixin, UpdateView):
         for _, unit_auths in itertools.groupby(unit_auths, lambda unit_auth: unit_auth.subject):
             max(unit_auths)._ensure_lower_auth()
 
-
+        self._manage_staff_status()
         return HttpResponseRedirect(self.get_success_url())
 
     def forms_invalid(self, form, unit_authorization_formset):

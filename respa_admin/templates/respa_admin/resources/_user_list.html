@@ -31,10 +31,6 @@
                     <span>{{ user.email }}</span>
                 </div>
                 <div class="col-md-3">
-                    <div>
-                        <span class="{% if user.is_staff %}shape-success{% else %}shape-danger{% endif %}"></span>
-                        <span>{% trans 'Staff' %}</span>
-                    </div>
                 </div>
                 {% if user != request.user or request.user.is_superuser %}
                 <div class="col-md-3">
