@@ -36,6 +36,7 @@ from ..models import (
 from ..models.utils import generate_id
 from munigeo.models import Municipality
 from rest_framework.authtoken.admin import Token
+from respa_admin.forms import RespaMultiEmailField
 
 logger = logging.getLogger(__name__)
 
@@ -144,11 +145,22 @@ if settings.DEBUG:
     hard_delete_resources.short_description = _('Hard delete selected resources')
 
 
+class ResourceAdminForm(forms.ModelForm):
+    resource_staff_emails = RespaMultiEmailField(
+        required=False,
+        label=_('E-mail addresses for client correspondence')
+    )
+    class Meta:
+        model = Resource
+        fields = '__all__'
+
 class ResourceAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, 
                     TranslationAdmin, HttpsFriendlyGeoAdmin):
     default_lon = 2478871  # Central Railway Station in EPSG:3857
     default_lat = 8501259
     default_zoom = 12
+
+    form = ResourceAdminForm
 
     list_display = ('name', 'unit', '_public', 'reservable', 'soft_deleted')
     list_filter = ('unit', '_public', 'reservable', 'soft_deleted')
