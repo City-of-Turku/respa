@@ -8,6 +8,8 @@ if [[ "$ENABLE_SSH" = "true" ]]; then
     eval $(printenv | sed -n "/^PWD=/!s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/g' | sed '/=/s//="/' | sed 's/$/"/' >> /etc/profile)
 fi
 
+service cron start
+
 function _log(){
   echo $(date "+%F_%T %Z"): $@
 }

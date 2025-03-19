@@ -88,8 +88,7 @@ param apiAppSettings object = {
   // DJANGO_SUPERUSER_PASSWORD: djangoSuperuserPassword // TODO ?
   // DJANGO_SUPERUSER_USERNAME: 'admin' // TODO
   DJANGO_ADMIN_LOGOUT_REDIRECT_URL: '${apiUrl}/admin'
-  // EMAIL_BACKEND: 'django.core.mail.backends.smtp.EmailBackend' // TODO
-  EMAIL_HOST: 'smtp.turku.fi' // TODO
+  EMAIL_HOST: 'smtp.turku.fi'
   //EMAIL_HOST_PASSWORD: emailHostPassword // TODO
   //EMAIL_HOST_USER: 'apikey' // TODO
   EMAIL_PORT: '587'
@@ -124,11 +123,11 @@ param apiAppSettings object = {
   QUALITYTOOL_SFTP_PASSWORD: qualitytoolSftpPassword
   RESPA_ADMIN_SUPPORT_EMAIL: 'varaamo@turku.fi'
   RESPA_ADMIN_INSTRUCTIONS_URL: 'https://digipoint-turku.gitbook.io/varaamo-turku/yllapitoliittyma/aloitus'
-  RESPA_ADMIN_LOGOUT_REDIRECT_URL: 'https://testivaraamo-api.turku.fi/ra'
+  RESPA_ADMIN_LOGOUT_REDIRECT_URL: '${apiUrl}/ra'
   RESPA_ADMIN_LOGO: 'ra-logo.png'
   RESPA_ADMIN_KORO_STYLE: 'koro-storm'
-  RESPA_ADMIN_VIEW_RESOURCE_URL: 'https://testivaraamo.turku.fi/resources/'
-  RESPA_ADMIN_VIEW_UNIT_URL: 'https://testivaraamo.turku.fi/units/'
+  RESPA_ADMIN_VIEW_RESOURCE_URL: 'https://respa-testi.turku.fi/resources/'
+  RESPA_ADMIN_VIEW_UNIT_URL: 'https://respa-testi.turku.fi/units/'
   RESPA_PAYMENTS_ENABLED: 1
   RESPA_PAYMENTS_PROVIDER_CLASS: 'payments.providers.TurkuPaymentProviderV3'
   RESPA_PAYMENTS_TURKU_API_URL: 'https://qadigiaurajoki.turku.fi:9443/verkkomaksupalvelu/api/v1/payment/create'
@@ -142,6 +141,7 @@ param apiAppSettings object = {
   // SECURE_SSL_REDIRECT: 'False'
   SOCIAL_AUTH_TUNNISTAMO_KEY: 'https://auth.turku.fi/respa'
   SOCIAL_AUTH_TUNNISTAMO_SECRET: socialAuthTunnistamoSecret
+  SMS_ENABLED: 'True'
   STATIC_ROOT: '/fileshare/static'
   STATIC_URL: '/static/'
   STRONG_AUTH_CLAIMS: 'turku_adfs,turku_suomifi'
