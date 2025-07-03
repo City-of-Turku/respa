@@ -28,7 +28,8 @@
     "popper.js": "1.12.9",
     "shortid": "^2.2.16",
     "stylelint": "^15.6.0",
-    "stylelint-scss": "^4.1.0"
+    "stylelint-scss": "^4.1.0",
+    "micromatch": "^4.0.8"
   },
   "devDependencies": {
     "file-loader": "^6.2.0",

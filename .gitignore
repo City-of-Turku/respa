@@ -30,3 +30,9 @@ env*
 static/*
 .python-version
 docker-compose.env
+
+# Misc
+.vscode
+
+# Secrets
+secrets.*

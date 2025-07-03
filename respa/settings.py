@@ -75,6 +75,7 @@ env = environ.Env(
     USE_SWAGGER_OPENAPI_VIEW=(bool, False),
     USE_RESPA_EXCHANGE=(bool, False),
     EMAIL_HOST=(str, ''),
+    EMAIL_PORT=(str, ''),
     MACHINE_TO_MACHINE_AUTH_ENABLED=(bool, False),
     JWT_AUTH_HEADER_PREFIX=(str, "JWT"),
     JWT_LEEWAY=(int, 30), # seconds
@@ -130,7 +131,7 @@ ADMINS = env('ADMINS')
 INTERNAL_IPS = env.list('INTERNAL_IPS',
                         default=(['127.0.0.1'] if DEBUG else []))
 DATABASES = {
-    'default': env.db()
+    'default': env.db_url(default='postgis:///respa')
 }
 DATABASES['default']['ATOMIC_REQUESTS'] = True
 DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = env('DISABLE_SERVER_SIDE_CURSORS')
@@ -521,7 +522,7 @@ if env('MAIL_MAILGUN_KEY') and not USE_DJANGO_DEFAULT_EMAIL:
 elif USE_DJANGO_DEFAULT_EMAIL:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = env('EMAIL_HOST')
-    EMAIL_PORT = 25
+    EMAIL_PORT = env('EMAIL_PORT')
     EMAIL_HOST_USER = env('MAIL_DEFAULT_FROM')
     EMAIL_USE_TLS = True
     DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

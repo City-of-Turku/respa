@@ -41,7 +41,7 @@ cachetools==5.3.0
     # via django-helusers
 cattrs==22.2.0
     # via requests-cache
-certifi==2023.7.22
+certifi==2024.7.4
     # via
     #   -r requirements.in
     #   requests
