@@ -20,6 +20,10 @@ services:
       - db_respa_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    environment:
+      POSTGRES_USER: respa
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: respa
     env_file:
       - respa/.env
 

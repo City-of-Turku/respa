@@ -43,3 +43,9 @@ htmlcov
 README.md
 docker-compose.env
 docker-compose.env.template
+
+.vscode
+AzureUtil.ps1
+*.bicep
+*.bicepparam
+secrets.*

@@ -2,6 +2,14 @@
 
 set -e
 
+# Enable SSH and give it access to app setting env variables
+if [[ "$ENABLE_SSH" = "true" ]]; then
+    service ssh start
+    eval $(printenv | sed -n "/^PWD=/!s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/g' | sed '/=/s//="/' | sed 's/$/"/' >> /etc/profile)
+fi
+
+service cron start
+
 function _log(){
   echo $(date "+%F_%T %Z"): $@
 }
@@ -36,7 +44,7 @@ elif [ "$1" = "e" ]; then
 
 else
   _log "Starting the uwsgi web server"
-  uwsgi --ini deploy/uwsgi.ini --check-static /var/www
+  uwsgi --ini deploy/uwsgi.ini --check-static /fileshare
 fi
 
 _log "Respa entrypoint completed..."
