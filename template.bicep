@@ -72,14 +72,14 @@ param uiAppSettings object = {
   APP_TIMEZONE: 'Europe/Helsinki'
   CLIENT_ID: '7f80c6cd-d10c-4345-850b-c86aec3a0e98'
   OPENID_AUDIENCE: 'https://auth.turku.fi/respa'
-  OPENID_AUTHORITY: 'https://testitunnistamo.turku.fi/openid'  // TODO
+  OPENID_AUTHORITY: 'https://testitunnistamo.turku.fi/openid'
 }
 
 // Respa
 param apiAppSettings object = {
-  ALLOWED_HOSTS: '${apiWebAppName}.azurewebsites.net,127.0.0.1,respa-testi.turku.fi,localhost,testivaraamo.turku.fi,testivaraamo-api.turku.fi' // TODO
+  ALLOWED_HOSTS: '${apiWebAppName}.azurewebsites.net,127.0.0.1,testirespa.turku.fi,localhost,testivaraamo.turku.fi,testivaraamo-api.turku.fi' // TODO
   AUTHENTICATION_CLASSES: 'respa.providers.turku_oidc.oidc.ApiTokenAuthentication,respa.providers.turku_oidc.jwt.JWTAuthentication'
-  CSRF_TRUSTED_ORIGINS: 'https://respa-testi.turku.fi'  // TODO
+  CSRF_TRUSTED_ORIGINS: 'https://testirespa.turku.fi'  // TODO
   DEBUG: '0'
   DEFAULT_DISABLED_FIELDS_SET_ID: 2
   DJANGO_ADMIN_CONFIG: 'respa.providers.turku_oidc.admin_site.AdminConfig'
@@ -111,7 +111,7 @@ param apiAppSettings object = {
   OIDC_SECRET: oidcSecret
   OIDC_API_SCOPE_PREFIX: '7f80c6cd-d10c-4345-850b-c86aec3a0e98'
   OIDC_REQUIRE_API_SCOPE_FOR_AUTHENTICATION: 0
-  OIDC_ISSUER: 'https://testitunnistamo.turku.fi/openid'  // TODO
+  OIDC_ISSUER: 'https://testitunnistamo.turku.fi/openid'
   OIDC_LEEWAY: 86400
   PRODUCTION: 0 // TODO
   QUALITYTOOL_USERNAME: qualitytoolUsername
@@ -126,8 +126,8 @@ param apiAppSettings object = {
   RESPA_ADMIN_LOGOUT_REDIRECT_URL: '${apiUrl}/ra'
   RESPA_ADMIN_LOGO: 'ra-logo.png'
   RESPA_ADMIN_KORO_STYLE: 'koro-storm'
-  RESPA_ADMIN_VIEW_RESOURCE_URL: 'https://respa-testi.turku.fi/resources/'
-  RESPA_ADMIN_VIEW_UNIT_URL: 'https://respa-testi.turku.fi/units/'
+  RESPA_ADMIN_VIEW_RESOURCE_URL: 'https://testirespa.turku.fi/resources/'
+  RESPA_ADMIN_VIEW_UNIT_URL: 'https://testirespa.turku.fi/units/'
   RESPA_PAYMENTS_ENABLED: 1
   RESPA_PAYMENTS_PROVIDER_CLASS: 'payments.providers.TurkuPaymentProviderV3'
   RESPA_PAYMENTS_TURKU_API_URL: 'https://qadigiaurajoki.turku.fi:9443/verkkomaksupalvelu/api/v1/payment/create'
