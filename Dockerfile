@@ -26,7 +26,7 @@ WORKDIR /srv/app
 COPY --from=respa_admin_builder /app/static /srv/app/respa_admin/static
 COPY . .
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential netcat gettext python-dev libpq-dev gdal-bin dialog openssh-server \
+    && apt-get install -y --no-install-recommends build-essential netcat gettext python-dev libpq-dev gdal-bin dialog openssh-server cron \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip --no-cache-dir \
