@@ -43,19 +43,18 @@ COPY sshd_config /etc/ssh/
 
 # Add cron tasks
 
+
 # Send daily qualitytool stats
-# 30 0 * * * docker exec -u 0 $(docker ps -aqf "name=app-api-1") python manage.py post_daily_utilization --date $(date --date yesterday "+\%Y-\%m-\%d")
-RUN echo '30 0 * * * respa python /srv/app/manage.py sftp_daily_utilization tuotanto/laatutyokalut/Varaamo_$(date --date yesterday "+\%Y-\%m-\%d").csv --date $(date --date yesterday "+\%Y-\%m-\%d")' >> /etc/crontab
-# RUN echo "30 0 * * * respa python manage.py sftp_daily_utilization tuotanto/laatutyokalut/Varaamo_$(date --date yesterday "+\%Y-\%m-\%d").csv --date yesterday "+\%Y-\%m-\%d") > /tmp/cron1.txt"
+RUN echo '30 0 * * * su -s /bin/bash -c "source /etc/profile; /srv/app/manage.py sftp_daily_utilization tuotanto/laatutyokalut/Varaamo_$(date --date=yesterday "+\%Y-\%m-\%d").csv --date $(date --date=yesterday "+\%Y-\%m-\%d")" respa >> /proc/1/fd/1 2>&1' >> /root/crontab
 
-# Expire unpaid orders, and release the time slots for future reservations once every 6 minutes.
-RUN echo "*/6 * * * * respa python /srv/app/manage.py expire_too_old_unpaid_orders" >> /etc/crontab
+# Expire unpaid orders every 6 minutes
+RUN echo '*/6 * * * * su -s /bin/bash -c "source /etc/profile; /srv/app/manage.py expire_too_old_unpaid_orders" respa >> /proc/1/fd/1 2>&1' >> /root/crontab
 
-# Check for SMS reminders once every 5 minutes.
-RUN echo "*/5 * * * * respa python /srv/app/manage.py handle_reminders" >> /etc/crontab
+# Check for SMS reminders every 5 minutes
+RUN echo '*/5 * * * * su -s /bin/bash -c "source /etc/profile; /srv/app/manage.py handle_reminders" respa >> /proc/1/fd/1 2>&1' >> /root/crontab
 
-# Sync Abloy pin-codes once every 4 minutes.
-RUN echo "*/4 * * * * respa python /srv/app/manage.py sync_kulkunen" >> /etc/crontab
+# Sync Abloy pin-codes every 4 minutes
+RUN echo '*/4 * * * * su -s /bin/bash -c "source /etc/profile; /srv/app/manage.py sync_kulkunen" respa >> /proc/1/fd/1 2>&1' >> /root/crontab
 
 # Create the log file to be able to run tail
 RUN touch /var/log/cron.log
