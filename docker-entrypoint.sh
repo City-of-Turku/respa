@@ -8,8 +8,6 @@ if [[ "$ENABLE_SSH" = "true" ]]; then
     eval $(printenv | sed -n "/^PWD=/!s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/g' | sed '/=/s//="/' | sed 's/$/"/' >> /etc/profile)
 fi
 
-service cron start
-
 function _log(){
   echo $(date "+%F_%T %Z"): $@
 }
@@ -22,6 +20,9 @@ if [ -n "$DATABASE_HOST" ]; then
   done
   _log "Database is up!"
 fi
+
+crontab /root/crontab
+service cron start
 
 _log "Running Respa entrypoint..."
 
