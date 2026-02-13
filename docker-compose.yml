@@ -16,6 +16,8 @@ services:
     build:
       context: .
       dockerfile: ./docker/postgres/Dockerfile
+      # On Apple Silicon (arm64), uncomment below to use native image and avoid slow emulation:
+      # platform: linux/arm64
     volumes:
       - db_respa_data:/var/lib/postgresql/data
     ports:

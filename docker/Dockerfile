@@ -37,6 +37,8 @@ RUN mkdir -p /srv/logs && chown respa:respa /srv/logs
 RUN python manage.py compilemessages
 RUN python manage.py collectstatic --no-input
 
+RUN chmod +x ./docker-entrypoint.sh
+
 ENTRYPOINT ["./docker-entrypoint.sh"]
 
 FROM respa_setup AS development
