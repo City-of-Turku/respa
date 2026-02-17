@@ -1,7 +1,7 @@
 from .base import all_views
 from users.api import all_views as users_views
 from .resource import (
-    ResourceListViewSet, ResourceViewSet, PurposeViewSet, 
+    ResourceViewSet, PurposeViewSet,
     ResourceCreateView, ResourceUpdateView, ResourceCreateProductView,
     ResourceDeleteView, ResourceRestoreView, ResourceCancelReservationsView
 )
