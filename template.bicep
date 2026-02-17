@@ -1,4 +1,6 @@
 param location string = resourceGroup().location
+@allowed(['test', 'prod'])
+param environment string = 'test'
 param apiImageName string
 param apiUrl string
 param uiImageName string
@@ -66,14 +68,14 @@ param tunnistamoBaseUrl string
 param qualitytoolApiBase string
 param showTestSiteMessage string
 param blockSearchEngineIndexing string
-param productionFlag number
-param useSwaggerOpenApiView number
+param productionFlag int
+param useSwaggerOpenApiView int
 param allowedHosts string
 param clientId string
 param matomoSiteId string
-param defaultDisabledFieldsSetId number
+param defaultDisabledFieldsSetId int
 param respaPaymentsApiUrl string
-param
+param uiUrl string
 
 // Varaamo
 param uiAppSettings object = {

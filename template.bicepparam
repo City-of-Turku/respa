@@ -40,6 +40,6 @@ param allowedHosts = environment == 'prod'
     ? '${apiWebAppName}.azurewebsites.net,127.0.0.1,respa.turku.fi,localhost,varaamo.turku.fi,varaamo-api.turku.fi'
     : '${apiWebAppName}.azurewebsites.net,127.0.0.1,testirespa.turku.fi,localhost,testivaraamo.turku.fi,testivaraamo-api.turku.fi'
 param clientId = environment == 'prod' ? 'varaamo-02582b03-7bae-4156-b069-f5fafa0f3f75' : '7f80c6cd-d10c-4345-850b-c86aec3a0e98'
-param matomoSiteId = environment == 'prod' ? '3' : '4';
+param matomoSiteId = environment == 'prod' ? '3' : '4'
 param defaultDisabledFieldsSetId = environment == 'prod' ? 1 : 2
 param respaPaymentsApiUrl = environment == 'prod' ? 'https://digiaurajoki.turku.fi:9443/verkkomaksupalvelu/api/v1/payment/create' : 'https://qadigiaurajoki.turku.fi:9443/verkkomaksupalvelu/api/v1/payment/create'
