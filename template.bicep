@@ -61,36 +61,50 @@ param qualitytoolSftpPassword string = ''
 // @secure()
 // param turkuApiKey string = ''
 
+param openidAuthority string
+param tunnistamoBaseUrl string
+param qualitytoolApiBase string
+param showTestSiteMessage string
+param blockSearchEngineIndexing string
+param productionFlag number
+param useSwaggerOpenApiView number
+param allowedHosts string
+param clientId string
+param matomoSiteId string
+param defaultDisabledFieldsSetId number
+param respaPaymentsApiUrl string
+param
+
 // Varaamo
 param uiAppSettings object = {
   API_URL: '${apiUrl}/v1'
   ADMIN_URL: '${apiUrl}/ra'
   PORT: '8080'
-  MATOMO_SITE_ID: '4'
-  SHOW_TEST_SITE_MESSAGE: '1'
-  BLOCK_SEARCH_ENGINE_INDEXING: '1'
+  MATOMO_SITE_ID: matomoSiteId
+  SHOW_TEST_SITE_MESSAGE: showTestSiteMessage
+  BLOCK_SEARCH_ENGINE_INDEXING: blockSearchEngineIndexing
   APP_TIMEZONE: 'Europe/Helsinki'
-  CLIENT_ID: '7f80c6cd-d10c-4345-850b-c86aec3a0e98'
+  CLIENT_ID: clientId
   OPENID_AUDIENCE: 'https://auth.turku.fi/respa'
-  OPENID_AUTHORITY: 'https://testitunnistamo.turku.fi/openid'
+  OPENID_AUTHORITY: openidAuthority
 }
 
 // Respa
 param apiAppSettings object = {
-  ALLOWED_HOSTS: '${apiWebAppName}.azurewebsites.net,127.0.0.1,testirespa.turku.fi,localhost,testivaraamo.turku.fi,testivaraamo-api.turku.fi' // TODO
+  ALLOWED_HOSTS: allowedHosts
   AUTHENTICATION_CLASSES: 'respa.providers.turku_oidc.oidc.ApiTokenAuthentication,respa.providers.turku_oidc.jwt.JWTAuthentication'
-  CSRF_TRUSTED_ORIGINS: 'https://testirespa.turku.fi'  // TODO
+  CSRF_TRUSTED_ORIGINS: apiUrl
   DEBUG: '0'
-  DEFAULT_DISABLED_FIELDS_SET_ID: 2
+  DEFAULT_DISABLED_FIELDS_SET_ID: defaultDisabledFieldsSetId
   DJANGO_ADMIN_CONFIG: 'respa.providers.turku_oidc.admin_site.AdminConfig'
-  //DJANGO_LOG_LEVEL: 'INFO'
+  // DJANGO_LOG_LEVEL: 'INFO'
   // DJANGO_SUPERUSER_EMAIL: 'admin@admin.com' // TODO ?
   // DJANGO_SUPERUSER_PASSWORD: djangoSuperuserPassword // TODO ?
   // DJANGO_SUPERUSER_USERNAME: 'admin' // TODO
   DJANGO_ADMIN_LOGOUT_REDIRECT_URL: '${apiUrl}/admin'
   EMAIL_HOST: 'smtp.turku.fi'
-  //EMAIL_HOST_PASSWORD: emailHostPassword // TODO
-  //EMAIL_HOST_USER: 'apikey' // TODO
+  // EMAIL_HOST_PASSWORD: emailHostPassword // TODO
+  // EMAIL_HOST_USER: 'apikey' // TODO
   EMAIL_PORT: '587'
   EMAIL_USE_TLS: 'True'
   ENABLE_SSH: 'true'
@@ -111,12 +125,12 @@ param apiAppSettings object = {
   OIDC_SECRET: oidcSecret
   OIDC_API_SCOPE_PREFIX: '7f80c6cd-d10c-4345-850b-c86aec3a0e98'
   OIDC_REQUIRE_API_SCOPE_FOR_AUTHENTICATION: 0
-  OIDC_ISSUER: 'https://testitunnistamo.turku.fi/openid'
+  OIDC_ISSUER: openidAuthority
   OIDC_LEEWAY: 86400
-  PRODUCTION: 0 // TODO
+  PRODUCTION: productionFlag
   QUALITYTOOL_USERNAME: qualitytoolUsername
   QUALITYTOOL_PASSWORD: qualitytoolPassword
-  QUALITYTOOL_API_BASE: 'https://api.laatutyokalut.dev.suomi.fi'
+  QUALITYTOOL_API_BASE: qualitytoolApiBase
   QUALITYTOOL_ENABLED: 1
   QUALITYTOOL_SFTP_HOST: 'tkusiirto1.turku.fi'
   QUALITYTOOL_SFTP_USERNAME: qualitytoolSftpUsername
@@ -126,13 +140,13 @@ param apiAppSettings object = {
   RESPA_ADMIN_LOGOUT_REDIRECT_URL: '${apiUrl}/ra'
   RESPA_ADMIN_LOGO: 'ra-logo.png'
   RESPA_ADMIN_KORO_STYLE: 'koro-storm'
-  RESPA_ADMIN_VIEW_RESOURCE_URL: 'https://testirespa.turku.fi/resources/'
-  RESPA_ADMIN_VIEW_UNIT_URL: 'https://testirespa.turku.fi/units/'
+  RESPA_ADMIN_VIEW_RESOURCE_URL: '${apiUrl}/resources/'
+  RESPA_ADMIN_VIEW_UNIT_URL: '${apiUrl}/units/'
   RESPA_PAYMENTS_ENABLED: 1
   RESPA_PAYMENTS_PROVIDER_CLASS: 'payments.providers.TurkuPaymentProviderV3'
-  RESPA_PAYMENTS_TURKU_API_URL: 'https://qadigiaurajoki.turku.fi:9443/verkkomaksupalvelu/api/v1/payment/create'
+  RESPA_PAYMENTS_TURKU_API_URL: respaPaymentsApiUrl
   RESPA_PAYMENTS_TURKU_API_KEY: respaPaymentsTurkuApiKey
-  RESPA_PAYMENTS_TURKU_API_APP_NAME: 'Testivaraamo'
+  RESPA_PAYMENTS_TURKU_API_APP_NAME: 'Varaamo'
   RESPA_PAYMENTS_TURKU_SAP_SALES_ORGANIZATION: '1100'
   RESPA_PAYMENTS_TURKU_SAP_DISTRIBUTION_CHANNEL: '11'
   RESPA_PAYMENTS_TURKU_SAP_SECTOR: '1A'
@@ -149,12 +163,12 @@ param apiAppSettings object = {
   TIMMI_API_URL: 'https://timmi.turku.fi/WebTimmi/rest'
   TIMMI_USERNAME: timmiUsername
   TIMMI_PASSWORD: timmiPassword
-  TOKEN_AUTH_ACCEPTED_AUDIENCE: 'https://testivaraamo.turku.fi'
+  TOKEN_AUTH_ACCEPTED_AUDIENCE: uiUrl
   TOKEN_AUTH_SHARED_SECRET: tokenAuthSharedSecret
   // TURKU_API_KEY: turkuApiKey
-  TUNNISTAMO_BASE_URL: 'https://testitunnistamo.turku.fi'  // TODO
+  TUNNISTAMO_BASE_URL: tunnistamoBaseUrl
   USE_DJANGO_DEFAULT_EMAIL: 1
-  USE_SWAGGER_OPENAPI_VIEW: 1
+  USE_SWAGGER_OPENAPI_VIEW: useSwaggerOpenApiView
   USE_RESPA_EXCHANGE: 0
   // WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'false'
   // WEBSITES_PORT: '8000'
