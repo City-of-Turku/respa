@@ -8,7 +8,7 @@
 
 arrow==1.4.0
     # via -r requirements.in
-asgiref==3.11.1
+asgiref==3.8.1
     # via
     #   django
     #   django-allauth
