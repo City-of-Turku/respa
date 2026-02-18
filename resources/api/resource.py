@@ -2097,7 +2097,9 @@ class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.ListModelMixin,
         ([TokenAuthentication] if settings.ENABLE_RESOURCE_TOKEN_AUTH else []))
 
     def get_serializer_class(self):
-        if self.action == 'list':
+        # When used from typeahead search, self.action may be unset; treat as list for many=True
+        action = getattr(self, 'action', None)
+        if action == 'list':
             if settings.RESPA_PAYMENTS_ENABLED:
                 from payments.api.resource import PaymentsResourceSerializer  # noqa
                 return PaymentsResourceSerializer
@@ -2108,7 +2110,12 @@ class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.ListModelMixin,
         return ResourceDetailsSerializer
 
     def get_serializer(self, *args, **kwargs):
-        if self.action == 'list':
+        # When used from typeahead search, viewset is not dispatched so self.action may be unset
+        action = getattr(self, 'action', None)
+        if action is None and kwargs.get('many', False):
+            self.action = 'list'  # so get_serializer_class() returns list serializer
+        use_list_style = action == 'list' or (action is None and kwargs.get('many', False))
+        if use_list_style:
             setattr(self, '_page', args[0] if args else [])
         else:
             setattr(self, '_page', [args[0]] if args else [])
