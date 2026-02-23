@@ -2069,71 +2069,56 @@ class ResourceDeleteView(views.APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ResourceListViewSet(munigeo_api.GeoModelAPIView, mixins.ListModelMixin,
-                          viewsets.GenericViewSet, ResourceCacheMixin):
-    queryset = Resource.objects.select_related('generic_terms', 'payment_terms', 'unit', 'type', 'reservation_metadata_set')
-    queryset = queryset.prefetch_related('favorited_by', 'resource_equipment', 'resource_equipment__equipment',
-                                         'purposes', 'images', 'purposes', 'groups', 'resource_tags')
-    if settings.RESPA_PAYMENTS_ENABLED:
-        queryset = queryset.prefetch_related('products')
+# Shared queryset for list and retrieve (used by ResourceViewSet only).
+_resource_queryset = Resource.objects.select_related(
+    'generic_terms', 'payment_terms', 'unit', 'type', 'reservation_metadata_set'
+).prefetch_related(
+    'favorited_by', 'resource_equipment', 'resource_equipment__equipment',
+    'purposes', 'images', 'purposes', 'groups', 'resource_tags'
+)
+if settings.RESPA_PAYMENTS_ENABLED:
+    _resource_queryset = _resource_queryset.prefetch_related('products')
+
+
+class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.ListModelMixin,
+                      mixins.RetrieveModelMixin, viewsets.GenericViewSet, ResourceCacheMixin):
+    """Single viewset for resource list and detail; keeps URL names resource-list and resource-detail."""
+    queryset = _resource_queryset
     filter_backends = (filters.SearchFilter, ResourceFilterBackend, LocationFilterBackend)
     search_fields = (
-                    'name_fi', 'description_fi', 'unit__name_fi', 'type__name_fi',
-                    'name_sv', 'description_sv', 'unit__name_sv', 'type__name_sv',
-                    'name_en', 'description_en', 'unit__name_en', 'type__name_en', '=resource_tags__label'
-                    )
-
+        'name_fi', 'description_fi', 'unit__name_fi', 'type__name_fi',
+        'name_sv', 'description_sv', 'unit__name_sv', 'type__name_sv',
+        'name_en', 'description_en', 'unit__name_en', 'type__name_en', '=resource_tags__label'
+    )
     serializer_class = ResourceSerializer
-    authentication_classes = (
-        list(drf_settings.DEFAULT_AUTHENTICATION_CLASSES) +
-        [SessionAuthentication])
-
-    def get_serializer_class(self):
-        if settings.RESPA_PAYMENTS_ENABLED:
-            from payments.api.resource import PaymentsResourceSerializer  # noqa
-            return PaymentsResourceSerializer
-        else:
-            return ResourceSerializer
-
-    def get_serializer(self, *args, **kwargs):
-        setattr(self, '_page', args[0] if args else [])
-        return super().get_serializer(*args, **kwargs)
-
-    def get_serializer_context(self):
-        self.srs = getattr(self, 'srs', munigeo_api.srid_to_srs(None))
-        context = super().get_serializer_context()
-        context.update(self._get_cache_context())
-
-        request_user = self.request.user
-        if request_user.is_authenticated:
-            prefetched_user = get_user_model().objects.prefetch_related('unit_authorizations', 'unit_group_authorizations__subject__members').\
-                get(pk=request_user.pk)
-
-            context['prefetched_user'] = prefetched_user
-
-        return context
-
-    def get_queryset(self):
-        return self.queryset.visible_for(self.request.user)
-
-
-class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.RetrieveModelMixin,
-                      viewsets.GenericViewSet, ResourceCacheMixin):
-    queryset = ResourceListViewSet.queryset
     authentication_classes = (
         list(drf_settings.DEFAULT_AUTHENTICATION_CLASSES) +
         [SessionAuthentication] +
         ([TokenAuthentication] if settings.ENABLE_RESOURCE_TOKEN_AUTH else []))
 
     def get_serializer_class(self):
+        # When used from typeahead search, self.action may be unset; treat as list for many=True
+        action = getattr(self, 'action', None)
+        if action == 'list':
+            if settings.RESPA_PAYMENTS_ENABLED:
+                from payments.api.resource import PaymentsResourceSerializer  # noqa
+                return PaymentsResourceSerializer
+            return ResourceSerializer
         if settings.RESPA_PAYMENTS_ENABLED:
             from payments.api.resource import PaymentsResourceDetailsSerializer  # noqa
             return PaymentsResourceDetailsSerializer
-        else:
-            return ResourceDetailsSerializer
+        return ResourceDetailsSerializer
 
     def get_serializer(self, *args, **kwargs):
-        setattr(self, '_page', [args[0]] if args else [])
+        # When used from typeahead search, viewset is not dispatched so self.action may be unset
+        action = getattr(self, 'action', None)
+        if action is None and kwargs.get('many', False):
+            self.action = 'list'  # so get_serializer_class() returns list serializer
+        use_list_style = action == 'list' or (action is None and kwargs.get('many', False))
+        if use_list_style:
+            setattr(self, '_page', args[0] if args else [])
+        else:
+            setattr(self, '_page', [args[0]] if args else [])
         return super().get_serializer(*args, **kwargs)
 
     def get_serializer_context(self):
@@ -2192,5 +2177,4 @@ class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.RetrieveModelMixin,
         return response
 
 
-register_view(ResourceListViewSet, 'resource')
 register_view(ResourceViewSet, 'resource')

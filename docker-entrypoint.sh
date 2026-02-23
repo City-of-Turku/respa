@@ -21,8 +21,14 @@ if [ -n "$DATABASE_HOST" ]; then
   _log "Database is up!"
 fi
 
-crontab /root/crontab
-service cron start
+# Only load and start cron if crontab file exists (e.g. in full production image)
+if [ -f /root/crontab ] && command -v crontab >/dev/null 2>&1; then
+  _log "Loading crontab and starting cron..."
+  crontab /root/crontab
+  service cron start
+else
+  _log "Skipping cron (no /root/crontab or crontab not installed)."
+fi
 
 _log "Running Respa entrypoint..."
 

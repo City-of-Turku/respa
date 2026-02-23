@@ -48,7 +48,8 @@ class TranslatedModelSerializer(serializers.ModelSerializer):
             self.translated_fields = []
             return
 
-        self.translated_fields = trans_opts.fields.keys()
+        # modeltranslation uses a tuple of field names, not a dict
+        self.translated_fields = list(trans_opts.fields) if isinstance(trans_opts.fields, (list, tuple)) else list(trans_opts.fields.keys())
         # Remove the pre-existing data in the bundle.
         for field_name in self.translated_fields:
             for lang in LANGUAGES:

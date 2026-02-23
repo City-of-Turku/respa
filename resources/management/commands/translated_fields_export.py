@@ -93,7 +93,10 @@ class Command(BaseCommand):
         for model_name in models:
             model = apps.get_model('resources', model_name)
             trans_opts = translator.get_options_for_model(model)
-            translated_fields = sorted([tr_field.name for field in trans_opts.fields.values() for tr_field in field])
+            if hasattr(trans_opts.fields, 'values'):
+                translated_fields = sorted([tr_field.name for field in trans_opts.fields.values() for tr_field in field])
+            else:
+                translated_fields = sorted(trans_opts.fields)
 
             data[model_name] = [translated_fields, model.objects.all()]
 
