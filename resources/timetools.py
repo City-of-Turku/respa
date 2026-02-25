@@ -1,5 +1,5 @@
 import datetime
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from itertools import groupby
 
 import arrow
@@ -351,6 +351,24 @@ def get_availability(begin, end, resources=None, duration=None):
 
     # NOTE: Resource's Period overrides Unit's Period
 
+    # For units with disallow_overlapping_reservations, fetch all reservations in the unit
+    # (across all resources) so availability can exclude slots that would conflict.
+    unit_ids_no_overlap = {
+        r.unit_id for r in resources_during_time
+        if r.unit_id and getattr(r.unit, 'disallow_overlapping_reservations', False)
+    }
+    unit_reservations_map = defaultdict(list)
+    if unit_ids_no_overlap:
+        unit_reservations_qs = (
+            Reservation.objects
+            .filter(resource__unit_id__in=unit_ids_no_overlap, duration__overlap=dt_range)
+            .exclude(state=Reservation.CANCELLED)
+            .select_related('resource')
+            .order_by('begin')
+        )
+        for rsv in unit_reservations_qs:
+            unit_reservations_map[rsv.resource.unit_id].append(rsv)
+
     opening_hours = {}
     availability = {}
 
@@ -358,17 +376,30 @@ def get_availability(begin, end, resources=None, duration=None):
         opening_hours[res] = periods_to_opening_hours(res, begin, end)
 
         if duration:
-            availability[res] = calculate_availability(res, opening_hours[res], duration)
+            blocking_reservations = (
+                unit_reservations_map.get(res.unit_id)
+                if (res.unit_id and getattr(res.unit, 'disallow_overlapping_reservations', False))
+                else None
+            )
+            availability[res] = calculate_availability(
+                res, opening_hours[res], duration,
+                blocking_reservations=blocking_reservations
+            )
 
     return opening_hours, availability
 
 
-def calculate_availability(resource, opening_hours, duration=None):
+def calculate_availability(resource, opening_hours, duration=None, blocking_reservations=None):
     """
     Goes through reservations for given resource
 
     Calculates available time for days with reservations
-    based on reservation duration and opening hours
+    based on reservation duration and opening hours.
+
+    When blocking_reservations is provided (e.g. all reservations in the same unit
+    when unit has disallow_overlapping_reservations), those are used instead of
+    only the resource's own reservations so that availability reflects unit-level
+    overlap rules.
 
     Availability is dictionary of dates and a list of
     FreeTime objects with begin and end DateTime fields
@@ -385,15 +416,21 @@ def calculate_availability(resource, opening_hours, duration=None):
     :type opening_hours:
     :param duration:
     :type duration:
+    :param blocking_reservations: optional list of reservations that block slots
     :return:
     :rtype:
     """
-    reservations_by_day = groupby(resource.overlapping_reservations,
-                                  key=lambda rsv: rsv.begin.date())
+    if blocking_reservations is not None:
+        reservations_to_use = list(blocking_reservations)
+    else:
+        reservations_to_use = list(resource.overlapping_reservations)
+    reservations_to_use.sort(key=lambda r: r.begin)
+    reservations_by_day = groupby(reservations_to_use, key=lambda rsv: rsv.begin.date())
 
     availability = {}
 
     for day, reservations in reservations_by_day:
+        reservations_list = list(reservations)
         first = opening_hours[day].opens
         last = opening_hours[day].closes
 
@@ -402,7 +439,7 @@ def calculate_availability(resource, opening_hours, duration=None):
 
         full_time = []
 
-        for n, rsv in enumerate(reservations):
+        for n, rsv in enumerate(reservations_list):
             if first >= rsv.begin and last <= rsv.end:
                 # Whole opening time could be reserved, thus rendering whole day unavailable
                 full_time = []
@@ -428,8 +465,8 @@ def calculate_availability(resource, opening_hours, duration=None):
                 if last > rsv.end:
                     begin = rsv.end
                     # if there is more reservations on this day
-                    if n + 1 < len(day):
-                        end = day[n + 1].begin
+                    if n + 1 < len(reservations_list):
+                        end = reservations_list[n + 1].begin
                     # otherwise free time ends with closing
                     else:
                         end = last

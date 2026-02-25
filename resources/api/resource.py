@@ -895,13 +895,16 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
 
         if 'reservations_cache' in self.context:
             rv_list = self.context['reservations_cache'].get(obj.id, [])
-            for rv in rv_list:
-                rv.resource = obj
         else:
-            rv_list = get_resource_reservations_queryset(self.context['start'], self.context['end'])
-            rv_list = rv_list.filter(Q(resource=obj)|Q(resource__timmi_resource=False))
+            qs = get_resource_reservations_queryset(self.context['start'], self.context['end'])
+            if obj.unit_id and getattr(obj.unit, 'disallow_overlapping_reservations', False):
+                rv_list = list(qs.filter(resource__unit=obj.unit))
+            else:
+                rv_list = list(qs.filter(resource=obj))
 
-        rv_list = list(rv_list)
+        for rv in rv_list:
+            if rv.resource_id == obj.id:
+                rv.resource = obj
         if not rv_list:
             return []
         if settings.RESPA_PAYMENTS_ENABLED:
@@ -1254,9 +1257,30 @@ class ResourceCacheMixin:
 
     def _preload_reservations(self, times):
         qs = get_resource_reservations_queryset(times['start'], times['end'])
-        reservations = qs.filter(resource__in=self._page)
+        # For units with disallow_overlapping_reservations, include all reservations in the unit
+        # so the calendar shows slots from other resources as blocked.
+        units_no_overlap = {
+            r.unit_id for r in self._page
+            if r.unit_id and getattr(r.unit, 'disallow_overlapping_reservations', False)
+        }
+        if units_no_overlap:
+            # Load reservations for page resources and for all resources in those units
+            reservations_page = list(qs.filter(resource__in=self._page))
+            unit_reservations_qs = qs.filter(
+                resource__unit_id__in=units_no_overlap
+            ).select_related('resource')
+            unit_reservations_by_unit = collections.defaultdict(list)
+            for rv in unit_reservations_qs:
+                unit_reservations_by_unit[rv.resource.unit_id].append(rv)
+            reservations_by_resource = {}
+            for r in self._page:
+                if r.unit_id and r.unit_id in units_no_overlap:
+                    reservations_by_resource[r.id] = unit_reservations_by_unit.get(r.unit_id, [])
+                else:
+                    reservations_by_resource[r.id] = [rv for rv in reservations_page if rv.resource_id == r.id]
+            return reservations_by_resource
         reservations_by_resource = {}
-        for rv in reservations:
+        for rv in qs.filter(resource__in=self._page):
             rv_list = reservations_by_resource.setdefault(rv.resource_id, [])
             rv_list.append(rv)
         return reservations_by_resource
