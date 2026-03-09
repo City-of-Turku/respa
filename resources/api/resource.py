@@ -1268,7 +1268,7 @@ class ResourceCacheMixin:
             reservations_page = list(qs.filter(resource__in=self._page))
             unit_reservations_qs = qs.filter(
                 resource__unit_id__in=units_no_overlap
-            ).select_related('resource')
+            ).select_related('resource', 'resource__unit')
             unit_reservations_by_unit = collections.defaultdict(list)
             for rv in unit_reservations_qs:
                 unit_reservations_by_unit[rv.resource.unit_id].append(rv)
