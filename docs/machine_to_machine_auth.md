@@ -8,7 +8,7 @@ To use M2M authentication:
    * header Content-Type application/x-www-form-urlencoded
    * form data:
      * username=*myusername*
-     * passoword=*mypassword*
+     * password=*mypassword*
 3. Use Respa API with header “Authorization: JWT *mytoken*”.
    * To test M2M authentication works: GET <Respa URL>/v1/user/, should return current user’s info.
    * Authorization tokens expire after a certain amount of time. New token needs to be retrieved at that point.

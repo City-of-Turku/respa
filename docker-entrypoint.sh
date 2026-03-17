@@ -2,6 +2,12 @@
 
 set -e
 
+# Enable SSH and give it access to app setting env variables
+if [[ "$ENABLE_SSH" = "true" ]]; then
+    service ssh start
+    eval $(printenv | sed -n "/^PWD=/!s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/g' | sed '/=/s//="/' | sed 's/$/"/' >> /etc/profile)
+fi
+
 function _log(){
   echo $(date "+%F_%T %Z"): $@
 }
@@ -13,6 +19,15 @@ if [ -n "$DATABASE_HOST" ]; then
     sleep 1
   done
   _log "Database is up!"
+fi
+
+# Only load and start cron if crontab file exists (e.g. in full production image)
+if [ -f /root/crontab ] && command -v crontab >/dev/null 2>&1; then
+  _log "Loading crontab and starting cron..."
+  crontab /root/crontab
+  service cron start
+else
+  _log "Skipping cron (no /root/crontab or crontab not installed)."
 fi
 
 _log "Running Respa entrypoint..."
@@ -36,7 +51,7 @@ elif [ "$1" = "e" ]; then
 
 else
   _log "Starting the uwsgi web server"
-  uwsgi --ini deploy/uwsgi.ini --check-static /var/www
+  uwsgi --ini deploy/uwsgi.ini --check-static /fileshare
 fi
 
 _log "Respa entrypoint completed..."

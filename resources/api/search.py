@@ -4,7 +4,7 @@ from rest_framework import viewsets
 from rest_framework.fields import BooleanField
 from rest_framework.response import Response
 
-from resources.api.resource import ResourceListViewSet
+from resources.api.resource import ResourceViewSet
 from resources.api.unit import UnitViewSet
 
 
@@ -27,7 +27,7 @@ class TypeaheadViewSet(viewsets.ViewSet):
     Currently supported are "resource" and "unit".
     """
     objects = {
-        "resource": {"search_fields": ["name"], "viewset": ResourceListViewSet, "text_getter": force_str},
+        "resource": {"search_fields": ["name"], "viewset": ResourceViewSet, "text_getter": force_str},
         "unit": {"search_fields": ["name"], "viewset": UnitViewSet, "text_getter": force_str},
     }
 

@@ -23,9 +23,11 @@
     "hel-bootstrap-3": "^1.0.0-beta.4",
     "hel-icons": "^1.0.0-beta.3",
     "jquery": "^3.6.0",
-    "js-yaml": "^4.1.0",
-    "node-sass": "^8.0.0",
+    "js-yaml": "^4.1.1",
+    "lodash": "^4.17.23",
+    "micromatch": "^4.0.8",
     "popper.js": "1.12.9",
+    "sass": "^1.69.0",
     "shortid": "^2.2.16",
     "stylelint": "^15.6.0",
     "stylelint-scss": "^4.1.0"
@@ -34,7 +36,7 @@
     "file-loader": "^6.2.0",
     "mini-css-extract-plugin": "^2.7.5",
     "sass-loader": "^13.2.2",
-    "webpack": "^5.77.0",
+    "webpack": "^5.105.2",
     "webpack-cli": "^4.9.1"
   }
 }

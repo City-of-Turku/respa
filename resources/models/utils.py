@@ -608,7 +608,7 @@ def get_translated_fields(instance, use_field_name=False):
     translated = {}
     try:
         translation_options = translator.get_options_for_model(instance.__class__)
-        for field_name in translation_options.fields.keys():
+        for field_name in (translation_options.fields if isinstance(translation_options.fields, (list, tuple)) else translation_options.fields.keys()):
             for lang in [x[0] for x in settings.LANGUAGES]:
                 field = getattr(instance, '%s_%s' % (field_name, lang), None)
                 if not field:
