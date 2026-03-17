@@ -360,9 +360,8 @@ def get_availability(begin, end, resources=None, duration=None):
     unit_reservations_map = defaultdict(list)
     if unit_ids_no_overlap:
         unit_reservations_qs = (
-            Reservation.objects
+            Reservation.objects.current()
             .filter(resource__unit_id__in=unit_ids_no_overlap, duration__overlap=dt_range)
-            .exclude(state=Reservation.CANCELLED)
             .select_related('resource')
             .order_by('begin')
         )
