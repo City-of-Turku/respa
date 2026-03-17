@@ -357,7 +357,7 @@ pyjwkest==1.4.4
     # via
     #   -r requirements.in
     #   drf-oidc-auth
-pyjwt==2.11.0
+pyjwt==2.12.0
     # via
     #   -r requirements.in
     #   djangorestframework-simplejwt
