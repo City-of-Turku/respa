@@ -31,8 +31,8 @@ from io import BytesIO
 
 from resources.pagination import PurposePagination
 from rest_framework import (
-    exceptions, filters, mixins, 
-    serializers, viewsets, response, 
+    exceptions, filters, mixins,
+    serializers, viewsets, response,
     status, generics, permissions, fields,
     views
 )
@@ -134,7 +134,7 @@ class PurposeSerializer(TranslatedModelSerializer):
             data['image'] = ContentFile(base64.b64decode(imgstr), name=img_name + ext)
         data = super().to_internal_value(data)
         return data
-    
+
     def create(self, validated_data):
         parent = validated_data.pop('parent', None)
         if parent and isinstance(parent, str):
@@ -150,7 +150,7 @@ class PurposeSerializer(TranslatedModelSerializer):
                 parent = Purpose.objects.get(pk=parent)
 
             validated_data['parent'] = parent
-        
+
         super().update(instance, validated_data)
         return instance
 
@@ -226,7 +226,7 @@ class ResourceImageSerializer(TranslatedModelSerializer):
     caption = serializers.DictField(required=True)
     image = ImageSerializer(required=False)
     remove = serializers.BooleanField(
-            write_only=True, required=False, 
+            write_only=True, required=False,
             help_text=_('This field is used to remove image from Resource. Fields: id or stamp are required.'))
     stamp = serializers.CharField(write_only=True, required=False)
 
@@ -284,7 +284,7 @@ class ResourceImageSerializer(TranslatedModelSerializer):
         instance = super().create(validated_data)
         instance._process_image()
         return instance
-    
+
     def update(self, resource, validated_data):
         remove = validated_data.pop('remove', False)
         ident = validated_data.pop('stamp', validated_data.get('id', None))
@@ -300,7 +300,7 @@ class ResourceImageSerializer(TranslatedModelSerializer):
         request = self.context['request']
         user = request.user
 
-    
+
         image = validated_data.pop('image')
         serializer = ImageSerializer(data=image)
         serializer.is_valid()
@@ -336,7 +336,7 @@ class NestedResourceImageSerializer(TranslatedModelSerializer):
         model = ResourceImage
         fields = (
             'url', 'type', 'caption',
-            'stamp', 'filename', 
+            'stamp', 'filename',
         )
         ordering = ('resource', 'sort_order')
 
@@ -351,7 +351,7 @@ class UniversalOptionSimpleSerializer(TranslatedModelSerializer):
         model = ResourceUniversalFormOption
         fields = ('id','text')
         required_translations = ('text_fi', 'text_sv', 'text_en')
-        
+
     def validate(self, attrs):
         request = self.context['request']
         if request.method == 'POST':
@@ -395,9 +395,9 @@ class ResourceUniversalOptionViewSet(viewsets.ModelViewSet):
             return UniversalOptionDetailedSerializer
 
         return UniversalOptionSimpleSerializer
-    
+
 register_view(ResourceUniversalOptionViewSet, 'resource_universal_option')
- 
+
 class ResourceUniversalFieldSerializer(TranslatedModelSerializer):
     field_type = UniversalFormFieldTypeSerializer()
     options = UniversalOptionSimpleSerializer(many=True, read_only=True)
@@ -444,7 +444,7 @@ class ResourceUniversalFieldSerializer(TranslatedModelSerializer):
                         'type': _('Invalid type provided')
                     }
                 })
-        return super().create(validated_data) 
+        return super().create(validated_data)
 
 class ResourceUniversalFieldCreateSerializer(ResourceUniversalFieldSerializer):
     field_type = UniversalFormFieldTypeSerializer()
@@ -537,14 +537,14 @@ class TermsOfUseSerializer(TranslatedModelSerializer):
     class Meta:
         model = TermsOfUse
         fields = (
-            'name', 'terms_type', 
+            'name', 'terms_type',
             'text', 'id'
         )
         required_translations = (
-            'name_fi', 
+            'name_fi',
             'text_fi', 'text_en', 'text_sv'
         )
-    
+
     def validate(self, attrs):
         terms_type = attrs.get('terms_type', "")
         if terms_type != TermsOfUse.TERMS_TYPE_GENERIC and \
@@ -556,7 +556,7 @@ class TermsOfUseSerializer(TranslatedModelSerializer):
                 }))]
             })
         return super().validate(attrs)
-    
+
     def update(self, resource, validated_data):
         if not isinstance(resource, Resource):
             raise TypeError("Invalid type: %s passed to %s" % (type(resource), str(self.__class__.__name__)))
@@ -570,16 +570,16 @@ class TermsOfUseSerializer(TranslatedModelSerializer):
 class ResourceStaffEmailsField(serializers.ListField):
     def to_internal_value(self, data):
         return '\n'.join(data)
-    
+
     def validate_empty_values(self, data):
         if data == fields.empty:
             return super().validate_empty_values(data)
-        
+
         for email in data:
             validate_email(email)
 
         return super().validate_empty_values(data)
-    
+
     def to_representation(self, data):
         if not data:
             return []
@@ -612,7 +612,7 @@ class ResourcePublishDateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({
                     'begin': _('Begin time must be before end time')
                 })
-            
+
         if begin:
             attr['begin'] = begin.replace(microsecond=0, second=0)
         if end:
@@ -621,7 +621,7 @@ class ResourcePublishDateSerializer(serializers.ModelSerializer):
                     'end': _('End time cannot be in the past')
                 })
             attr['end'] = end.replace(microsecond=0, second=0)
-            
+
         return attr
 
     def _create_new_publish(self, resource, validated_data) -> ResourcePublishDate:
@@ -635,7 +635,7 @@ class ResourcePublishDateSerializer(serializers.ModelSerializer):
 
     def update(self, resource, validated_data):
         return self._create_new_publish(resource, validated_data)
-    
+
     def save(self, **kwargs):
         request = self.context['request']
         resource = kwargs['resource']
@@ -683,7 +683,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     def get_publish_date(self, obj):
         if obj.publish_date:
             return ResourcePublishDateSerializer().to_representation(obj.publish_date)
-        
+
     def get_public(self, obj):
         return obj.public
 
@@ -895,13 +895,16 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
 
         if 'reservations_cache' in self.context:
             rv_list = self.context['reservations_cache'].get(obj.id, [])
-            for rv in rv_list:
-                rv.resource = obj
         else:
-            rv_list = get_resource_reservations_queryset(self.context['start'], self.context['end'])
-            rv_list = rv_list.filter(Q(resource=obj)|Q(resource__timmi_resource=False))
+            qs = get_resource_reservations_queryset(self.context['start'], self.context['end'])
+            if obj.unit_id and getattr(obj.unit, 'disallow_overlapping_reservations', False):
+                rv_list = list(qs.filter(resource__unit=obj.unit))
+            else:
+                rv_list = list(qs.filter(resource=obj))
 
-        rv_list = list(rv_list)
+        for rv in rv_list:
+            if rv.resource_id == obj.id:
+                rv.resource = obj
         if not rv_list:
             return []
         if settings.RESPA_PAYMENTS_ENABLED:
@@ -911,7 +914,7 @@ class ResourceSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.
     class Meta:
         model = Resource
         exclude = ('reservation_requested_notification_extra', 'reservation_confirmed_notification_extra',
-                   'access_code_type', 'reservation_metadata_set', 'reservation_home_municipality_set', 
+                   'access_code_type', 'reservation_metadata_set', 'reservation_home_municipality_set',
                    'created_by', 'modified_by', 'configuration', 'resource_email', 'soft_deleted', '_public')
 
 
@@ -1254,9 +1257,33 @@ class ResourceCacheMixin:
 
     def _preload_reservations(self, times):
         qs = get_resource_reservations_queryset(times['start'], times['end'])
-        reservations = qs.filter(resource__in=self._page)
+        # For units with disallow_overlapping_reservations, include all reservations in the unit
+        # so the calendar shows slots from other resources as blocked.
+        units_no_overlap = {
+            r.unit_id for r in self._page
+            if r.unit_id and getattr(r.unit, 'disallow_overlapping_reservations', False)
+        }
+        if units_no_overlap:
+            # Load reservations for page resources and for all resources in those units
+            reservations_page = list(qs.filter(resource__in=self._page))
+            page_reservations_by_resource = collections.defaultdict(list)
+            for rv in reservations_page:
+                page_reservations_by_resource[rv.resource_id].append(rv)
+            unit_reservations_qs = qs.filter(
+                resource__unit_id__in=units_no_overlap
+            ).select_related('resource', 'resource__unit')
+            unit_reservations_by_unit = collections.defaultdict(list)
+            for rv in unit_reservations_qs:
+                unit_reservations_by_unit[rv.resource.unit_id].append(rv)
+            reservations_by_resource = {}
+            for r in self._page:
+                if r.unit_id and r.unit_id in units_no_overlap:
+                    reservations_by_resource[r.id] = unit_reservations_by_unit.get(r.unit_id, [])
+                else:
+                    reservations_by_resource[r.id] = page_reservations_by_resource.get(r.id, [])
+            return reservations_by_resource
         reservations_by_resource = {}
-        for rv in reservations:
+        for rv in qs.filter(resource__in=self._page):
             rv_list = reservations_by_resource.setdefault(rv.resource_id, [])
             rv_list.append(rv)
         return reservations_by_resource
@@ -1329,7 +1356,7 @@ class ResourceCreateProductSerializer(serializers.ModelSerializer):
                 }
             })
         return super().validate(attrs)
-    
+
     def create(self, validated_data):
         instance = None
         if 'id' in validated_data:
@@ -1348,9 +1375,9 @@ class ResourceCreateProductSerializer(serializers.ModelSerializer):
                 })
             instance.resources.add(self.context['pk'])
             return instance
-        
+
         validated_data['resources'] = [self.context['pk']]
-        return super().create(validated_data) 
+        return super().create(validated_data)
 
     def to_representation(self, instance):
         obj = super().to_representation(instance)
@@ -1359,7 +1386,7 @@ class ResourceCreateProductSerializer(serializers.ModelSerializer):
 
 class ResourceCreateProductView(generics.CreateAPIView):
     queryset = Resource.objects.select_related(
-        'generic_terms', 'payment_terms', 
+        'generic_terms', 'payment_terms',
         'unit', 'type', 'reservation_metadata_set'
         )
     serializer_class = ResourceCreateProductSerializer
@@ -1383,8 +1410,8 @@ class ResourceTagSerializer(serializers.ModelSerializer):
         if 'new_label' in validated_data:
             del validated_data['new_label']
         return super().create(validated_data)
-        
-    
+
+
     def update(self, resource, validated_data):
         try:
             instance = self.Meta.model.objects.get(resource=resource, label=validated_data['label'])
@@ -1399,13 +1426,13 @@ class ResourceTagSerializer(serializers.ModelSerializer):
 
 class MetadataSetSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=False)
-    supported_fields = serializers.ListField(required=False, write_only=True, 
+    supported_fields = serializers.ListField(required=False, write_only=True,
             help_text='Options: \n%s' % '\n'.join(ReservationMetadataSet.get_supported_fields()))
     required_fields = serializers.ListField(required=False,  write_only=True,
             help_text='Options: \n%s' % '\n'.join(ReservationMetadataSet.get_supported_fields()))
     remove_fields = serializers.DictField(
                             child=serializers.ListField(
-                                required=False, write_only=True, 
+                                required=False, write_only=True,
                                     child=serializers.CharField(required=True)),
                     required=False, write_only=True, allow_empty=True,
             help_text='Example: "remove_fields: { "supported_fields": [ %(example)s ] }"' % ({
@@ -1417,11 +1444,11 @@ class MetadataSetSerializer(serializers.ModelSerializer):
         model = ReservationMetadataSet
         exclude = (
             'id',
-            'created_at', 'modified_at', 
+            'created_at', 'modified_at',
             'created_by', 'modified_by'
         )
         list_fields = (
-            'required_fields', 
+            'required_fields',
             'supported_fields'
         )
         schema = {
@@ -1438,7 +1465,7 @@ class MetadataSetSerializer(serializers.ModelSerializer):
             },
             "required": [ "remove_fields" ]
         }
-    
+
     def validate(self, attrs):
         request = self.context['request']
         supported_fields = attrs.pop('supported_fields', [])
@@ -1469,7 +1496,7 @@ class MetadataSetSerializer(serializers.ModelSerializer):
                     'remove_fields': 'Invalid schema.',
                     'schema': self.Meta.schema
                 }) from exc
-        
+
         if not supported_fields:
             raise serializers.ValidationError({
                 'supported_fields': [_('This field is required.')]
@@ -1488,7 +1515,7 @@ class MetadataSetSerializer(serializers.ModelSerializer):
             })
 
         attrs['supported_fields'] = supported_fields
-    
+
         if required_fields:
             required_fields = ReservationMetadataField.objects.filter(field_name__in=required_fields)
             if not required_fields.exists():
@@ -1502,7 +1529,7 @@ class MetadataSetSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         if 'remove_fields' in validated_data:
-            del validated_data['remove_fields'] 
+            del validated_data['remove_fields']
         try:
             instance = super().create(validated_data)
         except Exception as exc:
@@ -1544,11 +1571,11 @@ class MetadataSetSerializer(serializers.ModelSerializer):
 
 class ReservationHomeMunicipalitySetSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=True)
-    municipalities = serializers.ListField(required=True, write_only=True, 
+    municipalities = serializers.ListField(required=True, write_only=True,
     help_text='Options: \n%s' % '\n'.join(ReservationHomeMunicipalitySet.get_supported_fields()))
     remove_fields = serializers.DictField(
                             child=serializers.ListField(
-                                required=False, write_only=True, 
+                                required=False, write_only=True,
                                     child=serializers.CharField(required=True)),
                     required=False, write_only=True, allow_empty=True,
                     help_text='Example: "remove_fields: { "municipalities": [ %(example)s ] }"' % ({
@@ -1608,7 +1635,7 @@ class ReservationHomeMunicipalitySetSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'municipalities':[_('Atleast one invalid option was given.')]
             })
-    
+
         attrs['municipalities'] = municipalities
         attrs['remove_fields'] = remove_fields
         return attrs
@@ -1707,8 +1734,8 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
             'reservation_requested_notification_extra_fi',
             'reservation_requested_notification_extra_en',
             'reservation_requested_notification_extra_sv',
-            'reservation_additional_information_fi', 
-            'reservation_additional_information_en', 
+            'reservation_additional_information_fi',
+            'reservation_additional_information_en',
             'reservation_additional_information_sv'
 
             )
@@ -1722,7 +1749,7 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
             'equipments': ResourceEquipmentRelationSerializer,
             'publish_date': ResourcePublishDateSerializer,
         }
-    
+
     def validate_slot_size(self, slot_size):
         if slot_size.total_seconds() < 300:
             raise serializers.ValidationError({
@@ -1762,7 +1789,7 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
                 'id': [_('This resource already exists.')]
             })
         return super().validate(attrs)
-    
+
     def create(self, validated_data):
         request = self.context['request']
         user = request.user
@@ -1780,7 +1807,7 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
 
     def create_or_update(self, validated_data, _instance=None):
         extra = (
-            ('images', 
+            ('images',
                 {'kwargs': { 'many': True, 'context': self.context, 'data': validated_data.pop('images', {}), },
                     'validate': ( (lambda data: len(data) <= 20, _('Invalid length, max: 20')), ),
                     'save_kw': { 'resource_fk': True, }, } ),
@@ -1790,16 +1817,16 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
                     'validate': ( (lambda data: len(data) <= 100,  _('Invalid length, max: 100')), ),
                     'save_kw': { 'resource_fk': True }, } ),
 
-            ('periods', 
+            ('periods',
                 { 'kwargs': { 'many': True, 'context': self.context, 'data': validated_data.pop('periods', {}), },
                     'validate': ( (lambda data: len(data) <= 20,  _('Invalid length, max: 20')), ),
                     'save_kw': { 'resource_fk': True }, } ),
-    
-            ('equipments', 
+
+            ('equipments',
                 { 'kwargs': { 'many': True, 'context': self.context, 'data': validated_data.pop('equipments', {}), },
                     'save_kw': { 'resource_fk': True }, } ),
 
-            ('terms_of_use', 
+            ('terms_of_use',
                 { 'kwargs': { 'many': True, 'context': self.context, 'data': validated_data.pop('terms_of_use', []), },
                     'validate': ( (lambda data: len(data) <= 2,  _('Invalid length, max: 2')), ),
                     'perform': ( lambda instance, serializer: setattr(instance, serializer.terms_type, serializer), ), } ),
@@ -1808,11 +1835,11 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
                 { 'kwargs': { 'data': validated_data.pop('reservation_metadata_set', {}), 'context': self.context, },
                     'perform': ( lambda instance, serializer: setattr(instance, 'reservation_metadata_set', serializer), ), } ),
 
-            ('reservation_home_municipality_set', 
+            ('reservation_home_municipality_set',
                 { 'kwargs': { 'data': validated_data.pop('reservation_home_municipality_set', {}), 'context': self.context, },
                     'perform': ( lambda instance, serializer: setattr(instance, 'reservation_home_municipality_set', serializer), ), } ),
 
-            ('publish_date', 
+            ('publish_date',
                 { 'kwargs': { 'context': self.context, 'data': validated_data.pop('publish_date', {}), 'allow_null': True },
                   'save_kw': { 'resource': True }, } ),
         )
@@ -1887,7 +1914,7 @@ class ResourceCreateSerializer(TranslatedModelSerializer):
         if kwargs['data'] is None and \
             not kwargs.get('allow_null', False):
             return None
-        
+
         validations = kwargs.pop('validate', [])
 
         for validate, message in validations:
@@ -1934,7 +1961,7 @@ class ResourceUpdateSerializer(ResourceCreateSerializer):
     unit = serializers.PrimaryKeyRelatedField(required=False, queryset=Unit.objects.all())
     purposes = serializers.PrimaryKeyRelatedField(required=False, many=True, queryset=Purpose.objects.all())
     type = serializers.PrimaryKeyRelatedField(required=False, queryset=ResourceType.objects.all())
-    
+
     def validate(self, attrs):
         request = self.context['request']
 
@@ -1954,7 +1981,7 @@ class ResourceUpdateSerializer(ResourceCreateSerializer):
         instance = self.create_or_update(validated_data, _instance=instance)
         log_entry(instance, user, is_edit=True, message='Edited through API: %s' % ', '.join([k for k in validated_data]))
         return instance
-    
+
 
 class ResourceCancelReservationsView(CancelReservationsView):
     queryset = Resource.objects.all()
@@ -1969,7 +1996,7 @@ class ResourceCancelReservationsView(CancelReservationsView):
 
 class ResourceCreateView(generics.CreateAPIView):
     queryset = Resource.objects.select_related(
-        'generic_terms', 'payment_terms', 
+        'generic_terms', 'payment_terms',
         'unit', 'type', 'reservation_metadata_set'
         )
     serializer_class = ResourceCreateSerializer
@@ -1977,7 +2004,7 @@ class ResourceCreateView(generics.CreateAPIView):
 
 class ResourceUpdateView(generics.UpdateAPIView):
     queryset = Resource.objects.select_related(
-        'generic_terms', 'payment_terms', 
+        'generic_terms', 'payment_terms',
         'unit', 'type', 'reservation_metadata_set'
         )
     serializer_class = ResourceUpdateSerializer
@@ -2163,7 +2190,7 @@ class ResourceViewSet(munigeo_api.GeoModelAPIView, mixins.ListModelMixin,
     @action(detail=True, methods=['post'])
     def unfavorite(self, request, pk=None):
         return self._set_favorite(request, False)
-    
+
     def retrieve(self, request, *args, **kwargs):
         from resources.timmi import TimmiManager
         resource = self.get_object()
