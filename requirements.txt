@@ -202,7 +202,7 @@ drf-yasg==1.21.14
     # via -r requirements.in
 easy-thumbnails==2.10.1
     # via -r requirements.in
-ecdsa==0.19.1
+ecdsa==0.19.2
     # via
     #   -r requirements.in
     #   python-jose
