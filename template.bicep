@@ -513,7 +513,7 @@ var dbProperties = {
 }
 
 var dbSku = environment == 'prod' ? {
-  name: 'Standard_D2ds_v5'
+  name: 'Standard_D4ds_v5'
   tier: 'GeneralPurpose'
 } : {
   name: 'Standard_B2s'
