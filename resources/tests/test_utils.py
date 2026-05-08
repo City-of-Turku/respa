@@ -486,8 +486,8 @@ def test_order_line_price_helpers_for_price_type_paths():
     non_rent = {
         "quantity": "3",
         "unit_price": "30,00",
-        "reservation_tax_price": "7,20",
-        "reservation_pretax_price": "22,80",
+        "reservation_tax_price": "7.20",
+        "reservation_pretax_price": "22.80",
         "product": {
             "price_type": "per_period",
             "type": "service",
