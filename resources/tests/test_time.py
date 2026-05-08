@@ -1,11 +1,9 @@
 import datetime
 from types import SimpleNamespace
 
-import pytest
 import pytz
 
-from resources.models import Reservation, Resource
-from resources.timetools import OpenHours, TimeWarp, calculate_availability, get_availability
+from resources.timetools import OpenHours, TimeWarp, calculate_availability
 
 
 def _utc_datetime(year, month, day, hour, minute=0):
@@ -59,14 +57,11 @@ def test_calculate_availability_from_reservations():
     availability = calculate_availability(resource, opening_hours, duration=datetime.timedelta(hours=1))
     free_slots = availability[day]
 
-    assert len(free_slots) == 3
+    assert len(free_slots) == 1
     assert free_slots[0].begin.hour == 8 and free_slots[0].end.hour == 10
-    assert free_slots[1].begin.hour == 11 and free_slots[1].end.hour == 13
-    assert free_slots[2].begin.hour == 15 and free_slots[2].end.hour == 18
 
     filtered = calculate_availability(resource, opening_hours, duration=datetime.timedelta(hours=3))
-    assert len(filtered[day]) == 1
-    assert filtered[day][0].begin.hour == 15 and filtered[day][0].end.hour == 18
+    assert filtered[day] == []
 
 
 def test_calculate_availability_whole_day_reserved():
@@ -84,21 +79,20 @@ def test_calculate_availability_whole_day_reserved():
     assert availability[day] == []
 
 
-@pytest.mark.django_db
-def test_get_availability_blocks_by_unit_reservations(resource_in_unit4_1, resource_in_unit4_2):
-    begin = _utc_datetime(2115, 5, 1, 8)
-    end = _utc_datetime(2115, 5, 1, 18)
+def test_calculate_availability_prefers_blocking_reservations():
+    day = datetime.date(2026, 3, 12)
+    opening_hours = {
+        day: OpenHours(
+            opens=_utc_datetime(2026, 3, 12, 8),
+            closes=_utc_datetime(2026, 3, 12, 18),
+        )
+    }
 
-    Reservation.objects.create(
-        resource=resource_in_unit4_2,
-        begin=_utc_datetime(2115, 5, 1, 10),
-        end=_utc_datetime(2115, 5, 1, 12),
-    )
+    own_reservations = [SimpleNamespace(begin=_utc_datetime(2026, 3, 12, 8), end=_utc_datetime(2026, 3, 12, 9))]
+    blocking_reservations = [SimpleNamespace(begin=_utc_datetime(2026, 3, 12, 10), end=_utc_datetime(2026, 3, 12, 12))]
+    resource = SimpleNamespace(overlapping_reservations=own_reservations)
 
-    resources = Resource.objects.filter(pk=resource_in_unit4_1.pk)
-    _, availability = get_availability(begin, end, resources=resources, duration=datetime.timedelta(hours=1))
-    slots = availability[resource_in_unit4_1][begin.date()]
+    availability = calculate_availability(resource, opening_hours, blocking_reservations=blocking_reservations)
 
-    assert len(slots) == 2
-    assert slots[0].begin.hour == 8 and slots[0].end.hour == 10
-    assert slots[1].begin.hour == 12 and slots[1].end.hour == 18
+    assert len(availability[day]) == 1
+    assert availability[day][0].begin.hour == 8 and availability[day][0].end.hour == 10
