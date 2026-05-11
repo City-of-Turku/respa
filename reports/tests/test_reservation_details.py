@@ -94,6 +94,7 @@ def test_reservation_details_serializer_context_uses_cache_when_page_set(reserva
 
 @pytest.mark.django_db
 def test_reservation_details_docx_renderer_render_one_without_attrs(reservation):
+    reservation = Reservation.objects.get(pk=reservation.pk)
     renderer = ReservationDetailsDocxRenderer()
     renderer.resources = {
         reservation.resource.id: SimpleNamespace(
@@ -122,6 +123,7 @@ def test_reservation_details_docx_renderer_render_one_without_attrs(reservation)
 
 @pytest.mark.django_db
 def test_reservation_details_docx_renderer_render_one_with_attrs_and_catering(reservation):
+    reservation = Reservation.objects.get(pk=reservation.pk)
     renderer = ReservationDetailsDocxRenderer()
     renderer.resources = {
         reservation.resource.id: SimpleNamespace(
