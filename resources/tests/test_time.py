@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytz
 
+import resources.timetools as timetools
 from resources.timetools import OpenHours, TimeWarp, calculate_availability, periods_to_opening_hours
 
 
@@ -156,6 +157,96 @@ def test_calculate_availability_without_reservations_returns_empty_mapping():
     }
     resource = SimpleNamespace(overlapping_reservations=[])
     assert calculate_availability(resource, opening_hours) == {}
+
+
+def test_get_opening_hours_defaults_to_all_resources_and_handles_empty_periods(monkeypatch):
+    class FakeResources:
+        def values(self, *_args, **_kwargs):
+            return []
+
+    class FakePeriodQuery(list):
+        def order_by(self, *_args, **_kwargs):
+            return self
+
+    monkeypatch.setattr(timetools.Resource.objects, "all", lambda: FakeResources())
+    monkeypatch.setattr(timetools.Period.objects, "filter", lambda *_args, **_kwargs: FakePeriodQuery())
+
+    begin = datetime.date(2026, 10, 1)
+    end = datetime.date(2026, 10, 2)
+    dates = timetools.get_opening_hours(begin, end)
+
+    assert begin in dates
+    assert end in dates
+    assert dates[begin] is False
+    assert dates[end] is False
+
+
+def test_get_availability_uses_duration_and_unit_blocking_reservations(monkeypatch):
+    begin = _utc_datetime(2026, 11, 1, 8)
+    end = _utc_datetime(2026, 11, 1, 18)
+
+    class FakeQuery(list):
+        def order_by(self, *_args, **_kwargs):
+            return self
+
+        def prefetch_related(self, *_args, **_kwargs):
+            return self
+
+        def filter(self, *_args, **_kwargs):
+            return self
+
+        def select_related(self, *_args, **_kwargs):
+            return self
+
+    blocking_reservation = SimpleNamespace(
+        begin=_utc_datetime(2026, 11, 1, 10),
+        end=_utc_datetime(2026, 11, 1, 11),
+        resource=SimpleNamespace(unit_id=7),
+    )
+
+    class FakeResource:
+        pass
+
+    fake_resource = FakeResource()
+    fake_resource.unit_id = 7
+    fake_resource.unit = SimpleNamespace(disallow_overlapping_reservations=True)
+
+    class FakeResources:
+        def prefetch_related(self, *_args, **_kwargs):
+            return [fake_resource]
+
+    monkeypatch.setattr(timetools.Period.objects, "filter", lambda *_args, **_kwargs: FakeQuery())
+    monkeypatch.setattr(timetools.Unit.objects, "filter", lambda *_args, **_kwargs: FakeQuery())
+    monkeypatch.setattr(timetools.Reservation.objects, "filter", lambda *_args, **_kwargs: FakeQuery())
+    monkeypatch.setattr(timetools.Reservation.objects, "current", lambda: FakeQuery([blocking_reservation]))
+    monkeypatch.setattr(
+        timetools,
+        "periods_to_opening_hours",
+        lambda *_args, **_kwargs: {begin.date(): OpenHours(begin, end)},
+    )
+
+    captured = {}
+
+    def fake_calculate_availability(resource, opening_hours, duration=None, blocking_reservations=None):
+        captured["resource"] = resource
+        captured["duration"] = duration
+        captured["blocking_reservations"] = list(blocking_reservations or [])
+        return {begin.date(): []}
+
+    monkeypatch.setattr(timetools, "calculate_availability", fake_calculate_availability)
+
+    opening_hours, availability = timetools.get_availability(
+        begin=begin,
+        end=end,
+        resources=FakeResources(),
+        duration=datetime.timedelta(hours=1),
+    )
+
+    assert fake_resource in opening_hours
+    assert fake_resource in availability
+    assert captured["resource"] == fake_resource
+    assert captured["duration"] == datetime.timedelta(hours=1)
+    assert len(captured["blocking_reservations"]) == 1
 
 
 def test_periods_to_opening_hours_unit_and_resource_overrides():
