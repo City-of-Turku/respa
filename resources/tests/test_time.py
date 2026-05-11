@@ -1,9 +1,10 @@
 import datetime
+import operator
 from types import SimpleNamespace
 
 import pytz
 
-from resources.timetools import OpenHours, TimeWarp, calculate_availability
+from resources.timetools import OpenHours, TimeWarp, calculate_availability, periods_to_opening_hours
 
 
 def _utc_datetime(year, month, day, hour, minute=0):
@@ -96,3 +97,98 @@ def test_calculate_availability_prefers_blocking_reservations():
 
     assert len(availability[day]) == 1
     assert availability[day][0].begin.hour == 8 and availability[day][0].end.hour == 10
+
+
+def test_timewarp_raises_for_invalid_inputs():
+    try:
+        TimeWarp(dt=1)
+    except ValueError:
+        pass
+    else:
+        assert False, "Expected ValueError for dt without tzinfo attribute"
+
+    start = datetime.datetime(2026, 4, 1, 12, 0)
+    end = datetime.datetime(2026, 4, 1, 11, 0)
+    try:
+        TimeWarp(dt=start, end_dt=end, original_timezone="UTC")
+    except ValueError:
+        pass
+    else:
+        assert False, "Expected ValueError when end_dt is before dt"
+
+
+def test_timewarp_delta_comparisons_and_utc_conversion():
+    tw = TimeWarp(dt=datetime.datetime(2026, 4, 2, 10, 0), original_timezone="Europe/Helsinki")
+    plus_hour = tw.get_delta(datetime.timedelta(hours=1), operator.add)
+    minus_hour = tw.get_delta(datetime.timedelta(hours=1), operator.sub)
+
+    assert plus_hour > tw
+    assert minus_hour < tw
+    assert tw != plus_hour
+    assert tw == TimeWarp(dt=datetime.datetime(2026, 4, 2, 10, 0), original_timezone="Europe/Helsinki")
+
+    utc_from_naive = tw.dt_as_utc(datetime.datetime(2026, 4, 2, 8, 0))
+    assert utc_from_naive.utcoffset() == datetime.timedelta(0)
+
+
+def test_periods_to_opening_hours_unit_and_resource_overrides():
+    begin_dt = datetime.datetime(2026, 6, 1, 0, 0)
+    end_dt = datetime.datetime(2026, 6, 3, 0, 0)
+    monday = datetime.date(2026, 6, 1)
+    tuesday = datetime.date(2026, 6, 2)
+
+    def day(weekday, opens=None, closes=None, closed=False):
+        return SimpleNamespace(weekday=weekday, opens=opens, closes=closes, closed=closed)
+
+    unit_period = SimpleNamespace(
+        start=monday,
+        end=tuesday,
+        days=SimpleNamespace(all=lambda: [day(0, datetime.time(8, 0), datetime.time(16, 0))]),
+    )
+    # Resource-specific period overrides unit period for Monday
+    resource_period = SimpleNamespace(
+        start=monday,
+        end=tuesday,
+        days=SimpleNamespace(all=lambda: [day(0, datetime.time(10, 0), datetime.time(12, 0))]),
+    )
+
+    resource = SimpleNamespace(
+        overlapping_unit=SimpleNamespace(periods=SimpleNamespace(all=lambda: [unit_period])),
+        overlapping_periods=[resource_period],
+    )
+
+    hours = periods_to_opening_hours(resource, begin_dt, end_dt)
+    assert hours[monday].opens.hour == 10
+    assert hours[monday].closes.hour == 12
+    assert hours[tuesday] is False
+
+
+def test_periods_to_opening_hours_closed_and_overnight_day():
+    begin_dt = datetime.datetime(2026, 6, 1, 0, 0)
+    end_dt = datetime.datetime(2026, 6, 3, 0, 0)
+    monday = datetime.date(2026, 6, 1)
+    tuesday = datetime.date(2026, 6, 2)
+
+    def day(weekday, opens=None, closes=None, closed=False):
+        return SimpleNamespace(weekday=weekday, opens=opens, closes=closes, closed=closed)
+
+    overnight_period = SimpleNamespace(
+        start=monday,
+        end=tuesday,
+        days=SimpleNamespace(
+            all=lambda: [
+                day(0, datetime.time(22, 0), datetime.time(2, 0)),
+                day(1, closed=True),
+            ]
+        ),
+    )
+
+    resource = SimpleNamespace(
+        overlapping_unit=None,
+        overlapping_periods=[overnight_period],
+    )
+
+    hours = periods_to_opening_hours(resource, begin_dt, end_dt)
+    assert hours[monday].opens.hour == 22
+    assert hours[monday].closes.date() == monday + datetime.timedelta(days=1)
+    assert hours[tuesday] is False
