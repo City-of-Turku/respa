@@ -131,6 +131,33 @@ def test_timewarp_delta_comparisons_and_utc_conversion():
     assert utc_from_naive.utcoffset() == datetime.timedelta(0)
 
 
+def test_timewarp_day_range_and_default_serialize():
+    tw = TimeWarp(day=datetime.date(2026, 7, 1), end_day=datetime.date(2026, 7, 2))
+    assert tw.as_date is True
+    assert tw.end_dt is not None
+    serialized = tw.serialize()
+    assert "dt" in serialized
+    assert "end_dt" in serialized
+
+
+def test_timewarp_get_delta_with_explicit_zone_and_astimezone_default():
+    tw = TimeWarp(dt=datetime.datetime(2026, 8, 5, 12, 0), original_timezone="Europe/Helsinki")
+    utc_delta = tw.get_delta(datetime.timedelta(hours=2), operator.add, zone=pytz.utc)
+
+    # zone parameter path should produce a valid TimeWarp in UTC timeline
+    assert utc_delta.dt.utcoffset() == datetime.timedelta(0)
+    assert tw.astimezone().tzinfo.zone == "Europe/Helsinki"
+
+
+def test_calculate_availability_without_reservations_returns_empty_mapping():
+    day = datetime.date(2026, 9, 1)
+    opening_hours = {
+        day: OpenHours(opens=_utc_datetime(2026, 9, 1, 8), closes=_utc_datetime(2026, 9, 1, 18))
+    }
+    resource = SimpleNamespace(overlapping_reservations=[])
+    assert calculate_availability(resource, opening_hours) == {}
+
+
 def test_periods_to_opening_hours_unit_and_resource_overrides():
     begin_dt = datetime.datetime(2026, 6, 1, 0, 0)
     end_dt = datetime.datetime(2026, 6, 3, 0, 0)
