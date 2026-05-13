@@ -10,7 +10,7 @@
     "stylelint": "stylelint \"**/*.scss\""
   },
   "engines": {
-    "node": ">=18.15.0"
+    "node": ">=20.9.0"
   },
   "author": "",
   "license": "ISC",
