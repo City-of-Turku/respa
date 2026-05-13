@@ -1,4 +1,5 @@
 import datetime
+import uuid
 import pytest
 
 import arrow
@@ -13,6 +14,7 @@ from resources.models import (
     Day,
     Period,
     Reservation,
+    ReservationMetadataField,
     ReservationMetadataSet,
     Resource,
     ResourceType,
@@ -20,6 +22,7 @@ from resources.models import (
     UnitAuthorization,
     ReservationHomeMunicipalityField,
     ReservationHomeMunicipalitySet,
+    ReservationReminder,
 )
 
 
@@ -118,6 +121,75 @@ def test_need_manual_confirmation_metadata_set(resource_in_unit):
     assert data_set.required_fields.exists()
 
 
+@pytest.mark.django_db
+def test_reservation_metadata_field_and_set_str():
+    field = ReservationMetadataField.objects.create(field_name='custom_field')
+    data_set = ReservationMetadataSet.objects.create(name='custom_set')
+    assert str(field) == 'custom_field'
+    assert str(data_set) == 'custom_set'
+
+
+@pytest.mark.django_db
+def test_reservation_metadata_set_add_filter_remove_and_noop():
+    field_name = f"custom_field_{uuid.uuid4().hex[:8]}"
+    ReservationMetadataField.objects.create(field_name=field_name)
+    data_set = ReservationMetadataSet.objects.create(name='custom_set')
+
+    data_set.add('supported_fields', field_name)
+    assert data_set.filter('supported_fields', field_name).count() == 1
+
+    data_set.add('required_fields', field_name)
+    assert data_set.filter('required_fields', field_name).count() == 1
+    # required field should also be supported
+    assert data_set.filter('supported_fields', field_name).count() == 1
+
+    data_set.remove('supported_fields', field_name)
+    assert data_set.filter('supported_fields', field_name).count() == 0
+    # removing from supported also removes from required
+    assert data_set.filter('required_fields', field_name).count() == 0
+
+    # Unknown collection and unknown field should be no-op.
+    assert data_set.filter('unknown_collection', field_name) is None
+    data_set.add('unknown_collection', field_name)
+    data_set.remove('unknown_collection', field_name)
+    data_set.add('supported_fields', 'missing_field')
+    data_set.remove('supported_fields', 'missing_field')
+
+
+@pytest.mark.django_db
+def test_reservation_metadata_set_static_helpers(monkeypatch):
+    ReservationMetadataField.objects.create(field_name='field_one')
+    ReservationMetadataField.objects.create(field_name='field_two')
+    ReservationMetadataField.objects.create(field_name='field_three')
+
+    supported = ReservationMetadataSet.get_supported_fields()
+    assert 'field_one' in supported
+    assert 'field_two' in supported
+
+    example = ReservationMetadataSet.get_example()
+    assert len(example) == 2
+    assert set(example).issubset(set(supported))
+
+    monkeypatch.setattr(
+        ReservationMetadataField.objects,
+        'all',
+        lambda: (_ for _ in ()).throw(Exception('db failure')),
+    )
+    assert ReservationMetadataSet.get_supported_fields() == []
+    assert ReservationMetadataSet.get_example() == ['Example1', 'Example2']
+
+
+@pytest.mark.django_db
+def test_reservation_metadata_set_get_example_with_too_few_items(monkeypatch):
+    one_item = ReservationMetadataField(field_name='only_one')
+    monkeypatch.setattr(
+        ReservationMetadataField.objects,
+        'all',
+        lambda: [one_item],
+    )
+    assert ReservationMetadataSet.get_example() == ['Example1', 'Example2']
+
+
 @freeze_time('2115-04-02')
 @pytest.mark.django_db
 def test_valid_reservation_duration_with_slot_size(resource_with_opening_hours):
@@ -198,6 +270,73 @@ def test_reservation_home_municipality_set_str():
     home_municipality_set = ReservationHomeMunicipalitySet.objects.create(name='test municipality set')
     assert str(home_municipality_set) == 'test municipality set'
 
+
+@pytest.mark.django_db
+def test_reservation_home_municipality_set_add_filter_remove():
+    ReservationHomeMunicipalityField.objects.create(name='test municipality')
+    home_municipality_set = ReservationHomeMunicipalitySet.objects.create(name='test municipality set')
+
+    home_municipality_set.add('test municipality')
+    assert home_municipality_set.filter('test municipality').count() == 1
+
+    home_municipality_set.remove('test municipality')
+    assert home_municipality_set.filter('test municipality').count() == 0
+
+    # No-op branches for missing values should not raise.
+    home_municipality_set.add('missing municipality')
+    home_municipality_set.remove('missing municipality')
+
+
+@pytest.mark.django_db
+def test_reservation_home_municipality_set_static_helpers(monkeypatch):
+    ReservationHomeMunicipalityField.objects.create(name='municipality one')
+    ReservationHomeMunicipalityField.objects.create(name='municipality two')
+    ReservationHomeMunicipalityField.objects.create(name='municipality three')
+
+    supported = ReservationHomeMunicipalitySet.get_supported_fields()
+    assert 'municipality one' in supported
+    assert 'municipality two' in supported
+
+    example = ReservationHomeMunicipalitySet.get_example()
+    assert len(example) == 2
+    assert set(example).issubset(set(supported))
+
+    monkeypatch.setattr(
+        ReservationHomeMunicipalityField.objects,
+        'all',
+        lambda: (_ for _ in ()).throw(Exception('db failure')),
+    )
+    assert ReservationHomeMunicipalitySet.get_supported_fields() == []
+    assert ReservationHomeMunicipalitySet.get_example() == ['Example1', 'Example2']
+
+
+@pytest.mark.django_db
+def test_reservation_home_municipality_set_get_example_with_too_few_items():
+    ReservationHomeMunicipalityField.objects.create(name='municipality one')
+    assert ReservationHomeMunicipalitySet.get_example() == ['Example1', 'Example2']
+
+
+@pytest.mark.django_db
+def test_reservation_reminder_timestamp_and_remind_call(resource_in_unit, user, monkeypatch):
+    tz = timezone.get_current_timezone()
+    begin = tz.localize(datetime.datetime(2115, 6, 1, 8, 0, 0))
+    end = begin + datetime.timedelta(hours=1)
+    reservation = Reservation.objects.create(resource=resource_in_unit, begin=begin, end=end, user=user)
+    reminder_date = tz.localize(datetime.datetime(2115, 5, 31, 10, 0, 0))
+    reminder = ReservationReminder.objects.create(reservation=reservation, reminder_date=reminder_date)
+
+    assert isinstance(reminder.get_unix_timestamp(), int)
+    assert reminder.get_unix_timestamp() > 0
+
+    captured = {}
+
+    def fake_send_reservation_mail(self, **kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setattr(Reservation, 'send_reservation_mail', fake_send_reservation_mail)
+    reminder.remind()
+    assert captured['user'] == user
+    assert captured['is_reminder'] is True
 
 
 @pytest.mark.parametrize('virtual_address', (
