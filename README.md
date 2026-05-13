@@ -88,7 +88,7 @@ psql -U postgres --dbname=respa -c "create extension postgis;"
 
 ### Build Respa Admin static resources
 
-Make sure you have Node 18 and npm installed.
+Make sure you have Node 20 and npm installed.
 
 ```shell
 ./build-resources
