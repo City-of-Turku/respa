@@ -1,9 +1,38 @@
 import datetime
+from decimal import Decimal
+from types import SimpleNamespace
 import pytest
+import pytz
 from django.conf import settings
 from django.test.utils import override_settings
+from django.utils import translation
 from resources.models.utils import (
-    get_payment_requested_waiting_time, has_reservation_data_changed, is_reservation_metadata_or_times_different, format_dt_range_alt
+    _build_weekday_string,
+    build_reservations_ical_file,
+    calculate_final_order_sums,
+    calculate_final_product_sums,
+    create_datetime_days_from_now,
+    format_dt_range,
+    format_dt_range_alt,
+    generate_id,
+    get_municipality_help_options,
+    get_object_or_none,
+    get_order_pretax_price,
+    get_order_quantity,
+    get_order_tax_price,
+    get_payment_requested_waiting_time,
+    get_translated,
+    get_translated_fields,
+    get_translated_name,
+    has_reservation_data_changed,
+    humanize_duration,
+    is_reservation_metadata_or_times_different,
+    is_valid_time_slot,
+    localize_datetime,
+    log_entry,
+    product_has_given_tax_percentage,
+    save_dt,
+    time_to_dtz,
 )
 from resources.models import Reservation, Resource, Unit
 from payments.models import Product, Order
@@ -317,3 +346,329 @@ def test_has_reservation_data_changed_empty_data(reservation_basic):
     data = {}
     result = has_reservation_data_changed(data, reservation_basic)
     assert result is False
+
+
+def test_generate_id_returns_lowercase_string():
+    generated = generate_id()
+    assert isinstance(generated, str)
+    assert generated
+    assert generated == generated.lower()
+
+
+def test_save_dt_and_get_translated_helpers():
+    target = SimpleNamespace()
+    naive_dt = datetime.datetime(2026, 5, 8, 12, 0)
+    save_dt(target, "saved", naive_dt, orig_tz="Europe/Helsinki")
+    assert getattr(target, "saved").tzinfo is not None
+    assert getattr(target, "saved").utcoffset() == datetime.timedelta(0)
+
+    default_lang = settings.LANGUAGES[0][0]
+    translated = SimpleNamespace(**{f"name_{default_lang}": "localized", "name": "fallback"})
+    assert get_translated(translated, "name") == "localized"
+    assert get_translated_name(translated) == "localized"
+
+    missing_translated = SimpleNamespace(**{f"name_{default_lang}": "", "name": "fallback"})
+    assert get_translated(missing_translated, "name") == "fallback"
+
+
+def test_time_to_dtz_and_time_slot_validation():
+    day = datetime.date(2026, 5, 8)
+    converted = time_to_dtz(datetime.time(9, 15), date=day)
+    assert converted.hour == 9
+    assert converted.minute == 15
+    assert converted.tzinfo is not None
+
+    arr = SimpleNamespace(year=2026, month=5, day=8)
+    converted_with_arr = time_to_dtz(datetime.time(10, 30), arr=arr)
+    assert converted_with_arr.hour == 10
+    assert converted_with_arr.minute == 30
+
+    assert time_to_dtz(None, date=day) is None
+
+    opening = pytz.utc.localize(datetime.datetime(2026, 5, 8, 8, 0))
+    valid = opening + datetime.timedelta(minutes=30)
+    invalid = opening + datetime.timedelta(minutes=20)
+    slot_size = datetime.timedelta(minutes=30)
+    assert is_valid_time_slot(valid, slot_size, opening) is True
+    assert is_valid_time_slot(invalid, slot_size, opening) is False
+
+
+def test_humanize_duration_outputs_expected_strings():
+    with translation.override("en"):
+        assert humanize_duration(datetime.timedelta(hours=2, minutes=30)) == "2 hours 30 minutes"
+        assert humanize_duration(datetime.timedelta(hours=1)) == "1 hour"
+        assert humanize_duration(datetime.timedelta(minutes=45)) == "45 minutes"
+
+
+def test_create_datetime_days_from_now_sets_midnight():
+    assert create_datetime_days_from_now(None) is None
+
+    dt = create_datetime_days_from_now(2)
+    assert dt.hour == 0
+    assert dt.minute == 0
+    assert dt.second == 0
+    assert dt.microsecond == 0
+
+
+@pytest.mark.django_db
+def test_get_object_or_none_returns_instance_or_none():
+    unit = Unit.objects.create(name="unit for object lookup", time_zone="Europe/Helsinki")
+    assert get_object_or_none(Unit, pk=unit.pk) == unit
+    assert get_object_or_none(Unit, pk=-1) is None
+
+
+@pytest.mark.django_db
+def test_format_dt_range_fi_and_en(reservation_basic):
+    reservation = Reservation.objects.get(id=reservation_basic.id)
+    tz = reservation.resource.unit.get_tz()
+    begin = reservation.begin.astimezone(tz)
+    end = reservation.end.astimezone(tz)
+
+    fi_same_day = format_dt_range("fi", begin, end)
+    assert "klo" in fi_same_day
+    assert "12.00" in fi_same_day
+    assert "14.00" in fi_same_day
+    assert "–" in fi_same_day
+
+    en_same_day = format_dt_range("en", begin, end)
+    assert "12:00" in en_same_day
+    assert "14:00" in en_same_day
+    assert "–" in en_same_day
+
+    next_day = end + datetime.timedelta(days=1)
+    fi_next_day = format_dt_range("fi", begin, next_day)
+    assert "klo" in fi_next_day
+    assert "12.00" in fi_next_day
+    assert "14.00" in fi_next_day
+    assert " – " in fi_next_day
+
+
+def test_product_has_given_tax_percentage():
+    product = {"tax_percentage": Decimal("24.00")}
+    assert product_has_given_tax_percentage(product, Decimal("24.00")) is True
+    assert product_has_given_tax_percentage(product, Decimal("10.00")) is False
+
+
+def test_calculate_final_product_and_order_sums():
+    product_sums = calculate_final_product_sums(
+        {
+            "a": {"tax_total": Decimal("1.11"), "taxfree_price_total": Decimal("10.00")},
+            "b": {"tax_total": Decimal("0.89"), "taxfree_price_total": Decimal("5.00")},
+        },
+        quantity=2,
+    )
+    assert product_sums["product_tax_total"] == Decimal("4.00")
+    assert product_sums["product_taxfree_total"] == Decimal("30.00")
+
+    all_products = [
+        {"tax_percentage": Decimal("24.00"), "product_taxfree_total": Decimal("20.00")},
+        {"tax_percentage": Decimal("10.00"), "product_taxfree_total": Decimal("10.00")},
+    ]
+    totals = calculate_final_order_sums(all_products)["final_order_totals"]
+    assert totals["order_taxfree_total"] == Decimal("30.00")
+    assert totals["order_tax_total"][Decimal("24.00")] == Decimal("4.80")
+    assert totals["order_tax_total"][Decimal("10.00")] == Decimal("1.00")
+    assert totals["order_total"] == Decimal("35.80")
+
+
+def test_order_line_price_helpers_for_price_type_paths():
+    per_period_rent = {
+        "quantity": "1",
+        "unit_price": "40,00",
+        "reservation_tax_price": "9,60",
+        "reservation_pretax_price": "30,40",
+        "product": {
+            "price_type": "per_period",
+            "type": "rent",
+            "price": "10,00",
+            "tax_price": "2,40",
+            "pretax_price": "7,60",
+        },
+    }
+    assert get_order_quantity(per_period_rent) == 4.0
+    assert get_order_tax_price(per_period_rent) == 2.4
+    assert get_order_pretax_price(per_period_rent) == 7.6
+
+    non_rent = {
+        "quantity": "3",
+        "unit_price": "30,00",
+        "reservation_tax_price": "7.20",
+        "reservation_pretax_price": "22.80",
+        "product": {
+            "price_type": "per_period",
+            "type": "service",
+            "price": "10,00",
+            "tax_price": "2,40",
+            "pretax_price": "7,60",
+        },
+    }
+    assert get_order_quantity(non_rent) == 3.0
+    assert get_order_tax_price(non_rent) == 7.2
+    assert get_order_pretax_price(non_rent) == 22.8
+
+    zero_price = {
+        "quantity": "2",
+        "unit_price": "0,00",
+        "reservation_tax_price": "0,00",
+        "reservation_pretax_price": "0,00",
+        "product": {
+            "price_type": "fixed",
+            "type": "rent",
+            "price": "0,00",
+            "tax_price": "0,00",
+            "pretax_price": "0,00",
+        },
+    }
+    assert get_order_quantity(zero_price) == 2.0
+    assert get_order_tax_price(zero_price) == 0.0
+    assert get_order_pretax_price(zero_price) == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Missing branches: get_order_quantity quantity<1, get_order_tax_price fallthrough
+# ---------------------------------------------------------------------------
+
+def test_get_order_quantity_returns_1_when_calculated_quantity_below_1():
+    """When unit_price < product price, calculated quantity < 1 → return 1."""
+    item = {
+        "quantity": "1",
+        "unit_price": "3,00",
+        "reservation_tax_price": "0,72",
+        "reservation_pretax_price": "2,28",
+        "product": {
+            "price_type": "per_period",
+            "type": "rent",
+            "price": "9,00",
+            "tax_price": "2,16",
+            "pretax_price": "6,84",
+        },
+    }
+    assert get_order_quantity(item) == 1.0
+
+
+def test_get_order_tax_price_fallthrough_when_quantity_not_above_1():
+    """per_period + rent + quantity <= 1 → fallthrough to reservation_tax_price."""
+    item = {
+        "quantity": "1",
+        "unit_price": "9.00",
+        "reservation_tax_price": "2.16",
+        "reservation_pretax_price": "6.84",
+        "product": {
+            "price_type": "per_period",
+            "type": "rent",
+            "price": "9.00",   # quantity = 9/9 = 1.0, not > 1
+            "tax_price": "2.16",
+            "pretax_price": "6.84",
+        },
+    }
+    assert get_order_tax_price(item) == 2.16
+
+
+# ---------------------------------------------------------------------------
+# _build_weekday_string
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_build_weekday_string():
+    # weekday 0=Monday, 4=Friday; language may be Finnish
+    result = _build_weekday_string([0, 4])
+    assert isinstance(result, str)
+    assert len(result) > 0
+    assert ',' in result  # two weekdays joined by comma
+
+
+# ---------------------------------------------------------------------------
+# localize_datetime
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_localize_datetime_returns_string():
+    tz = pytz.timezone("Europe/Helsinki")
+    dt = tz.localize(datetime.datetime(2026, 6, 1, 12, 30))
+    result = localize_datetime(dt)
+    assert isinstance(result, str)
+    assert "2026" in result
+
+
+# ---------------------------------------------------------------------------
+# get_municipality_help_options
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_get_municipality_help_options_returns_list():
+    result = get_municipality_help_options()
+    assert isinstance(result, list)
+
+
+# ---------------------------------------------------------------------------
+# build_reservations_ical_file
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_build_reservations_ical_file(reservation_basic):
+    # Refresh from DB to get proper datetime objects
+    reservation = Reservation.objects.get(id=reservation_basic.id)
+    ical_bytes = build_reservations_ical_file([reservation])
+    assert isinstance(ical_bytes, bytes)
+    assert b'BEGIN:VCALENDAR' in ical_bytes
+    assert b'BEGIN:VEVENT' in ical_bytes
+    assert b'END:VEVENT' in ical_bytes
+
+
+@pytest.mark.django_db
+def test_build_reservations_ical_file_empty():
+    ical_bytes = build_reservations_ical_file([])
+    assert isinstance(ical_bytes, bytes)
+    assert b'BEGIN:VCALENDAR' in ical_bytes
+
+
+# ---------------------------------------------------------------------------
+# get_translated_fields
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_get_translated_fields_for_translated_model(resource_in_unit):
+    result = get_translated_fields(resource_in_unit)
+    # Resource has translated fields (name_fi, name_en, etc.), result is a dict
+    assert result is not None
+    assert isinstance(result, dict)
+
+
+@pytest.mark.django_db
+def test_get_translated_fields_use_field_name(resource_in_unit):
+    result = get_translated_fields(resource_in_unit, use_field_name=True)
+    assert result is not None
+    assert isinstance(result, dict)
+    # When use_field_name=True, keys are field names, values are dicts of {lang: value}
+    for field_name, lang_dict in result.items():
+        assert isinstance(lang_dict, dict)
+
+
+@pytest.mark.django_db
+def test_get_translated_fields_unregistered_model_returns_none(reservation_basic):
+    # Reservation is not in modeltranslation, so should return None
+    from resources.models import Reservation as Rsv
+    r = Rsv.objects.get(id=reservation_basic.id)
+    # Wrapped in try/except in the function, returns None for NotRegistered
+    result = get_translated_fields(r)
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# log_entry
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_log_entry_creates_log_action(resource_in_unit, user):
+    from django.contrib.admin.models import LogEntry
+    count_before = LogEntry.objects.count()
+    log_entry(resource_in_unit, user, is_edit=True, message="test edit")
+    assert LogEntry.objects.count() == count_before + 1
+
+
+@pytest.mark.django_db
+def test_log_entry_addition(resource_in_unit, user):
+    from django.contrib.admin.models import LogEntry, ADDITION
+    log_entry(resource_in_unit, user, is_edit=False, message="test add")
+    entry = LogEntry.objects.order_by('-action_time').first()
+    assert entry.action_flag == ADDITION
