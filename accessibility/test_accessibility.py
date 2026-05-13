@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from django.core.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory
@@ -247,3 +249,124 @@ def test_service_point_viewset_and_requirement_view_choose_many_and_partial():
     req_view.kwargs = {}
     serializer = req_view.get_serializer(data=[])
     assert serializer.many is True
+
+
+@pytest.mark.django_db
+def test_service_entrance_serializer_validate_location_valid_paths():
+    serializer = ServiceEntranceSerializer()
+
+    # dict input is returned as-is
+    location_dict = {"type": "Point", "coordinates": [60.1, 24.9]}
+    result = serializer.validate_location(location_dict)
+    assert result == location_dict
+
+    # valid JSON string is accepted and returned as-is (not parsed)
+    location_str = json.dumps(location_dict)
+    result = serializer.validate_location(location_str)
+    assert result == location_str
+
+
+@pytest.mark.django_db
+def test_service_entrance_serializer_to_representation_with_location():
+    point = ServicePoint.objects.create(code=20, name_fi="point fi")
+    location_dict = {"type": "Point", "coordinates": [60.1, 24.9]}
+
+    # Location stored as JSON string should be parsed in to_representation
+    entrance_str_location = ServiceEntrance.objects.create(
+        service_point=point,
+        name_fi="entrance fi",
+        location=json.dumps(location_dict),
+    )
+    serializer = ServiceEntranceSerializer(instance=entrance_str_location)
+    data = serializer.data
+    assert isinstance(data["location"], dict)
+    assert data["location"]["type"] == "Point"
+
+    # Location already a dict should be returned as-is
+    entrance_dict_location = ServiceEntrance.objects.create(
+        service_point=point,
+        name_fi="entrance 2 fi",
+        location=location_dict,
+    )
+    serializer2 = ServiceEntranceSerializer(instance=entrance_dict_location)
+    data2 = serializer2.data
+    assert isinstance(data2["location"], dict)
+
+
+@pytest.mark.django_db
+def test_service_point_serializer_to_representation_with_includes():
+    point = ServicePoint.objects.create(code=30, name_fi="point fi")
+    ServiceShortage.objects.create(
+        service_point=point,
+        viewpoint=1,
+        shortage_fi="s fi",
+        shortage_en="s en",
+        shortage_sv="s sv",
+    )
+    ServiceEntrance.objects.create(service_point=point, name_fi="entrance fi")
+
+    request = _make_request("GET", "/v1/accessibility/")
+    # With both includes: full nested lists are returned instead of counts
+    serializer = ServicePointSerializer(
+        instance=point,
+        context={"request": request, "includes": ["service_shortages", "service_entrances"]},
+    )
+    data = serializer.data
+    assert isinstance(data["service_shortages"], list)
+    assert isinstance(data["service_entrances"], list)
+    assert len(data["service_shortages"]) == 1
+    assert len(data["service_entrances"]) == 1
+
+
+@pytest.mark.django_db
+def test_service_point_update_serializer_creates_new_shortage_and_entrance_when_id_not_found():
+    point = ServicePoint.objects.create(code=40, name_fi="point fi")
+    request = _make_request("PUT", f"/v1/accessibility/{point.id}/")
+
+    payload = {
+        "service_shortages": [
+            {
+                "id": 99999,  # non-existent ID → new shortage is created
+                "viewpoint": 3,
+                "shortage": _name_translations("new shortage"),
+            }
+        ],
+        "service_entrances": [
+            {
+                "id": 99998,  # non-existent ID → new entrance is created
+                "name": _name_translations("new entrance"),
+            }
+        ],
+    }
+    serializer = ServicePointUpdateSerializer(
+        instance=point,
+        data=payload,
+        context={"request": request},
+        partial=True,
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+
+    assert point.service_shortages.count() == 1
+    assert point.service_entrances.count() == 1
+
+
+@pytest.mark.django_db
+def test_base_serializer_to_representation_filters_falsy_non_bool_non_dict_fields():
+    """BaseSerializer replaces falsy string/int fields with empty string but keeps False bools and empty dicts."""
+    point = ServicePoint.objects.create(code=50, name_fi="point fi")
+    entrance = ServiceEntrance.objects.create(
+        service_point=point,
+        name_fi="entrance fi",
+        photo_url=None,
+        street_view_url=None,
+        is_main_entrance=False,
+    )
+    serializer = ServiceEntranceSerializer(instance=entrance)
+    data = serializer.data
+    # False bool should be preserved, not replaced with ""
+    assert data["is_main_entrance"] is False
+    # None URL fields should become ""
+    assert data["photo_url"] == ""
+    assert data["street_view_url"] == ""
+
