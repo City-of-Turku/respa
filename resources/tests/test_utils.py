@@ -7,23 +7,29 @@ from django.conf import settings
 from django.test.utils import override_settings
 from django.utils import translation
 from resources.models.utils import (
+    _build_weekday_string,
+    build_reservations_ical_file,
     calculate_final_order_sums,
     calculate_final_product_sums,
     create_datetime_days_from_now,
     format_dt_range,
     format_dt_range_alt,
     generate_id,
+    get_municipality_help_options,
     get_object_or_none,
     get_order_pretax_price,
     get_order_quantity,
     get_order_tax_price,
     get_payment_requested_waiting_time,
     get_translated,
+    get_translated_fields,
     get_translated_name,
     has_reservation_data_changed,
     humanize_duration,
     is_reservation_metadata_or_times_different,
     is_valid_time_slot,
+    localize_datetime,
+    log_entry,
     product_has_given_tax_percentage,
     save_dt,
     time_to_dtz,
@@ -516,3 +522,153 @@ def test_order_line_price_helpers_for_price_type_paths():
     assert get_order_quantity(zero_price) == 2.0
     assert get_order_tax_price(zero_price) == 0.0
     assert get_order_pretax_price(zero_price) == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Missing branches: get_order_quantity quantity<1, get_order_tax_price fallthrough
+# ---------------------------------------------------------------------------
+
+def test_get_order_quantity_returns_1_when_calculated_quantity_below_1():
+    """When unit_price < product price, calculated quantity < 1 → return 1."""
+    item = {
+        "quantity": "1",
+        "unit_price": "3,00",
+        "reservation_tax_price": "0,72",
+        "reservation_pretax_price": "2,28",
+        "product": {
+            "price_type": "per_period",
+            "type": "rent",
+            "price": "9,00",
+            "tax_price": "2,16",
+            "pretax_price": "6,84",
+        },
+    }
+    assert get_order_quantity(item) == 1.0
+
+
+def test_get_order_tax_price_fallthrough_when_quantity_not_above_1():
+    """per_period + rent + quantity <= 1 → fallthrough to reservation_tax_price."""
+    item = {
+        "quantity": "1",
+        "unit_price": "9.00",
+        "reservation_tax_price": "2.16",
+        "reservation_pretax_price": "6.84",
+        "product": {
+            "price_type": "per_period",
+            "type": "rent",
+            "price": "9.00",   # quantity = 9/9 = 1.0, not > 1
+            "tax_price": "2.16",
+            "pretax_price": "6.84",
+        },
+    }
+    assert get_order_tax_price(item) == 2.16
+
+
+# ---------------------------------------------------------------------------
+# _build_weekday_string
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_build_weekday_string():
+    # weekday 0=Monday, 4=Friday; language may be Finnish
+    result = _build_weekday_string([0, 4])
+    assert isinstance(result, str)
+    assert len(result) > 0
+    assert ',' in result  # two weekdays joined by comma
+
+
+# ---------------------------------------------------------------------------
+# localize_datetime
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_localize_datetime_returns_string():
+    tz = pytz.timezone("Europe/Helsinki")
+    dt = tz.localize(datetime.datetime(2026, 6, 1, 12, 30))
+    result = localize_datetime(dt)
+    assert isinstance(result, str)
+    assert "2026" in result
+
+
+# ---------------------------------------------------------------------------
+# get_municipality_help_options
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_get_municipality_help_options_returns_list():
+    result = get_municipality_help_options()
+    assert isinstance(result, list)
+
+
+# ---------------------------------------------------------------------------
+# build_reservations_ical_file
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_build_reservations_ical_file(reservation_basic):
+    # Refresh from DB to get proper datetime objects
+    reservation = Reservation.objects.get(id=reservation_basic.id)
+    ical_bytes = build_reservations_ical_file([reservation])
+    assert isinstance(ical_bytes, bytes)
+    assert b'BEGIN:VCALENDAR' in ical_bytes
+    assert b'BEGIN:VEVENT' in ical_bytes
+    assert b'END:VEVENT' in ical_bytes
+
+
+@pytest.mark.django_db
+def test_build_reservations_ical_file_empty():
+    ical_bytes = build_reservations_ical_file([])
+    assert isinstance(ical_bytes, bytes)
+    assert b'BEGIN:VCALENDAR' in ical_bytes
+
+
+# ---------------------------------------------------------------------------
+# get_translated_fields
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_get_translated_fields_for_translated_model(resource_in_unit):
+    result = get_translated_fields(resource_in_unit)
+    # Resource has translated fields (name_fi, name_en, etc.), result is a dict
+    assert result is not None
+    assert isinstance(result, dict)
+
+
+@pytest.mark.django_db
+def test_get_translated_fields_use_field_name(resource_in_unit):
+    result = get_translated_fields(resource_in_unit, use_field_name=True)
+    assert result is not None
+    assert isinstance(result, dict)
+    # When use_field_name=True, keys are field names, values are dicts of {lang: value}
+    for field_name, lang_dict in result.items():
+        assert isinstance(lang_dict, dict)
+
+
+@pytest.mark.django_db
+def test_get_translated_fields_unregistered_model_returns_none(reservation_basic):
+    # Reservation is not in modeltranslation, so should return None
+    from resources.models import Reservation as Rsv
+    r = Rsv.objects.get(id=reservation_basic.id)
+    # Wrapped in try/except in the function, returns None for NotRegistered
+    result = get_translated_fields(r)
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# log_entry
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_log_entry_creates_log_action(resource_in_unit, user):
+    from django.contrib.admin.models import LogEntry
+    count_before = LogEntry.objects.count()
+    log_entry(resource_in_unit, user, is_edit=True, message="test edit")
+    assert LogEntry.objects.count() == count_before + 1
+
+
+@pytest.mark.django_db
+def test_log_entry_addition(resource_in_unit, user):
+    from django.contrib.admin.models import LogEntry, ADDITION
+    log_entry(resource_in_unit, user, is_edit=False, message="test add")
+    entry = LogEntry.objects.order_by('-action_time').first()
+    assert entry.action_flag == ADDITION
