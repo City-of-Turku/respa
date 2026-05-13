@@ -2,6 +2,7 @@ import datetime
 import operator
 from types import SimpleNamespace
 
+import pytest
 import pytz
 
 import resources.timetools as timetools
@@ -101,21 +102,13 @@ def test_calculate_availability_prefers_blocking_reservations():
 
 
 def test_timewarp_raises_for_invalid_inputs():
-    try:
+    with pytest.raises(ValueError):
         TimeWarp(dt=1)
-    except ValueError:
-        pass
-    else:
-        assert False, "Expected ValueError for dt without tzinfo attribute"
 
     start = datetime.datetime(2026, 4, 1, 12, 0)
     end = datetime.datetime(2026, 4, 1, 11, 0)
-    try:
+    with pytest.raises(ValueError):
         TimeWarp(dt=start, end_dt=end, original_timezone="UTC")
-    except ValueError:
-        pass
-    else:
-        assert False, "Expected ValueError when end_dt is before dt"
 
 
 def test_timewarp_delta_comparisons_and_utc_conversion():
